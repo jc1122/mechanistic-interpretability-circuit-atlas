@@ -1,0 +1,64 @@
+# Modular addition, (x + y) mod 59: MLP on a frozen menu
+
+**Task.** Prompt `SUM: x y\nANSWER: `, x, y in 0..58, answer (x + y) mod 59 read at the answer position. Train fraction .4 of all 59² pairs.
+**Status.** 2026-11-04. 10 seeds (+ 6 control runs). Trained part: one MLP layer, 256 ReLU neurons. AdamW lr 1e-3, weight decay 1.0,
+betas (.9, .98), full batch, 300k steps.
+
+## Summary
+All 10 networks converge to the same circuit: the Fourier "clock" solution of a wide MLP (Gromov, 2023). Each neuron uses one
+frequency and the output weights obey a phase rule. The per-neuron closed form, substituted for the trained layer, scores
+.996–1.000, higher than the networks themselves (.94–.98), whose residual errors are memorization not yet removed by weight decay.
+
+## Setup: frozen menu + trained stage
+A frozen, hand-built transformer (6 layers, every weight set by formula) reads the two numbers and places a "menu" of encodings
+at the answer position. Each menu block is centered and scaled to rms 1:
+- scalar x/100, y/100;
+- one-hot x, y (59 + 59 dims);
+- thermometer [x ≥ k], [y ≥ k] (58 + 58 dims);
+- distractors: a copy pointer, a position value, a counter and a bracket balance (the last two are constant on this prompt).
+
+Only the MLP on top is trained. The question is which encodings it reads and which algorithm it builds from them.
+
+## What training finds
+- **Learning curve (grokking).** Train accuracy 99% at step 500. Test accuracy stays at chance (.02) to step 20k, reaches 50% at
+  49–69k and 90% at 105–295k, and ends at .91–.97. Generalization is delayed but gradual, not a sharp jump. The weight norm rises from
+  10 to 101 during memorization, then decays to 85.
+- **Circuit type.** 10/10 clock (no pizza, no lookup table): the correct logit does not depend on x − y.
+- **Encodings read (test accuracy after mean-ablation; full network .94):**
+
+  | Block | Ablated | Kept alone (pair) |
+  |---|---|---|
+  | one-hot x / y | .08 / .02 | .65–.79 |
+  | thermometer x / y | .89 / .87 | .08–.11 |
+  | scalar x / y | .93 / .94 | .02–.03 |
+  | copy / position distractors | .86 / .89 | |
+
+  One-hot is necessary and nearly sufficient; the thermometer supplies the low frequencies k = 1–2 (73–77% of its contribution at k = 1);
+  the scalar is unused.
+- **Frequencies.** Neurons spread over 22–27 of the 29 frequencies in every network (no sparse key set). Frequencies 1 and 2 are in the
+  logit top-5 of all 10 networks; the rest are seed-specific (mean Jaccard overlap of top-5 sets .37).
+
+## Closed form
+For neuron n with frequency k_n (ω_n = 2πk_n/59):
+
+  h_n(x, y) = ReLU(c_n + a_n cos(ω_n x + φ_n) + b_n cos(ω_n y + ψ_n))
+  logit_c = Σ_n A_n cos(ω_n c + φ_n + ψ_n) · h_n(x, y)
+
+The phase rule θ_n = φ_n + ψ_n holds with median error .04–.05 rad. The convex ReLU turns the sum of cosines into a cross term
+cos(ω_n(x + y − c)), which peaks at c = x + y mod 59. Fitting k, φ, ψ from the DFTs of the input weights and substituting the formula
+for the trained layer gives .996–1.000 accuracy on all pairs (agreement with the network .94–.98).
+
+## Comparison
+Matches the analytic MLP solution of Gromov (2023) and the clock algorithm of Zhong et al. (2023). Unlike the sparse key-frequency
+transformer circuit, a wide MLP uses many frequencies. New here: given a menu of encodings, training consistently selects one-hot
+plus a low-frequency thermometer helper and ignores the scalar.
+
+## Controls and limits
+- Random frozen base (same shape, random weights): memorizes, test stays flat at .25, no phase rule.
+- Scalar-only menu: cannot fit the training set (train .47–.50).
+- One modulus, one width, one hyperparameter set; 300k steps did not reach 99% test accuracy (longer training not run).
+
+## References
+- Gromov, A. (2023). Grokking modular arithmetic. https://doi.org/10.48550/arxiv.2301.02679
+- Zhong, Z., Liu, Z., Tegmark, M., & Andreas, J. (2023). The clock and the pizza. https://doi.org/10.52202/075280-1186
+- Chughtai, B., Chan, L., & Nanda, N. (2023). A toy model of universality. https://doi.org/10.48550/arxiv.2302.03025
