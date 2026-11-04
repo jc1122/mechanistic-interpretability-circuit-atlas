@@ -9,7 +9,8 @@ All 10 networks converge to the same circuit: the Fourier "clock" solution of a 
 frequency and the output weights obey a phase rule. The per-neuron closed form, substituted for the trained layer, scores
 .996–1.000, higher than the networks themselves (.94–.98), whose residual errors are memorization not yet removed by weight decay.
 
-## Setup: frozen menu + trained stage
+## Setup
+Full architecture, optimiser and instrumentation: [METHODS.md](../METHODS.md). Task-specific conditions:
 A frozen, hand-built transformer (6 layers, every weight set by formula) reads the two numbers and places a "menu" of encodings
 at the answer position. Each menu block is centered and scaled to rms 1:
 - scalar x/100, y/100;
@@ -18,6 +19,19 @@ at the answer position. Each menu block is centered and scaled to rms 1:
 - distractors: a copy pointer, a position value, a counter and a bracket balance (the last two are constant on this prompt).
 
 Only the MLP on top is trained. The question is which encodings it reads and which algorithm it builds from them.
+
+- Menu width 310; hidden width 256 ReLU, 59 outputs; AdamW lr 1e-3, weight decay 1.0, betas (.9, .98), full batch, 300,000 steps, no early
+  stop, evaluation every 500 steps. Train fraction .4 of the 3481 pairs (1392 training pairs); seed = initialisation and split.
+- Controls: random frozen base and scalar-only menu, 3 seeds each. Runs were on CPU, 14-29 minutes per network.
+- Grok steps are the first evaluation (every 500 steps) with test accuracy >= 50% / 90%.
+
+**Reproduce** (from `code/`; one network per call, add seeds as needed):
+```
+python run.py modadd --seeds 0 1 2 3 4 5 6 7 8 9                 # menu, 10 seeds (headline: neuron_formula_acc .996-1.000)
+python run.py modadd --kind random --seeds 0 1 2                  # controls
+python run.py modadd --kind scalar --seeds 0 1 2
+```
+Each run prints the learning-curve steps, the circuit type, dd, the phase error and the substitution accuracies, and writes `out/*.json`.
 
 ## What training finds
 - **Learning curve (grokking).** Train accuracy 99% at step 500. Test accuracy stays at chance (.02) to step 20k, reaches 50% at

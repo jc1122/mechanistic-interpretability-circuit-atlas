@@ -10,10 +10,23 @@ Every network learns a flat residue lookup on the count c and ignores the list l
 (equivalently, a delta on the residue) reproduces it exactly (1.000). There is no grokking delay: test accuracy equals train accuracy from
 the first evaluation.
 
-## Setup: frozen menu + trained stage
+## Setup
+Full architecture, optimiser and instrumentation: [METHODS.md](../METHODS.md).
 A frozen hand-built transformer (6 layers, every weight set by formula) computes the count c (a segment-match attention head gives
 1/(c+1), an MLP step ladder decodes it) and the line length L. A frozen menu places three encodings of each integer at the answer
 position, each centered and scaled to rms 1: the raw scalar, a one-hot and a thermometer, plus distractor features. Only the MLP on top is trained.
+
+Menu width 326; hidden width 256 ReLU, 5 outputs; 200,000 steps, evaluation every 500 steps, no early stop; 10 seeds at each train fraction
+.4 / .6 / .8; controls (random base, scalar-only menu) 3 seeds at each fraction.
+
+**Reproduce** (from `code/`):
+```
+python run.py atlas --task count_mod5 --frac 0.4 --seeds 0 1 2 3 4 5 6 7 8 9     # repeat with --frac 0.6 and 0.8
+python run.py atlas --task count_mod5 --kind random --seeds 0 1 2 --probe        # random-base control with ridge probes
+python run.py atlas --task count_mod5 --kind scalar --seeds 0 1 2
+python run.py table out/count_mod5_*.json                                         # min-max over seeds, as quoted here
+```
+Headline per network: `final` (test accuracy), `form_res5` and `form_u_only` (substitution accuracy), `form_fourier` / `fourier_r2`.
 
 ## What training finds
 - **Learning curve.** Train 99% and test 99% both at step 500 for every fraction (final test .992–1.000). Not grokking.

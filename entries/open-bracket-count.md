@@ -5,6 +5,20 @@ where b is the final depth (#`(` − #`)`) and L the length, L = 1..45, b = −L
 **Status.** 2026-11-04. 30 networks (10 seeds × train fractions .4/.6/.8) + 18 control runs; setup as in [count mod 5](count-mod-5.md),
 with the frozen network supplying the depth ratio b/(L+1) and L.
 
+## Setup
+Frozen m2 and menu as in [count mod 5](count-mod-5.md) but on the bracket prompt: u = b (depth, from the bracket head's b/(L+1)), v = L; menu
+width 416 (the b thermometer is a second step stage gated by the one-hot of L). Hidden width 256, 46 outputs, 200,000 steps, evaluation
+every 500 steps, 10 seeds at train fractions .4 / .6 / .8, controls 3 seeds each; see [METHODS.md](../METHODS.md).
+
+**Reproduce** (from `code/`; the clock sum appears at fraction .8):
+```
+python run.py atlas --task open_count --frac 0.8 --seeds 0 1 2 3 4 5 6 7 8 9    # also --frac 0.4 and 0.6
+python run.py atlas --task open_count --kind random --seeds 0 1 2 --probe
+python run.py atlas --task open_count --kind scalar --seeds 0 1 2
+python run.py table out/open_count_*.json
+```
+Headline per network: `final`, `t50`, `form_clock` / `form_clock_agree`, `clock_k_top`.
+
 ## Summary
 The only task in this set that groks, and only with 80% of cells in training: 10/10 networks build a low-frequency trigonometric sum
 (frequencies k = 1–3 of 92), a Gromov-style clock on a non-modular domain. With 40% or 60% training data all networks memorize.

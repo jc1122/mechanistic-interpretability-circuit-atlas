@@ -4,6 +4,20 @@
 `=` if 2c = L (3 classes over 1080 cells (c, L), L = 1..45; 22 cells are `=`). The trained stage must compare c with L/2.
 **Status.** 2026-11-04. 30 networks (10 seeds × train fractions .4/.6/.8) + 18 control runs; setup as in count mod 5.
 
+## Setup
+Same prompts, menu (width 326) and trained stage as [count mod 5](count-mod-5.md), with 3 outputs (`a`, `b`, `=`); see
+[METHODS.md](../METHODS.md). Hidden width 256, 200,000 steps, evaluation every 500 steps, 10 seeds at train fractions .4 / .6 / .8,
+controls 3 seeds each. Label rule: class 0 if 2c > L, 1 if 2c < L, 2 (`=`) if 2c = L.
+
+**Reproduce** (from `code/`):
+```
+python run.py atlas --task compare_counts --frac 0.4 --seeds 0 1 2 3 4 5 6 7 8 9    # repeat with --frac 0.6 and 0.8
+python run.py atlas --task compare_counts --kind random --seeds 0 1 2 --probe
+python run.py atlas --task compare_counts --kind scalar --seeds 0 1 2
+python run.py table out/compare_counts_*.json
+```
+Headline per network: `final`, `eq_test_acc` (test accuracy on `=` cells), `cmp_ratio` and `cmp_r2` (the linear comparator), `form_line` / `form_line_agree`.
+
 ## Summary
 All 30 networks learn a linear comparator with a slightly wrong slope and memorize the `=` class, which never generalizes (0 correct
 `=` test cells in every network). A random frozen base does better than the exact hand-built menu (.99–1.0 vs .91–.96).

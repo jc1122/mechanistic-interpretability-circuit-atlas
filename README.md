@@ -10,7 +10,17 @@ Each entry describes one task and the circuit types that trained networks conver
 - **Closed form:** a formula for the trained part. It is accepted only if *substituting* it for the trained weights keeps the accuracy.
 
 Entries are written as encyclopedia articles: the mechanism in plain words, the equations, the evidence (ablations, accuracies,
-seed counts) and the limits. Experiments are run elsewhere; this repository holds the results and descriptions.
+seed counts) and the limits. [METHODS.md](METHODS.md) describes the architecture, the experimental conditions and the instrumentation common to all entries, and
+[code/](code/) is a self-contained CPU reimplementation (Python, torch) that rebuilds the hand-built network, generates the synthetic data,
+trains and runs the analysis; every entry has a Setup section with the command that reproduces it.
+
+## Quick start
+
+```
+cd code && pip install -r requirements.txt
+python run.py check                                              # the hand-built model and the menus are exact
+python run.py atlas --task count_mod5 --seeds 0 --steps 400 --every 100    # smoke run (about a minute); drop --steps/--every for the full 200,000 steps
+```
 
 ## Index
 
@@ -33,4 +43,4 @@ multiplication; long division; long-hand square root; counting and bracket tasks
 
 ## License
 
-Text: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+Text (entries, METHODS.md, README): [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Code in `code/`: [MIT](code/LICENSE).
