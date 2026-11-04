@@ -17,5 +17,7 @@ Short notes on results that went against expectation. Each says whether it is **
 - **…but the scratchpad networks trained on top of frozen parts did not generalize to longer inputs, while answer-only did**
   (preliminary, decimal subtraction trained on 3 digits). Answer-only: .80–.98 at 4 and 6 digits; scratchpad formats: ≤ .20 at 4 digits.
   The trained stage reads absolute position to tell which step it is in; holding that input at its mean drops accuracy from .99 to .01.
-  The hand-built network reads only position relative to the operator. Confirming experiment (running): the same training with position
-  inputs masked.
+  The hand-built network reads only position relative to the operator. Masking the trained stage's position inputs (absolute position,
+  operator anchor, relative offset) largely restores generalization: answer-only .99–1.0 at 4 digits and .98–.99 at 6; the place-value
+  format .95–.99 at 4 digits (from .01–.02) but only .52–.59 at 6, so position is the main cause, not the whole story. The borrow-chain
+  format is still training.
