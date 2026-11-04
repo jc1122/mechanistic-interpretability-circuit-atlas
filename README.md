@@ -36,6 +36,8 @@ multiplication; long division; long-hand square root; counting and bracket tasks
 
 ## Cross-entry findings
 
+Surprising results across entries, including early ones from tasks still running, are collected in [SURPRISES.md](SURPRISES.md).
+
 - Frozen exact encodings can hurt: on compare-counts and open-bracket-count a *random* frozen base (which encodes the integers
   linearly) generalizes better than the exact one-hot/thermometer menu, which invites memorization. Only residue tasks need the exact codes.
 - Equality never generalizes as its own learned class; a hand-built comparator that makes `=` the default ("neither greater nor less") is exact.

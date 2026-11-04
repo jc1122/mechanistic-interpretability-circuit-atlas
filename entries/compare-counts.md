@@ -40,5 +40,5 @@ non-linear (XOR-like) feature, so it can only memorize it.
 
 ## Controls and limits
 - Random frozen base: .99–1.000. Its residual encodes c, L and 2c − L linearly (ridge R² 1.000), so a few ReLUs give an exact comparator, `=` included.
-- Scalar-only menu: .97–.99, also better than the full menu (`=` test cells .25–.44 correct).
+- Scalar-only menu: .97–.99, also better than the full menu (`=` test cells .17–.44 correct).
 - Hypothesis (untested): exact one-hot codes make `=` and boundary cells memorizable at a lower weight norm than learning the line 2c − L.
