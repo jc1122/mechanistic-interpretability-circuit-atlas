@@ -6,6 +6,7 @@ where b is the final depth (#`(` − #`)`) and L the length, L = 1..45, b = −L
 with the frozen network supplying the depth ratio b/(L+1) and L.
 
 ## Setup
+Networks: [huggingface.co/jc1122/circuit-atlas-nets/tree/main/open-bracket-count](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/open-bracket-count) (hand-built base in `_shared/m2`).
 Frozen m2 and menu as in [count mod 5](count-mod-5.md) but on the bracket prompt: u = b (depth, from the bracket head's b/(L+1)), v = L; menu
 width 416 (the b thermometer is a second step stage gated by the one-hot of L). Hidden width 256, 46 outputs, 200,000 steps, evaluation
 every 500 steps, 10 seeds at train fractions .4 / .6 / .8, controls 3 seeds each; see [METHODS.md](../METHODS.md).

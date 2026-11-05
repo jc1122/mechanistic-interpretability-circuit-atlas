@@ -9,6 +9,8 @@ Each entry describes one task and the circuit types that trained networks conver
   entry gives how often each circuit type appears, which frozen parts training chooses to reuse, and how fast it generalizes (grokking).
 - **Closed form:** a formula for the trained part. It is accepted only if *substituting* it for the trained weights keeps the accuracy.
 
+**Weights:** the trained networks and frozen inputs behind each entry are on Hugging Face: [https://huggingface.co/jc1122/circuit-atlas-nets](https://huggingface.co/jc1122/circuit-atlas-nets) (safetensors, CC BY 4.0).
+
 Entries are written as encyclopedia articles: the mechanism in plain words, the equations, the evidence (ablations, accuracies,
 seed counts) and the limits. [METHODS.md](METHODS.md) describes the architecture, the experimental conditions and the instrumentation common to all entries, and
 [code/](code/) is a self-contained CPU reimplementation (Python, torch) that rebuilds the hand-built network, generates the synthetic data,

@@ -11,6 +11,7 @@ Every network learns a flat residue lookup on the count c and ignores the list l
 the first evaluation.
 
 ## Setup
+Networks: [huggingface.co/jc1122/circuit-atlas-nets/tree/main/count-mod-5](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/count-mod-5) (hand-built base in `_shared/m2`).
 Full architecture, optimiser and instrumentation: [METHODS.md](../METHODS.md).
 A frozen hand-built transformer (6 layers, every weight set by formula) computes the count c (a segment-match attention head gives
 1/(c+1), an MLP step ladder decodes it) and the line length L. A frozen menu places three encodings of each integer at the answer

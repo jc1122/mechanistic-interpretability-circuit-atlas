@@ -10,6 +10,7 @@ frequency and the output weights obey a phase rule. The per-neuron closed form, 
 .996–1.000, higher than the networks themselves (.94–.98), whose residual errors are memorization not yet removed by weight decay.
 
 ## Setup
+Networks: [huggingface.co/jc1122/circuit-atlas-nets/tree/main/modular-addition-mlp](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/modular-addition-mlp) (hand-built base in `_shared/m2`).
 Full architecture, optimiser and instrumentation: [METHODS.md](../METHODS.md). Task-specific conditions:
 A frozen, hand-built transformer (6 layers, every weight set by formula) reads the two numbers and places a "menu" of encodings
 at the answer position. Each menu block is centered and scaled to rms 1:

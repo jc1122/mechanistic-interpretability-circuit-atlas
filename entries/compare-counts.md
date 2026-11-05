@@ -5,6 +5,7 @@
 **Status.** 2026-11-04. 30 networks (10 seeds × train fractions .4/.6/.8) + 18 control runs; setup as in count mod 5.
 
 ## Setup
+Networks: [huggingface.co/jc1122/circuit-atlas-nets/tree/main/compare-counts](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/compare-counts) (hand-built base in `_shared/m2`).
 Same prompts, menu (width 326) and trained stage as [count mod 5](count-mod-5.md), with 3 outputs (`a`, `b`, `=`); see
 [METHODS.md](../METHODS.md). Hidden width 256, 200,000 steps, evaluation every 500 steps, 10 seeds at train fractions .4 / .6 / .8,
 controls 3 seeds each. Label rule: class 0 if 2c > L, 1 if 2c < L, 2 (`=`) if 2c = L.
