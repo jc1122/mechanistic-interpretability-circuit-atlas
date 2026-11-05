@@ -29,7 +29,7 @@ python run.py atlas --task count_mod5 --seeds 0 --steps 400 --every 100    # smo
 | [modular-addition-mlp](entries/modular-addition-mlp.md) | (x + y) mod 59, MLP on a frozen menu | Fourier "clock" (Gromov MLP solution), 10/10 | 10 | yes, .996–1.000 |
 | [count-mod-5](entries/count-mod-5.md) | count of a letter mod 5, MLP on a frozen menu | flat residue lookup, 30/30 | 30 | yes, 1.000 |
 | [compare-counts](entries/compare-counts.md) | which of two letters is more frequent | tilted linear comparator, `=` memorized, 30/30 | 30 | partial, .93–.96 (no `=`) |
-| [open-bracket-count](entries/open-bracket-count.md) | number of `(` in a bracket line | low-frequency clock sum (k = 1–3) at 80% data, 10/10; memorization below | 30 | yes, .91–.93 |
+| [open-bracket-count](entries/open-bracket-count.md) | number of `(` in a bracket line | low-frequency clock sum (k = 1–3) + parity channel at 80% data, 10/10; memorization below | 30 | yes, .91–.93 |
 
 Planned: binary, decimal and hex addition (answer only, carries written, place-value split); base conversion; subtraction;
 multiplication; long division; long-hand square root; counting and bracket tasks. See [TEMPLATE.md](TEMPLATE.md) for the entry format.
