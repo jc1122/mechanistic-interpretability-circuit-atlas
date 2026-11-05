@@ -36,6 +36,8 @@ Mechanism in words, then the weights as formulas (per layer / head / neuron bloc
 - Learning curve: memorization step, 50% / 90% test step, final accuracy.
 - Circuit types, clustered by mechanism (not by weights), with seed counts.
 - Which frozen parts are read (ablation per part).
+- Diagnostics (per setup): used heads + neurons, best linear-probe R² per hand-built variable (layer), residual effective rank vs the
+  hand-built net, attention divergence to the matching hand-built head, best vs final test; failures explained from these.
 
 ## Closed form
 Equation per circuit type; accuracy when substituted for the trained part; agreement with the network.
