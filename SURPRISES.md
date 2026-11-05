@@ -40,3 +40,39 @@ Short notes on results that went against expectation. Each says whether it is **
 - **Trained addition nets learn the column-sum lookup but not the carry-lookahead head** (verified, 10 seeds per cell; [decimal-hex-addition](entries/decimal-hex-addition.md)). With frozen hand-built parts the trained
   stage reads X1 + X2 + carry with equal weights (60/60 nets) and reaches .95-1.00; trained from scratch, 37/40 nets of the retry runs (40k steps, warmup, cosine, clip) reach exact match .998+, yet none of them is separated from the
   failed first-run nets by a HAND-like chain head, and none generalizes to a fourth digit (n + 1 <= .04), while the frozen-part answer-only stage extrapolates (.93-1.00).
+- **More data, not a scratchpad, rescues answer-only long division** (verified, 10 seeds per cell; tasks without an entry yet).
+  Binary long division, answer only, trained from scratch: 8-bit dividends (1920 training pairs) 0/10, test .64–.81 with train 1.00 (memorisation);
+  12-bit dividends (30720 pairs, 16x) 10/10 at test ≥ .99 (.9947–.99997; exact on every test pair in 0/10). The prediction written before the
+  rerun ("answer only stays below .5: no scratchpad") failed. Long-hand square root, answer only: 8-bit (128 numbers) .10–.28 → 14-bit
+  (11468 numbers, 90x) .981–.993 in all 10 seeds (2/10 ≥ .99). Division with the steps written out: .53–.69 → .877–.999 (7/10 ≥ .99). The same
+  holds for an automaton: answer-only parity of a word (lengths 1–16) trained on 20k fixed words stays at chance (.501–.524, 0/10); with fresh
+  words in every batch it is exact in 10/10, but only in the training range (32 symbols .34–.55, 64 chance).
+- **…while the frozen-part version of the same task fails on threshold precision** (preliminary; one task, two runs, 10 seeds each). On the
+  wide-range square root the stage trained on top of frozen hand-built parts gets every input it needs (R² 1.00 at its input) yet scores
+  .000–.006 (constant learning rate); with warmup, cosine annealing and clipping it reaches only .12–.29, and the test accuracy rises only in the
+  last 6k of 30k steps as the learning rate goes to zero. The root bits are right (.99–1.00); the remainder bits fall with significance (.98 → .61):
+  the stage must place a threshold at unit resolution on inputs of size 2^14. Wide-range division on frozen parts likewise scores .000–.004.
+  Confirming experiment (not run): a longer annealing tail or lr 1e-4, or a rescaled stage input.
+- **With a running-sum scratchpad, the multiplication step is the adder's step** (verified; [multiplication](entries/multiplication.md)).
+  The stage trained on frozen hand-built parts is a lookup on x + b_j a_{k−j} + carry in 10/10 nets (substitution 1.00); trained from scratch
+  (retry run) 9/10 nets solve the task and the last MLP has a closed form in 8/10: the adder key itself in 5/10 (substitution 1.00), a 6-input
+  table or (x, y, carry) key in 3/10. Answer-only multiplication trains in neither setting (best .80 from scratch, memorised).
+- **A net that fails on the permutation automaton learns its sign first** (verified, 10 seeds; automaton task without an entry yet). Trained from
+  scratch to give the final state of the 6-state S3 permutation automaton (answer only, words of 1–16 symbols, 20k fixed words), the test accuracy
+  plateaus near .33 (best .21–.37); the predicted state has the right sign (even or odd permutation, the quotient S3 → Z2) in 8/10 seeds (.99–1.00), learned at
+  4–10k steps (test .17 → .33), and the rest of the training set is memorised. The sign is length-bound (32 symbols .40–.71, 64 .48–.52). The same
+  architecture trained on the parity automaton, which is that same Z2 count, never learns it (chance). With fresh words in every batch the sign is 1.00 in 10/10.
+- **Chess attack maps: the nearest-blocker attention never forms** (preliminary; tasks without an entry yet). For attack maps (squares a colour
+  attacks) of one piece, of sliders and of random positions, no trained head matches a hand-built ray head (attention JS .45–.66 to every hand-built
+  head; 0 of 12 heads below .2 in all 30 nets trained on frozen parts); the nearest-blocker distance is not linear in the residual (R² .03–.38) and no
+  net reaches exact maps (best .37 on single pieces, at baseline on random positions). Only 3 nets trained from scratch have a single ray-like head.
+  Confirming experiments running: a scratchpad that writes each ray step, and 2x width.
+- **Weight decay erases hand-built circuits used as initialisation** (preliminary; one task, binary to decimal answer only). Starting from the hand-built
+  net with 2x fresh units and training everything with weight decay 1, the hand-built weights drift completely away (relative drift 1.0, 10/10 nets) and the fresh units take
+  over (output norm 1.6–2.5x the hand-built part's); with decay on the fresh units only, the hand-built weights stay (drift .012–.019). Neither version
+  beats training the stage on frozen parts (.56–.76): seeding adds width that memorises 128 examples. Confirming experiment: the same drift
+  check on the square-root and multiplication seeds.
+- **Digit embeddings trained from scratch are periodic, but no clock neurons compute the sum** (preliminary; [decimal-hex-addition](entries/decimal-hex-addition.md)).
+  In the nets trained from scratch the digit-token embeddings are periodic in the digit value: the top-2 DFT frequencies (1 and 2 or 3) hold .71–.97
+  of their power. The column sum is still assembled by a lookup in the last MLP, as on frozen parts. Measured on the archived nets (best and worst
+  seed per cell and run); confirming experiment: the same DFT on every seed and a substitution of the embeddings by their top-2 Fourier terms.

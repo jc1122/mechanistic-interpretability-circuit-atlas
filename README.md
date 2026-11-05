@@ -35,9 +35,10 @@ python run.py atlas --task count_mod5 --seeds 0 --steps 400 --every 100    # smo
 | [base-conversion](entries/base-conversion.md) | hex to binary, binary to decimal, decimal to binary (x = 0..255), answer only and scratchpad; 2-layer net | hex to binary: nibble one-hot lookup, 38/40 TRAIN nets (grokks from scratch in 16/40); decimal to binary A (frozen heads): remainder threshold, 10/10; carry-type cells never learned | 10 per setting | yes, hex to binary 1.00 in 36/40; thresholds off by <= .06 |
 | [decimal-hex-addition](entries/decimal-hex-addition.md) | a + b, 3 digits, base 10 and 16; answer only, carry token, column sums; 4-layer net | column-sum lookup f(X1 + X2 + carry) in 60/60 PART nets (retry runs); TRAIN solves 37/40 with 40k steps, with no carry-lookahead head | 10 per setting | yes, .95–1.00 (PART) |
 | [binary-addition](entries/binary-addition.md) | a + b, 6 bits; answer only, carry token, column sums; 4-layer net | one-head carry lookahead by hand; every working trained stage is a lookup on a + b + carry; position inputs break length until masked (column sums exact at 12 bits, 10/10); TRAIN solves all three formats in the final runs but fails at 12 bits | 10 per setting | yes, 1.00 (A, C), 3/10 to 6/10 (B) |
+| [subtraction](entries/subtraction.md) | a − b (a ≥ b), 3 digits base 10 and 6 bits base 2; answer only, borrow token, signed column differences; 4-layer net | per-column lookup on a − b − borrow (not the adder's a + b + c) in all 60 PART nets but one; TRAIN solves all six cells after one retry, same key in the last MLP in 84/100 nets; position shortcut breaks length unless masked | 10 per setting | yes, = net accuracy (PART .97–1.00) |
+| [multiplication](entries/multiplication.md) | a · b, 6 bits; answer only and running-sum scratchpad; 4-layer net | scratchpad step = the adder's sum lookup on x + b_j a + carry (PART 10/10, TRAIN 5/10, closed form 8/10); answer only never trains (parity staircase not fitted, TRAIN memorises) | 10 per setting | yes, 1.00 (scratchpad PART) |
 
-Planned: subtraction;
-multiplication; long division; long-hand square root; counting and bracket tasks. See [TEMPLATE.md](TEMPLATE.md) for the entry format.
+Planned: long division; long-hand square root; counting and bracket tasks. See [TEMPLATE.md](TEMPLATE.md) for the entry format.
 
 ## Cross-entry findings
 
