@@ -25,7 +25,7 @@ Short notes on results that went against expectation. Each says whether it is **
 - **Only the most local conversion is learned from scratch** (verified, 10 seeds per setting; [base-conversion](entries/base-conversion.md)). Hex to binary groks in
   a 2-layer net trained on half of the 256 inputs (answer only 1/10 seeds, with 80% of the data 6/10; scratchpad 2/10 and 7/10), while every carry-type conversion
   (binary to decimal, decimal to binary in both formats) memorizes the training inputs and stays far from test exact match .99 in all 80 nets and 30 PART nets.
-  An optimizer sweep on decimal to binary (answer only, from scratch; 17 settings of learning rate, weight decay, warmup, cosine decay and
+  An optimizer sweep on decimal to binary (answer only, from scratch; 17 settings at 50% and the best 5–6 at 70% and 90%, varying learning rate, weight decay, warmup, cosine decay and
   clipping, 3 seeds each) does not change this: with 50%, 70% or 90% of the 256 inputs in training no seed reaches test .99 (best mean .40
   at 90%, where the test set is only about 26 inputs). The same sweep solves subtraction, binary addition and multiplication, so the
   limit here is the data, not the optimizer (verified on decimal to binary only).
