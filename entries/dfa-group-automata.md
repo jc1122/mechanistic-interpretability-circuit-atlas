@@ -55,22 +55,29 @@ back and a 36-neuron table composes the two blocks: 5 heads + 180 neurons, exact
   Z3 every S ≥ 17–19 wrong. r3 tail-balanced S (large S now ~12% of words): parity masked 7/10 exact, unmasked 1/10, Z3 0/10. Not data.
 - A TRAIN r1 (20k static words): parity counts S but has no S mod 2 (test .50–.52, train also chance); Z3 9/10 (q decodable 1.00 at L4);
   S3 memorises and learns only the sign of the permutation (right sign in 8/10 seeds).
-- A TRAIN r2 (fresh words): parity and Z3 10/10 (grok at 13–21k / 3.5–18k steps): S at L1–L2, q 1.00 from L2–L3, MLPs = f(S): the HAND
-  type, but the residue staircase covers only the trained S (parity n = 32 chance; Z3 n = 32 ≥ .95 in 3/10). S3: sign 1.0 (10/10), exact up to
+- A TRAIN r2 (fresh words): parity and Z3 10/10 (grok at 13–21k / 3.5–18k steps): S at L1–L2, q 1.00 from L2–L3, MLPs = f(S): HAND's
+  variables (interchange below) in a different code (no orthogonal map to HAND's residual, CKA .11–.23), but the residue staircase covers only the trained S (parity n = 32 chance; Z3 n = 32 ≥ .95 in 3/10). S3: sign 1.0 (10/10), exact up to
   n ≈ 9–13, best .70–1.0 (3/10 ≥ .99) and still rising at the budget; ST2..ST4 at chance: no doubling.
 - Diagnostics (median over seeds; probe = best layer, one-hot accuracy, R² for S and position t; r90 = principal components for 90% of the
-  last residual's variance; attention divergence to HAND ≈ 0 throughout because HAND's unused heads are uniform):
+  last residual's variance; attention divergence to HAND ≈ 0 throughout because HAND's unused heads are uniform; patch = activation patching
+  on a shuffled batch, component with the largest accuracy drop; uses = interchange flip → DAS flip of the HAND variable at its best layer,
+  ranges over 167 seeds; "untested" = no answer-fixing pairs, not unused):
 
-| cell | used heads + MLPs | probes | r90 | best / final |
-|---|---|---|---|---|
-| B PART (3 groups) | 1 + 1 | q_prev, q 1.00 (L2) | 2–10 | 1 / 1 |
-| A S3 PART | 5 + 5 | ST1..ST4 1.00 (L2..L5), q .94 | 35 | 1 / 1 |
-| B TRAIN parity / Z3 | 1–6 + 4–6 / 0–3 + 2–6 | q_prev, q 1.00 (L5–6 / L3), t R² .97 / .98 | 1.5 / 2 | 1 / 1 |
-| A parity PART r1 / r2 / r3 (+mask) | 1 + 1 | S 1.00 (L2), q .63 / .97 / .96–.99 | 1 | .96–.99 / .986–.999 / .988–1.0 |
-| A Z3 PART r1 / r2 / r3 | 1 + 1 | S 1.00 (L2), q .80 / .76 / .79 | 1 | .91–.98 / .92–.97 / .88–.97 |
-| A parity TRAIN r1 / r2 | 0 + 0 / 3–10 + 4–6 | S 1.00 (L1), q .52 / 1.00 (L3) | 2 / 1 | .50–.52 / 1 |
-| A Z3 TRAIN r1 / r2 | 2–6 + 5–6 / 3–6 + 4–6 | S R² .95 / .98 (L1 / L2), q 1.00 (L4 / L2) | 2 | .998–1 / 1 |
-| A S3 TRAIN r1 / r2 | 0–4 + 0–5 / 4–20 + 4–6 | ST1 .37 / .55, ST2..4 .18–.23, q .34 / .64 | 2.5 / 4.5 | .21–.37 / .70–1.0 |
+| cell | used heads + MLPs | probes | r90 | patch (drop) | uses (inter → DAS) | best / final |
+|---|---|---|---|---|---|---|
+| B PART (3 groups) | 1 + 1 | q_prev, q 1.00 (L2) | 2–10 | MLP1 1.0, fetch head L1H0 .94 | sym 1, q .93–1 → 1; q_prev untested | 1 / 1 |
+| A S3 PART | 5 + 5 | ST1..ST4 1.00 (L2..L5), q 1.00 | 35 | index heads L1–L3 ≈ 1 | q .26–.54 → .78–1; ST1–4 untested | 1 / 1 |
+| B TRAIN parity / S3 | 1–6 + 4–6 / 0–3 + 4–6 | q_prev, q 1.00 (L3–6), t R² .88–.99 | 1.5 / 2 | MLP0 (6/10, 7/9), late MLPs .84–.98 | sym 1, q .99–1 → 1 | 1 / 1 |
+| A parity PART r1 / r2 / r3 (+mask) | 1 + 1 | S 1.00 (L2), q .84–.97 / .93–1 / .93–1 | 1 | L1H0 and MLP1 1.0 (55/55) | S .92–1; q .48–.79 → .85–1 | .96–.99 / .986–.999 / .988–1.0 |
+| A Z3 PART r1 / r2 / r3 | 1 + 1 | S 1.00 (L2), q .80 / .76 / .79 | 1 | L1H0 and MLP1 1.0 (11/11) | S .82–.90 (2 seeds); q .64–.86 → .70–.88 | .91–.98 / .92–.97 / .88–.97 |
+| A parity TRAIN r1 / r2 | 0 + 0 / 3–10 + 4–6 | S 1.00 (L1), q .52 / 1.00 (L3) | 2 / 1 | — / layer-0 heads + MLP0 1.0 | S, q .48–.53 → .48–.53 / S 1.00, q .85–1 → .97–1 | .50–.52 / 1 |
+| A Z3 TRAIN r1 / r2 | 2–6 + 5–6 / 3–6 + 4–6 | S R² .95 / .98 (L1 / L2), q 1.00 (L4 / L2) | 2 | MLP5 or layer-0 heads ≈ 1 | q .94–.96 → 1.00 (2 seeds) | .998–1 / 1 |
+| A S3 TRAIN r1 / r2 | 0–4 + 0–5 / 4–20 + 4–6 | ST1 .37 / .55, ST2..4 .18–.23, q .34 / .64 | 2.5 / 4.5 | layer-0 heads, MLP5 ≈ 1 | untested / q .62–.99 → .57–.99 (5/7); ST1–4 untested | .21–.37 / .70–1.0 |
+- Causal verdicts. Failed abelian PART stages use S (interchange .92–1) and carry q, recoverable by DAS (.85–1) though only half linearly
+  readable (.48–.79): the miss is the large-S readout, not the count. Deleting the S/q subspace drops every parity A PART and parity TRAIN r2 net to
+  chance (.46–.52), keeping only it leaves accuracy unchanged. Parity TRAIN r1 has S but no answer-controlling variable (all flips at chance).
+  Solved TRAIN nets use HAND's variables in their own basis (residual alignment fit R² < 0); a high CKA does not mark success (failed parity
+  r1 .99, solved r2 ≤ .23). S3 TRAIN: no linear trace of HAND's block states; whether some other code carries them is not tested.
 
 ## Closed form
 B: q_t = δ(q_{t-1}, s_t), a G × G table applied to the fetched previous state; substituting the (q_prev, symbol) mean table for the stage
@@ -94,7 +101,8 @@ a log-depth solution, and TRAIN answer-only nets are length-bound. Fresh samples
 (r1 0/10 → r2 10/10), in line with the advantage of fresh-sample SGD on parities (Abbe & Sandon 2023). Scratchpads as an aid: Nye et al. 2021.
 
 ## Controls and limits
-Linear probes only; teacher-forced scratchpad; one size (d 256; the d 512 S3 run is pending); 10 seeds per cell; length evaluated on random
+Probes, ablation, activation patching, interchange and DAS on the best snapshots (final snapshots unchecked; neuron
+counts not measured); teacher-forced scratchpad; one size (d 256; the d 512 S3 run is pending); 10 seeds per cell; length evaluated on random
 words. The masked/unmasked PART pairs control for the position shortcut. The abelian PART r3 retry rules out coverage; a structured
 (hinge) initialisation of the stage was not tried.
 
