@@ -104,6 +104,19 @@ evaluation over the run / last evaluation (final weights can be far lower).
   in tens and units: a blurred threshold ladder plus memorising features; about 200 neurons vs 18.
 - **Binary to decimal B, PART (unsolved).** F alone gives .02; the read tokens (or the current token) are needed (.54-.64).
 - **All carry-type TRAIN nets use all 8 heads and both MLPs (420-510 neurons) and have no closed form.**
+- Diagnostics (medians over solved nets, exact ≥ .9; * = cell without a solved net, all 10 nets): used heads+MLPs; patch = component with the
+  largest patching drop (nets); var inter/DAS = linear interchange / DAS flip, best layer; edges = EAP-IG jaccard/hand_recall vs HAND, trusted nets (spearman_exact ≥ .8); diag exact best / final:
+
+| cell | HAND | PART | TRAIN frac .5 | TRAIN frac .8 |
+|---|---|---|---|---|
+| hex2bin A | 1+1; L1H0; X 1/1; edges 1/1 | 1+1; L1H0 6, MLP1 4; X 1/1; edges 1/1 (10); 1 / 1 | 7-8+2; MLP1 9/9; X untested (nf < 30); edges .50/.67 (3); .85-1 / .54-.93 | 7-8+2; MLP1 10/10; X untested; edges .20/.67 (7); .98-1 / .09-1 |
+| hex2bin B | 1+1; L1H0; X 1/1; edges 1/1 | 1+1; L1H0 10/10; X .94/1; edges 1/1 (9); 1 / 1 | 5-8+2; MLP1 9, MLP0 1; X 1/1; edges .33/.50 (7); .91-1 / .87-1 | 4-8+2; MLP1 10/10; X 1/1; edges .33/.50 (9); .96-1 / .01-1 |
+| dec2bin A | 2+1; MLP1; F 1/1; edges untrusted | 2+1; MLP1 10/10; F 1/1; edges 1/1 (4 of 9); final .93-.99 | * 5-8+2; MLP1 9, MLP0 1; F .87/.87; edges .25/.50 (4); final .11-.55 | * 8+2; MLP1 7, MLP0 3; F .89/.95 (lr 3e-4: .82/.94); edges .25/.40 (8); final .24-.86 |
+| dec2bin B | 2+1; MLP1; C .24/.49, X .42/.42; edges 1/1 | * 2+1; MLP1 10/10; C .47/.98, X .63/.98; edges 1/1 (5); final .21-.52 | * 0-8+0-2; MLP0 7, MLP1 2; C .18/.91, X .32/.86; edges .25/.40 (7); final .00-.52 | * 8+2; MLP0 4, L1H2 2; C .15/.93, X .29/.44; edges .25/.40 (4); final .24-.66 |
+| bin2dec A | 3+1; MLP1; F 0/.32; edges untrusted | * 2+1; MLP1 10/10; F .11/.42; edges 1/1 (4); final .71-.81 | * 7-8+2; MLP0 6, MLP1 4; F .07/.30; edges .11/.40 (8); final .43-.51 | * 8+2; MLP0 6, MLP1 4; F .05/.30; edges .11/.40 (10); final .73-.80 |
+| bin2dec B | 1+1; L1H0; F .09/–; no edges | * 1+1; MLP1 10/10; F .17/.48; edges 1/1 (8); final .43-.64 | * 8+2; MLP0 10/10; F .10/.31; edges .20/.33 (6); final .08-.71 | * 0-8+0-2; MLP0 7, MLP1 2; F .12/.31; edges .20/.33 (7); final .03-.88 |
+- Causal: PART patch top = the frozen read head L1H0 (hex2bin, 16/20) or the trained L1 MLP; PART edges = HAND wiring (jaccard 1.0, hand_recall 1.0; 43/48 solved nets trusted,
+  also in the failed PART cells). TRAIN wiring differs (jaccard .11-.50; heads not aligned: a different-wiring flag, not a match score); TRAIN patch top MLP1 (63/64 solved). Present but not linear: dec2bin B C, X (PART inter .47/.63, DAS .98). bin2dec F is neither (inter ≤ .17, DAS ≤ .48 in every rung; HAND 0 / .32).
 
 ## Closed form
 - Hex to binary: bit_j = bit_j(X) of the read nibble X. Substituting the per-position least-squares fit of the nibble one-hot for the residual after layer 1

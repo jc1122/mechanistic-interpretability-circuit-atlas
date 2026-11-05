@@ -52,21 +52,24 @@ A scratchpad shrinks the circuit: division 14 vs 186 neurons, square root 20 vs 
 - Diagnostics (best + worst seed, final / best snapshot; probes = best-layer ridge R²; PR = residual participation ratio at layer 3 (HAND 1.0–1.9);
   JS = attention divergence of HAND's heads):
 
-| cell | used components | probes | PR | JS | best / final |
-|---|---|---|---|---|---|
-| division B PART 8-bit / wide | 4–8 | x, T, x−T 1.00 (L2), bit .76–.81 | 1.9 | 0 | 1 / 1 |
-| square root B PART 8-bit / wide (annealed) | 4–8 | x, T, x−T 1.00 (L2), bit .57–.71 | 1.3–1.4 | 0 | .98–.99 / .98–.99 |
-| division A PART 8-bit / wide (annealed) | 0–6 | N 1.00, D .67–1.0, quotient .51–.86 | 1.0–1.7 | 0–.31 | ≤ .22 / ≤ .13 |
-| square root A PART 8-bit / wide (annealed) | 0–7 | N 1.00, root .70–.97 | 1.0–1.5 | 0–.34 | ≤ .30 / ≤ .28 |
-| division A / B TRAIN 8-bit | 14–15 | quotient .82–.85; x−T .74–.76, bit .58–.66 | 1.1–1.4 | .5–.6 | ≤ .84 / ≤ .81 |
-| division A / B TRAIN wide | 14–15 | quotient .80–.86; x−T .64–.67, bit .50–.70 | 1.0–2.0 | .2–.7 | .88–1.0 / .88–1.0 |
-| division B TRAIN 2x width (seeds 5–9) | 15 | x .77–.79, T .99, x−T .72–.73, bit .61–.63 | 1.1–1.2 | .55 | .97–1.0 / .97–1.0 |
-| square root A TRAIN wide / 2x width | 13–15 | N .92–.98, root .92–.98 (L2) | 1.0–1.6 | .5 | .98–.99 / .98–.99 |
-| square root B TRAIN wide (30k) | 15 | x .87–.91, T .98–1.0, x−T .63–.73, bit .73–.77 | 1.0–1.2 | .58 | .21–.96 / .21–.95 |
+| cell | used components | probes | PR | JS | best / final | patch (nets) | inter/DAS | edges (trusted) |
+|---|---|---|---|---|---|---|---|---|
+| division B PART 8-bit / wide | 4–8 | x, T, x−T 1.00 (L2), bit .76–.81 | 1.9 | 0 | 1 / 1 | L1H0 2 / MLP2 2 | bit .70/– / .76/1 | untrusted |
+| square root B PART 8-bit / wide (annealed) | 4–8 | x, T, x−T 1.00 (L2), bit .57–.71 | 1.3–1.4 | 0 | .98–.99 / .98–.99 | L1H0 2 / L1H0 2 | bit .85/.99 / x 1/1, x−T .74/.89, bit .86/.96 | untrusted |
+| division A PART 8-bit / wide (annealed) | 0–6 | N 1.00, D .67–1.0, quotient .51–.86 | 1.0–1.7 | 0–.31 | ≤ .22 / ≤ .13 | * MLP1 3, MLP2 1 / MLP2 2 | quot .47/– / .31/– | – |
+| square root A PART 8-bit / wide (annealed) | 0–7 | N 1.00, root .70–.97 | 1.0–1.5 | 0–.34 | ≤ .30 / ≤ .28 | * L1H0 2, MLP1 2 / L1H0 2 | N .52/.52 / N .53/.78, root .32/.57 | .75/1 (3) / untrusted |
+| division A / B TRAIN 8-bit | 14–15 | quotient .82–.85; x−T .74–.76, bit .58–.66 | 1.1–1.4 | .5–.6 | ≤ .84 / ≤ .81 | * MLP2 2 / MLP2, MLP0 | quot .99/– / bit .88/– | – |
+| division A / B TRAIN wide | 14–15 | quotient .80–.86; x−T .64–.67, bit .50–.70 | 1.0–2.0 | .2–.7 | .88–1.0 / .88–1.0 | MLP2, MLP1 / MLP2 (1 solved) | quot .98/1 / bit .98/1 | .08/.14 (1) / .10/.36 (1) |
+| division B TRAIN 2x width (seeds 5–9) | 15 | x .77–.79, T .99, x−T .72–.73, bit .61–.63 | 1.1–1.2 | .55 | .97–1.0 / .97–1.0 | MLP2 2 (+ MLP0 1) | bit .85-.95/1 | untrusted |
+| square root A TRAIN wide / 2x width | 13–15 | N .92–.98, root .92–.98 (L2) | 1.0–1.6 | .5 | .98–.99 / .98–.99 | MLP2 2 / MLP2 2 | N .99/1, root 1/1 / N .77/1, root .80/1 | .12/.27 (2) / untrusted |
+| square root B TRAIN wide (30k) | 15 | x .87–.91, T .98–1.0, x−T .63–.73, bit .73–.77 | 1.0–1.2 | .58 | .21–.96 / .21–.95 | MLP0 (1 solved) | x 1/1, x−T .99/1, bit 1/1 | .06/.22 (1) |
 
 - Failures explained: PART A has every hand-built variable linear at the stage input and misses only the threshold readout, worst where the operands
   are largest (constant-lr AdamW moves a breakpoint by far more than one unit per step; annealing helps square root, not division's 15 gated compare
   families). 8-bit TRAIN memorises (train 1.0) for lack of data; 16–90x more data fixes it, 2x width adds little.
+- Causal (2 analysed nets per cell; patch = component with the largest patching drop; inter/DAS = linear interchange / DAS flip, best layer; edges = EAP-IG jaccard/hand_recall vs HAND, nets with spearman_exact ≥ .8; * marks a cell
+  without a solved net, all nets): no solved PART net has a trusted edge graph (0/14: no wiring verdict); TRAIN wiring differs (jaccard .06-.12; heads not aligned: a different-wiring flag). Patch top: PART B the compare head L1H0 (18/22 solved PART nets),
+  TRAIN MLP2 (17/25). Present but not linear: PART B bit (inter .70-.86, DAS .96-1) and sqrt B wide x−T (.74 / .89-.97; HAND .45 / .99). DAS adds nothing where inter is already ≥ .95.
 ## Closed form
 B: bit = [x ≥ T], remainder = x − bit·T (T = D, or 4p + 1). Substituted for the trained stage this is the hand-built stage: exact on all inputs at
 both ranges (1.0) vs the nets 1.0 (division B) and .985–.992 (wide square root B): accepted. Agreement with the nets on all (step, x, T) grid

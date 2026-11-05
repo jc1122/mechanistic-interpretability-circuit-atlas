@@ -41,16 +41,19 @@ the carry recomputed from the previous column, c = [x' + b_j a' − s' ≥ 1] (n
   HAND fetch roles 1–2/5 in 7/10.
 - Diagnostics (best-layer ridge R²; AB = bit products, LK = low sums (means over bits); residual PR at L4; attention JS of used heads; W_in r99 = rank at 99% energy):
 
-| cell | used heads+MLPs | probes | PR L4 | JS | W_in r99 | test best |
-|---|---|---|---|---|---|---|
-| A PART run 1 | 0+0 (MLP3 unused) | AB .28–.30, LK .91–.92 | 1.1 | 0 | – | .02–.04 |
-| A PART run 2 (scaled) | 11–12+2 | AB .32–.35, LK .91–.92 | 2.3–2.5 | 0 | 11–216 | .10–.20 |
-| A TRAIN run 1 | 0–24+0–4 | AB .48–.55, LK .75–.82 | 1.2–1.7 | 0–.21 | 5–95 | .04–.34 |
-| A TRAIN run 2 | 32–40+4 | AB .56–.62, LK .82–.86 | 2.0–4.7 | .12–.18 | 194–210 | .66–.79 |
-| B PART | 5+1 | x, x', b_j, a 1.00 | 1.03 | 0 | 10–11 | 1 |
-| B TRAIN run 1 | 0+0 | x .34–.38, b_j .16 | 1.7–2.4 | 0 | – | 0 |
-| B TRAIN run 2 | 7–29+4 | x .55–.96, b_j .67–.86, a .51–.88 | 2.5–4.0 | .29–.41 | 191–214 | .71–1 |
+| cell | used heads+MLPs | probes | PR L4 | JS | W_in r99 | test best | patch (nets) | inter/DAS | edges (trusted) |
+|---|---|---|---|---|---|---|---|---|---|
+| A PART run 1 | 0+0 (MLP3 unused) | AB .28–.30, LK .91–.92 | 1.1 | 0 | – | .02–.04 | * L0H0 9, MLP3 1 | LK1-11 .50-.56/.51-.76 | .93/1 (1) |
+| A PART run 2 (scaled) | 11–12+2 | AB .32–.35, LK .91–.92 | 2.3–2.5 | 0 | 11–216 | .10–.20 | * MLP3 10/10 | LK1-11 .45-.54/– | – |
+| A TRAIN run 1 | 0–24+0–4 | AB .48–.55, LK .75–.82 | 1.2–1.7 | 0–.21 | 5–95 | .04–.34 | * MLP3 8, MLP0 2 | LK1-11 .52-.91/.73-.89 | .07/.17 (1) |
+| A TRAIN run 2 | 32–40+4 | AB .56–.62, LK .82–.86 | 2.0–4.7 | .12–.18 | 194–210 | .66–.79 | * MLP3 7, MLP0 3 | LK0-11 .40-1/.30-.99 | .04/.12 (1) |
+| B PART | 5+1 | x, x', b_j, a 1.00 | 1.03 | 0 | 10–11 | 1 | MLP3 9/9 | X 1/1, X2 .81/1 | 1/1 (7) |
+| B TRAIN run 1 | 0+0 | x .34–.38, b_j .16 | 1.7–2.4 | 0 | – | 0 | * MLP2 (1 of 2) | X2 1/1 | – |
+| B TRAIN run 2 | 7–29+4 | x .55–.96, b_j .67–.86, a .51–.88 | 2.5–4.0 | .29–.41 | 191–214 | .71–1 | MLP0 6, MLP3 1 (9 solved) | X 1/1, X2 .96/1 | .04/.17 (5) |
 
+- Causal (patch = component with the largest patching drop over solved nets, exact ≥ .9; * = no solved net, all nets; inter/DAS = linear interchange / DAS flip, best layer, median; edges = EAP-IG
+  jaccard/hand_recall vs HAND, nets with spearman_exact ≥ .8): PART B edges = HAND wiring (1/1 in 7/7 trusted nets); TRAIN B r2 wiring differs (jaccard .04; heads not aligned: a different-wiring flag).
+  X2 is present but not linear in HAND B (inter 0, DAS 1.0); PART .81/1, TRAIN .96/1. A, no solved net: LK_k partly linear (HAND .48-.57 / DAS .42-.60).
 - Failures explained: A has complete inputs (LK_k R² 1.0 for k ≥ 4 at the stage input) in both PART runs, but the target is a square wave in LK_k
   (~10 unit steps per bit, densest in the worst middle bits); O(1) weights made the MLP used, not fitted (train ≤ .18: an optimisation failure).
   TRAIN A run 2 fits the training pairs with full-rank MLPs (LK .82–.86, no closed form). TRAIN B run 2 s2 (late fit, train 1.0 at 25k) has the

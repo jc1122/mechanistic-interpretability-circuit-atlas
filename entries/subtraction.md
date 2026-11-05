@@ -51,13 +51,16 @@ base 10 A 6; 64/114/4/22, B 5; 64/64/3/14, C 5; 64/119/43/0 (base 2: L3 6/6/0, L
 
 | cell | PART | TRAIN best (final) |
 |---|---|---|
-| b10 A | 4+2; a, b, c 1; PR 3.4–3.6; JS 0; 1 | 4–16+4; a .74–.90, b .70–.89, c .52–.62; PR 2.1–3.2; JS .09–.35; .72–.98 (.01–.90). Retry 4–8+4; a .75–.88, b .79–.92, c .59–.74; JS .16–.39; 1 (1) |
-| b10 B | 2–3+2; a, b .83–.86, c .64–.67, diff .85–.91; JS 0–.16; .91–.99 | 10–16+4; a .58–.84, c .65–.86, diff .85–.98; JS .08–.19; .94–1 (.01–1) |
-| b10 C | 3+1; a, b, c, phase 1; JS 0; .97–1 | 3–16+4; a .61–.83, b .55–.73, c .65–.89; PR 2.5–4.7; JS .08–.39; .48–1 (0–.97). Retry 3–15+3–4; a .70–.81, c .80–.96; JS .10–.34; 1 (1) |
-| b2 A | 4+2; a, b, c 1; PR 5.4; JS 0; 1 | 11–16+4; a .39–.50, b .58–.70, c .28–.38; JS .04–.14; .39–.95. Retry 6–16+4; a .41–.68, b .61–.75, c .32–.48; JS .08–.31; 1 (1) |
-| b2 B | 3+2; a, b .79–.84, c .72–.83, diff .89–1; JS .15–.17; 1 | 5–13+4; a .47–.72, c .58–.85, diff .84–.94; JS .05–.19; .79–1 |
-| b2 C | 3+1; a, b, c, phase 1; JS 0; 1 | run 1 6–16+4; c .50–.64; .54–.95. Retry 3–9+3–4; a .56–.75, c .51–.89; JS .18–.38; 1 (1) |
+| b10 A | 4+2; a, b, c 1; PR 3.4–3.6; JS 0; 1 ‖ MLP3 10/10; edges 1/1 (2; mask 3) | 4–16+4; a .74–.90, b .70–.89, c .52–.62; PR 2.1–3.2; JS .09–.35; .72–.98 (.01–.90). Retry 4–8+4; a .75–.88, b .79–.92, c .59–.74; JS .16–.39; 1 (1) ‖ r1 7 solved: MLP3 4, MLP0 3; edges .11/.20 (7). Retry MLP3 8, L3H0 1; edges .11/.20 (8) |
+| b10 B | 2–3+2; a, b .83–.86, c .64–.67, diff .85–.91; JS 0–.16; .91–.99 ‖ MLP2 10/10; diff .99/.94, digit .32/.96, borrow_out .80/.99; edges .60/1 (9) | 10–16+4; a .58–.84, c .65–.86, diff .85–.98; JS .08–.19; .94–1 (.01–1) ‖ MLP3 8, MLP0 2; diff 1/1, digit .98/1, borrow_out .92/1; edges .14/.33 (10) |
+| b10 C | 3+1; a, b, c, phase 1; JS 0; .97–1 ‖ MLP2 10/10; X2 .03/.36; edges 1/1 (10) | 3–16+4; a .61–.83, b .55–.73, c .65–.89; PR 2.5–4.7; JS .08–.39; .48–1 (0–.97). Retry 3–15+3–4; a .70–.81, c .80–.96; JS .10–.34; 1 (1) ‖ r1 8 solved: MLP3 7, MLP0 1; X2 .04/.83; edges 0/0 (8). Retry MLP3 10/10; X2 .06/.97; edges 0/0 (10) |
+| b2 A | 4+2; a, b, c 1; PR 5.4; JS 0; 1 ‖ MLP3 10/10; edges 1/1 (10) | 11–16+4; a .39–.50, b .58–.70, c .28–.38; JS .04–.14; .39–.95. Retry 6–16+4; a .41–.68, b .61–.75, c .32–.48; JS .08–.31; 1 (1) ‖ r1 1 solved: MLP0; edges .20/.50 (1). Retry MLP0 9, MLP3 1; edges .20/.33 (10) |
+| b2 B | 3+2; a, b .79–.84, c .72–.83, diff .89–1; JS .15–.17; 1 ‖ MLP2 10/10; diff .93/.95, digit 1/1, borrow_out .86/1; edges .80/1 (10) | 5–13+4; a .47–.72, c .58–.85, diff .84–.94; JS .05–.19; .79–1 ‖ 9 solved: MLP3 7, MLP1 1; diff .99/1, digit .75/1, borrow_out 1/1; edges .20/.44 (8) |
+| b2 C | 3+1; a, b, c, phase 1; JS 0; 1 ‖ MLP2 10/10; X2 0/1; edges 1/1 (10) | run 1 6–16+4; c .50–.64; .54–.95. Retry 3–9+3–4; a .56–.75, c .51–.89; JS .18–.38; 1 (1) ‖ r1 4 solved: MLP3 4; edges 0/0 (4). Retry MLP3 9, MLP1 1; X2 0/1; edges 0/0 (8) |
 
+- Causal (after ‖; medians over solved nets, exact ≥ .9: component with the largest patching drop (nets); var inter/DAS = linear interchange / DAS flip, best layer; edges = EAP-IG jaccard/hand_recall vs HAND, trusted nets (spearman_exact ≥ .8); HAND b10 B diff 1/.37, digit 1/.17, borrow_out 1/1; b10 C X2 0/.01; b2 B diff .31/.31; b2 C X2 0/1; A: no answer-fixing var).
+  PART patch top = the stage MLP in 60/60; PART edges = HAND wiring (hand_recall 1.0; jaccard 1.0 in A/C, .60-.80 in B; 51/60 trusted); TRAIN wiring differs (jaccard 0-.20; heads not aligned: a different-wiring flag).
+  Present but not linear: X2 (C borrow chain) flips .00-.06 by linear interchange in every rung, DAS 1.0 (b2), .97 (b10 TRAIN retry), .36 (b10 PART); b10 PART B digit .32 / DAS .96.
 - Failures explained: failed TRAIN nets keep the stage key (diff R² .84–.98) but carry a, b and the borrow only partly linearly (R² .3–.9);
   the base 10 A/C failures oscillate under wd 1 with a constant learning rate (final ≪ best); the retries (warmup + cosine + clip) solved every
   seed (base 2 C at wd 1, base 10 at wd .1). PART B/C length failure: the stage reads position (clamping those inputs to their mean drops n = 3 to ~.01).
