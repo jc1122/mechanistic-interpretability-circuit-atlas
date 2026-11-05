@@ -94,3 +94,6 @@ reads the one-hot output and pools it by residue: one more linear map. No hand-b
 - Random frozen base (same shape): .24–.40 test. Its residual holds c linearly (ridge R² 1.000) but carries no residue feature.
 - Scalar-only menu: .29–.34 (chance .2): 1/(c+1) cannot be cut into residues by 256 ReLUs at this weight decay.
 - Open: holding out c values (not cells) to test period extrapolation was not run; why one-hot beats thermometer when both are exact.
+
+## References
+- Behrens, F., et al. (2024). Counting in small transformers: the delicate interplay between attention and feed-forward layers. https://doi.org/10.48550/arxiv.2407.11542 (counting / histogram tasks)

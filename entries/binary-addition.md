@@ -60,4 +60,7 @@ Same arithmetic (f(sum)), different carry: HAND uses one lookahead head; trained
 One training length; 1000-pair analysis subsets; TF32 TRAIN nets evaluated in fp32 (±1 pair). Final weights exist only for TRAIN r1 and r4 (r4 final = snapshot); r2/r3 report the best-train snapshot. TRAIN circuit types are attention-mass labels, not substitution-verified.
 
 ## References
-None.
+- Quirke, P., & Barez, F. (2023). Understanding addition in transformers. https://doi.org/10.48550/arxiv.2310.13121 (per-digit streams, carry heads)
+- McLeish, S., et al. (2024). Transformers can do arithmetic with the right embeddings. https://doi.org/10.48550/arxiv.2405.17399 (position inputs and length generalisation)
+- Jelassi, S., et al. (2023). Length generalization in arithmetic transformers. https://doi.org/10.48550/arxiv.2306.15400
+- Shen, R., et al. (2023). Positional description matters for transformers arithmetic. https://doi.org/10.48550/arxiv.2311.14737

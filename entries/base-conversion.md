@@ -167,4 +167,5 @@ not found by training: no trained net solved a carry-type cell from scratch. No 
 - 10 seeds per cell; "n = 0" means no seed reached .99, not that none can.
 
 ## References
-None.
+- Lee, N., et al. (2023). Teaching arithmetic to small transformers. https://doi.org/10.48550/arxiv.2307.03381 (output order, scratchpads)
+- Nye, M., et al. (2021). Show your work: scratchpads for intermediate computation with language models. https://doi.org/10.48550/arxiv.2112.00114

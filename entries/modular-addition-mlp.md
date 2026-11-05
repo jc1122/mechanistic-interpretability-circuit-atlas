@@ -123,3 +123,4 @@ plus a low-frequency thermometer helper and ignores the scalar.
 - Gromov, A. (2023). Grokking modular arithmetic. https://doi.org/10.48550/arxiv.2301.02679
 - Zhong, Z., Liu, Z., Tegmark, M., & Andreas, J. (2023). The clock and the pizza. https://doi.org/10.52202/075280-1186
 - Chughtai, B., Chan, L., & Nanda, N. (2023). A toy model of universality. https://doi.org/10.48550/arxiv.2302.03025
+- Nanda, N., et al. (2023). Progress measures for grokking via mechanistic interpretability. https://doi.org/10.48550/arxiv.2301.05217 (original modular-addition Fourier circuit)

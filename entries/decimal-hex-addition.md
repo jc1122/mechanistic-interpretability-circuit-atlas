@@ -60,4 +60,9 @@ PART = HAND's algorithm (sum lookup, ~100–200 hinges); TRAIN finds the digit t
 One training length (n = 3); length at 4 and 6 digits only. v2 PART nets are TF32 (up to .03 lower in fp32). Probes are linear, at scored positions.
 
 ## References
-None.
+- Quirke, P., & Barez, F. (2023). Understanding addition in transformers. https://doi.org/10.48550/arxiv.2310.13121 (per-digit streams, carry heads)
+- Quirke, P., Neo, C., & Barez, F. (2024). Understanding addition and subtraction in transformers. https://doi.org/10.48550/arxiv.2402.02619 (shared add/sub skeleton, borrow)
+- Lee, N., et al. (2023). Teaching arithmetic to small transformers. https://doi.org/10.48550/arxiv.2307.03381 (output order, scratchpads)
+- Zhou, T., et al. (2024). Pre-trained large language models use Fourier features to compute addition. https://doi.org/10.48550/arxiv.2406.03445 (contrasting mechanism in LLMs)
+- Kantamneni, S., & Tegmark, M. (2025). Language models use trigonometry to do addition. https://doi.org/10.48550/arxiv.2502.00873 (contrasting mechanism in LLMs)
+- Nikankin, Y., et al. (2024). Arithmetic without algorithms: language models solve math with a bag of heuristics. https://doi.org/10.48550/arxiv.2410.21272

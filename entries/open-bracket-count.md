@@ -92,3 +92,6 @@ staircases; the trained stage never forms the sum linearly and builds a trigonom
 
 ## References
 - Gromov, A. (2023). Grokking modular arithmetic. https://doi.org/10.48550/arxiv.2301.02679
+- Yao, S., et al. (2021). Self-attention networks can process bounded hierarchical languages. https://doi.org/10.48550/arxiv.2105.11115 (bounded Dyck)
+- Sharma et al. (2026). Dissociating decodability and causal use in bracket-sequence transformers. https://doi.org/10.48550/arxiv.2604.22128 (Dyck depth / top of stack)
+- Liu, B., et al. (2022). Transformers learn shortcuts to automata. https://doi.org/10.48550/arxiv.2210.10749

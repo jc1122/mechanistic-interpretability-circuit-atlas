@@ -91,3 +91,7 @@ non-linear (XOR-like) feature, so it can only memorize it.
 - Random frozen base: .99–1.000. Its residual encodes c, L and 2c − L linearly (ridge R² 1.000), so a few ReLUs give an exact comparator, `=` included.
 - Scalar-only menu: .97–.99, also better than the full menu (`=` test cells .17–.44 correct).
 - Hypothesis (untested): exact one-hot codes make `=` and boundary cells memorizable at a lower weight norm than learning the line 2c − L.
+
+## References
+- Behrens, F., et al. (2024). Counting in small transformers: the delicate interplay between attention and feed-forward layers. https://doi.org/10.48550/arxiv.2407.11542 (counting / histogram tasks)
+- Delétang, G., et al. (2022). Neural networks and the Chomsky hierarchy. https://doi.org/10.48550/arxiv.2207.02098 (length generalisation on formal-language tasks)

@@ -72,4 +72,6 @@ intermediate sums written out.
 n = 6 only (length 7 and 12; PART B at 2n is beyond HAND B's exact range). Train = 60% of all pairs, so TRAIN A can memorise. Probes are linear.
 
 ## References
-None.
+- Pres, I., et al. (2025). Why can't transformers learn multiplication? Reverse-engineering reveals long-range dependency pitfalls. https://doi.org/10.48550/arxiv.2510.00184 (implicit-CoT multiplication mechanism; answer-only failure)
+- Dziri, N., et al. (2023). Faith and fate: limits of transformers on compositionality. https://doi.org/10.48550/arxiv.2305.18654 (multi-digit multiplication failures)
+- Lee, N., et al. (2023). Teaching arithmetic to small transformers. https://doi.org/10.48550/arxiv.2307.03381 (output order, scratchpads)

@@ -93,3 +93,5 @@ Power, A., Burda, Y., Edwards, H., Babuschkin, I., & Misra, V. (2022). Grokking:
 Nogueira, R., Jiang, Z., & Lin, J. (2021). Investigating the limitations of transformers with simple arithmetic tasks. https://doi.org/10.48550/arxiv.2102.13019
 Loshchilov, I., & Hutter, F. (2016). SGDR: stochastic gradient descent with warm restarts. https://doi.org/10.48550/arxiv.1608.03983
 Kataria (2026). Quantifying the memorization-to-generalization transition: scaling laws and phase structure in grokking. https://doi.org/10.48550/arxiv.2609.10657
+- Lee, N., et al. (2023). Teaching arithmetic to small transformers. https://doi.org/10.48550/arxiv.2307.03381 (output order, scratchpads)
+- Nye, M., et al. (2021). Show your work: scratchpads for intermediate computation with language models. https://doi.org/10.48550/arxiv.2112.00114

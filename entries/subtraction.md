@@ -80,4 +80,5 @@ One training length per base; the position-masked PART is the length control. Pr
 PART .91–.99, base 2 C PART 1.0. Binary A cannot separate diff from a + b + c (the keys coincide mod 2).
 
 ## References
-None.
+- Quirke, P., Neo, C., & Barez, F. (2024). Understanding addition and subtraction in transformers. https://doi.org/10.48550/arxiv.2402.02619 (shared add/sub skeleton, borrow)
+- Stolfo, A., et al. (2023). A mechanistic interpretation of arithmetic reasoning in language models using causal mediation analysis. https://doi.org/10.48550/arxiv.2305.15054
