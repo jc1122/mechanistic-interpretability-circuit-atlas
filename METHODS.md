@@ -11,7 +11,7 @@ of the code; each entry's Setup section lists its task-specific values and the c
 | PART | one trained stage on top of frozen hand-built parts, 10 seeds | which frozen parts training reads, which algorithm it builds from them |
 | TRAIN | a network trained from scratch, 10 seeds | whether the same algorithm appears without any hand-built help |
 
-The entries in this atlas are PART experiments (plus controls); HAND and TRAIN rungs are not part of the code release. For each
+Most entries in this atlas are PART experiments (plus controls); the base-conversion entry (section 7) covers all three rungs, with the HAND networks and a single-network PART / TRAIN trainer in the code release. For each
 trained network the analysis reports: an ablation map (which frozen parts are read), the circuit type (clustered by mechanism, with seed
 counts), a closed form accepted only if substituting it for the trained part keeps accuracy, and the learning curve (grokking step).
 
@@ -146,3 +146,34 @@ entry. Re-running a seed reproduces its headline numbers (accuracies, circuit ty
 trained on different machines (CPU and GPU), and the random control uses a re-implemented initialiser with the same distribution. The
 smoke mode (`--steps 400 --every 100`) only checks that the pipeline runs; at that length networks have not converged and the analysis
 numbers are not those of the entries.
+
+## 7. Small two-layer networks (base conversion and other whole-network entries)
+
+Entries that train or hand-build the whole network (not a stage on the frozen m2) use a smaller GPT-NeoX model, `code/convert.py` for
+base conversion: 2 layers, d_model 256, 4 heads of 64, MLP 256, ReLU, no LayerNorm, no positional embedding or rotary (position is built
+from attention: a head on the start token gives 1/(r+1)-like values from which an MLP interpolates a position one-hot), sequential
+residual, vocabulary of 18 tokens (start, 0-9, a-f, `=`), untied readout. Parameter names are Hugging Face GPTNeoXForCausalLM's without
+LayerNorm keys.
+
+| Rung | What is trained |
+|---|---|
+| HAND | nothing; exact on all 256 inputs (`python run.py convert check`) |
+| PART | the layer-1 MLP only (re-initialised N(0, .02), biases 0); embedding, layer 0, layer-1 attention and readout are the frozen hand-built ones |
+| TRAIN | every weight, from N(0, .02) (biases 0) |
+
+Data: all 256 inputs, one sequence each; seed s sets the init, the batch order and the split (first `int(frac * 256)` of a random
+permutation train, the rest test). Loss: cross-entropy on the output tokens; metric: exact match (every output token right, teacher
+forced). AdamW lr 1e-3, weight decay 1.0, betas (.9, .98), minibatch 64, full fp32: reduced-precision matmuls (TF32) take the hand-built
+converters from 100% to about 2% exact, so they must stay off. The published runs packed 10 seeds per process on a GPU (vmap) with early
+stopping (all seeds exact, or no seed's best test accuracy up by .005 in 5,000 steps after 10,000 steps); `code/` trains one network at
+a time on CPU with the same objective and stops when train and test are both exact.
+
+Instrumentation: *best* = the evaluation (every 500 steps) with the highest test accuracy; final weights can be far worse (instability
+at weight decay 1). *Substitution* (`convert.substitute`): at every scored position the residual after the last attention layer is
+replaced by its least-squares fit (with intercept, over all 256 inputs) on HAND's variable at that position, and the exact-match rate
+of the rest of the network is measured; the variable is accepted as the one the net uses if the rate stays within .01 of the net's own.
+The fit uses test inputs too: it says which variable the stage needs, not that the net computes it cleanly. *Threshold check*
+(`convert.thresholds`, decimal to binary, answer only): per answer bit the best theta in `pred = [F >= theta]` over HAND's remainder F,
+and its agreement with the net on all inputs. Reported sizes use mean-ablation of heads and neurons (a head or MLP is "used" if
+replacing its output by its mean over inputs costs more than 5% exact; neurons: the smallest set, ranked by output spread, that keeps
+exact within .01 when the rest are mean-ablated); the input-independent position frame (layer-0 head and MLP) is not counted.

@@ -5,13 +5,15 @@
   python run.py atlas --task count_mod5 --frac .4 --seeds 0 1 --steps 200000      # also compare_counts, open_count
   python run.py atlas --task compare_counts --kind random --seeds 0 --probe       # random-base control (+ ridge probes)
   python run.py table out/*.json                        # aggregate atlas results over seeds
+  python run.py convert check                           # base conversion: the 6 hand-built networks are exact on all 256 inputs
+  python run.py convert --variant hex2bin --fmt A --rung part --seeds 0 1 --steps 10000   # PART / TRAIN + substitution check (entry base-conversion)
 
 Options: --kind m2|scalar|random (menu / scalar-only / random frozen base), --every N (evaluation interval), --out DIR (default out/).
 Each run writes DIR/<name>.json with the learning curve, the usage (ablation) table and the analysis; weights are not saved."""
 import argparse, json, os, sys, time
 from pathlib import Path
 import torch
-import analyze_atlas, analyze_modadd, atlas, m2, menu, train as T
+import analyze_atlas, analyze_modadd, atlas, convert, m2, menu, train as T
 
 
 def check():
@@ -44,6 +46,22 @@ def run_modadd(a):
                      f"(agree {an['neuron_formula_agree']:.3f}), analytic acc {an['analytic_acc']:.3f}, logit top-5 freqs {list(an['logit_freq_amp'])[:5]}", flush=True)
 
 
+def run_convert(a):
+    """Base conversion: train one network per seed (rung part | train) on a random half (--frac) of x = 0..255 and analyse it."""
+    if a.files == ["check"]: sys.exit(0 if convert.check() else 1)
+    torch.set_num_threads(int(os.environ.get("OMP_NUM_THREADS", 4))); a.frac = a.frac or 0.5; t0 = time.time()
+    for s in a.seeds:
+        sd, best, log, te = convert.train(a.variant, a.fmt, a.rung, s, a); r = {}
+        for tag, w in (("final", sd), ("best", best)):
+            full, sub = convert.substitute(w, a.variant, a.fmt); r[tag] = dict(exact_all=round(full, 3), exact_substituted=round(sub, 3))
+            if (a.variant, a.fmt) == ("dec2bin", "A"): r[tag]["thresholds"] = convert.thresholds(w)
+        res = dict(variant=a.variant, fmt=a.fmt, rung=a.rung, seed=s, args=vars(a), test_idx=te.tolist(), log=log, analysis=r,
+                   best_test=max(e["test"] for e in log), final_test=log[-1]["test"], grok_step=next((e["step"] for e in log if e["test"] >= .99), None))
+        save(Path(a.out), f"convert_{a.variant}_{a.fmt}_{a.rung}_s{s}", res)
+        print(f"convert {a.variant} {a.fmt} {a.rung} s{s}: best test {res['best_test']:.3f} final {res['final_test']:.3f} grok step {res['grok_step']}, "
+              f"substitution (best net) {r['best']}, {time.time() - t0:.0f}s", flush=True)
+
+
 def run_atlas(a):
     atlas.LMAX = a.lmax; fam, f, ncls = atlas.TASKS[a.task]; ncls = ncls()
     torch.set_num_threads(int(os.environ.get("OMP_NUM_THREADS", 4))); t0 = time.time(); a.frac = a.frac or 0.4; bases = {}
@@ -64,15 +82,18 @@ def run_atlas(a):
 
 
 if __name__ == "__main__":
-    ap = argparse.ArgumentParser(); ap.add_argument("cmd", choices=["check", "modadd", "atlas", "table"]); ap.add_argument("files", nargs="*")
+    ap = argparse.ArgumentParser(); ap.add_argument("cmd", choices=["check", "modadd", "atlas", "table", "convert"]); ap.add_argument("files", nargs="*")
     ap.add_argument("--task", default="count_mod5", choices=list(atlas.TASKS)); ap.add_argument("--kind", default="m2", choices=["m2", "scalar", "random"])
     ap.add_argument("--seeds", type=int, nargs="+", default=[0]); ap.add_argument("--steps", type=int, default=None); ap.add_argument("--every", type=int, default=500)
     ap.add_argument("--frac", type=float, default=None); ap.add_argument("--width", type=int, default=256)
     ap.add_argument("--lr", type=float, default=1e-3); ap.add_argument("--wd", type=float, default=1.0)
     ap.add_argument("--p", type=int, default=59); ap.add_argument("--lmax", type=int, default=45); ap.add_argument("--probe", action="store_true")
     ap.add_argument("--out", default="out")
+    ap.add_argument("--variant", default="hex2bin", choices=["hex2bin", "bin2dec", "dec2bin"]); ap.add_argument("--fmt", default="A", choices=["A", "B"])
+    ap.add_argument("--rung", default="part", choices=["part", "train"]); ap.add_argument("--bs", type=int, default=64)
     a = ap.parse_args()
     if a.cmd == "check": check()
     if a.cmd == "modadd": a.steps = a.steps or 300000; run_modadd(a)
     if a.cmd == "atlas": a.steps = a.steps or 200000; run_atlas(a)
+    if a.cmd == "convert": a.steps = a.steps or 10000; run_convert(a)
     if a.cmd == "table": print(analyze_atlas.table([json.loads(Path(f).read_text())["row"] for f in a.files]))

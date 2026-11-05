@@ -32,8 +32,9 @@ python run.py atlas --task count_mod5 --seeds 0 --steps 400 --every 100    # smo
 | [count-mod-5](entries/count-mod-5.md) | count of a letter mod 5, MLP on a frozen menu | flat residue lookup, 30/30 | 30 | yes, 1.000 |
 | [compare-counts](entries/compare-counts.md) | which of two letters is more frequent | tilted linear comparator, `=` memorized, 30/30 | 30 | partial, .93–.96 (no `=`) |
 | [open-bracket-count](entries/open-bracket-count.md) | number of `(` in a bracket line | low-frequency clock sum (k = 1–3) + parity channel at 80% data, 10/10; memorization below | 30 | yes, .91–.93 |
+| [base-conversion](entries/base-conversion.md) | hex to binary, binary to decimal, decimal to binary (x = 0..255), answer only and scratchpad; 2-layer net | hex to binary: nibble one-hot lookup, 38/40 TRAIN nets (grokks from scratch in 16/40); decimal to binary A (frozen heads): remainder threshold, 10/10; carry-type cells never learned | 10 per setting | yes, hex to binary 1.00 in 36/40; thresholds off by <= .06 |
 
-Planned: binary, decimal and hex addition (answer only, carries written, place-value split); base conversion; subtraction;
+Planned: binary, decimal and hex addition (answer only, carries written, place-value split); subtraction;
 multiplication; long division; long-hand square root; counting and bracket tasks. See [TEMPLATE.md](TEMPLATE.md) for the entry format.
 
 ## Cross-entry findings
