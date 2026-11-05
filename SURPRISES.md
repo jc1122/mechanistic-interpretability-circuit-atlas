@@ -22,6 +22,10 @@ Short notes on results that went against expectation. Each says whether it is **
   format .95–.99 at 4 digits (from .01–.02) but only .52–.59 at 6, so position is the main cause, not the whole story; the borrow-chain
   format likewise .87–.98 at 4 digits (from ≤ .20) and .39–.60 at 6. The remaining 6-digit gap is unexplained (all inputs stay in the
   trained range).
+- **The same position shortcut appears in binary addition** (verified, 10 seeds per format, trained 6-bit stage on frozen hand-built parts).
+  With the stage's position inputs held at zero, the place-value format becomes exact at 7, 8 and 12 bits in 10/10 seeds (unmasked: .17–.20,
+  .01–.02, 0) and its trained stage computes the hand-built function; the carry-chain format reaches .99–1.00 at 7 bits and .53–1.00 at 12
+  (unmasked .00–1.00). The remaining 12-bit errors of the carry-chain format are unexplained.
 - **Only the most local conversion is learned from scratch** (verified, 10 seeds per setting; [base-conversion](entries/base-conversion.md)). Hex to binary groks in
   a 2-layer net trained on half of the 256 inputs (answer only 1/10 seeds, with 80% of the data 6/10; scratchpad 2/10 and 7/10), while every carry-type conversion
   (binary to decimal, decimal to binary in both formats) memorizes the training inputs and stays far from test exact match .99 in all 80 nets and 30 PART nets.
