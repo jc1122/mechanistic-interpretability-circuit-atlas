@@ -22,7 +22,7 @@ Short notes on results that went against expectation. Each says whether it is **
   format .95–.99 at 4 digits (from .01–.02) but only .52–.59 at 6, so position is the main cause, not the whole story; the borrow-chain
   format likewise .87–.98 at 4 digits (from ≤ .20) and .39–.60 at 6. The remaining 6-digit gap is unexplained (all inputs stay in the
   trained range).
-- **The same position shortcut appears in binary addition** (verified, 10 seeds per format, trained 6-bit stage on frozen hand-built parts).
+- **The same position shortcut appears in binary addition** ([binary-addition](entries/binary-addition.md); verified, 10 seeds per format, trained 6-bit stage on frozen hand-built parts).
   With the stage's position inputs held at zero, the place-value format becomes exact at 7, 8 and 12 bits in 10/10 seeds (unmasked: .17–.20,
   .01–.02, 0) and its trained stage computes the hand-built function; the carry-chain format reaches .99–1.00 at 7 bits and .53–1.00 at 12
   (unmasked .00–1.00). The remaining 12-bit errors of the carry-chain format are unexplained.
