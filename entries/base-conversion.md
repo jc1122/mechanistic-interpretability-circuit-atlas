@@ -15,6 +15,7 @@ decimal to binary (answer only) learns HAND's rule in 6/10 seeds: every answer b
 theta in [.94, 1.06] instead of 1. The carry-type cells (binary to decimal, scratchpad decimal to binary) fail in PART and in TRAIN (0 of 80 TRAIN nets, and 0 of 30 PART nets, reach test .99).
 
 ## Setup
+Networks: [huggingface.co/jc1122/circuit-atlas-nets/tree/main/base-conversion](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/base-conversion) (6 HAND, 77 PART/TRAIN).
 Architecture, optimiser and instrumentation: [METHODS.md](../METHODS.md), section 7. Task-specific: vocabulary of 18 tokens, sequence
 lengths 12 / 14 (hex to binary A / B), 13 / 34 (binary to decimal), 13 / 46 (decimal to binary); minibatch 64 of the training
 inputs; evaluation every 500 steps; PART at most 10,000 steps, TRAIN at most 50,000; seeds 0-9. Controls: TRAIN at fraction .8, and
