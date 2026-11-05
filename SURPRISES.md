@@ -40,7 +40,7 @@ Short notes on results that went against expectation. Each says whether it is **
 - **Trained addition nets learn the column-sum lookup but not the carry-lookahead head** (verified, 10 seeds per cell; [decimal-hex-addition](entries/decimal-hex-addition.md)). With frozen hand-built parts the trained
   stage reads X1 + X2 + carry with equal weights (60/60 nets) and reaches .95-1.00; trained from scratch, 37/40 nets of the retry runs (40k steps, warmup, cosine, clip) reach exact match .998+, yet none of them is separated from the
   failed first-run nets by a HAND-like chain head, and none generalizes to a fourth digit (n + 1 <= .04), while the frozen-part answer-only stage extrapolates (.93-1.00).
-- **More data, not a scratchpad, rescues answer-only long division** (verified, 10 seeds per cell; tasks without an entry yet).
+- **More data, not a scratchpad, rescues answer-only long division** (verified, 10 seeds per cell; [long-division-square-root](entries/long-division-square-root.md)).
   Binary long division, answer only, trained from scratch: 8-bit dividends (1920 training pairs) 0/10, test .64–.81 with train 1.00 (memorisation);
   12-bit dividends (30720 pairs, 16x) 10/10 at test ≥ .99 (.9947–.99997; exact on every test pair in 0/10). The prediction written before the
   rerun ("answer only stays below .5: no scratchpad") failed. Long-hand square root, answer only: 8-bit (128 numbers) .10–.28 → 14-bit

@@ -37,8 +37,9 @@ python run.py atlas --task count_mod5 --seeds 0 --steps 400 --every 100    # smo
 | [binary-addition](entries/binary-addition.md) | a + b, 6 bits; answer only, carry token, column sums; 4-layer net | one-head carry lookahead by hand; every working trained stage is a lookup on a + b + carry; position inputs break length until masked (column sums exact at 12 bits, 10/10); TRAIN solves all three formats in the final runs but fails at 12 bits | 10 per setting | yes, 1.00 (A, C), 3/10 to 6/10 (B) |
 | [subtraction](entries/subtraction.md) | a − b (a ≥ b), 3 digits base 10 and 6 bits base 2; answer only, borrow token, signed column differences; 4-layer net | per-column lookup on a − b − borrow (not the adder's a + b + c) in all 60 PART nets but one; TRAIN solves all six cells after one retry, same key in the last MLP in 84/100 nets; position shortcut breaks length unless masked | 10 per setting | yes, = net accuracy (PART .97–1.00) |
 | [multiplication](entries/multiplication.md) | a · b, 6 bits; answer only and running-sum scratchpad; 4-layer net | scratchpad step = the adder's sum lookup on x + b_j a + carry (PART 10/10, TRAIN 5/10, closed form 8/10); answer only never trains (parity staircase not fitted, TRAIN memorises) | 10 per setting | yes, 1.00 (scratchpad PART) |
+| [long-division-square-root](entries/long-division-square-root.md) | binary N / D and long-hand square root of N, 8-bit and wide ranges; answer only and per-step scratchpad; 3-layer net | scratchpad step = one shared compare-and-subtract [x ≥ T], x − bit·T (division B PART 10/10 exact, square root B .985–.992); answer-only PART never places the thresholds (≤ .29); TRAIN generalises only with 16–90x more data (division A 10/10 ≥ .99) | 10 per setting | yes, 1.00 (scratchpad PART; nets 1.00 / .985–.992) |
 
-Planned: long division; long-hand square root; counting and bracket tasks. See [TEMPLATE.md](TEMPLATE.md) for the entry format.
+Planned: counting and bracket tasks. See [TEMPLATE.md](TEMPLATE.md) for the entry format.
 
 ## Cross-entry findings
 
