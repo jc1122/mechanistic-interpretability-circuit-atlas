@@ -139,6 +139,14 @@ Types are a summary of the measured forms, not an independent classifier.
 predicts integer quantities (c, L, 2c - L, 1/(c+1), c mod 5 = 0, b, (L+b)/2); fitted on the training cells of the network's split, R^2
 on its test cells. R^2 near 1 for c, L, 2c - L and near 0 for `c mod 5 = 0` is the control's finding.
 
+**Causal use of a variable: interchange vs DAS.** A linear probe shows a variable is decodable, not that the net uses it. *Interchange*
+replaces the probed component of a variable in one input's residual by that of another input and counts how often the answer flips as
+the variable predicts. It under-reads variables with many values or a positional code: in binary addition (carry-chain format) the carry
+scores .16 by interchange but 1.00 with distributed alignment search (DAS, a learned rotation), and some position variables score 0 by
+interchange even on the hand-built net. We therefore read "unused" only when DAS is also low. Between-seed comparisons use linear mode
+connectivity (loss barrier on the interpolation path); for nets on frozen parts the permutation-only alignment is the valid arm, since a
+general rotation breaks the shared frozen basis.
+
 ## 6. Reproduction cost and tolerances
 
 Everything runs on CPU. Menu construction (m2 forward over all cells) takes about a minute. Training time scales with steps; see each

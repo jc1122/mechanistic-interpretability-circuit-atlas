@@ -76,3 +76,18 @@ Short notes on results that went against expectation. Each says whether it is **
   In the nets trained from scratch the digit-token embeddings are periodic in the digit value: the top-2 DFT frequencies (1 and 2 or 3) hold .71–.97
   of their power. The column sum is still assembled by a lookup in the last MLP, as on frozen parts. Measured on the archived nets (best and worst
   seed per cell and run); confirming experiment: the same DFT on every seed and a substitution of the embeddings by their top-2 Fourier terms.
+- **Failed nets trained from scratch still use the hand-built variables; they fail to generalise, not to compute a variable** (verified on
+  binary addition, decimal/hex addition and long division/square root; 981 nets across tasks). A variable counts as used when swapping it
+  between two inputs (linear interchange, or DAS where that reads low) flips the answer in >= half the cases. Failed vs solved nets: 116/127 vs
+  135/166 variable tests pass in binary addition, 185/204 vs 155/156 in decimal/hex addition, 39/45 vs 10/10 in division/square root; removing
+  the probed variable subspace breaks both groups alike, keeping only it preserves both. Yet the failed nets end at test .33 / .04 / .28.
+  Where a variable really is missing, the tools localise it: in answer-only binary multiplication the middle partial-product bits (largest
+  fan-in) are the ones not fetched (use .91 for the first bit, .52 for the eighth).
+- **Same variables, different wiring** (verified on binary and decimal/hex addition, edge attribution trusted in 155/184 nets). Nets trained
+  from scratch share only 6–9% of their top circuit edges with the hand-built net (Jaccard), solved and failed alike, and no rotation or
+  permutation maps their weights onto it (mean overlap .03–.12); nets trained on frozen hand-built parts share 79–100%. Training recovers the
+  hand-built variables but not its heads, edges or weights.
+- **Each seed trained from scratch finds its own solution; seeds on frozen parts share one** (preliminary, 22 seed pairs over six tasks).
+  Linear interpolation between two seeds of one cell: on frozen parts the loss barrier is .0001–.09 after a permutation alignment; between two
+  solved nets trained from scratch it is 1.1–8.2 (median 1.8), and no alignment lowers it, although both use the same variables (above).
+  Confirming experiment: more pairs per cell and the same check on the tasks without an entry yet.
