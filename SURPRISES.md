@@ -37,3 +37,6 @@ Short notes on results that went against expectation. Each says whether it is **
   HAND's one-hot of the source hex digit keeps exact match at 1.00, yet the nets use 4-8 heads and 310-490 neurons where the hand-built net uses 1 head and 4-7 neurons.
 - **Given the exact remainder, the net learns a threshold close to, but not at, the true one** (verified, decimal to binary answer only, frozen heads, 10/10): each answer bit is
   one threshold with theta in [.94, 1.06] instead of 1; the errors are the unseen inputs whose remainder falls between theta and 1.
+- **Trained addition nets learn the column-sum lookup but not the carry-lookahead head** (verified, 10 seeds per cell; [decimal-hex-addition](entries/decimal-hex-addition.md)). With frozen hand-built parts the trained
+  stage reads X1 + X2 + carry with equal weights (60/60 nets) and reaches .95-1.00; trained from scratch, 37/40 nets of the retry runs (40k steps, warmup, cosine, clip) reach exact match .998+, yet none of them is separated from the
+  failed first-run nets by a HAND-like chain head, and none generalizes to a fourth digit (n + 1 <= .04), while the frozen-part answer-only stage extrapolates (.93-1.00).
