@@ -1,0 +1,66 @@
+# GF(2) matrix product: each trace step is a 3-bit XOR-AND lookup; trained nets fetch A_ij and B_jk one layer later than HAND
+**Task.** C = A B over GF(2), m = 3. Prompt `B column-major ; A row-major =` (bits, `,` between groups). T: per column k a segment of running
+parities s_ij = s_i,j−1 ⊕ A_ij B_jk (s_i2 = C_ik; `,` between rows, `;` between columns); A: the 9 bits of C column-major (answer only).
+Per seed 100k train / 2k test disjoint random (A, B) pairs of 2^18; exact match of all output tokens; extra evals m = 2, 4, 5 (500 random).
+**Status.** 2026-11-05. HAND T; PART T, TRAIN T, TRAIN A, 10 seeds each: 10/10 solved in every cell (no retry needed).
+## Summary
+HAND T computes each trace token as a lookup on (s_i,j−1, A_ij, B_jk) after two 3-D attribute-match heads fetch A_ij and B_jk. PART (L3 MLP
+re-learnt on frozen HAND) solves 10/10 in 500 steps and reads only HAND's two fetch heads
+(diag: used = L2H0, L2H1, MLP3 in 10/10, attention JS 0 to HAND). TRAIN T groks (Power et al., 2022) at 3–7.5k and computes
+HAND's variables (and, s flip 1.0 under interchange at L4) but fetches A_ij/B_jk with 2–7 L3 heads, one layer later than HAND, in another code.
+TRAIN A solves 10/10 with no compact HAND (13 heads + 4 MLPs on s0). Nothing generalises to m = 4, 5 (0 everywhere).
+## Setup
+[METHODS.md](../METHODS.md). AdamW lr 1e-3, wd .1, betas (.9, .98), warmup 1000, cosine (PART 10k, TRAIN 30k), clip 1, batch 256; eval every
+500, best-test snapshot; early stop at test 1.0 or 5k-plateau after 15k. PART fp32, TRAIN TF32. Consumer GPUs, all seeds of a cell in one process.
+Networks: [huggingface.co/jc1122/circuit-atlas-nets/tree/main/gf2-matrix-product](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/gf2-matrix-product)
+(15: 1 HAND, 10 PART, 4 TRAIN; train/test split per seed in `split.safetensors`).
+**Reproduce:** the training and analysis code for this task is not yet in `code/`; the weights, split and accuracies are in the folder above.
+## Architecture as used
+GPT-NeoX 4 layers × 12 heads (d_head 32), d_model 384, MLP 256 ReLU, no LayerNorm, NoPE; vocab 6 (BOS `0 1 , ; =`), 256 positions (3.16M
+params). HAND T: 1295 non-zero weights; 7 heads, neurons L0 256 / L1 72 / L2 4 / L3 7. PART trains the L3 MLP only (dense_h_to_4h [256, 384]
++ bias, dense_4h_to_h [384, 256] + bias). TRAIN: all weights from the default initialisation. Archive `gf2-matrix-product/`: hand_T, part_T_s0–s9 (stage
+tensors), train_T_s2/s6 and train_A_s2/s5 (earliest/latest best step), split.safetensors, config.json, manifest.json (sha256, roundtrip_all_ok true).
+## Prediction before training
+Recorded in the task specification before any PART/TRAIN run: PART 10/10 at m = 3 and < .1 at m = 2, 4, 5; TRAIN T ≥ 8/10, grok 5–15k; TRAIN A
+≥ 6/10; nothing > .2 at m = 4, 5. Held except PART at m = 2 (up to .40, predicted < .1); TRAIN T grokked earlier (best 4.5–7.5k).
+## Hand-built reference
+L0: position R from a uniform head + 256 reciprocal neurons. L1: 4 first/last heads (first separator → row length, first `;` → segment length,
+last terminator, last separator); MLP: clean steps give segment SEG, group G, offset J (and the next-token versions SEGN, GN, JN). L2: H0 matches
+(SEG 1, G = GN, J = JN) → MA = A_ij; H1 matches (SEG 0, G = SEGN − 2, J = JN) → MB = B_jk (score 2·20·[match] − 20 per attribute); MLP: separator
+flags TS, TSEMI, TB = 1 − TS. L3 MLP: 4 neurons relu(±tok1 ± MA ± MB + 100 TB − (#ones − 1) − 100), one per cell with tok1 ⊕ MA·MB = 1, writing
+Y1 − Y0; + Y0 bias neuron and `,` / `;` neurons. Exact: all 2^8 pairs at m = 2, every m = 3 pair, 2000 random at m = 4, 5.
+## What training finds
+- PART T: 10/10 test 1.0 at step 500; m = 2 .00–.40, m = 4, 5 0. TRAIN T: 10/10, t(.5) 2.5–5.5k, t(.9) 3–7k, best 4.5–7.5k; m = 2, 4, 5 0.
+  TRAIN A: 10/10, t(.5) 2.5–8k, t(.9) 2.5–8.5k, train .99 at 3.5–9k, best 5–11k; m = 2 .07–.27, m = 4, 5 0.
+- Circuit types: PART one type (HAND's L2 fetch heads + new L3 lookup) 10/10. TRAIN T: frame in L0–L2, fetch in L3, XOR-AND in MLP2/MLP3
+  (9/9 diag seeds use 2–7 L3 heads; a, b linear only at L4, R² ≤ .39 at L3 in 8/9).
+- Diagnostics ([METHODS.md](../METHODS.md), 250 test pairs, best snapshots; probes = best-layer R²/acc; interchange flips as in Geiger et al. (2023); JS of used heads to the closest HAND head):
+
+| Cell (diag seeds) | used heads + MLPs | best probe R² (layer); interchange flip | r99 L4 | JS used heads | best / final |
+|---|---|---|---|---|---|
+| PART T (10) | 2 + 1: L2H0, L2H1, MLP3 (10/10) | a, b, prev 1 (L3); and .87–.92, s .92–.96 (L4); flip and 1 (L3), s .81–.92 | 7 (HAND frame) | 0 | 1.0 / 1.0 |
+| TRAIN T (9; s4 pending) | 2–9 + 2–4 | a .85–.99, b .93–.99, and .89–.99, s .93–.99 (L4); flip and, s 1 (L4) | 1–14 | .00–.60 | 1.0 / 1.0 |
+| TRAIN A (2: s0, s1) | 13–14 + 4 | out .95–.96, cnt .96–.98 (L4); flip out 1, cnt .79 (L4) | 24–28 | — (no HAND) | 1.0 / 1.0 |
+
+- Failures: none (all cells 10/10). Length: PART keeps HAND's frame, yet m = 4 is 0 because the re-learnt L3 also keys on m = 3 features (TB/TS
+  scale); TRAIN learns absolute separator positions (col/grp probes).
+## Closed form
+PART: stage → its mean output per (tok1, MA, MB, TS, TSEMI) key: exact 1.0 and agreement 1.0 with the net on 2000 test pairs, 10/10 seeds (24 keys). TRAIN: no shared basis; and, s linear at L4 (flip 1.0); align
+(s0, s1) fit_r2 < 0, QK/OV mean_ov ≤ .05, edge Jaccard .09 vs HAND: HAND's variables, not HAND's wiring.
+## Weights excerpt and reading
+HAND L3 cell neuron 0: relu(−tok1 + MA + MB + 100 TB − 101) fires only at (s_i,j−1, A_ij, B_jk) = (0, 1, 1) and writes Y1 − Y0.
+PART: only 5.2–6.1% of the stage's W_in norm lies on HAND's six L3 inputs. Strongest Y1 − Y0 neuron (W_in / row max): s0 n243
+(+.60 tok1, −1.00 MA, −.61 MB, +.26 TB; out +.26), s7 n46 (−.54, +.93, +.96; out +.24), s3 n209 (−.45, −.76, −1.00; out −.27).
+Reading: in 10/10 seeds the top neuron weighs tok1, MA, MB at ≥ .45 of its row max with the sign pattern of one truth-table cell and votes
+that cell's answer: (1,0,0)→1 in 5 seeds, (0,1,1)→1 in 3, (0,0,0)→0 and (0,0,1)→0 in one each. Same cell-detector form as HAND, different cells.
+## Comparison
+Same algorithm as HAND in PART (the same truth table as a matrix-vector trace, with the B fetch in place of the vector bit). TRAIN T computes HAND's variables but moves
+the fetch to L3 and spreads the AND/XOR over MLP2–MLP3; TRAIN A needs ≥ 13 heads, consistent with a query-dependent partner per output bit. Charton (2021)
+trains transformers on real-valued matrix products; here the field is GF(2) and the trace makes each step a 3-bit lookup.
+## Controls and limits
+m = 3 only; 38% of all pairs seen in training. Linear probes; 250-pair diagnostics; JS ties on uniform heads. Diagnostics on best snapshots
+(best = final for every seed); TRAIN T s4 and TRAIN A s2–s9 not diagnosed.
+## References
+- Charton, F. (2021). Linear algebra with transformers. https://doi.org/10.48550/arxiv.2112.01898
+- Power, A., Burda, Y., Edwards, H., et al. (2022). Grokking: generalization beyond overfitting on small algorithmic datasets. https://doi.org/10.48550/arxiv.2201.02177
+- Geiger, A., Wu, Z., Potts, C., et al. (2023). Finding alignments between interpretable causal variables and distributed neural representations. https://doi.org/10.48550/arxiv.2303.02536
