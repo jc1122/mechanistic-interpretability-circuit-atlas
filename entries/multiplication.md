@@ -74,6 +74,28 @@ intermediate sums written out.
 ## Controls and limits
 n = 6 only (length 7 and 12; PART B at 2n is beyond HAND B's exact range). Train = 60% of all pairs, so TRAIN A can memorise. Probes are linear.
 
+## Circuit found in trained nets
+Circuit probes (2026-11-06). **Verified** = causal intervention plus an accepted substitution on disjoint non-training pairs (or the full
+grid); **supported** = causal only. Exact = teacher-forced whole-output accuracy; ablation numbers are accuracy retained; layers zero-based.
+
+| Component | Role | Evidence (verified) |
+|---|---|---|
+| B TRAIN run 2 seed 0: MLP3 | query-conditioned adder-step readout | m3 = μ[q, u] 1.000, drop 0 (187 observed keys); five position-free prototypes .9988, rejected as exact |
+| A PART run 2 (scaled) seed 3: MLP3 | live-register bit decoder (repair, not the learned rule) | full 4,096-pair grid .179 → 1.000 |
+
+- Closed forms. B TRAIN: x / a = current addend bits, x′ / a′ / s′ the preceding-bit inputs and output, b_j the multiplier bit;
+  c = [x′ + b_j a′ − s′ ≥ 1], u = x + b_j a + c; MLP3 → μ[q, u] (separator has its own key). This is the adder step at the readout
+  boundary, as in the Closed form's f(add) cells, not HAND's five clean fetch heads or 32 truth-table neurons.
+- Failed A PART: the frozen heads and 36 AND neurons already compute LK_k = Σ_{i+j≤k} a_i b_j 2^(i+j). Replacing only MLP3 by
+  t = Σ_k round(E_k/1024)·(⌊round(LK_k)/2^k⌋ mod 2) (E_k = scaled bit-query register), Y_0 = 1 − t, Y_1 = t, with no operand or answer labels,
+  gives 1.000 on all inputs: the products are present and the learned readout is the bottleneck, consistent with Failures explained.
+  Its neurons n193/n172 track partial sums (R² .80 / .96) but miss the alternating thresholds (hypothesis: misplaced or cancelling hinges).
+- Supported: B TRAIN L3H6 needs soft previous-sum/context retrieval (mean ablation .031; a hard previous-sum fetch keeps only .719);
+  n182/n67 affect the step output but are not pure sum units.
+- Limit: same-(q, u) individual donors keep only .584 exact (token .993) although the mean table is exact, so MLP3 = f(q, u) is a
+  sufficient readout, not an activation-level causal abstraction. A seed census is pending; one examined seed per cell.
+- Open: the within-key amplitude/context dependence; the failed multiplier's native threshold placement.
+
 ## References
 - Pres, I., et al. (2025). Why can't transformers learn multiplication? Reverse-engineering reveals long-range dependency pitfalls. https://doi.org/10.48550/arxiv.2510.00184 (implicit-CoT multiplication mechanism; answer-only failure)
 - Dziri, N., et al. (2023). Faith and fate: limits of transformers on compositionality. https://doi.org/10.48550/arxiv.2305.18654 (multi-digit multiplication failures)
