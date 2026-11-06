@@ -179,6 +179,42 @@ not found by training: no trained net solved a carry-type cell from scratch. No 
 - Final weights are unstable under weight decay 1 (a net can fall from exact to .02 after grokking), so "best" numbers are best snapshots on the test split, an optimistic selection.
 - 10 seeds per cell; "n = 0" means no seed reached .99, not that none can.
 
+## Circuit found in trained nets
+Circuit probes on best snapshots (2026-11-06; decimal to binary PART at its final snapshot). All 256 inputs, teacher-forced; fits use
+training rows only. **Verified** = causal intervention plus accuracy-preserving substitution; **supported** = causal only. Scores are
+full / held-out exact; ablation numbers are accuracy retained; components zero-indexed.
+
+| Component | Role | Evidence (verified) |
+|---|---|---|
+| Hex TRAIN A seed 0 / B seed 1: L0 attention | content-weighted prefix summary, not a position clock | equal non-BOS affinities: full exact .215 (A) / .324 (B); rank-1 substitution 1/1 each, drop 0 |
+| Hex TRAIN B seeds 1 / 4: L0 attention + MLP0 + MLP1 | jointly substituted operational circuit | 48 + 80 / 48 + 48 neurons: full / held-out / agreement 1/1/1 in both seeds |
+| Hex TRAIN B seed 1: L1H1 | two-key mixture; echo → bit route | echo value-edge ablation .250 / .227; head substitution 1/1, drop 0 |
+| Hex TRAIN B seed 1: L1H3 | six-key softmax restriction | substitution 1/1/1; top-2 .984, top-5 .996: not a two-key copy |
+| Hex PART A / B seed 0: L1H0 + MLP1 | original-nibble read, bit decoding | head ablation .0039 / 0; 12- / 16-neuron substitutions 1/1, drop 0 |
+| Decimal to binary PART seed 3: MLP1 | remainder thresholds incl. native errors | F interchange 1.000 on 1254 changed targets; threshold substitution .992 / 1, agreement 1 |
+| Failed binary to decimal PART seed 2: MLP1 | token-conditioned decision intervals | F-only interchange .912, same-token donors 1.000; interval substitution .844 / .758, 100% token agreement |
+
+- Closed forms. Prefix head `H_h(t,c) = Σ_u c_u exp(λ_h(t)κ_h(u)) V_h(u) / Σ_u c_u exp(λ_h(t)κ_h(u))` (prefix counts c, learned OV values V,
+  rank-1 token-score factors λκ). MLP `F_R(z) = b + Σ_{n∈R} v_n ReLU(w_n·z + a_n)` with original input rows and refitted outputs; answer-only
+  seed 0 MLP1 needs R = {182, 86, 130, 244} alone (1/1/1), but its compact L0 + MLPs together give only .977 / .942 (not a joint circuit).
+  Two-key head `H(q) = σ(ℓ_qa − ℓ_qb) OV(x_a) + (1 − σ) OV(x_b)`, key pairs {1,2} at q3, {4,2} at q4–8, {9,4} at q9–12. Decimal PART
+  `[F ≥ θ_q]`, q4..11, θ = (.995, 1.0004, .981, .984, .915, .878, .755, .541): .992 / 1, reproducing both native errors. Failed binary PART:
+  upper envelope of query/token-conditioned ReLU logit lines explains all 43 wrong tokens; e.g. after tens token 5 the units ladder jumps
+  from 5 to 8 at F = 6.524. HAND's floor(F) ladder repairs that net to 1/1, which is a repair, not its mechanism.
+- Supported: in hex B TRAIN seed 1, echoed-digit transplants through H1 flip .179 / .263 of targets (original digits .016 / .005) and
+  original-digit transplants through H3 flip .095 / .152 (echoes 0): bits are read mainly from the written echo, unlike HAND.
+- Limits: a joint scrub of the selected-nibble-only story fails (.556 / .923 in seeds 1 / 4; .379 / .686 after pruning), and installing every
+  accepted head form at once gives .992 / .996 full exact, not identity. Coordinated head/frame context remains unexplained.
+- Size (greedy deletion at ≥ .99 × native, not minima): hex B TRAIN seed 1 **8 heads + 347 neurons**, seed 4 8 + 258 (full / held-out
+  .992 / 1 and .992 / .981); HAND 2 + 20, 1 + 4 under the same pruning.
+- Seed census (42 solved seeds; causal classes, not basins): hex PART A 10 single-original-head; hex PART B 10 original-driven (echo values
+  unused); hex TRAIN A 7 distributed original + written/context; hex TRAIN B 9 echo-dominant mixed/context (neither original-only nor
+  echo-only routing preserves all decisions); decimal to binary PART 6 F-threshold-compatible (final snapshots, full .965–.992).
+- Note: What training finds describes hex TRAIN layer-0 heads as averaging all positions; the probes show the prefix content matters
+  (equalising affinities drops exact to .215 / .324). The θ_q above lie partly outside the Closed form's [.94, 1.06] best-threshold range;
+  at the low bits F's grid is coarse, so any θ between grid points gives the same decisions. The 12 / 16-neuron PART decoders are refitted
+  replacements, not the 7–38 / 51–72 used-neuron counts from ablation.
+
 ## References
 - Lee, N., et al. (2023). Teaching arithmetic to small transformers. https://doi.org/10.48550/arxiv.2307.03381 (output order, scratchpads)
 - Nye, M., et al. (2021). Show your work: scratchpads for intermediate computation with language models. https://doi.org/10.48550/arxiv.2112.00114
