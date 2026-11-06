@@ -82,6 +82,38 @@ match binary addition.
 One training length per base; the position-masked PART is the length control. Probes are linear. Nets trained in TF32; fp32 re-score: base 10 B
 PART .91–.99, base 2 C PART 1.0. Binary A cannot separate diff from a + b + c (the keys coincide mod 2).
 
+## Circuit found in trained nets
+Circuit probes on seed-0 best snapshots unless noted (2026-11-06). **Verified** = causal intervention plus an accepted substitution
+fitted and tested on disjoint non-training pairs; **supported** = causal only. Exact = teacher-forced whole-output accuracy; ablation numbers
+are accuracy retained. Layers zero-based. d = a_i − b_i − c_i, q = output-query index, μ[key] = fit-set mean MLP-output vector.
+
+| Component | Role | Evidence (verified) |
+|---|---|---|
+| Base 10 A PART: L2H0/H1/H2, L3H0 | HAND operand, comparison-column and borrow routes | exact HAND route substitutions 1.000 each; mean ablation 0 / 0 / .602 / .313 |
+| Base 2 B PART: L2H0/H1, L3H0 | operand fetches, borrow relay | hard routes 1.000 each; mean ablation .016 / .031 / .391 |
+| Base 2 B PART: trained MLP2 → answer logits | digit path bypasses HAND's DIG register | deleting its digit write at digit queries: 0; deleting DIG: 1.000; m2 = μ[q, d] 1.000 |
+| Base 10 A PART / TRAIN retry: MLP3 | final digit readout | m3 = μ[q, d] 1.000 / 1.000 on 2,000 fresh pairs; μ[d mod 10] (ten vectors) 1.000 / 1.000 |
+| Base 2 B TRAIN: MLP3 | four-template digit/borrow decoder | m3 = μ[p, v] 1.000, drop 0, in 2/2 solved seeds tested |
+
+- Closed forms. Base 2 B PART: digit queries m2 = μ[q, d], final m3 = μ[q, [d < 0]] (1.000 each); keeping only HAND-like DIG = d mod 2,
+  MAJ = [d < 0] at digit queries gives .423, so the learned borrow calibration matters. Base 2 B TRAIN: phase p = 0 (digit) / 1 (borrow),
+  v = (1 − p)(d mod 2) + p[d < 0], four vectors, no column dependence. These keys use external arithmetic labels: they verify a local
+  readout, not how earlier layers compute d.
+- Supported: TRAIN operand receivers are context-sensitive, not copies: base 10 A TRAIN retry hard a/b routing .602 / .273 (mean ablation
+  .117 / .031); base 2 B TRAIN L3H0/H2 hard routing .977 / .984 (mean ablation .281 / .016). Needed populations: base 2 B PART 95
+  pair-selective neurons (ablated .051); base 2 B TRAIN 164 difference-selective neurons (.012).
+- Size (finite-set 1-minimal keep-sets at ≥ .99, order-dependent, not global minima; pruning set reused for selection): base 2 B TRAIN
+  seed 0 **14 heads + 516 neurons**, seed 3 12 + 550 (of 16 + 1,024), full-grid exact .967 / .977, so neither is 99%-faithful on the whole
+  domain; HAND under the same search 3 + 5 (1.000; unablated nonzero wiring 5 + 137).
+- Whole hypothesis rejected: resampling every retained head, neuron population and residual coordinate within its claimed role class
+  gives .938 / .933 (seeds 0 / 3); same-key individual donors keep only .957 for the base 10 TRAIN readout although its mean table is exact.
+  A complete endogenous TRAIN algorithm is not verified.
+- Seed census: pending; the phenotypes above come from one or two examined seeds per cell and are not frequencies.
+- Note: What training finds reports HAND's L2 fetch roles re-found in 9/10 base 10 A retry seeds (attention mass). In the probed seed the
+  receivers sit in L3 and forcing HAND's hard b route keeps only .273, so attention-mass labels overstate copy behaviour. The base 2 B
+  PART bypass refines, and does not contradict, the stage-level f(diff) closed form.
+- Open: the endogenous difference/borrow computation (incl. the B PART borrow compensation); causes of the donor failures; seed frequencies.
+
 ## References
 - Quirke, P., Neo, C., & Barez, F. (2024). Understanding addition and subtraction in transformers. https://doi.org/10.48550/arxiv.2402.02619 (shared add/sub skeleton, borrow)
 - Stolfo, A., et al. (2023). A mechanistic interpretation of arithmetic reasoning in language models using causal mediation analysis. https://doi.org/10.48550/arxiv.2305.15054
