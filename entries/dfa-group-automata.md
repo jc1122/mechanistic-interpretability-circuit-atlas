@@ -4,7 +4,7 @@ q_0 = identity, q_t = q_{t-1} · s_t. A (answer only): `BOS s_1 .. s_n = Q(q_n)`
 forced). n uniform in 1..16; per seed 20k unique training words and 2k disjoint test words; exact match of every answer token. Length
 axis: 1000 random words at n = 32, 64, 128.
 **Status.** 2026-11-05. HAND exact for all 6 cells (3 groups × 2 formats). PART and TRAIN 10 seeds per cell; every failed cell retried
-(fresh words per batch, then tail-balanced symbol counts); all runs kept. Pending: S3 answer-only TRAIN at d_model 512 (size-ladder step 1).
+(fresh words per batch, then tail-balanced symbol counts; S3 answer-only TRAIN then one size step, d_model 512); all saved nets kept.
 
 ## Summary
 With a scratchpad (B), PART and TRAIN learn the transition table δ(q_{t-1}, s_t) within 2500 steps in all three groups (10/10 each). PART
@@ -73,6 +73,11 @@ back and a 36-neuron table composes the two blocks: 5 heads + 180 neurons, exact
 | A parity TRAIN r1 / r2 | 0 + 0 / 3–10 + 4–6 | S 1.00 (L1), q .52 / 1.00 (L3) | 2 / 1 | — / layer-0 heads + MLP0 1.0 | S, q .48–.53 → .48–.53 / S 1.00, q .85–1 → .97–1 | .50–.52 / 1 |
 | A Z3 TRAIN r1 / r2 | 2–6 + 5–6 / 3–6 + 4–6 | S R² .95 / .98 (L1 / L2), q 1.00 (L4 / L2) | 2 | MLP5 or layer-0 heads ≈ 1 | q .94–.96 → 1.00 (2 seeds) | .998–1 / 1 |
 | A S3 TRAIN r1 / r2 | 0–4 + 0–5 / 4–20 + 4–6 | ST1 .37 / .55, ST2..4 .18–.23, q .34 / .64 | 2.5 / 4.5 | layer-0 heads, MLP5 ≈ 1 | untested / q .62–.99 → .57–.99 (5/7); ST1–4 untested | .21–.37 / .70–1.0 |
+| A S3 TRAIN r3 / r3b (d 512) | not diagnosed (no best snapshot) | — | — | — | — | .49–.99 at 40k / .36–.51 at 27.5k (logged test) |
+- A S3 TRAIN size step (d_model 512, fresh words): r3 (10 seeds, 40k) reached test .487–.988, still rising, but the nets were lost (GPU
+  out of memory in the final length evaluation, before the save); r3b (3 seeds, 80k from scratch, 2× budget) stopped at step 27.5k when the
+  rented host's disk filled, test .36–.51. No best snapshot exists, so neither run is
+  diagnosed or archived. This was the one size step of the retry order; the answer-only S3 TRAIN result stands at 3/10 (r2).
 - Causal verdicts. Failed abelian PART stages use S (interchange .92–1) and carry q, recoverable by DAS (.85–1) though only half linearly
   readable (.48–.79): the miss is the large-S readout, not the count. Deleting the S/q subspace drops every parity A PART and parity TRAIN r2 net to
   chance (.46–.52), keeping only it leaves accuracy unchanged. Parity TRAIN r1 has S but no answer-controlling variable (all flips at chance).
@@ -102,7 +107,8 @@ a log-depth solution, and TRAIN answer-only nets are length-bound. Fresh samples
 
 ## Controls and limits
 Probes, ablation, activation patching, interchange and DAS on the best snapshots (final snapshots unchecked; neuron
-counts not measured); teacher-forced scratchpad; one size (d 256; the d 512 S3 run is pending); 10 seeds per cell; length evaluated on random
+counts not measured); teacher-forced scratchpad; size: d 256 throughout, the one d 512 step (S3 answer-only TRAIN) ended without saved nets
+(out of memory at 40k, disk full at 27.5k of 80k), so size vs solved is untested; 10 seeds per cell; length evaluated on random
 words. The masked/unmasked PART pairs control for the position shortcut. The abelian PART r3 retry rules out coverage; a structured
 (hinge) initialisation of the stage was not tried.
 
@@ -144,7 +150,7 @@ stated finite domain; **supported** = causal only. Layers zero-based; H = heads,
 - Open: the S3 answer-only point product; what the failed whole-hypothesis scrub omits; smallest sufficient circuits under length extension.
 
 ## References
-- Liu, B., Ash, J. T., Goel, S., et al. (2022). Transformers learn shortcuts to automata. https://doi.org/10.48550/arxiv.2210.10749
-- Hong, Q., et al. (2022). On the activation function dependence of the spectral bias of neural networks. https://doi.org/10.48550/arxiv.2208.04924
-- Abbe, E., & Sandon, C. (2023). Polynomial-time universality and limitations of deep learning. https://doi.org/10.1002/cpa.22121
-- Nye, M., et al. (2021). Show your work: scratchpads for intermediate computation with language models. https://doi.org/10.48550/arxiv.2112.00114
+- Liu, B., Ash, J. T., Goel, S., et al. (2022). Transformers learn shortcuts to automata. https://doi.org/10.48550/arxiv.2210.10749 (arXiv preprint)
+- Hong, Q., et al. (2022). On the activation function dependence of the spectral bias of neural networks. https://doi.org/10.48550/arxiv.2208.04924 (arXiv preprint)
+- Abbe, E., & Sandon, C. (2023). Polynomial-time universality and limitations of deep learning. https://doi.org/10.1002/cpa.22121 (journal article, Communications on Pure and Applied Mathematics)
+- Nye, M., et al. (2021). Show your work: scratchpads for intermediate computation with language models. https://doi.org/10.48550/arxiv.2112.00114 (arXiv preprint)
