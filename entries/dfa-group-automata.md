@@ -106,6 +106,43 @@ counts not measured); teacher-forced scratchpad; one size (d 256; the d 512 S3 r
 words. The masked/unmasked PART pairs control for the position shortcut. The abelian PART r3 retry rules out coverage; a structured
 (hinge) initialisation of the stage was not tried.
 
+## Circuit found in trained nets
+Circuit probes on selected best snapshots (2026-11-06). **Verified** = causal intervention plus an accuracy-preserving substitution on the
+stated finite domain; **supported** = causal only. Layers zero-based; H = heads, N = neurons; B is teacher-forced.
+
+| Component | Role | Evidence |
+|---|---|---|
+| S3 B TRAIN, all L0 heads | weighted prefix histogram | substitution 512/512 in both tested seeds (verified) |
+| S3 B TRAIN, joint forms (histogram heads, ideal L2 routing, MLP2..5 tables) | answer-preserving reduction | seed 4 full net 100%; both pruned circuits 100% with refitted coefficients, 512 words (verified answer reduction only) |
+| S3 B PART, L1 fetch + MLP1 | displayed-state transport, local product | fetch zeroed: exact 0; changed-state patch 100%; 36-number substitution 256/256 (verified) |
+| S3 A PART, MLP5 | composes the last frozen blocks | 36-number substitution 256/256, drop 0 (verified) |
+| S3 A TRAIN (run 2), MLP5 | sign + inverse-image-of-zero readout | rank-4 projection 250/256, agreement 100%; sign-only 88/256, point-only 171/256 (verified readout only) |
+| Z3 A TRAIN (run 2), MLP5 | in-range periodic readout | seven-number cosine form 256/256, drop 0; MLP5 deletion 45.3% (verified at n = 16) |
+
+- Closed forms. Histogram head: `H = Σ_t C_t exp(q·k_t/8) OV_t / Σ_t C_t exp(q·k_t/8)` (C_t = prefix token counts). S3 PART: state-logit
+  write `T[MUL[q_a, q_b]]` with 36 fitted numbers (q_a, q_b = fetched/frozen-block states). S3 A TRAIN: `δ_e = c(x) + u(x) sign(e) + v_{e⁻¹(0)}(x)`,
+  99.96% of the state-write variance, coefficients still neural (no input algorithm). Z3 A TRAIN: `d = max(0, 1 − (S − 6)/29.5)`,
+  `δ_{6+e} = d a_e cos(2π(S − e)/3)`, other channels `d b_{S mod 3}`, a = (24.439, 27.467, 24.795), b = (−62.595, 2.495, −38.438); write R² .764;
+  n = 32 228/256, n = 64 65/256: not faithful out of range.
+- Supported: S3 B TRAIN previous-state transport (whole-L2 changed-state patch 100%; ideal routing 512/512 in both seeds, but seed 0
+  improves 115/128 → 128/128 on random-display words: a repair). S3 A TRAIN sign/point factors (DAS transfers 256/256 and 181/187); the two
+  late heads alone transfer the point in only 61/351 donor patches, so the upstream point-product algorithm is unresolved.
+- Critical limit: scrubbing the whole S3 B TRAIN hypothesis at once gives 71.42% (seed 4) and 1.69% (seed 0) on the sufficient circuits
+  (mean of 3 draws) although each is 100% unscrubbed and under joint substitution: the replacements do not prove independent causal modules.
+- Size (sufficient upper bounds, not minima): S3 B TRAIN seed 4 7H + 2202N, seed 0 8H + 1333N (of 24H + 3072N), 512/512 each; HAND B
+  2H + 292N (256 position hinges + 36 pair gates), not re-minimised. PART learned stage: 34/512 (B) and 22/512 (A) neurons suffice, 256/256.
+- Seed census (150 best snapshots in 17 cells; mechanism classes, not basins): B PART parity/Z3/S3 20/20/20 frozen fetch + product, compact
+  substitution 100%. B TRAIN (10 each) display-local / history-sensitive: parity 3/7, Z3 7/3, S3 9/1; the strongest-attention layer is an
+  exactly sufficient fetch in 0/10, 2/10, 6/10. A S3 PART (20): 14 faithful compact products, 6 one-error repairs, all on frozen doubling.
+  A TRAIN parity run 2: 10 late-count codes; Z3 run 1: 9 count + context; Z3 run 2: 1 faithful late count, 9 count + context. A S3 TRAIN
+  run 2: 1 of 3 solved seeds has the faithful sign + point readout. A parity PART run 3: 8 scalar-hinge codes. Z3 A PART: 0 solved.
+- Unlike HAND: S3 B TRAIN fetches later and redundantly with distributed pair/position thresholds; PART keeps HAND's interfaces but not
+  its single-neuron AND gates (pair dependence R² .9993 vs product-only .148 for the best-fitting neuron).
+- Note: the Weights excerpt reads B PART neurons as group characters; the probes verify pair dependence but not a unique group-character
+  role. The Closed form's f(S) tables for Z3 A TRAIN hold on random test words; on a balanced histogram grid MLP2..5 = f(S) gives only
+  90.41% agreement, so a global f(S) reduction is refuted. The parity A PART run-3 nets exact on test words still miss 2 of 17 counts on that grid.
+- Open: the S3 answer-only point product; what the failed whole-hypothesis scrub omits; smallest sufficient circuits under length extension.
+
 ## References
 - Liu, B., Ash, J. T., Goel, S., et al. (2022). Transformers learn shortcuts to automata. https://doi.org/10.48550/arxiv.2210.10749
 - Hong, Q., et al. (2022). On the activation function dependence of the spectral bias of neural networks. https://doi.org/10.48550/arxiv.2208.04924
