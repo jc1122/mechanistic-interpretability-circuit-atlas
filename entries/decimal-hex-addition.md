@@ -59,6 +59,42 @@ PART = HAND's algorithm (sum lookup, ~100–200 hinges); TRAIN finds the digit t
 ## Controls and limits
 One training length (n = 3); length at 4 and 6 digits only. v2 PART nets are TF32 (up to .03 lower in fp32). Probes are linear, at scored positions.
 
+## Circuit found in trained nets
+Circuit probes on best snapshots (2026-11-06), on fresh pairs disjoint from all stored splits. **Verified** = causal intervention plus a
+successful component substitution (not a whole-net algorithm); **supported** = causal only. Teacher-forced 3-digit whole-answer exact
+unless stated; ablation numbers are accuracy retained; layers zero-based. s = round(X1 + X2 + CY) (A) or round(X1 + X2 + TOK[c]) (B).
+
+| Component | Role | Evidence (verified) |
+|---|---|---|
+| b10 A TRAIN retry seed 1: MLP0 + digit embeddings | position/token table + Fourier k = 1, 2, 3 embeddings | MLP0 mean ablation .001; joint replacement 1024/1024 exact and agreement in both tested seeds (later layers native) |
+| b10 A PART seed 0: L2H0 / L2H1 | fetch b / a | mean ablation .002 / .000; correct-variable substitutions 1.000 / 1.000 |
+| b10 A PART seed 0: L3H0 | first decisive lower-column carry | mean ablation .127; carry-table substitution 1.000, R² = 1 |
+| b10 A PART seed 0: MLP3 (121 neurons) | sum-response digit stage | population ablation .001; sum-response substitution 1.000, drop 0 |
+| b16 B PART retry seed 1: L3H0 | analog carry state, not a Boolean bit | carry-bit means .949; compact hinge substitute 1.000, R² .9964 |
+| b16 B TRAIN seed 4: L3H0 | copies the preceding arithmetic position | joint hard copies .993, agreement 1; bit-only / subtotal-only content .820 / .903 |
+| b16 B TRAIN seed 4: MLP3 (231 neurons) | sum-coded digit lookup | ablation .001; substitution .993 = baseline, agreement .998 (not identity) |
+| b10 C TRAIN retry seed 0: L3H0 | one head reused: b digits, then written column sums | head ablation .000; joint six-query hard substitution 1.000 |
+
+- Closed forms (actual internal channels, other stage outputs zero): A PART `Y[(s mod b) + 2] = 1`; B PART `DIG = s mod b`, `MAJ = [s ≥ b]`;
+  C PART `Y[round(X1 + X2) + 2] = 1` before the phase token, `Y[(round(X3 + CY) mod b) + 2] = 1` after. Replacing only the learned stage gives
+  1.000 in 80/80 PART snapshots (40,960/40,960 pairs), failed seeds included (a repair, not their mechanism). In b16 B PART it also lifts
+  4 / 6 digits from .066 / .032 to 1.000: the length failure is in the learned stage, not the frozen routing.
+- b16 B PART analog carry: `MJP = a + b·s + c·ReLU(s − 15) + d·ReLU(s − 16)` on the live predecessor s; e.g. (a, b, c, d) at the first carry
+  query = (−2.0873, .1209, .0511, −.1162); 1.000 on 1,024 pairs, while canonical 0/1 output gives .222. Not length-general.
+- Supported: b10 A TRAIN uses a distributed stack (MLP0/1/2/3 ablations .001 / .003 / .047 / .007). Scrubbing every component within the
+  local-variable classes at once gives .74–.80 (seed 1) and .81–.82 (seed 2); lower digits stay 1.000 and every error is the top carry,
+  whose context-dependent readout is unresolved. b10 C TRAIN's 105-neuron sum population is necessary (.002) but a pure-sum model gives .933.
+  Failed b16 A TRAIN: units accuracy .054 although carry interchange/DAS is .976 / .996: not a carry-only failure.
+- Size (search-only local minima, not verified circuits): b10 A TRAIN seeds 1 / 2 keep 7 heads + 608 / 597 neurons, independent exact
+  .980 / .985 (fail 99%); HAND under the same procedure 3 + 22 (.992).
+- Seed census (180 snapshots, 131 at ≥ .90; signatures within .01 exact and token agreement): PART: frozen lookahead/two-phase routing +
+  canonical stage in every solved seed; B carry head bit-sufficient / subtotal-required: b10 8/2, b16 3/5. TRAIN sum-table sufficient /
+  main effects / unresolved: b10 A 4/0/6, b16 A 3/3/3, b10 B 6/0/3, b16 B 5/1/2, b10 C 3/2/5, b16 C 2/0/8; HAND-chain carry route in 0 A nets.
+- Note: the Summary's "equal weights" holds at the decision level only: in b16 B PART, setting own-carry weights equal to operand weights
+  drops exact to .938 (two top neurons) and .303 (all). The census's sufficient sum table is stricter than the Closed form's TRAIN f(sum)
+  counts, hence fewer TRAIN nets pass here.
+- Open: the A TRAIN top-carry state; compact joint forms for B/C TRAIN; why failed hex A loses the units digit.
+
 ## References
 - Quirke, P., & Barez, F. (2023). Understanding addition in transformers. https://doi.org/10.48550/arxiv.2310.13121 (per-digit streams, carry heads)
 - Quirke, P., Neo, C., & Barez, F. (2024). Understanding addition and subtraction in transformers. https://doi.org/10.48550/arxiv.2402.02619 (shared add/sub skeleton, borrow)
