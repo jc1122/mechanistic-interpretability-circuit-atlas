@@ -59,6 +59,47 @@ Same arithmetic (f(sum)), different carry: HAND uses one lookahead head; trained
 ## Controls and limits
 One training length; 1000-pair analysis subsets; TF32 TRAIN nets evaluated in fp32 (±1 pair). Final weights exist only for TRAIN r1 and r4 (r4 final = snapshot); r2/r3 report the best-train snapshot. TRAIN circuit types are attention-mass labels, not substitution-verified.
 
+## Circuit found in trained nets
+Circuit probes on best snapshots (2026-11-06). **Verified** = causal intervention plus an accuracy-preserving substitution; **supported** =
+causal only. E = whole-sequence exact accuracy (ablation E = accuracy retained). Fits use the 1638 training pairs only; substitutions are
+checked on all 4096 pairs (2458 held out); ablation screens use 256 held-out pairs, matched swaps 128 answer-changing pairs. Layers zero-based.
+
+| Component | Role | Evidence (verified) |
+|---|---|---|
+| B TRAIN run 2 seed 2: L3H0 / L3H3 | copy current a_i / b_i | ablation E .0117 / .0117; matched swaps flip 1 each; hard routes E = 1 each |
+| B TRAIN seed 2: L3H1 | attention switched by the current token | carry swaps act through QK (flip .617), not OV (0); A[q, current token] substitution E = 1, drop 0 |
+| B TRAIN seed 2: MLP3 | finite-state sum/carry readout | ablation E = 0; native LDA → prototype substitution E = 1, drop 0, logit R² .850; rank-4 input bottleneck E = 1 |
+| A PART seed 0: MLP3 ensemble | parity; redundant "total = 2 → 0" votes | MLP3 ablation E .0195; eight-neuron ensemble ablation E .178 (errors only at total 2); four-vector substitution E = 1 |
+| B PART seed 7: MLP2 neuron 165 | asymmetric b − a / context hinge, not a sum = 2 detector | ablation E .641; `ReLU(−.1256·X1 + .1258·X2 + γ[token] + β[q])` substitution E = 1, activation R² ≈ 1 |
+| C TRAIN run 2 seed 2: MLP3 | phase/query decision readout | ablation E = 0; 44-vector native classifier substitution E = 1, drop 0, logit R² .883 |
+
+- Joint replacement (B TRAIN seed 2): L0–2 as token/position means `T[j, t_j]`, hard operand routes, the other heads as
+  `g_h = Σ_j A_h[q, t_q, j] V_h(T[j, t_j])`, and MLP3 as 88 query/state prototypes, all at once: **4096/4096**. Read locally: a bit slot emits
+  a_i ⊕ b_i ⊕ c_i; a carry slot (current token s_i) emits 1 iff a_i + b_i = 2 or (a_i + b_i = 1 and s_i = 0) (supported). No scalar MAJ gate is
+  recovered. The tied exact seed 0 rejects the same joint formula (3/4096): the mechanism is not seed-universal.
+- PART closed forms: A `MLP3 = T[round(X1 + X2 + CY)]` (four vectors) keeps E = 1 in all 10 seeds at n = 6/7/8/12. C: eight vectors
+  `T[phase, round(X1 + X2) or round(X3 + CY)]` give E = 1 at n = 6 in all 10 seeds and repair n = 7/8/12 to 1 (native .16–.20 / .01–.02 / 0):
+  the unmasked C length failure sits in the learned stage, not the frozen carry circuit.
+- Supported: A TRAIN seed 2 assembles the carry over several heads (joint final-head swap flips .742); C TRAIN seed 2 carries it through
+  L3H2 (flip .852), lower-column statistic unresolved; the failed C seed 9 also carries causal carry information (.805): diffuse, not absent.
+- Size (greedy joint pruning, not a global minimum): B seed 2 **4 heads + 163 neurons** (E .9907), seed 0 5 + 216 (E .9902; held-out .9886
+  misses a separate 99% bar), HAND B 3 + 6 (E 1). The pruned seed-2 circuit fails a 99% semantic scrub (.980 / .985 / .983), though the joint
+  formulas restore 4096/4096: pruning and explanation do not compose.
+- Seed census (causal routing families; copy = ablation drop ≥ .05, target mass ≥ .8 and accuracy-preserving hard route):
+
+| Cell | Routing families |
+|---|---|
+| A / B / C PART, B / C mask PART | frozen HAND routing, 10 each |
+| A TRAIN run 4 | 10 distributed/anchor |
+| B TRAIN run 2 | 1 two-operand copy, 9 distributed/anchor |
+| C TRAIN run 2 / run 3 | 6 partial-index + 3 distributed (9 solved) / 10 distributed |
+
+- Note: these copy counts use a stricter causal criterion than the attention-mass index-head counts in What training finds (B 6/10, C 7/9,
+  A 2/10); the two are not in conflict but should not be compared directly. The probes' slot-aware f(sum) table passes in 4/10 B PART nets
+  versus 3/10 for the sum-only table in Closed form.
+- Unlike HAND: B seed 2 fetches operands and adds in L3 instead of HAND's L2 arithmetic + MAJ relay; PART learns redundant, asymmetric
+  responses rather than sparse thresholds. Open: a compact circuit that survives scrubbing; A/C carry aggregation; the B mask length failure.
+
 ## References
 - Quirke, P., & Barez, F. (2023). Understanding addition in transformers. https://doi.org/10.48550/arxiv.2310.13121 (per-digit streams, carry heads)
 - McLeish, S., et al. (2024). Transformers can do arithmetic with the right embeddings. https://doi.org/10.48550/arxiv.2405.17399 (position inputs and length generalisation)
