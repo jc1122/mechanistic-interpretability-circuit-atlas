@@ -53,6 +53,9 @@ Surprising results across entries, including early ones from tasks still running
   linearly) generalizes better than the exact one-hot/thermometer menu, which invites memorization. Only residue tasks need the exact codes.
 - Equality never generalizes as its own learned class; a hand-built comparator that makes `=` the default ("neither greater nor less") is exact.
 - Frequency use differs by domain: modular addition spreads over 22–27 frequencies; the non-modular count uses only the lowest 1–3.
+- Circuit probes ("Circuit found in trained nets" sections): component substitutions on trained nets usually preserve accuracy one
+  at a time, but scrubbing the whole proposed circuit at once fails in every probed transformer task, and greedily pruned circuits are
+  rarely 99%-faithful on fresh inputs: a working replacement is a sufficient readout, not a verified mechanism.
 
 ## License
 
