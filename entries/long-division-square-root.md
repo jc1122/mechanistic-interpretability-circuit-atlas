@@ -91,6 +91,45 @@ representation decides arithmetic learnability (Nogueira et al., 2021). The anne
 ## Controls and limits
 Fixed widths: no length test. Linear probes only. TRAIN nets were trained in TF32 and re-score in fp32 within ±1 item. Wide-range evals during
 training use a 2048-item subset; reported accuracies are on the full test split.
+## Circuit found in trained nets
+Circuit probes (2026-11-06). **Verified** = causal intervention plus actual substitution on the stated domain; **supported** = causal only.
+Exact = whole-sequence accuracy; layers/heads zero-based. Representatives: wide division B PART (seed 0, best), 8-bit square root B PART,
+wide division A TRAIN (seed 0, final; repeat seed 3).
+
+| Component | Role | Evidence (verified) |
+|---|---|---|
+| Division B PART L1H0/H1 | frozen low/high partial-remainder readers | mean lesion exact 0 / 0; position-only attention substitutes 1 / 1 |
+| Square root B PART L1H0–H3 | frozen X / 4p / decision bit / remainder prefix | lesion exact 0 / .031 / .010 / .010; every position-only substitute 1 |
+| Division B PART L2, 48-unit X − W bank | remainder thresholds | erasing X / W terms: exact 0 / .115; bank substitution 768/768, drop 0 |
+| Division / square root B PART, all 1024 stage neurons | state/token/query-dependent ReLUs; 90- / 223-unit banks use the trial T | erasing T: .042 / .031; all-neuron substitution 768/768 and 128/128 |
+| B PART learned stage | the hand-built compare/subtract on real inputs | division 61,440/61,440 inputs (3,686,400 tokens); square root 256/256 (6,144 tokens); drop 0 |
+| TRAIN final-MLP output projection | behavioural control only, not a native comparator | division A final-MLP lesion exact 0; external-sign substitution 1.0 in all 37 TRAIN seed-runs |
+
+- Closed forms. PART: X = 2r + next bit (division) or 4r + next pair (square root); T = D or 4p + 1; b = [X ≥ T], r′ = X − bT; remainder bit
+  k = [X − bT − W ≥ 2^k] (p = written root, W = written remainder prefix). Native units `a_j = ReLU(α_j X + β_j T + γ_j b + δ_j W + η_{j,token} + κ_{j,query})`
+  substitute for all 1024 neurons with drop 0, but keep learned step-dependent offsets: averaging query intercepts across steps leaves .841
+  (division) / .164 (square root), and snapping normals to (1, −1, −1) gives .404 / .813.
+- TRAIN control: `c = −w·x + K(2s − 1)`, s = [m ≥ −.5], w = unembed('1') − unembed('0'), with the margin m computed externally from the
+  operands and already-written tokens (division A: N − D(P + 2^j) at quotient queries, N − DQ − W − 2^k at remainder queries). Fitted
+  cancellation `c = −w·x + a_q + b_q s` is exact in 35/37 seed-runs, sign-only in 11/37. This supplies the arithmetic; it does not find it.
+- Supported (division A TRAIN seed 0): value swaps at the divisor through L1H2 leave exact .156, at the dividend through L2H0/H2 .052 / .042,
+  at the written prefix through L2H3 .094. Division B L2H1/H3 previous-remainder swaps .031 / .031; square root A L1H3/L2H1 dividend swaps
+  .208 / .208. Causal source use, not clean scalar readers: affine single-scalar head replacements score .05–.42 (division B 0).
+- Whole hypothesis rejected: resampling every head, neuron and residual PC within its one-scalar role class gives 2.9% (seed 0) and 1.8%
+  (seed 3). Replacing all four affine readers together gives 0/768 and 4/768, but 768/768 once the external readout is added: a working
+  output surrogate can hide a wrong upstream story.
+- Size (budgeted greedy bounds at ≥ .99 × native on all 30,720 test inputs, not minima): division A TRAIN seed 0 12 heads + 1646 neurons,
+  seed 3 11 + 1097 (of 12 + 3072); HAND 5 + 558 counted the same way (including the position frame).
+- Seed census (78 solved seed-runs; readout phenotypes, not circuit types; repeated seeds across retries not independent): all 41 PART
+  stages accept the hand-built compare/subtract substitute (division B 8-bit 10, wide 10; square root B 21 over five schedules). TRAIN
+  readout: sign-only / fixed cancellation / neither = division A 2 / 7 / 1, division B 0 / 13 / 1 (wide and width 512), square root A
+  10 / 3 / 0. Solved square root B TRAIN weights were unavailable (not tested).
+- Failed square root A PART (wide, annealed): replacing only the learned L2 MLP by [N − SQ − T ≥ 0] raises 225/768 → 768/768; its
+  neurons read N, SQ, T and two increments with misweighted coefficients (five-register substitution keeps 225/768, drop 0): a misplaced
+  readout, consistent with Failures explained.
+- Open: TRAIN's nonlinear comparator code; minimal jointly sufficient circuits; behaviour on intervened registers (native/HAND agreement
+  under single-register perturbations is only .956–1 division, .844–1 square root) and unseen lengths.
+
 ## References
 Power, A., Burda, Y., Edwards, H., Babuschkin, I., & Misra, V. (2022). Grokking: generalization beyond overfitting on small algorithmic datasets. https://doi.org/10.48550/arxiv.2201.02177
 Nogueira, R., Jiang, Z., & Lin, J. (2021). Investigating the limitations of transformers with simple arithmetic tasks. https://doi.org/10.48550/arxiv.2102.13019
