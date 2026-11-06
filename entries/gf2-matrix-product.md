@@ -60,6 +60,39 @@ trains transformers on real-valued matrix products; here the field is GF(2) and 
 ## Controls and limits
 m = 3 only; 38% of all pairs seen in training. Linear probes; 250-pair diagnostics; JS ties on uniform heads. Diagnostics on best snapshots
 (best = final for every seed); TRAIN T s4 and TRAIN A s2–s9 not diagnosed.
+## Circuit found in trained nets
+Circuit probes (2026-11-06). **Verified** = causal intervention plus accuracy-preserving internal substitution; **supported** = causal
+only. Exact = teacher-forced complete-sequence accuracy. Layers zero-based. The deep probes were run on a matrix-vector variant of this
+task (trace s_i,j = s_i,j−1 ⊕ (M_ij ∧ v_j), matrix size 4, same format and network family); the matrix-product cells of this entry were
+covered by the seed census only.
+
+**Matrix product (this entry's cells), seed census.** T PART: early two-fetch + XOR-AND/separator macro, verified in 10/10 seeds
+(consistent with the Closed form's 24-key table). T TRAIN: a Boolean oracle table suffices in 6, a query-dependent one in 3, richer
+context in 1; no neural decoder was verified, so the TRAIN macro is unverified. A TRAIN: count-only oracle 2, frame/weight-dependent 2,
+richer context 6; internal codes are hypotheses.
+
+**Matrix-vector trace, best TRAIN (seed 0, replicate seed 8).**
+| Component | Role | Evidence (verified) |
+|---|---|---|
+| L3H6 / L3H2 | matrix / vector bit transport | donor bit patches flip 64/64 each; hard positional routes separately and jointly 1.0, drop 0 |
+| L3H4 | previous-parity message, conditioned on the query | previous-token donor flips 64/64, M/v donors 0/64; zeroed .012; μ[query, prev] substitution 1.0 |
+| MLP3 | s = prev ⊕ (M ∧ v), plus separator | μ[M̂, v̂, prev, sep] substitution 1.0, drop 0; no single neuron necessary |
+| PART L2H0/H1 → MLP2 | same macro one layer earlier, on frozen fetches | operand donor flips 64/64 in all ten seeds; 8- and 16-cell substitutions 1.0 (seed 0) |
+| A PART MLP3 | parity of the count c = round(1/X − 1) | MLP3 zeroed 0; μ[c] substitution 1.0 in 10/10 seeds (seed 3 .9955 → 1 is a repair) |
+
+- μ = training conditional-mean contribution at the replaced boundary; hats = live neural decoders. All TRAIN forms together (hard M/v
+  routes + μ[query, prev] head + MLP3 table) give 100% in seeds 0 and 8, also on 2000 fresh instances: a verified dense decision macro, not
+  exact amplitudes or a closed form of the early layers. The eight-cell (AND, prev, sep) macro holds in 1/10 TRAIN seeds, the
+  separate-operand macro in 8/10.
+- Supported: L0–L2 form a position/current-token frame (dense whole scrub 100 / 99.85–99.90%); the same story fails on the pruned circuits
+  (69.2–71.0% seed 0, 88.7–89.8% seed 8), so it is not a complete minimal mechanism.
+- Size (joint mean-ablation local minima at ≥ 99% of native): seed 0 35 heads + 284 neurons, seed 8 33 + 272, vs HAND 6 + 364; on fresh
+  instances 98.70 / 98.45%, below 99%. Joint substitution on the pruned circuits: seed 0 54.5%, seed 8 100%.
+- Size transfer (matrix-vector): count-parity and separator-relative tables restore A PART m = 6, 8 and T PART m = 2, 3, 5, 6, 8 from 0 to 1 (repairs):
+  the learned stage keys on absolute separator positions, as the Length note in What training finds describes for this entry.
+- Unlike HAND: trained nets fetch operands and update in L3, not L2, and add a previous-parity path; PART keeps HAND's fetches but uses
+  redundant decision neurons. Open: the early frame code; answer-only TRAIN decoders; the matrix-product TRAIN neural macro.
+
 ## References
 - Charton, F. (2021). Linear algebra with transformers. https://doi.org/10.48550/arxiv.2112.01898
 - Power, A., Burda, Y., Edwards, H., et al. (2022). Grokking: generalization beyond overfitting on small algorithmic datasets. https://doi.org/10.48550/arxiv.2201.02177
