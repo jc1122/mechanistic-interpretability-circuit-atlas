@@ -2,11 +2,13 @@
 **Task.** `a*b=` → a·b, a and b 6-bit (all 4096 pairs; train fraction .6: 2457 train / 1639 test per seed). A: product p_11..p_0 (MSB first,
 answer only); B: running sums S_0 `;` S_1 .. `;` S_5 with S_j = S_{j−1} + b_j (a << j), each 12 bits LSB first (S_5 = a·b). Exact match of all output tokens.
 **Status.** 2026-11-05. HAND A, B; PART and TRAIN 10 seeds per format; failed cells retried once (both runs kept).
+Audit 2026-11-07: none of the closed forms below passes the full bar (best and final snapshots, native/zero/shuffle exact controls,
+fewer fitted reals than the replaced component); they are keyed on task-derived labels and stay sufficient-readout results.
 ## Summary
 B (scratchpad): the trained PART stage is the binary adder's step, a lookup on x + b_j a_{k−j} + carry (substitution 1.00, 10/10; prediction
 held), and it carries to 7 bits. A (answer only) never trains: PART fails both with HAND's input scale and after rescaling the input to O(1)
 weights (best .10–.19): it cannot fit HAND's parity staircase on the low partial-product sum LK_k, although LK_k is linearly present (R² 1.0).
-TRAIN A memorises (train 1.0, test ≤ .80, 35–44 heads); TRAIN B (retry) solves 9/10, and its L3 MLP has a closed form in 8/10, the adder key itself in 5/10.
+TRAIN A memorises (train 1.0, test ≤ .80, 35–44 heads); TRAIN B (retry) solves 8/10 exactly (9/10 ≥ .99; seed 1 .9994), and its L3 MLP has a closed form in 8/10, the adder key itself in 5/10.
 ## Setup
 [METHODS.md](../METHODS.md). fp32 throughout (HAND index scores ~1e5 lose their ±20 margin under TF32). AdamW betas (.9, .98), eval every 500,
 best-test snapshot. PART run 1: lr 1e-3, wd 1, constant, 10k, 2k-plateau stop. PART A run 2 (design fix: inputs scaled by 1024, see below):
@@ -36,7 +38,7 @@ the carry recomputed from the previous column, c = [x' + b_j a' − s' ≥ 1] (n
 - PART B: 10/10 = 1.0, t(.9) 500; 7 bits 1.0 (HAND B is exact to n = 7; 12 bits 0); HAND's 5 fetch heads (attention substitution 1.0) + 34–68 neurons; f(add) 10/10.
 - PART A run 1: .02–.04 (MLP3 unused: no ablation drop). Run 2 (scaled): best .10–.19 at 1.5–2.5k, final .00–.08, train ≤ .18; MLP3 used (72–146
   neurons), keyed on the low partial-product sum (substitution .17–.51 > net); per-bit accuracy worst on the middle bits p_7..p_4 (.52–.74), p_11 .99.
-- TRAIN A: run 1 ≤ .34; run 2 best .65–.80 (t(.9) never), train 1.0 from ~15k, final .60–.76, length 7 ≤ .12. TRAIN B: run 1 ≤ .034; run 2 9/10 = 1.0,
+- TRAIN A: run 1 ≤ .34; run 2 best .65–.80 (t(.9) never), train 1.0 from ~15k, final .60–.76, length 7 ≤ .12. TRAIN B: run 1 ≤ .034; run 2 8/10 = 1.0 (s1 .9994),
   t(.9) 7.5–16.5k, s2 .755; length 7 ≤ .002. Run 2 MLP3: f(add) 5, f(6-input table) 2, f(x, y, c) 1, none 2; 7–30 heads + 569–763 neurons (HAND 7 + 88);
   HAND fetch roles 1–2/5 in 7/10.
 - Diagnostics (best-layer ridge R²; AB = bit products, LK = low sums (means over bits); residual PR at L4; attention JS of used heads; W_in r99 = rank at 99% energy):
@@ -73,6 +75,8 @@ neurons. A has no learnable one-layer analogue of HAND's carry-save staircase he
 intermediate sums written out.
 ## Controls and limits
 n = 6 only (length 7 and 12; PART B at 2n is beyond HAND B's exact range). Train = 60% of all pairs, so TRAIN A can memorise. Probes are linear.
+Open: the widened-range (10,000-pair) multiplication ten-seed final is not finished; failed B retry seed 2 keeps X / X2 (DAS .99 / 1 at
+L4), so a missing running sum does not explain it; shuffle-control and final-snapshot substitutions are not run.
 
 ## Circuit found in trained nets
 Circuit probes (2026-11-06). **Verified** = causal intervention plus an accepted substitution on disjoint non-training pairs (or the full

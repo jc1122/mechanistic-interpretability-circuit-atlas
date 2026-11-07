@@ -2,7 +2,9 @@
 **Task.** C = A B over GF(2), m = 3. Prompt `B column-major ; A row-major =` (bits, `,` between groups). T: per column k a segment of running
 parities s_ij = s_i,j−1 ⊕ A_ij B_jk (s_i2 = C_ik; `,` between rows, `;` between columns); A: the 9 bits of C column-major (answer only).
 Per seed 100k train / 2k test disjoint random (A, B) pairs of 2^18; exact match of all output tokens; extra evals m = 2, 4, 5 (500 random).
-**Status.** 2026-11-05. HAND T; PART T, TRAIN T, TRAIN A, 10 seeds each: 10/10 solved in every cell (no retry needed).
+**Status.** 2026-11-05. HAND T; PART T, TRAIN T, TRAIN A, 10 seeds each: 10/10 solved in every cell (no retry needed); best = final in every
+cell. Audit 2026-11-07: no learned closed form passes the full bar (best and final snapshots, matched zero and shuffle controls); across the two GF(2) entries 9 candidate
+groups were rejected on re-check, 12 need reruns.
 ## Summary
 HAND T computes each trace token as a lookup on (s_i,j−1, A_ij, B_jk) after two 3-D attribute-match heads fetch A_ij and B_jk. PART (L3 MLP
 re-learnt on frozen HAND) solves 10/10 in 500 steps and reads only HAND's two fetch heads
@@ -91,7 +93,9 @@ richer context 6; internal codes are hypotheses.
 - Size transfer (matrix-vector): count-parity and separator-relative tables restore A PART m = 6, 8 and T PART m = 2, 3, 5, 6, 8 from 0 to 1 (repairs):
   the learned stage keys on absolute separator positions, as the Length note in What training finds describes for this entry.
 - Unlike HAND: trained nets fetch operands and update in L3, not L2, and add a previous-parity path; PART keeps HAND's fetches but uses
-  redundant decision neurons. Open: the early frame code; answer-only TRAIN decoders; the matrix-product TRAIN neural macro.
+  redundant decision neurons. Open: the early frame code; answer-only TRAIN decoders (only 2 A TRAIN best snapshots diagnosed, no finals);
+  the matrix-product TRAIN neural macro; final-snapshot and shuffle-control substitutions (the trained nets of this task are not
+  available for re-scoring, so the PART substitutions cannot be re-run fresh).
 
 ## References
 - Charton, F. (2021). Linear algebra with transformers. https://doi.org/10.48550/arxiv.2112.01898

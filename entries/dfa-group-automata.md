@@ -5,13 +5,15 @@ forced). n uniform in 1..16; per seed 20k unique training words and 2k disjoint 
 axis: 1000 random words at n = 32, 64, 128.
 **Status.** 2026-11-05. HAND exact for all 6 cells (3 groups × 2 formats). PART and TRAIN 10 seeds per cell; every failed cell retried
 (fresh words per batch, then tail-balanced symbol counts; S3 answer-only TRAIN then one size step, d_model 512); all saved nets kept.
+Audit 2026-11-07 (unrounded curves): S3 answer-only TRAIN r2 has 2/10 seeds ≥ .99 (max .9995, none exact), not 3/10; no closed form
+below passes the full bar (every substitution is on best snapshots; none on final snapshots).
 
 ## Summary
 With a scratchpad (B), PART and TRAIN learn the transition table δ(q_{t-1}, s_t) within 2500 steps in all three groups (10/10 each). PART
 keeps the hand-built recency head and stays exact to n = 128; TRAIN fetches q_{t-1} with its own heads and breaks at about twice the
 training length. Answer-only (A): S3 PART reproduces the hand-built composition tables (10/10, exact to n = 31, the hand-built depth
 bound). The abelian PART stage computes the symbol sum S exactly but learns S mod G only for S ≤ 11–18, even when large S are made
-frequent. A TRAIN with fresh words: parity and Z3 10/10 (count, then a residue table; bound to the training length), S3 3/10.
+frequent. A TRAIN with fresh words: parity and Z3 10/10 (count, then a residue table; bound to the training length), S3 2/10 at ≥ .99.
 
 ## Setup
 [METHODS.md](../METHODS.md). AdamW lr 1e-3, wd .1, betas (.9, .98), warmup 1000 + cosine, clip 1, batch 256, fp32, eval every 500 steps,
@@ -35,7 +37,7 @@ Recorded in the task specification before any PART/TRAIN run. (1) B PART exact, 
 (2) B TRAIN ≥ 7/10, hand-built circuit, half the seeds ≥ .9 at 2× length: 10/10, hand-built single fetch head 1/10 (parity), ≥ .9 at
 2× length only 1–2/10. (3) A abelian PART exact: failed (large S). (4) A abelian TRAIN ≤ 5/10 with a length-bound count shortcut: r1 parity
 0/10, Z3 9/10; r2 10/10 and length-bound (shortcut held, count broken). (5) A S3 PART = HAND including length: held. (6) A S3 TRAIN ≤ 3/10,
-depth-bound: r2 3/10 with a length frontier, held. (7) Grokking order B < A abelian < A S3: B first held; at PART the order is inverted.
+depth-bound: r2 2/10 (≥ .99) with a length frontier, held. (7) Grokking order B < A abelian < A S3: B first held; at PART the order is inverted.
 
 ## Hand-built reference
 Layer 0: BOS-sink position stage (P = 1/(j+1); hinges give R = j/256). B: a layer-1 recency head (score 100·[state token] + 20 j) copies
@@ -52,12 +54,12 @@ back and a 36-neuron table composes the two blocks: 5 heads + 180 neurons, exact
   head (mass .85–.95) in 7/10. Length: n = 32 .05–.99, n = 64 ≤ .14; token accuracy breaks at t = 24–48.
 - A S3 PART: 10/10 by step 1000; the block states ST1..ST4 are decodable at accuracy 1.0 in layers 2..5 (the HAND layers); n = 32 .18 = HAND's .18.
 - A abelian PART: S exact (probe R² 1.00), stage = f(S), but whole large S values are wrong. r2 fresh words: parity S = 13 wrong in 10/10,
-  Z3 every S ≥ 17–19 wrong. r3 tail-balanced S (large S now ~12% of words): parity masked 7/10 exact, unmasked 1/10, Z3 0/10. Not data.
+  Z3 every S ≥ 17–19 wrong. r3 tail-balanced S (large S now ~12% of words): parity masked 4/10 exact on the original test split (7/10 on fresh batches), unmasked 1/10, Z3 0/10. Not data.
 - A TRAIN r1 (20k static words): parity counts S but has no S mod 2 (test .50–.52, train also chance); Z3 9/10 (q decodable 1.00 at L4);
   S3 memorises and learns only the sign of the permutation (right sign in 8/10 seeds).
 - A TRAIN r2 (fresh words): parity and Z3 10/10 (grok at 13–21k / 3.5–18k steps): S at L1–L2, q 1.00 from L2–L3, MLPs = f(S): HAND's
   variables (interchange below) in a different code (no orthogonal map to HAND's residual, CKA .11–.23), but the residue staircase covers only the trained S (parity n = 32 chance; Z3 n = 32 ≥ .95 in 3/10). S3: sign 1.0 (10/10), exact up to
-  n ≈ 9–13, best .70–1.0 (3/10 ≥ .99) and still rising at the budget; ST2..ST4 at chance: no doubling.
+  n ≈ 9–13, best .70–.9995 (2/10 ≥ .99) and still rising at the budget; ST2..ST4 at chance: no doubling.
 - Diagnostics (median over seeds; probe = best layer, one-hot accuracy, R² for S and position t; r90 = principal components for 90% of the
   last residual's variance; attention divergence to HAND ≈ 0 throughout because HAND's unused heads are uniform; patch = activation patching
   on a shuffled batch, component with the largest accuracy drop; uses = interchange flip → DAS flip of the HAND variable at its best layer,
@@ -77,7 +79,7 @@ back and a 36-neuron table composes the two blocks: 5 heads + 180 neurons, exact
 - A S3 TRAIN size step (d_model 512, fresh words): r3 (10 seeds, 40k) reached test .487–.988, still rising, but the nets were lost (GPU
   out of memory in the final length evaluation, before the save); r3b (3 seeds, 80k from scratch, 2× budget) stopped at step 27.5k when the
   rented host's disk filled, test .36–.51. No best snapshot exists, so neither run is
-  diagnosed or archived. This was the one size step of the retry order; the answer-only S3 TRAIN result stands at 3/10 (r2).
+  diagnosed or archived. This was the one size step of the retry order; the answer-only S3 TRAIN result stands at 2/10 ≥ .99 (r2).
 - Causal verdicts. Failed abelian PART stages use S (interchange .92–1) and carry q, recoverable by DAS (.85–1) though only half linearly
   readable (.48–.79): the miss is the large-S readout, not the count. Deleting the S/q subspace drops every parity A PART and parity TRAIN r2 net to
   chance (.46–.52), keeping only it leaves accuracy unchanged. Parity TRAIN r1 has S but no answer-controlling variable (all flips at chance).
@@ -86,7 +88,8 @@ back and a 36-neuron table composes the two blocks: 5 heads + 180 neurons, exact
 
 ## Closed form
 B: q_t = δ(q_{t-1}, s_t), a G × G table applied to the fetched previous state; substituting the (q_prev, symbol) mean table for the stage
-keeps accuracy 1.0 (PART 30/30; TRAIN parity and Z3 10/10). A S3 PART: MLP5 = f(q) and MLP4 = f(ST4) tables, 10/10. A abelian: each stage is
+keeps accuracy 1.0 (PART 30/30; TRAIN parity and Z3 10/10) on the stated words; as a universal reduction it is rejected: on a re-check
+parity seed 9 keeps 126/128 (< .99 of the net). A S3 PART: MLP5 = f(q) and MLP4 = f(ST4) tables, 10/10. A abelian: each stage is
 a table f(S) (substitution = the net's own accuracy, PART 40/40, TRAIN r2 parity 10/10, Z3 8–9/10); replacing it by the exact table
 [S mod G] gives 1.0, so the closed form exists and the trained stage misses only its large-S teeth.
 
@@ -141,13 +144,14 @@ stated finite domain; **supported** = causal only. Layers zero-based; H = heads,
   substitution 100%. B TRAIN (10 each) display-local / history-sensitive: parity 3/7, Z3 7/3, S3 9/1; the strongest-attention layer is an
   exactly sufficient fetch in 0/10, 2/10, 6/10. A S3 PART (20): 14 faithful compact products, 6 one-error repairs, all on frozen doubling.
   A TRAIN parity run 2: 10 late-count codes; Z3 run 1: 9 count + context; Z3 run 2: 1 faithful late count, 9 count + context. A S3 TRAIN
-  run 2: 1 of 3 solved seeds has the faithful sign + point readout. A parity PART run 3: 8 scalar-hinge codes. Z3 A PART: 0 solved.
+  run 2: seed 4 has the faithful sign + point readout; seed 0 (also ≥ .99) and seed 3 (.99 only after rounding) need extra directions. A parity PART run 3: 8 scalar-hinge codes. Z3 A PART: 0 solved.
 - Unlike HAND: S3 B TRAIN fetches later and redundantly with distributed pair/position thresholds; PART keeps HAND's interfaces but not
   its single-neuron AND gates (pair dependence R² .9993 vs product-only .148 for the best-fitting neuron).
 - Note: the Weights excerpt reads B PART neurons as group characters; the probes verify pair dependence but not a unique group-character
   role. The Closed form's f(S) tables for Z3 A TRAIN hold on random test words; on a balanced histogram grid MLP2..5 = f(S) gives only
   90.41% agreement, so a global f(S) reduction is refuted. The parity A PART run-3 nets exact on test words still miss 2 of 17 counts on that grid.
-- Open: the S3 answer-only point product; what the failed whole-hypothesis scrub omits; smallest sufficient circuits under length extension.
+- Open: final-snapshot substitutions for every form above (0 final-weight diagnostics); the d 512 S3 answer-only size final (not
+  completed); six solved seeds (6/9) of a context-reset S TRAIN follow-up, mechanism unclassified; the S3 answer-only point product; what the failed whole-hypothesis scrub omits; smallest sufficient circuits under length extension.
 
 ## References
 - Liu, B., Ash, J. T., Goel, S., et al. (2022). Transformers learn shortcuts to automata. https://doi.org/10.48550/arxiv.2210.10749 (arXiv preprint)

@@ -6,13 +6,14 @@ token (digit, significance id), coupled across the two operands; lines `ADD s_k 
 names the sub-step that follows. I and R ids = column + a random offset (ids up to 2N are trained). Test: 1000 fixed pairs at n = N (in
 range), N + 1 and 2N; exact = every scored token.
 **Status.** 2026-11-06. HAND exact for all 8 (base, format) pairs. PART 10 seeds per cell (+ an arm with the stage's position inputs masked),
-TRAIN 10 seeds per cell; failed cells retried once (3 seeds) where the retry rules applied.
+TRAIN 10 seeds per cell; failed cells retried once (3 seeds) where the retry rules applied. Audit 2026-11-07: no closed form below passes
+the full bar (best and final snapshots, zero and shuffle controls); substitutions were run on best snapshots with native and zero controls only.
 
 ## Summary
 The hand-built step is one output-MLP circuit shared by every column (sum, carry and next-id neuron groups never overlap). Re-learning that
 stage on the frozen hand-built net (PART) length-generalises exactly when the stage cannot read position: R without masking (2N ≥ .93 in
 8/10 binary and ≥ .99 in 10/10 decimal seeds) and I, AM, AL once the stage's position inputs are masked (10/10 at 2N); unmasked I and A are 0 at 2N.
-From scratch (TRAIN) every format except binary most-significant-first answers solves in range, and none reaches 2N (R included): the
+From scratch (TRAIN) I, R and AL solve in range (binary AL 8/10), most-significant-first answers do not (binary 0/10, decimal 2/10), and none reaches 2N (R included): the
 router token alone does not buy length generalisation. Trained nets deliver the two operand digits by input-dependent attention mixtures
 and compute the sum in distributed MLPs; no compact trained arithmetic formula was verified.
 
@@ -61,7 +62,7 @@ overlap .71–.97 (Jaccard) across columns and 0 between slots. Exact (logit mar
 | PART R binary / decimal | 10/10 / 10/10 | 1.5–3k / 3.5–5k | 1 / 1 / .001–1 (8/10 ≥ .93); 1 / 1 / .99–1 |
 | PART I binary / decimal (unmasked) | 0/10 / 0/10 | — | 0 / 0 / 0; .57–.78 / .14–.34 / 0 |
 | PART I masked binary / decimal | 10/10 / 10/10 | 3.5–4.5k / 8.5–10k | 1 / 1 / 1 |
-| PART AM / AL decimal (unmasked; 20k retry, 3 seeds) | 0/10 / 0/10; 2/3 / 0/3 | 16–19k (retry AM) | .99–1 / .24–.26 / 0; .59–.71 / .02–.04 / 0 (retry) |
+| PART AM / AL decimal (unmasked; 20k retry, 3 seeds) | 0/10 / 0/10; 2/3 (3/3 ≥ .99) / 0/3 | 16–19k (retry AM) | .99–1 / .24–.26 / 0; .59–.71 / .02–.04 / 0 (retry) |
 | PART AM / AL decimal masked | 10/10 / 10/10 | 5.5–7k / 7.5–9.5k | 1 / 1 / 1 |
 | PART AM / AL binary (unmasked) | 10/10 / 8/10 | 7.5–9k / 8–9.5k | 1 / .26–1 / 0; .39–1 / .16–1 / 0 |
 | TRAIN I binary / decimal | 10/10 / 10/10 | 20–25k / 8.5–16k | 1 / .975–1 / 0; 1 / .27–.94 / 0 |
@@ -78,7 +79,7 @@ overlap .71–.97 (Jaccard) across columns and 0 between slots. Exact (logit mar
   HAND's wiring. At 2N TRAIN I / AL are 0 and the patching drop moves to MLP1/MLP3; failed binary AM and the residual binary AL errors
   are not diagnosed, and trained R nets have no diagnostics yet.
 - Circuit probes (best snapshots; layers zero-based; "verified" = causal intervention + accuracy-preserving substitution on the stated
-  finite test, "supported" = causal only):
+  finite test, best snapshot, no shuffle control; "supported" = causal only):
 
 | component | role | evidence |
 |---|---|---|
@@ -91,9 +92,10 @@ overlap .71–.97 (Jaccard) across columns and 0 between slots. Exact (logit mar
 
 ## Closed form
 PART R stage: s = (XA + XB + LD) mod B at ADD, c = [XA + XB > LD] at CARRY, then the successor id and op cycle. Substituting it for MLP2
-gives 1 / 1 / 1 (n = 1 / 6 / 12, decimal, 512 pairs each) vs the native net's 1 / 1 / .246: accepted in range; at 2N it is a repair, not
-the net's behaviour. PART AL masked (decimal s2): u = XA + XB + CY, Y_d = Σ_{j=0..19} C[j, d]·max(0, 1 − |u − j|)/30 (a 200-number
-fitted spline of the raw sum): 1 / 1 / 1 vs native 1 / 1 / .9995, an accuracy-level abstraction. TRAIN: operand delivery
+gives 1 / 1 / 1 (n = 1 / 6 / 12, decimal, 512 pairs each) vs the native net's 1 / 1 / .246; across 95 PART best snapshots the same rule
+gives native .984–1 → 1 on 64 pairs (no fitted reals). Holds in range on best snapshots; final snapshots and a shuffle control are not
+run, so it is not accepted under the full bar; at 2N it is a repair, not the net's behaviour. PART AL masked (decimal s2): u = XA + XB + CY, Y_d = Σ_{j=0..19} C[j, d]·max(0, 1 − |u − j|)/30 (a 200-number
+fitted spline of the raw sum): 1 / 1 / 1 vs native 1 / 1 / .9995, an accuracy-level abstraction (best snapshot only, no shuffle control). TRAIN: operand delivery
 α = sigmoid((Q·K_a − Q·K_b)/8), z = α V_a + (1 − α) V_b with Q, K, V recomputed in the net; all 11 component forms of TRAIN I s4 together
 give 8188/8192 exact vs native 8187/8192 (one native error repaired; agreement 8191/8192). The arithmetic stays in dense fits
 (2,979,840 coefficients per head form): no compact trained formula is verified. Failed unmasked PART AL decimal s0 is repaired by
@@ -121,6 +123,11 @@ Masked vs unmasked PART arms control for the position shortcut. Binary AM HAND i
 budget-limited; its 60k retry has not run past a smoke test. Unmasked PART A and I were budget-limited at 10k (retries from scratch at
 20k: decimal AM 2/3, AL 0/3). Diagnostics on 2–10 seeds per cell; trained R nets, failed binary AM and failed PART I/A cells are not
 diagnosed; routing in trained R nets is untested. Teacher-forced scratchpads; one size (d_model 256).
+Open: final-snapshot and shuffle-control substitutions for every closed form above; five PART best seeds without an interpreted stage;
+binary TRAIN R per-seed length scores; dense PART stage tables (2.6–25M fitted entries) exceed the stage's 262,912 parameters, so they are
+not compact forms (rejected). Follow-up, binary subtraction (a ≥ b, borrow), PART I / R, 3 seeds: native 512/512 at n = 16 on best and
+final snapshots; at 2N I is 0 in every seed, R best 1 / .06 / 1 and final 1 / 1 / 1; a graph of 7 heads plus 2–3 whole MLPs keeps 512/512
+and its complement gives 0/512 (no graph shuffle control yet). Decimal subtraction R (3 seeds) reached in-range 1 at its 20k budget.
 
 ## References
 - Abbe, E., et al. (2024). How far can transformers reason? The globality barrier and inductive scratchpad. arXiv preprint. https://doi.org/10.48550/arxiv.2406.06467

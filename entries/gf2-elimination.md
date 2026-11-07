@@ -8,7 +8,8 @@ side), so test systems use matrices never seen in training. Exact match of every
 118 train / 50 test (944 / 400 systems). m = 4: 6000 random invertible matrices of 20160, 67.2k train systems, 2000 test systems drawn
 from the unseen-matrix systems. Size axis: 500 random systems at the other m (2, 3, 4, 5).
 **Status.** 2026-11-06. HAND T exact (m = 2–5). m = 3: PART (two stages) and TRAIN T / A, 10 seeds each. Failed TRAIN cells retried with
-the data rule at m = 4 (3 seeds per format); final cell: A TRAIN at m = 4, 10 seeds, 10/10 at test 1.0.
+the data rule at m = 4 (3 seeds per format); final cell: A TRAIN at m = 4, 10 seeds, 10/10 at test 1.0. Audit 2026-11-07: no learned closed form passes the full bar (best and final snapshots, matched zero and shuffle controls); across the two GF(2) entries 9 candidate
+groups were rejected on re-check, 12 need reruns.
 
 ## Summary
 The hand-built net computes each scratchpad token by fetching three bits of the previous block with 3-D attribute-match heads and
@@ -57,12 +58,13 @@ m = 5. No compact hand-built A net (x = A⁻¹ b).
 ## What training finds
 - T PART (layer-3 MLP): 10/10 test 1.0 at step 1000; m = 2 1.0 in 6/10 seeds (0 in the rest), m = 4, 5 0.
 - T PARTp (layer-3 attention): 10/10 test 1.0, best at 1.5–4k; m = 2 0–.37, m = 4, 5 0.
-- T TRAIN m = 3: 5/10 (best .73–1.0, final .70–1.0, plateau stop 16.5k); label and answer tokens 1.0 in every seed, row-update tokens
+- T TRAIN m = 3: 5/10 best, 3/10 final (best .73–1.0, final .70–1.0, plateau stop 16.5k); label and answer tokens 1.0 in every seed, row-update tokens
   .992–1.0; m = 2, 4, 5 0. A TRAIN m = 3: 5/10 (best .845–1.0, final .805–1.0, plateau stop 20.5k); m = 2 .27–.64, m = 4 .04–.16, m = 5 .02–.06.
 - Failure (m = 3, both formats): train ≥ .99 by 3.5–5k steps in every seed, then test oscillates with a train–test gap up to .40 in the
   failed seeds: they memorise matrix-specific updates / answers for the 118 training matrices (m = 3 has no more data).
 - Retry (data rule, m = 4, 6000 matrices, 67.2k train systems, 3 seeds): A 3/3 test 1.0 (best 10–18k), train ≈ test throughout;
-  T 3/3 test 1.0 at 8.5k, but the best/final nets were lost when the rented host's disk filled (step-7500 snapshot test .996–1.0).
+  T 3/3 test 1.0 at 8.5k, but the best/final nets were lost when the rented host's disk filled (step-7500 snapshot test .996–1.0);
+  a replacement T run logs 3/3 best and final 1.0 by 6k, its nets not yet retrieved.
 - Final A TRAIN m = 4 (10 seeds): 10/10 best and final test 1.0, best step 12–21.5k; test at 2.5k .22–.52, 5k .51–.96, 7.5k .74–1.0;
   m = 2 .09–.45, m = 3 .10–.27, m = 5 .03–.10 (final).
 - Diagnostics (best snapshots, 250 test systems; used = ablation-used heads + MLP blocks, neurons not ablated; probe = best layer;
@@ -87,7 +89,10 @@ PART and PARTp: the row-update bit is bit = OLD ⊕ (K ∧ PB ∧ ¬EQ). Replaci
 μ[OLD, K·PB·¬EQ, query slot] computed from HAND's live registers keeps accuracy 1.0 in all 10 PART and all 10 PARTp nets (coverage 1,
 drop 0); the other slots stay native, and PARTp needs the registers before its own attention. TRAIN: no closed form accepted. Substituting
 fitted Boolean tables for a solved T TRAIN net (seed 6) gives .0475–.0625; repairing failed seed 0 with an oracle row update lifts it
-.735 → 1 but reproduces 0 of its 144 native errors (a repair, not an explanation).
+.735 → 1 but reproduces 0 of its 144 native errors (a repair, not an explanation). Oracle control on the A TRAIN m = 4 final cell
+(terminal MLP replaced by a fitted readout of the externally supplied solution bits, 1,024 fresh systems, bar ≥ .99 × net): passes on
+4/10 best and 10/10 final snapshots (an earlier 10-seed run: 5/10 / 9/10). The answer is readable at the end; this does not identify an
+internal elimination.
 
 ## Weights excerpt and reading
 HAND layer-3 row-update neurons (one per cell of (OLD, K, PB, EQ) whose output bit is 1, 8 cells):
@@ -122,7 +127,9 @@ the trained block layout.
 ## Controls and limits
 Unseen-matrix test sets (by-matrix split). m = 3 TRAIN cells are the 10-seed screening; the m = 4 T retry lost its best/final nets
 (disk full), so T at m = 4 is a 3-seed result from logs and a step-7500 snapshot. Diagnostics cover 7/10 PART, 4/10 PARTp, 6/10 T TRAIN
-m = 3 and 3/10 A final seeds; A TRAIN m = 3 has none. Linear probes; interchange/DAS only for answer-fixing variables; no neuron-level
+m = 3 and the A TRAIN m = 4 final cell on 10 best + 10 final snapshots (2026-11-07; its earlier run 10 best + 6 final); A TRAIN m = 3
+has none. Open: el4 intermediate variables (old/k/pb/eq/pivot are not probed in the answer-only nets), training dynamics (checkpoints
+lost), final-snapshot substitutions. Linear probes; interchange/DAS only for answer-fixing variables; no neuron-level
 ablation; no training-dynamics measurements. The archived A m = 3 nets are final snapshots (their best-snapshot file was truncated).
 One size (d_model 384).
 
