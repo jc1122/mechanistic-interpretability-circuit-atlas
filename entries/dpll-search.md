@@ -6,9 +6,8 @@ decision levels and tried flags, a clock, the clause in focus and the conflict f
 gives train/monitor/test buckets 8:1:1, so clause-order or clock variants never cross splits. Test: 192 formulas per seed; exact = every
 non-PAD teacher-forced output token correct (T: the complete trace).
 **Status.** 2026-11-07. HAND A/T; PART A/T and TRAIN A/T, 3 screening seeds each, all runs finished. Open: **the ten-seed final cell
-(T PART, seeds 3–9) has not finished** (four launches lost to host failures; the current one is in training); **no learned closed form
-is accepted** (claim audit: 0 accepted / 3 rejected / 11 needing reruns); the zero/shuffle complete-trace controls for the T PART
-substitution have not run (the queued job failed at start-up); no admissible TRAIN retry (data already ≥ 3×; size needs train < 1,
+(T PART, seeds 3–9) has not finished** (four launches lost to host failures; the current one is in training); the T PART learned-update
+closed form is accepted with zero/shuffle controls (below), other component claims stay frozen-HAND identities; no admissible TRAIN retry (data already ≥ 3×; size needs train < 1,
 unmeasured); A PART n = 7 replay and the A PART threshold substitution are not run; public code pending.
 
 ## Summary
@@ -74,15 +73,16 @@ no linear witness count (≤ .19). T PART aligns with HAND's weights up to rotat
 CKA ≤ .34; T TRAIN seeds sit in different basins (LMC barrier 6.5–6.8). T edge checks are below the faithfulness bar (ρ .38–.87).
 
 ## Closed form
-**None accepted.** Candidate (T PART, open): replacing the whole frozen path plus learned MLP5 by a parameter-free seven-field
-copy/clear/force/decide/backtrack update keeps 40/40 complete teacher-forced traces per seed at (n, m) = (4, 10), (5, 17), (6, 20),
-(6, 25), best and final, and repairs all eight native n = 7 errors (native 10, 10, 8 of 12 → 12/12) — but the matched zero/shuffle
-controls are missing, so it stays a hypothesis. Rejected: a 14-scalar raw-activation fit of MLP5 (96/96 → 0/96 windows); an 817-scalar
+**Accepted (T PART, 3/3 seeds; best and final are byte-identical).** The learned MLP5 equals a parameter-free seven-field update
+F = (state, level, level²): conditional copy / clear / force / decide / backtrack of the old state. On 52 fresh complete teacher-forced
+traces per seed ((n, m) = (4, 10), (5, 17), (6, 20), (6, 25), (7, 20)), substituting F for MLP5 — alone or with the whole frozen path
+replaced by its HAND formulas — gives 52/52 per seed vs native 48 / 51 / 48 (all native errors repaired); zeroing or position-shuffling
+MLP5's output gives 0/52. A 14-scalar affine fit of F's fields also keeps 52/52 (14 < 2,887 learned parameters). Rejected: a 14-scalar raw-activation fit of MLP5 (96/96 → 0/96 windows; 0/52 complete traces); an 817-scalar
 count bottleneck for TRAIN A (.70–.84 → .47–.56); a 4,822-scalar update bottleneck for TRAIN T (.31–.68 → 0 on its windows). A PART's
 threshold form is not yet substituted.
 
 ## Weights excerpt and reading
-No trained-weight formula is promoted: the seven-field candidate is decision-equivalent on measured inputs, not a reconstruction of
+No trained-weight formula is promoted: the accepted seven-field form is decision-equivalent on measured inputs, not a reconstruction of
 learned neurons, and its implementation thresholds flags, argmaxes the old state and clamps the old level. Frozen HAND identity in PART
 is architectural, not evidence that the learned stage has HAND's weights.
 
