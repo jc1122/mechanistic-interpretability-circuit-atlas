@@ -6,9 +6,11 @@ independently permuted terms; two terms per side, coefficients −9…9 without 
 digit strings. Format **A** writes only the answer; format **T** writes a scratchpad (expand: distribution products then collection;
 collect: copy/copy/sum triples; solve: `D N ; solution`). Split by canonical-input hash mod 97 (one residue = test); fresh training
 sequences every batch; 1000 held-out sequences per seed. Exact = whole teacher-forced output.
-**Status.** 2026-11-06. HAND exact for all six cells. Three-seed screening runs (30k steps) for PART and TRAIN in all six cells, plus
-PART collect T seeds 3–9, PART expand A/T at 60k and TRAIN expand T at 60k. Pending: ten-seed finals (except PART collect T), most
-best/final diagnostics, native-vs-closed-form agreement on a fresh batch, literal trained-weight excerpts, public code.
+**Status.** 2026-11-07. HAND exact for all six cells. Three-seed screening runs (30k steps) for PART and TRAIN in all six cells, plus
+PART collect T seeds 3–9, PART expand A/T at 60k and TRAIN expand T at 60k. Ten-seed finals: PART collect T 10/10, TRAIN expand T (60k)
+10/10, TRAIN solve T (30k) 10/10. Pending: ten-seed finals of the other cells, diagnostics of the two new ten-seed TRAIN finals, most
+best/final diagnostics, native-vs-closed-form agreement on a fresh batch, literal trained-weight excerpts, public code; the seed 3–9
+nets of the two new TRAIN finals are not yet in the network archive.
 
 ## Summary
 Collection is easy: training only the last arithmetic MLP on frozen hand-built routing (PART) solves A and T in every seed (10/10 for T)
@@ -58,10 +60,11 @@ Held-out exact, best snapshot (final in brackets where lower by > .005); 3 seeds
 | collect A | 1, 1, 1 (step .5k) | 1, 1, .996 (11–20k) |
 | collect T | 1 in 10/10 (1k) | 1, 1, 1 (17.5–22.5k) |
 | expand A | .90, .90, .80; 60k: .95, .96, .88 | .11, .12, .13 [.09–.11] |
-| expand T | .71, .74, .78; 60k: .78, .81, .86 | .11, .16, .99; 60k: 1, 1, 1 (29.5–36.5k) |
+| expand T | .71, .74, .78; 60k: .78, .81, .86 | .11, .16, .99; 60k: 1, 1, 1 (29.5–36.5k); ten-seed final 60k: 10/10 best 1, final 1 (s3 .998), 29.5–44k |
 | solve A | .97, .96, .96 | .97, .29 [.24], .42 [.33] |
-| solve T | .41, .40, .39 | 1, 1, 1 (25–26.5k) |
-Learning curves show no separate memorisation phase: collection TRAIN A crosses test .5/.9 at 2–3.5k/4.5–5.5k, before train exact
+| solve T | .41, .40, .39 | 1, 1, 1 (25–26.5k); ten-seed final 30k: 10/10, best = final = 1, 24–26.5k |
+Out of range (256 selected rows, all ten-seed TRAIN T finals): held-out ±8 coefficients exact 0–.008, wide coefficient range .08–.09,
+reordered terms .996–1. Learning curves show no separate memorisation phase: collection TRAIN A crosses test .5/.9 at 2–3.5k/4.5–5.5k, before train exact
 (13.5–18k). Diagnostics (best snapshot, one seed each): PART collect A/T decode the sum with probe R² = 1 at L3, residual rank99 = HAND;
 PART solve A decodes D, N exactly at L1 but D², N², DN only at R² .91/.61/.84 at L2; TRAIN collect A sum R² .92 at L3 (12 heads matter,
 JS to HAND .16), collect T .42, solve T difference .998 at L3 and D/N .98 at L2. Failure localisation, solve A PART seed 0: exact D, N
@@ -94,7 +97,7 @@ PART collect at 6 terms and wide coefficients .66/.008. Progress-measure methods
 ## Controls and limits
 HAND controls exact; substitution evaluated on fresh hash-held-out sequences, fits not tuned on them. Sampling is with replacement;
 saved perfection is not exhaustive exactness. Not established: natural-notation parsing, learned fraction reduction, unseen rational
-atoms, length or range transfer. Pending: ten-seed finals, best/final diagnostics for most nets, fresh native-vs-formula agreement,
+atoms, length or range transfer. Pending: ten-seed finals of the other cells, best/final diagnostics for most nets, fresh native-vs-formula agreement,
 trained-weight excerpts, sufficient-neuron counts, checkpoint dynamics, public code.
 
 ## References
