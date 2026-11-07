@@ -5,7 +5,7 @@ decimal). The answer is written MSB-first or LSB-first. Format **A** writes only
 lines (d2b: halving lines `r_{k−1} q_k`, q_k = x >> k; b2d: doubling lines v_k = x >> (16−k)), then copies the answer from them.
 Prompt `BOS input =`, vocabulary 18. Split per seed: a random permutation of all 65536 integers, 90% train (58982), 10% test (6554).
 Exact = every teacher-forced output token of the row.
-**Status.** 2026-11-06. HAND exact in all 8 conversion cells (65536/65536 each). Published here: A cells b2d MSB (PART, TRAIN 10 seeds),
+**Status.** 2026-11-07. HAND exact in all 8 conversion cells (65536/65536 each). Published here: A cells b2d MSB (PART, TRAIN 10 seeds),
 d2b MSB (PART, TRAIN 10), d2b LSB (PART, TRAIN 10), b2d LSB (PART 10, failed), B cells d2b MSB, b2d MSB, b2d LSB (10 seeds trained,
 seeds 0–2 archived). Pending: d2b B LSB (training interrupted), a companion integer-Newton square-root trace task, a controlled-routing
 scratchpad format, ten-seed substitution checks and most best/final diagnostics.
@@ -59,7 +59,7 @@ Full-test exact (6554 integers per seed), best snapshot unless marked; 10 seeds 
 |---|---:|---:|---|
 | d2b A MSB | .999–1 | .996–1 | threshold on F |
 | b2d A MSB | .993–.997 | .77–.9997 (3 seeds ≥ .998) | thermometer on F (PART); TRAIN not identified |
-| d2b A LSB | .46–.59 | .21–1 (3/10 ≥ .9995) | PART keeps F but misses parity precision |
+| d2b A LSB | .46–.59 | .21–1 (3/10 ≥ .9995); r3 repeat 0/3 | PART keeps F but misses parity precision; TRAIN fails on a middle bit band |
 | b2d A LSB | .18–.38 | .03–.045 (also d_model 1024) | decimal residue never read out |
 | d2b B MSB | .89–1 (7/10 = 1) | .999–1 | scratchpad |
 | b2d B MSB / LSB | 1 in 10/10 (5.3k / 5.5k steps) | .9986–1 / .9985–1 | scratchpad |
@@ -68,6 +68,11 @@ memorisation phase. Diagnostics (1000 rows, seeds 0–2): PART b2d MSB / d2b LSB
 the L2 MLP drops/recovers everything, attention divergence to HAND 0, residual rank99 2 / 15 = HAND. TRAIN b2d MSB: F R² .978–.985 at L3,
 12 heads matter, rank99 49–97 vs HAND 2, attention JS .18–.21; TRAIN d2b: F R² .75–.92 at L2, 9–12 heads, rank99 20–38 vs 15, JS .32–.37.
 The TRAIN nets carry F but spread it over many heads; their sufficient neuron counts are not measured.
+**TRAIN d2b A LSB repeat (r3, 3 seeds, same 80k schedule): 0/3** (best / final .08 / .07 and .29 / .26 for seeds 0 and 2; 4–7 heads
+matter, F R² .75 / .91 at L2). Failure explained per bit: all 7 failed TRAIN d2b A LSB snapshots (seeds 0–2 of the first run, r3 seeds
+0 and 2, best and final) are exact on bits b0–b2 and b7–b15 and at chance (.48–.53) on 1–4 bits inside b3–b6. No failed net lacks F (R²
+≥ .75, DAS high). b3 is the first bit whose residue x mod 16 needs 4 decimal digits, and from b7 on F/2ᵏ is coarse enough (≤ 2⁹ bins)
+for a magnitude read; the hard part is the middle band, where neither a few-digit residue nor a coarse threshold suffices.
 
 ## Closed form
 **PART b2d MSB magnitude (3/3 measured seeds):** M′ = e_Z0 + Σ_{a=1..9} e_Za·[F ≥ θ(q, t, a)], q = query position, t = preceding symbol;
