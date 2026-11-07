@@ -5,8 +5,9 @@ the source symbols, `=`; vocabulary 104. Format **A** (answer only): the expande
 derivative references name earlier rows, and expanding the last register gives A. Training domain: operator depth 0–2, powers 1–6,
 padding 0–3; two operator-edge compositions are withheld. Split: SHA-256 of the canonical expression, 80/20; 256 held-out expressions
 per seed. Exact = whole teacher-forced output including the end token `$`.
-**Status.** 2026-11-06. HAND exact (A and T). TRAIN: A and T three-seed screens, T ten-seed final cell. PART: A and T, first run and a
-data retry (3 seeds each), all failed. Causal diagnostics of TRAIN A, of final-cell T seeds 0–3 and 5 and of the PART retries are pending.
+**Status.** 2026-11-07. HAND exact (A and T). TRAIN: A and T three-seed screens, T ten-seed final cell. PART: A and T, first run and a
+data retry (3 seeds each), all failed. Standard diagnostics now cover every cell, best and final (table below); ten-seed finals of TRAIN A
+and the PART cells are not run.
 
 ## Summary
 A formula-built transformer differentiates every tested expression (A 16 heads + 1,963 neurons, T 6 + 1,100). Trained from scratch,
@@ -54,16 +55,33 @@ margins 30 (A) and 27.5 (T). Sizes are the formula allocation, not a measured mi
 ## What training finds
 | Cell | Solved / seeds | Best / final exact | Stop (k steps) | Diagnostics (best, 128 rows) |
 |---|---|---|---|---|
-| TRAIN A r1 | 3/3 | 1.0 / 1.0 | 17.5 | pending |
+| TRAIN A r1 | 3/3 | 1.0 / 1.0 | 17.5 | see diagnostics table |
 | TRAIN T r1 | 3/3 | 1.0 / 1.0 | 19 | 5–7 heads, 5 MLPs; REF R² .95–.97 (L5); r99 24–32 vs HAND 6; JS .50–.52 |
-| TRAIN T final | 10/10 | 1.0 / 1.0 | 19 | seeds 4, 6–9: exact 1.0; REF R² .96–.97 (L5); r99 27–32 |
+| TRAIN T final | 10/10 | 1.0 / 1.0 | 19 | see diagnostics table |
 | PART A r1 | 0/3 | .70–.73 / .70–.73 | 22.5 | 11 heads, 12 MLPs (frozen); power R² .92–.96 (L11) |
 | PART T r1 | 0/3 | .79–.85 / .78–.80 | 22.5 | 5 heads, 4 MLPs; REF R² .63–.74 (L4); 45–46 neurons individually needed |
-| PART A r2 (data) | 0/3 | .46–.52 / .46–.52 | 22.5 | pending |
-| PART T r2 (data) | 0/3 | .89–.92 / .88–.91 | 24.5 | pending |
+| PART A r2 (data) | 0/3 | .46–.52 / .46–.52 | 22.5 | see diagnostics table |
+| PART T r2 (data) | 0/3 | .89–.92 / .88–.91 | 24.5 | see diagnostics table |
 - **Learning curve.** First held-out exact 1.0: A 16k / 17.5k / 17k, T 18.5k / 16k / 16k (screens), T final 14.5k–19k; best and final are equal.
   PART A peaks at 0.5k–2k steps and stays there with train exact also < .8 (a plateau); PART T reaches train exact 1.0 on its
   128-row monitor at test .78–.80 in r1 (memorising); with 5.6x more distinct expressions (r2) test rises to .88–.91, still not solved.
+- **Diagnostics** (128 in-distribution depth-2 rows, on which the failed PART nets score 1.0 — their errors are at other shapes; used =
+  mean-ablation exact drop > .05, H heads / M whole MLPs, neurons not ablated; R² = best linear probe (layer); flip = max-over-layers
+  interchange flip toward the source answer; DAS = distributed-alignment flip of the rule; r99 = final-residual rank; JS = attention
+  divergence to the best-matched HAND head; ranges over seeds, best and final):
+| Cell | Diag exact | Used H / M | Rule R² | Address R² (A power, T REF) | Flip rule / address; DAS | r99 | JS |
+|---|---|---|---|---|---|---|---|
+| HAND A | 1 | 11 / 12 | .928 (9) | .961 (11) | .35 / 1; 1 | 9 | 0 |
+| HAND T | 1 | 5 / 5 | .865 (5) | 1.0 (4) | .20 / .15; .86 | 6 | 0 |
+| PART A r1 / r2 | 1 | 11 / 12 | .85–.93 (9) | .92–.96 (11) | .32–.43 / 1; .89–1 / .33–1 | 9 | .001 |
+| PART T r1 / r2 | 1 | 5 / 4 | .95–.96 (4) | .63–.74 / .68–.73 (4) | .10–.29 / .07–.11; .85–.98 / .24–.99 | 7–8 | 0 |
+| TRAIN A r1 | 1 | 1–4 / 3–4 | .93–.94 (9–14) | .995–.999 (12–14) | .39–.85 / .50–.60; .72–1 | 20–28 | .13–.19 |
+| TRAIN T r1 | 1 | 5–7 / 5 | .66–.72 (5) | .95–.97 (5) | .50–.60 / .27–.34; .86–1 | 24–32 | .13–.28 |
+| TRAIN T final, 10 seeds | .97–1 | 5–10 / 5 | .65–.77 (3–5) | .94–.98 (5) | .49–.57 / .29–.39; .93–1 | 21–32 | .13–.27 |
+  Reading: PART nets share HAND's frozen state (identical upstream probes), so their failures lie in the trained stage's interface, not
+  in missing upstream variables. TRAIN nets carry the reference address and use the rule more swappably than HAND (rule flip A .39–.85,
+  T .49–.60 vs HAND .35 / .20) although its probe R² is lower in T: a different rule code, causally used. Low flips on HAND (scalar codes)
+  make flip a weak absence test here. TRAIN A uses far fewer components (1–4 heads) than HAND A (11).
 - **TRAIN T, circuit types (best, 3 screening seeds).** One family: the first layer's two heads compute a content-weighted histogram of
   the prefix tokens (closed form below); the leaf coefficient is available before the late heads in one seed, is fetched by the late
   head 1 with the address in head 0 in another, and both by head 0 in the third. All five MLP blocks are used. These are functional
@@ -112,8 +130,8 @@ Size (best, cumulative ablation with constant replacement): TRAIN T seed 2 9 hea
 HAND 6 + 1,100), both at 99.2% on the discovery cohort but 93.4% on a guard set: local upper bounds, not minima. Length (best, 64 rows per
 axis): native TRAIN T seed 2 and its histogram substitute score 0% at depth 3, powers 7–8 and padding 4–7, 100% on withheld compositions;
 HAND 100% everywhere. A PART seed 1 with the pointer repair still scores 0% at depth 3. Probe R², nf = 0 interchange and uniform-head
-divergence ties were not taken as use or absence. Pending: TRAIN A diagnostics, final-cell T diagnostics for seeds 0–3 and 5, PART r2
-diagnostics, public code.
+divergence ties were not taken as use or absence. Pending: ten-seed finals of TRAIN A and the PART cells,
+public code.
 
 ## References
 - Nye et al. (2021). Show Your Work: Scratchpads for Intermediate Computation with Language Models (preprint). https://arxiv.org/abs/2112.00114
