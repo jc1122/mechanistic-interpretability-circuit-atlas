@@ -3,8 +3,8 @@
 parities s_ij = s_i,j−1 ⊕ A_ij B_jk (s_i2 = C_ik; `,` between rows, `;` between columns); A: the 9 bits of C column-major (answer only).
 Per seed 100k train / 2k test disjoint random (A, B) pairs of 2^18; exact match of all output tokens; extra evals m = 2, 4, 5 (500 random).
 **Status.** 2026-11-05. HAND T; PART T, TRAIN T, TRAIN A, 10 seeds each: 10/10 solved in every cell (no retry needed); best = final in every
-cell. Audit 2026-11-07: no learned closed form passes the full bar (best and final snapshots, matched zero and shuffle controls); across the two GF(2) entries 9 candidate
-groups were rejected on re-check, 12 need reruns.
+cell. Controls 2026-11-08: the PART closed form passes the full bar (best and final snapshots, matched zero and shuffle controls); the TRAIN
+candidates of the earlier audit still lack these controls.
 ## Summary
 HAND T computes each trace token as a lookup on (s_i,j−1, A_ij, B_jk) after two 3-D attribute-match heads fetch A_ij and B_jk. PART (L3 MLP
 re-learnt on frozen HAND) solves 10/10 in 500 steps and reads only HAND's two fetch heads
@@ -47,7 +47,10 @@ Y1 − Y0; + Y0 bias neuron and `,` / `;` neurons. Exact: all 2^8 pairs at m = 2
 - Failures: none (all cells 10/10). Length: PART keeps HAND's frame, yet m = 4 is 0 because the re-learnt L3 also keys on m = 3 features (TB/TS
   scale); TRAIN learns absolute separator positions (col/grp probes).
 ## Closed form
-PART: stage → its mean output per (tok1, MA, MB, TS, TSEMI) key: exact 1.0 and agreement 1.0 with the net on 2000 test pairs, 10/10 seeds (24 keys). TRAIN: no shared basis; and, s linear at L4 (flip 1.0); align
+PART: stage → its mean output per (tok1, MA, MB, TS, TSEMI) key: exact 1.0 and agreement 1.0 with the net on 2000 test pairs, 10/10 seeds (24 keys).
+Controls (2,048 fit / 2,000 held-out pairs, best and final snapshot of all 10 seeds; the two snapshots are identical files): substituted 1.0 =
+native in 20/20; stage output zeroed 0, closed form fed shuffled keys ≤ .002, per-query mean ≤ .016, previous bit negated 0; another
+seed's table also gives 1.0 (one shared truth table). Accepted. TRAIN: no shared basis; and, s linear at L4 (flip 1.0); align
 (s0, s1) fit_r2 < 0, QK/OV mean_ov ≤ .05, edge Jaccard .09 vs HAND: HAND's variables, not HAND's wiring.
 ## Weights excerpt and reading
 HAND L3 cell neuron 0: relu(−tok1 + MA + MB + 100 TB − 101) fires only at (s_i,j−1, A_ij, B_jk) = (0, 1, 1) and writes Y1 − Y0.
@@ -94,8 +97,7 @@ richer context 6; internal codes are hypotheses.
   the learned stage keys on absolute separator positions, as the Length note in What training finds describes for this entry.
 - Unlike HAND: trained nets fetch operands and update in L3, not L2, and add a previous-parity path; PART keeps HAND's fetches but uses
   redundant decision neurons. Open: the early frame code; answer-only TRAIN decoders (only 2 A TRAIN best snapshots diagnosed, no finals);
-  the matrix-product TRAIN neural macro; final-snapshot and shuffle-control substitutions (the trained nets of this task are not
-  available for re-scoring, so the PART substitutions cannot be re-run fresh).
+  the matrix-product TRAIN neural macro.
 
 ## References
 - Charton, F. (2021). Linear algebra with transformers. https://doi.org/10.48550/arxiv.2112.01898

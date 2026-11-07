@@ -8,8 +8,8 @@ side), so test systems use matrices never seen in training. Exact match of every
 118 train / 50 test (944 / 400 systems). m = 4: 6000 random invertible matrices of 20160, 67.2k train systems, 2000 test systems drawn
 from the unseen-matrix systems. Size axis: 500 random systems at the other m (2, 3, 4, 5).
 **Status.** 2026-11-06. HAND T exact (m = 2–5). m = 3: PART (two stages) and TRAIN T / A, 10 seeds each. Failed TRAIN cells retried with
-the data rule at m = 4 (3 seeds per format); final cell: A TRAIN at m = 4, 10 seeds, 10/10 at test 1.0. Audit 2026-11-07: no learned closed form passes the full bar (best and final snapshots, matched zero and shuffle controls); across the two GF(2) entries 9 candidate
-groups were rejected on re-check, 12 need reruns.
+the data rule at m = 4 (3 seeds per format); final cell: A TRAIN at m = 4, 10 seeds, 10/10 at test 1.0. Controls 2026-11-08: the PART row-update closed form passes the full bar (best and final snapshots, matched zero and shuffle
+controls); PARTp and the A oracle readout do not.
 
 ## Summary
 The hand-built net computes each scratchpad token by fetching three bits of the previous block with 3-D attribute-match heads and
@@ -87,11 +87,16 @@ m = 5. No compact hand-built A net (x = A⁻¹ b).
 ## Closed form
 PART and PARTp: the row-update bit is bit = OLD ⊕ (K ∧ PB ∧ ¬EQ). Replacing the trained stage's row-bit output by the mean table
 μ[OLD, K·PB·¬EQ, query slot] computed from HAND's live registers keeps accuracy 1.0 in all 10 PART and all 10 PARTp nets (coverage 1,
-drop 0); the other slots stay native, and PARTp needs the registers before its own attention. TRAIN: no closed form accepted. Substituting
+drop 0); the other slots stay native, and PARTp needs the registers before its own attention. Controls (944 fit / 400 held-out
+systems, best and final snapshots of all 10 seeds; PART's two snapshots are identical files): PART substituted 1.0 = native in 20/20,
+stage output zeroed 0, per-query mean 0, shuffled keys ≤ .01, update bit negated 0; accepted. PARTp also substitutes at 1.0 in 20/20,
+but zeroing or shuffling leaves ≥ .2 in 7/20 snapshots (one final seed stays at 1.0 with the write zeroed): its learned attention carries
+the update there, so PARTp is not accepted. TRAIN: no closed form accepted. Substituting
 fitted Boolean tables for a solved T TRAIN net (seed 6) gives .0475–.0625; repairing failed seed 0 with an oracle row update lifts it
 .735 → 1 but reproduces 0 of its 144 native errors (a repair, not an explanation). Oracle control on the A TRAIN m = 4 final cell
 (terminal MLP replaced by a fitted readout of the externally supplied solution bits, 1,024 fresh systems, bar ≥ .99 × net): passes on
-4/10 best and 10/10 final snapshots (an earlier 10-seed run: 5/10 / 9/10). The answer is readable at the end; this does not identify an
+4/10 best and 10/10 final snapshots (an earlier 10-seed run: 5/10 / 9/10); rerun with controls on 2,000 held-out systems: again 4/10
+best (lowest .629) and 10/10 final; shuffled bits ≤ .096, but zeroing the terminal MLP leaves .86–.98 in 2 seeds. Not accepted. The answer is readable at the end; this does not identify an
 internal elimination.
 
 ## Weights excerpt and reading
@@ -129,7 +134,7 @@ Unseen-matrix test sets (by-matrix split). m = 3 TRAIN cells are the 10-seed scr
 (disk full), so T at m = 4 is a 3-seed result from logs and a step-7500 snapshot. Diagnostics cover 7/10 PART, 4/10 PARTp, 6/10 T TRAIN
 m = 3 and the A TRAIN m = 4 final cell on 10 best + 10 final snapshots (2026-11-07; its earlier run 10 best + 6 final); A TRAIN m = 3
 has none. Open: el4 intermediate variables (old/k/pb/eq/pivot are not probed in the answer-only nets), training dynamics (checkpoints
-lost), final-snapshot substitutions. Linear probes; interchange/DAS only for answer-fixing variables; no neuron-level
+lost). Linear probes; interchange/DAS only for answer-fixing variables; no neuron-level
 ablation; no training-dynamics measurements. The archived A m = 3 nets are final snapshots (their best-snapshot file was truncated).
 One size (d_model 384).
 
