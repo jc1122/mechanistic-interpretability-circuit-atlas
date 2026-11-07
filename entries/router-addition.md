@@ -6,8 +6,8 @@ token (digit, significance id), coupled across the two operands; lines `ADD s_k 
 names the sub-step that follows. I and R ids = column + a random offset (ids up to 2N are trained). Test: 1000 fixed pairs at n = N (in
 range), N + 1 and 2N; exact = every scored token.
 **Status.** 2026-11-06. HAND exact for all 8 (base, format) pairs. PART 10 seeds per cell (+ an arm with the stage's position inputs masked),
-TRAIN 10 seeds per cell; failed cells retried once (3 seeds) where the retry rules applied. Audit 2026-11-07: no closed form below passes
-the full bar (best and final snapshots, zero and shuffle controls); substitutions were run on best snapshots with native and zero controls only.
+TRAIN 10 seeds per cell; failed cells retried once (3 seeds) where the retry rules applied. Audit 2026-11-07: the PART R stage rule and the masked
+decimal PART AL spline pass the full bar (best and final snapshots, zero, mean and shuffle controls); the other forms below were run on best snapshots only.
 
 ## Summary
 The hand-built step is one output-MLP circuit shared by every column (sum, carry and next-id neuron groups never overlap). Re-learning that
@@ -93,9 +93,11 @@ overlap .71–.97 (Jaccard) across columns and 0 between slots. Exact (logit mar
 ## Closed form
 PART R stage: s = (XA + XB + LD) mod B at ADD, c = [XA + XB > LD] at CARRY, then the successor id and op cycle. Substituting it for MLP2
 gives 1 / 1 / 1 (n = 1 / 6 / 12, decimal, 512 pairs each) vs the native net's 1 / 1 / .246; across 95 PART best snapshots the same rule
-gives native .984–1 → 1 on 64 pairs (no fitted reals). Holds in range on best snapshots; final snapshots and a shuffle control are not
-run, so it is not accepted under the full bar; at 2N it is a repair, not the net's behaviour. PART AL masked (decimal s2): u = XA + XB + CY, Y_d = Σ_{j=0..19} C[j, d]·max(0, 1 − |u − j|)/30 (a 200-number
-fitted spline of the raw sum): 1 / 1 / 1 vs native 1 / 1 / .9995, an accuracy-level abstraction (best snapshot only, no shuffle control). TRAIN: operand delivery
+gives native .984–1 → 1 on 64 pairs (no fitted reals). Controls (20 seeds, binary and decimal, best and final, 512 held-out pairs at n = N):
+substituted 1 vs native .996–1; MLP2 output zeroed or set to its mean 0; the rule fed row-shuffled inputs .002: accepted in range. At 2N it is a
+repair, not the net's behaviour. PART AL masked (decimal s2): u = XA + XB + CY, Y_d = Σ_{j=0..19} C[j, d]·max(0, 1 − |u − j|)/30 (a 200-number
+fitted spline of the raw sum): 1 / 1 / 1 vs native 1 / 1 / .9995, an accuracy-level abstraction. Controls (seeds 0–9, best and final, 512 held-out pairs at n = 6): spline 1 vs native 1 (HAND's MLP3 also 1);
+zero, mean, sign-flipped C 0; shuffled inputs .002; C taken from another seed 1 (the fit is not seed-specific): accepted in range. TRAIN: operand delivery
 α = sigmoid((Q·K_a − Q·K_b)/8), z = α V_a + (1 − α) V_b with Q, K, V recomputed in the net; all 11 component forms of TRAIN I s4 together
 give 8188/8192 exact vs native 8187/8192 (one native error repaired; agreement 8191/8192). The arithmetic stays in dense fits
 (2,979,840 coefficients per head form): no compact trained formula is verified. Failed unmasked PART AL decimal s0 is repaired by
@@ -123,7 +125,7 @@ Masked vs unmasked PART arms control for the position shortcut. Binary AM HAND i
 budget-limited; its 60k retry has not run past a smoke test. Unmasked PART A and I were budget-limited at 10k (retries from scratch at
 20k: decimal AM 2/3, AL 0/3). Diagnostics on 2–10 seeds per cell; trained R nets, failed binary AM and failed PART I/A cells are not
 diagnosed; routing in trained R nets is untested. Teacher-forced scratchpads; one size (d_model 256).
-Open: final-snapshot and shuffle-control substitutions for every closed form above; five PART best seeds without an interpreted stage;
+Open: final-snapshot and shuffle controls for the TRAIN operand-delivery form and the PART AL s0 repair; five PART best seeds without an interpreted stage;
 binary TRAIN R per-seed length scores; dense PART stage tables (2.6–25M fitted entries) exceed the stage's 262,912 parameters, so they are
 not compact forms (rejected). Follow-up, binary subtraction (a ≥ b, borrow), PART I / R, 3 seeds: native 512/512 at n = 16 on best and
 final snapshots; at 2N I is 0 in every seed, R best 1 / .06 / 1 and final 1 / 1 / 1; a graph of 7 heads plus 2–3 whole MLPs keeps 512/512
