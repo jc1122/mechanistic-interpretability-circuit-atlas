@@ -6,16 +6,16 @@
 polynomials; fresh draws every batch. Exact = whole teacher-forced output correct.
 **Status.** 2026-11-07. HAND A/T; PART 3 seeds per format (screening) and a ten-seed final per format (10/10 each); TRAIN screening
 3 seeds per cell (width 1 30k, width 2 30k, width 2 60k); selected ten-seed TRAIN final T width 2, 60k: 6/10. 3 layers × 1 head.
-Open: no ten-seed TRAIN A final (only the T format got a final cell); no closed form accepted (PART candidate's replacement controls
-open; TRAIN none); no training-dynamics run on the final cells; public reproduction code pending.
+Open: no ten-seed TRAIN A final (only the T format got a final cell); no closed form for TRAIN (PART accepted); no
+training-dynamics run on the final cells; public reproduction code pending.
 
 ## Summary
 With addressing frozen from the hand-built net, one masked MLP learns the local multiply k·a_k in 2–3k steps in every seed (PART 26/26
 seed-runs), but never the multiplier bit it never saw (degree 4: .05). From scratch the same 3-layer NoPE shape needs 2× width and 60k
 steps and still solves only 6/10 final seeds: every failed seed is exact on every token except the coefficient copy a_1 (s9 also a_2),
 stuck near 1/3 — the missing variable is the position-indexed fetch, not the product. Solved TRAIN nets do not extrapolate (degree
-1/2/4–6, withheld pairs, wide coefficients: 0–.016). A three-constant replacement of the PART MLP is exact on all final snapshots but
-stays a candidate until its zero/shuffle controls are run.
+1/2/4–6, withheld pairs, wide coefficients: 0–.016). A three-constant replacement of the PART MLP, ΔS = a·(b_0 + 2b_1) = k·a,
+is exact on all 40 final snapshots and passes its zero/shuffle controls (accepted).
 
 ## Setup
 [METHODS.md](../METHODS.md) for shared conventions. AdamW lr 1e-3, wd .1, betas (.9, .98), warmup 1,000, cosine, clip 1, batch 256
@@ -80,10 +80,21 @@ so the product/exponent path works in failed seeds; the missing variable is the 
 (EAP-IG) check Spearman .49–.99; the .49 seed (s8) is not trusted.
 
 ## Closed form
-**None accepted.** PART candidate: replace the whole MLP2 write by ΔS = c + u·g(AA, b_0) + v·g(AA, b_1) (the frozen frame S kept), with
-(c, u, v) fitted to the MLP's outputs (512 training-hash draws), never to labels; on 1,024 disjoint held-out draws it keeps 1,024/1,024
-exact and agreement 1 on every A/T × best/final × seed 0–9 snapshot (40/40; bar substituted ≥ .99 × original), fit R² .998–.9996.
-It is not accepted because the replacement's zero/shuffle controls have not been run. TRAIN: a categorical codebook writer fed with the
+**PART: accepted.** Replace the whole MLP2 write by ΔS = c + u·g(AA, b_0) + v·g(AA, b_1) (the frozen frame kept), with (c, u, v)
+fitted to the MLP's outputs (512 training-hash draws), never to labels; fit R² .998–.9996. Controls, on the same 1,024 disjoint held-out
+draws for every A/T × best/final × seed 0–9 snapshot (exact; agreement = fraction of answer tokens equal to the network's):
+| Variant (40/40 snapshots, min = max) | Exact | Agreement |
+|---|---:|---:|
+| network | 1.000 | 1 |
+| fitted closed form | 1.000 | 1 |
+| zero write / mean write | 0 / 0 | .529 / .529 |
+| closed form, (AA, b_0, b_1) jointly permuted across rows | .002 | .532 |
+| closed form, u and v sign-flipped | 0 | .529 |
+| (c, u, v) from another seed / hand-built (0, 1, 2) | 1.000 / 1.000 | 1 / 1 |
+Half the answer tokens are written by the frozen frame, so agreement on the MLP-dependent tokens alone is ≈ .06 (zero, flip: correct
+only where a = 0). The bar (substituted ≥ .99 × network) holds 40/40 while zero and shuffle collapse; constants are interchangeable
+across seeds and equal to the hand-built ones, so the learned MLP computes ΔS = a·(b_0 + 2b_1) = k·a for k ≤ 3 (degree-3 inputs only;
+the unseen bit b_2 is absent). TRAIN: a categorical codebook writer fed with the
 true hand-built variables replaces MLP2 exactly in two screening T seeds (s1, s2) but fails all other solved snapshots (.73–.98); it
 uses oracle variables and is not a closed form of the network. The selected final TRAIN nets have no substitution test.
 
