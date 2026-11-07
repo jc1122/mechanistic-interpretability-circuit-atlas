@@ -9,8 +9,7 @@ sequences every batch; 1000 held-out sequences per seed. Exact = whole teacher-f
 **Status.** 2026-11-07. HAND exact for all six cells. Three-seed screening runs (30k steps) for PART and TRAIN in all six cells, plus
 PART collect T seeds 3–9, PART expand A/T at 60k and TRAIN expand T at 60k. Ten-seed finals: PART collect T 10/10, TRAIN expand T (60k)
 10/10, TRAIN solve T (30k) 10/10. Pending: ten-seed finals of the other cells, diagnostics of the two new ten-seed TRAIN finals, most
-best/final diagnostics, native-vs-closed-form agreement on a fresh batch, literal trained-weight excerpts, public code; the seed 3–9
-nets of the two new TRAIN finals are not yet in the network archive.
+best/final diagnostics, native-vs-closed-form agreement on a fresh batch, literal trained-weight excerpts, public code.
 
 ## Summary
 Collection is easy: training only the last arithmetic MLP on frozen hand-built routing (PART) solves A and T in every seed (10/10 for T)
@@ -26,7 +25,8 @@ clip 1, batch 128 fresh sequences per step, eval every 500 steps on the 1000 hel
 when all seeds are exact or on a 5k plateau after 75% of the steps. PART fp32, TRAIN TF32; all seeds of a cell in one process on
 consumer GPUs; re-scores fp32 on CPU.
 Networks: [huggingface.co/jc1122/circuit-atlas-nets/tree/main/symbolic-algebra-atoms](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/symbolic-algebra-atoms)
-(52 nets + 6 HAND; best snapshots; each run's held-out sequences in `test_<run>`). Reloaded in fp32, all 52 reproduce their recorded
+(66 nets + 6 HAND, incl. the ten-seed TRAIN T finals' seeds 3–9 `train_{expand,solve}_T_final_s3_9_s<seed>`; best snapshots; each run's
+held-out sequences in `test_<run>`). Reloaded in fp32, all 66 reproduce their recorded
 held-out exact (TF32 nets within 3/1000) and every HAND scores 1.0.
 **Reproduce:** the generator, HAND and trainer for this task are not yet in `code/`; weights, test sequences and accuracies are in the folder above.
 
