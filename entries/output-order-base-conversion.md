@@ -1,71 +1,152 @@
 # Output order in 16-bit base conversion
 
-> - **Task.** Convert integers 0…65535 between 5 decimal digits and 16 bits, with the answer written most-significant-bit first (MSB) or least-significant-bit first (LSB). Example: decimal 65535 → sixteen 1 bits.
-> - **Hand-built net.** A 3-layer net, every weight set by formula, exact on 65536/65536 integers in all 8 cells: MSB-first answers are a threshold ladder on the remaining magnitude F = x − W; LSB-first answers read F mod the output base.
-> - **Trained nets.** Trained on frozen hand-built routing (PART), MSB-first answer-only cells are learned (≥ .99 in all seeds; TRAIN decimal to binary ≥ .996 in 10/10); LSB-first answer-only cells mostly fail (PART .46–.59 decimal to binary, .18–.38 binary to decimal; TRAIN binary to decimal ≤ .045). Scratchpads solve binary to decimal in 10/10 PART seeds in both orders.
-> - **Verdict.** Partly solved (MSB-first and scratchpad cells learned; LSB-first answer-only fails, PART .18–.38 and TRAIN ≤ .045 for binary to decimal). Closed form: partial (PART only: identical token predictions in 12/12 tested snapshots of seeds 0–2; TRAIN scalar template rejected 0/12; seeds 3–9 untested).
-> - **Links.** [Weights](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/output-order-base-conversion) · Reproduce: not available yet · [Terms](../GLOSSARY.md)
+This entry asks whether the order in which a small transformer writes its answer, most significant digit first (MSB-first) or least
+significant first (LSB-first), changes how hard it is to convert integers 0…65535 between 5 decimal digits and 16 bits. A 3-layer
+hand-built network, with every weight set by formula, is exact on 65536/65536 integers in all 8 cells. Trained on frozen hand-built
+routing with only the last MLP trained, the MSB-first answer-only cells were learned (≥ .99 in all seeds), and networks trained from
+scratch learned decimal to binary MSB-first at ≥ .996 in 10/10 seeds; the LSB-first answer-only cells mostly failed (stage on frozen
+parts .46–.59 decimal to binary and .18–.38 binary to decimal; from scratch ≤ .045 binary to decimal). A scratchpad removed the
+difference: binary to decimal with a scratchpad was solved in 10/10 seeds of the stage on frozen parts in both orders. The task is
+partly solved. The closed form status is partial: two weight-derived closed forms replace the trained MLP with identical token
+predictions in 12/12 tested snapshots of seeds 0–2 (supported by substitution; complement not tested; seeds 3–9 untested), and a
+scalar template for the from-scratch networks was rejected (0/12).
 
-## Task and status
-**Task.** Convert integers x = 0…65535 between 5 decimal digits and 16 bits, both directions (d2b: decimal to binary, b2d: binary to
-decimal). The answer is written MSB-first or LSB-first. Format **A** writes only the answer; format **B** first writes 16 scratchpad
-lines (d2b: halving lines `r_{k−1} q_k`, q_k = x >> k; b2d: doubling lines v_k = x >> (16−k)), then copies the answer from them.
-Prompt `BOS input =`, vocabulary 18. Split per seed: a random permutation of all 65536 integers, 90% train (58982), 10% test (6554).
-Exact = every teacher-forced output token of the row.
-**Formats.**
-- **A**: answer only.
-- **B**: 16 scratchpad lines first (decimal to binary: halving lines `r_{k−1} q_k`; binary to decimal: doubling lines v_k), then the answer is copied from them.
+| | |
+|---|---|
+| Task | Convert an integer 0…65535 from 5 decimal digits to 16 bits or back, answer written MSB-first or LSB-first |
+| Input → output example | Decimal to binary: 00012 → 0000000000001100 (MSB-first) or 0011000000000000 (LSB-first); decimal 65535 → sixteen 1 bits |
+| Model | GPT-NeoX-shaped, 3 layers, d_model 512, 4 heads of 128, MLP 256 ReLU, no LayerNorm, no positional encoding; PART trains only the layer-2 MLP |
+| Rungs and seeds | HAND exact in all 8 cells; PART and TRAIN 10 seeds per published cell (scratchpad TRAIN: 10 trained, 3 archived); one TRAIN repeat with 3 seeds |
+| Closed form status | Partial (PART only: identical token predictions in 12/12 tested snapshots of seeds 0–2; supported by substitution, complement not tested; TRAIN scalar template rejected, 0/12) |
+| Status | Partly solved (MSB-first and scratchpad cells learned; LSB-first answer only fails, PART .18–.38 and TRAIN ≤ .045 for binary to decimal); last run 2026-11-07 |
+| Weights | [Hugging Face: output-order-base-conversion](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/output-order-base-conversion) |
+| Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
-**Status.** 2026-11-07. HAND exact in all 8 conversion cells (65536/65536 each). Published here: A cells b2d MSB (PART, TRAIN 10 seeds),
-d2b MSB (PART, TRAIN 10), d2b LSB (PART, TRAIN 10), b2d LSB (PART 10, failed), B cells d2b MSB, b2d MSB, b2d LSB (10 seeds trained,
-seeds 0–2 archived). Pending: d2b B LSB (training interrupted), a companion integer-Newton square-root trace task, a controlled-routing
-scratchpad format, ten-seed substitution checks and most best/final diagnostics.
+## 1. Task and data
 
-## Summary
-Answer order (MSB-first or LSB-first) changes difficulty in the opposite direction from the recorded prediction: MSB-first answer-only conversion needs one
-threshold ladder on a magnitude F = x − (value already written) and is learned (trained on frozen hand-built routing, PART, ≥ .99 in all seeds; trained from scratch, TRAIN, decimal to binary d2b ≥ .996 in 10/10),
-while LSB-first answer-only conversion needs a periodic readout (u mod base) of a summed residue and mostly fails (PART .46–.59 d2b,
-.18–.38 b2d; TRAIN b2d ≤ .045, also at 2x width). Scratchpads remove the difference: b2d B is solved by PART in 10/10 seeds in both
-orders. For PART (trained last MLP on frozen hand-built routing) two weight-derived closed forms — a 366-threshold thermometer for b2d
-MSB and a 1054-coefficient spline for the failed d2b LSB parity — replace the trained MLP with identical predictions on every token in
-12/12 tested snapshots. A scalar template for the TRAIN nets is rejected (0/12).
+An integer x = 0…65535 is converted between 5 decimal digits and 16 bits in both directions: decimal to binary (d2b) and binary to
+decimal (b2d). The prompt is `BOS input =` and the vocabulary has 18 tokens. The answer is written MSB-first or LSB-first
+([glossary](../GLOSSARY.md#task-formats)). Two output formats were studied (Table 1). The scratchpad format, in which the network
+writes intermediate results before the answer ([glossary](../GLOSSARY.md#task-formats)), writes 16 lines first and then copies the
+answer from them.
 
-## Setup
-[METHODS.md](../METHODS.md) for the shared conventions. AdamW lr 1e-3, wd .1, betas (.9, .98), warmup 1000, cosine over the run, clip 1,
-batch 128 from the train split; eval every 250 steps on the first 2048 test integers (best snapshot = highest there), full test at the
-end; stop when all seeds are exact or on a 5k plateau after the minimum steps. Budgets: A cells PART 20k / TRAIN 80k (d2b MSB PART 10k),
-B cells PART 10k / TRAIN 40k. PART fp32, TRAIN TF32; all seeds of a cell in one process on consumer GPUs; re-scores fp32 on CPU.
-Networks: [huggingface.co/jc1122/circuit-atlas-nets/tree/main/output-order-base-conversion](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/output-order-base-conversion)
-(88 nets + 7 HAND; best snapshots; each run's held-out integers in `test_<run>`). Reloaded in fp32, every net reproduces its recorded
-eval-subset exact (TF32 nets within 3/2048) and every HAND scores 1.0.
-**Reproduce:** training code for this task is not yet in `code/`; the weights, held-out splits and recorded accuracies are on Hugging Face (link above).
+*Table 1. Output formats.*
 
-## Architecture as used
-GPT-NeoX, 3 layers, d_model 512, 4 heads of 128, MLP 256, ReLU, no LayerNorm, no positional encoding (causal mask only), untied
-read-out, vocabulary 18, positions up to 256; sequence lengths A 23, d2b B 120, b2d B 104. TRAIN learns every tensor of this shape
-(the b2d A LSB width retry, d_model 1024, is not archived). PART: HAND frozen; the layer-2 MLP (`dense_h_to_4h` [256, 512] + bias,
-`dense_4h_to_h` [512, 256] + bias) re-initialised (normal .02, bias 0) and trained. PART input blocks (inclusive residual indices):
-TOK 0–17, frame scalar 18, raw positions 19…L+17, cleaned positions L+18…2L+16, task scalars from 2L+17 (A: F = 63; b2d MSB unit
-T = 64, thermometer Z = 65–74; d2b LSB Y = 64, ONE = 65). Files: `hand_<cell>`, `part_<cell>_s<seed>` (the 4 trained tensors; insert
-into the HAND), `train_<cell>_s<seed>` (full state dicts), `test_<run>` (test integers per seed), `config.json` (HF configs, split,
-optimiser), `manifest.json` (seed, best step, recorded and re-scored exact, full-test best/final, sha256).
+| Format | Output |
+|---|---|
+| `A` (answer only) | the converted number, MSB-first or LSB-first |
+| `B` (scratchpad) | 16 scratchpad lines, then the answer copied from them. Decimal to binary: halving lines `r_{k−1} q_k`, q_k = x >> k; binary to decimal: doubling lines v_k = x >> (16−k) |
 
-## Prediction before training
-Recorded before the runs: PART answer-only MSB fails, LSB succeeds, B succeeds 10/10; TRAIN LSB at least as good as MSB, B ≥ 8/10.
-The answer-only order result is the reverse (MSB learned, LSB fails); the B prediction held for b2d in both orders.
+The split is made per seed: a random permutation of all 65536 integers, 90% for training (58982) and 10% for testing (6554). A row
+counts as exact when every teacher-forced output token of the row is right (teacher-forced: each token is scored given the correct
+previous tokens; [glossary](../GLOSSARY.md#task-formats)). Cells are named by direction, format and order, for example "d2b A MSB".
 
-## Hand-built reference
-L0 builds a positional frame (BOS head, position one-hot), the L1 MLP cleans positions to an exact one-hot, L2 heads fetch exact
-weighted mixtures of input digits (BOS sink), and the L2 MLP is the arithmetic stage. **MSB:** heads form F = x − W (W = value of the
-written higher digits) and a per-row unit T (2^i or 10^k); digit a wins when F − aT ≥ 0, a comparator ReLU(s+1) − ReLU(s), s = F − aT;
-the read-out telescopes the thermometer to a digit. **LSB:** F = (Σ_j digit_j·(base_in^j mod base_out^(q+1)) − W)/base_out^q is an
-integer and the digit is F mod base_out (binary parity: alternating signed hinges; decimal: thermometer then mod-10 read-out).
-**B:** local halving/doubling rules per scratch line, then the answer copies the last scratch digits (reversed table for B MSB).
-Exhaustive check: 65536/65536 integers in every cell. Nonzero heads + neurons incl. the frame: d2b A MSB 3+67, A LSB 3+99; b2d A MSB
-3+83, A LSB 3+215; d2b B 3+382, b2d B 2+346.
+Published here are the answer-only cells b2d MSB (PART, TRAIN 10 seeds), d2b MSB (PART, TRAIN 10), d2b LSB (PART, TRAIN 10) and b2d LSB
+(PART 10, failed), and the scratchpad cells d2b MSB, b2d MSB and b2d LSB (10 seeds trained, seeds 0–2 archived). Pending are d2b B LSB
+(training interrupted), a companion integer-Newton square-root trace task, a controlled-routing scratchpad format, ten-seed
+substitution checks and most best/final diagnostics.
 
-## What training finds
-Full-test exact (6554 integers per seed), best snapshot unless marked; 10 seeds per cell (B TRAIN 10 trained, 3 archived).
+## 2. Model
+
+The shared conventions are described in [METHODS.md](../METHODS.md). The three [rungs](../GLOSSARY.md#the-three-rungs) are HAND (every
+weight set by formula), PART (frozen hand-built parts with one trained stage) and TRAIN (all weights trained from scratch).
+
+### 2.1 Architecture
+
+All networks are GPT-NeoX-shaped with 3 layers, d_model 512, 4 heads of 128, MLP 256, ReLU, no LayerNorm, no positional encoding (causal
+mask only) and an untied read-out. The vocabulary has 18 tokens and positions run up to 256. Sequence lengths are 23 for A, 120 for d2b
+B and 104 for b2d B. TRAIN learns every tensor of this shape; the b2d A LSB width retry, with d_model
+1024, is not archived.
+
+### 2.2 Frozen parts and trained part
+
+PART keeps HAND frozen and re-initialises the layer-2 MLP (`dense_h_to_4h` [256, 512] + bias, `dense_4h_to_h` [512, 256] + bias;
+normal .02, bias 0), which is then trained. Its inputs are the residual blocks in Table 2, where L is the sequence length.
+
+*Table 2. PART input blocks (inclusive residual indices).*
+
+| Block | Indices |
+|---|---|
+| TOK (token one-hot) | 0–17 |
+| frame scalar | 18 |
+| raw positions | 19…L+17 |
+| cleaned positions | L+18…2L+16 |
+| task scalars | from 2L+17. A: F = 63; b2d MSB unit T = 64, thermometer Z = 65–74; d2b LSB Y = 64, ONE = 65 |
+
+### 2.3 Training
+
+The optimiser was AdamW with learning rate 1e-3, weight decay .1, betas (.9, .98), warmup 1000, a cosine schedule over the run and
+gradient clipping at 1, with batch 128 from the training split. Test accuracy was evaluated every 250 steps on the first 2048 test
+integers (the best snapshot is the highest there), and on the full test split at the end. A run stopped when all seeds were exact or on
+a 5k plateau after the minimum number of steps. Table 3 gives the budgets. PART ran in fp32 and TRAIN in TF32
+([glossary](../GLOSSARY.md#hand-built-machinery)); all seeds of a cell ran in one process on consumer GPUs, and re-scores were in fp32
+on CPU.
+
+*Table 3. Step budgets.*
+
+| Cells | PART | TRAIN |
+|---|---|---|
+| A | 20k (d2b MSB 10k) | 80k |
+| B | 10k | 40k |
+
+### 2.4 Reproduction
+
+Reproduce: not available yet: training code for this task is not yet in `code/`; the weights, held-out splits and recorded
+accuracies are on Hugging Face at
+[huggingface.co/jc1122/circuit-atlas-nets/tree/main/output-order-base-conversion](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/output-order-base-conversion).
+
+### 2.5 Archive
+
+The Hugging Face folder holds 88 networks and 7 HAND networks (best snapshots): `hand_<cell>`, `part_<cell>_s<seed>` (the 4 trained
+tensors, to be inserted into the HAND), `train_<cell>_s<seed>` (full state dicts), `test_<run>` (the held-out integers of each run, per
+seed), `config.json` (Hugging Face configs, split, optimiser) and `manifest.json` (seed, best step, recorded and re-scored exact,
+full-test best/final, sha256). Reloaded in fp32, every network reproduces its recorded evaluation-subset exact match (TF32 networks
+within 3/2048), and every HAND scores 1.0.
+
+## 3. Hand-built solution
+
+All hand-built networks share their routing (Figure 1). L0 builds a positional frame (a BOS head and a position one-hot), the L1 MLP
+cleans positions to an exact one-hot, and L2 heads fetch exact weighted mixtures of input digits, with BOS as an attention sink. The L2
+MLP is the arithmetic stage.
+
+MSB-first. The heads form the remaining magnitude F = x − W, where W is the value of the higher digits already written, and a per-row
+unit T (2^i or 10^k). Digit a wins when F − aT ≥ 0. Each test is a comparator ReLU(s+1) − ReLU(s) with s = F − aT, and the read-out
+telescopes this thermometer, a vector whose a-th unit is [F ≥ aT], to a digit. This is a threshold ladder on F.
+
+LSB-first. The heads form F = (Σ_j digit_j·(base_in^j mod base_out^(q+1)) − W)/base_out^q, which is an integer, and the digit is F mod
+base_out. For binary output the parity is computed by alternating signed hinges; for decimal output by a thermometer followed by a
+mod-10 read-out. This is a periodic read-out of a summed residue.
+
+Scratchpad. Local halving or doubling rules produce each scratch line, and the answer copies the last scratch digits (a reversed table
+for B MSB).
+
+The exhaustive check gives 65536/65536 integers in every cell. Non-zero heads and neurons, including the frame, are d2b A MSB 3+67,
+A LSB 3+99; b2d A MSB 3+83, A LSB 3+215; d2b B 3+382 and b2d B 2+346.
+
+```mermaid
+flowchart LR
+    P["Prompt: BOS input = and answer so far"] --> L0["L0: positional frame, BOS head and position one-hot"]
+    L0 --> L1["L1 MLP: clean positions to an exact one-hot"]
+    L1 --> L2H["L2 heads: weighted digit mixtures, BOS sink"]
+    L2H --> F["F = x - W and unit T (MSB) or summed residue F (LSB)"]
+    F --> M["L2 MLP: arithmetic stage"]
+    M --> MSB["MSB: comparator ladder, digit a wins when F - aT >= 0"]
+    M --> LSB["LSB: digit = F mod base_out"]
+    classDef trained fill:gold,stroke:darkgoldenrod,color:black
+    class M trained
+```
+
+*Figure 1. The hand-built answer-only network. Layers 0 and 1 build a clean position code, the layer-2 heads compute the magnitude F
+(and the unit T for MSB-first), and the layer-2 MLP turns F into the output digit. The shaded MLP is the part that PART replaces with a
+trained stage.*
+
+## 4. What training finds
+
+Table 4 gives full-test exact match (6554 integers per seed), on the best snapshot unless marked, with 10 seeds per cell (B TRAIN:
+10 trained, 3 archived).
+
+*Table 4. Results per cell (ranges over seeds).*
+
 | Cell | PART | TRAIN | Reading |
 |---|---:|---:|---|
 | d2b A MSB | .999–1 | .996–1 | threshold on F |
@@ -74,64 +155,158 @@ Full-test exact (6554 integers per seed), best snapshot unless marked; 10 seeds 
 | b2d A LSB | .18–.38 | .03–.045 (also d_model 1024) | decimal residue never read out |
 | d2b B MSB | .89–1 (7/10 = 1) | .999–1 | scratchpad |
 | b2d B MSB / LSB | 1 in 10/10 (5.3k / 5.5k steps) | .9986–1 / .9985–1 | scratchpad |
-b2d B TRAIN first test crossings 50%/90%/99%: MSB 9.3–12.8k/13.5–19.5k/24.8–30k, LSB 9–11k/14.3–17.3k/23.3–28k; no separate
-memorisation phase. Diagnostics (1000 rows, seeds 0–2): PART b2d MSB / d2b LSB decode F with probe R² = 1 at L3, 2 heads matter, patching
-the L2 MLP drops/recovers everything, attention divergence to HAND 0, residual rank99 2 / 15 = HAND. TRAIN b2d MSB: F R² .978–.985 at L3,
-12 heads matter, rank99 49–97 vs HAND 2, attention JS .18–.21; TRAIN d2b: F R² .75–.92 at L2, 9–12 heads, rank99 20–38 vs 15, JS .32–.37.
-The TRAIN nets carry F but spread it over many heads; their sufficient neuron counts are not measured.
-**TRAIN d2b A LSB repeat (r3, 3 seeds, same 80k schedule): 0/3** (best / final .08 / .07 and .29 / .26 for seeds 0 and 2; 4–7 heads
-matter, F R² .75 / .91 at L2). Failure explained per bit: all 7 failed TRAIN d2b A LSB snapshots (seeds 0–2 of the first run, r3 seeds
-0 and 2, best and final) are exact on bits b0–b2 and b7–b15 and at chance (.48–.53) on 1–4 bits inside b3–b6. No failed net lacks F (R²
-≥ .75, DAS high). b3 is the first bit whose residue x mod 16 needs 4 decimal digits, and from b7 on F/2ᵏ is coarse enough (≤ 2⁹ bins)
-for a magnitude read; the hard part is the middle band, where neither a few-digit residue nor a coarse threshold suffices.
 
-## Closed form
-**PART b2d MSB magnitude (3/3 measured seeds):** M′ = e_Z0 + Σ_{a=1..9} e_Za·[F ≥ θ(q, t, a)], q = query position, t = preceding symbol;
-366 thresholds per snapshot found by bisection on the component's own response (no label fitting).
-**PART d2b LSB imperfect parity (3/3):** f = clip(F, 0, 33), k = min(⌊f⌋, 32), r = f − k, m = (1−r)c(q,t,k) + r·c(q,t,k+1),
-M′ = e_ONE + ((10+m)/20)e_Y; 1054 weight-derived grid coefficients per snapshot. It reproduces a failing read-out, not exact parity.
-Substitution (whole L2 MLP output replaced, calibration 512 integers, evaluation 1024 disjoint integers): native = substituted correct
-rows, best/final, b2d seeds 0: 1024/1024, 1: 1020/1019, 2: 1018/1018; d2b 0: 585/562, 1: 563/566, 2: 493/470. Every token prediction
-agrees in 12/12 snapshots (9362/12288 rows correct both ways); zeroing the MLP scores 0.
-**TRAIN (rejected):** decode a scalar û_q = h_q·w_q + b_q and replace the L2 MLP by query × digit mean logit profiles: 0/12 snapshots
-pass (b2d .002–.009 vs native .93–1; d2b .009–.18 vs .25–.90). This rejects this template, not every scalar algorithm.
+*Key: r3 = the third run, a TRAIN repeat with 3 seeds.*
 
-## Weights excerpt and reading
-HAND MSB hinge pair: input coefficients (F, T) = (1, −a), biases (1, 0), output (+1, −1), read-out scale 10. Binary parity: input F = 1,
-biases −a, output 1 at a = 0 and 2(−1)^a after. Trained PART, final snapshots (fitted response parameters, not raw entries):
+Answer order changes difficulty in the opposite direction from the recorded prediction (Section 7). MSB-first answer-only conversion
+needs one threshold ladder on F and was learned; LSB-first answer-only conversion needs a periodic read-out (u mod base) of a summed
+residue and mostly failed, also at 2x width for TRAIN b2d. With a scratchpad, b2d was solved by PART in 10/10 seeds in both orders.
+
+### 4.1 Learning curves
+
+For b2d B TRAIN, the first evaluations at which test accuracy crossed 50%, 90% and 99% were 9.3–12.8k, 13.5–19.5k and 24.8–30k steps
+(MSB) and 9–11k, 14.3–17.3k and 23.3–28k (LSB). There was no separate memorisation phase.
+
+### 4.2 Which variables the networks use
+
+PART reuses the hand-built variable. In PART b2d MSB and d2b LSB (diagnostics on 1000 rows, seeds 0–2), a linear probe decodes F with R²
+= 1 at L3 ([glossary](../GLOSSARY.md#analysis-measures)), 2 heads matter, patching the L2 MLP drops or recovers everything, the attention
+divergence to HAND is 0, and the residual rank at 99% of the variance (rank99) is 2 / 15, equal to HAND. TRAIN networks carry F but
+spread it over many heads: TRAIN b2d MSB decodes F with R² .978–.985 at L3, 12 heads matter, rank99 is 49–97 against HAND's 2 and the
+attention JS (Jensen-Shannon divergence of the attention patterns from HAND's) is .18–.21; TRAIN d2b decodes F with R² .75–.92 at L2, 9–12
+heads matter, rank99 is 20–38 against 15 and JS is .32–.37. The number of neurons that suffice in TRAIN networks was not measured.
+
+### 4.3 The failed LSB-first cells
+
+The repeat of TRAIN d2b A LSB (r3, 3 seeds, the same 80k schedule) solved 0/3 (best / final .08 / .07 for seed 0 and .29 / .26 for seed
+2; 4–7 heads matter; F R² .75 / .91 at L2). The failure can be located bit by bit. All 7 failed TRAIN d2b A LSB snapshots (seeds 0–2 of
+the first run and r3 seeds 0 and 2, best and final) are exact on bits b0–b2 and b7–b15 and at chance (.48–.53) on 1–4 bits inside b3–b6.
+No failed network lacks F (R² ≥ .75, DAS high; DAS is distributed alignment search, [glossary](../GLOSSARY.md#analysis-measures)). Bit b3
+is the first bit whose residue x mod 16 needs 4 decimal digits, and from b7 on F/2ᵏ is coarse enough (≤ 2⁹ bins) for a magnitude read.
+The hard part is the middle band, where neither a few-digit residue nor a coarse threshold suffices.
+
+## 5. Mechanism and verification
+
+### 5.1 Closed forms for PART
+
+Two closed forms were derived from the weights of the trained stage (Figure 2). For PART b2d MSB the magnitude stage (3/3 measured
+seeds) is
+
+M′ = e_Z0 + Σ_{a=1..9} e_Za·[F ≥ θ(q, t, a)],
+
+where q is the query position, t the preceding symbol and e_Za the output direction of thermometer unit Za. Its 366 thresholds per
+snapshot were found by bisection on the component's own response, with no label fitting.
+
+For the failed PART d2b LSB parity (3/3), with f = clip(F, 0, 33), k = min(⌊f⌋, 32) and r = f − k,
+
+m = (1−r)c(q,t,k) + r·c(q,t,k+1),  M′ = e_ONE + ((10+m)/20)e_Y,
+
+with 1054 weight-derived grid coefficients c per snapshot. It reproduces a failing read-out, not exact parity.
+
+The whole L2 MLP output was replaced by the closed form, calibrated on 512 integers and evaluated on 1024 disjoint integers. Table 5
+gives native and substituted correct rows. Every token prediction agrees in 12/12 snapshots (9362/12288 rows correct both ways), and
+zeroing the MLP scores 0. The closed forms are therefore supported by substitution; the resample ablation of the complement
+([glossary](../GLOSSARY.md#verifying-a-circuit)) was not run, and seeds 3–9 are untested, so the status is partial.
+
+*Table 5. Substitution of the PART closed forms: correct rows out of 1024, best/final snapshot; native = substituted in every case.*
+
+| Cell | Seed 0 | Seed 1 | Seed 2 |
+|---|---|---|---|
+| b2d A MSB | 1024/1024 | 1020/1019 | 1018/1018 |
+| d2b A LSB | 585/562 | 563/566 | 493/470 |
+
+```mermaid
+flowchart LR
+    F["F from the frozen L2 heads"] --> TH["b2d MSB: 366 thresholds theta(q, t, a) on F"]
+    TH --> Z["thermometer units Z1..Z9 plus Z0"]
+    F --> SP["d2b LSB: clip F to 0..33, grid coefficients c(q, t, k), 1054 per snapshot"]
+    SP --> Y["Y = (10 + m)/20 plus ONE, approximate parity"]
+    classDef trained fill:gold,stroke:darkgoldenrod,color:black
+    class TH,SP trained
+```
+
+*Figure 2. The two closed forms of the trained PART stage. In b2d MSB the stage is a threshold thermometer on F; in d2b LSB it is a
+piecewise-linear spline on F that approximates parity with wrong bands. Both are supported by substitution on seeds 0–2, with the
+complement not tested.*
+
+### 5.2 The template rejected for TRAIN
+
+For TRAIN, a scalar û_q = h_q·w_q + b_q was decoded from the hidden state h_q and the L2 MLP was replaced by query × digit mean logit
+profiles. This passes in 0/12 snapshots (b2d .002–.009 against native .93–1; d2b .009–.18 against .25–.90). This rejects this template,
+not every scalar algorithm.
+
+### 5.3 Relation to the hand-built network and to published work
+
+PART uses the same variable as HAND (F decodable at R² = 1, the same heads, the same residual rank) and, for MSB, the same threshold
+algorithm. For LSB, PART keeps F but fails the periodic read-out. TRAIN networks carry F with many more heads and a higher-rank code.
+The output-order advantage reported for reversed addition by [Lee et al. (2023)](#references) does not transfer to base conversion,
+where LSB-first needs a mod on a sum and is harder. Scratchpads remove the order effect, in line with scratchpad and inductive
+scratchpad results ([Abbe et al., 2024](#references)). Length and padding controls of the kind studied by
+[Zhou et al. (2024)](#references) were not run here, because the width is fixed.
+
+## 6. Limitations and open questions
+
+The HAND controls are exact. The substitutions used calibration and evaluation sets disjoint from the earlier fit sets, and the zeroed
+stage control scores 0. The substitution covers six cell/seed units (best and final), not twelve independent seeds; seeds 3–9 are
+untested for substitution. Displayed 1.000 values from logs are rounded; per-seed full-test values are in the manifest. Length transfer
+was not tested (fixed width).
+
+Pending work:
+
+- d2b B LSB;
+- the Newton square-root trace task (PART fails, TRAIN .85–.95 in 5 seeds);
+- the controlled-routing scratchpad format;
+- the remaining best/final diagnostics and checkpoint dynamics;
+- public code.
+
+## 7. Prediction record
+
+The prediction was recorded before the runs: PART answer-only MSB fails, LSB succeeds, B succeeds 10/10; TRAIN LSB at least as good as
+MSB, B ≥ 8/10. The answer-only order result is the reverse (MSB learned, LSB fails). The B prediction held for b2d in both orders.
+
+## Appendix A. Weights excerpt and reading
+
+In the hand-built MSB stage, a hinge pair has input coefficients (F, T) = (1, −a), biases (1, 0), output (+1, −1) and read-out scale
+10. The binary parity stage has input F = 1, biases −a, and output 1 at a = 0 and 2(−1)^a after.
+
+Table A1 gives fitted response parameters of the trained PART stages on final snapshots (not raw entries).
+
+*Table A1. Fitted response parameters, PART final snapshots.*
+
 | Seed | b2d θ(q=0, t='=', a=1) | d2b c(q=2, t='0', k=14…17) |
 |---|---:|---|
 | 0 | 9999.44 | (−1.305, −.310, .017, .325) |
 | 1 | 10001.96 | (.488, −.131, −.750, −.641) |
 | 2 | 9999.44 | (−1.323, −1.275, −1.235, −1.246) |
 
-Raw weights, seed 0 final (W_in columns are slices of `dense_h_to_4h.weight`; β = bias + remaining inputs at q = 0, t = '=', F = 0;
-last column = (U_1 − U_0)·W_out[:, j], the actual output column projected on the digit-1 minus digit-0 unembedding):
+Table A2 gives raw weights of seed 0, final snapshot. W_in columns are slices of `dense_h_to_4h.weight`; β is the bias plus the remaining
+inputs at q = 0, t = '=', F = 0; the last column is (U_1 − U_0)·W_out[:, j], the actual output column projected on the digit-1 minus
+digit-0 unembedding.
+
+*Table A2. Raw weights, seed 0, final snapshot.*
+
 | Neuron | W_in[j, F] | W_in[j, T] | β | (U₁−U₀)W_out[:, j] |
 |---|---:|---:|---:|---:|
 | b2d 87 | −.22669 | .21495 | 2149.97 | −20.42 |
 | b2d 22 | −.20950 | .19968 | 1997.30 | −17.36 |
 | d2b 252 | −.43030 | — | .654 | 103.86 |
 | d2b 164 | −.21479 | — | .641 | −102.91 |
-Reading: b2d neurons are decreasing hinges in F with a T-scaled offset, i.e. a ladder of cuts at multiples of the place value (θ ≈ 10^4
-for the leading digit); their negative writes release evidence for the larger digit as F rises. The d2b pair writes opposite signs and
-makes oscillations in F, but their sum has wrong bands (c changes sign irregularly across k): the learned parity is approximate. Only
-the whole-block substitution is verified, not a detector identity for single neurons.
 
-## Comparison
-Same variable as HAND in PART (F decodable at R² = 1, same heads, same residual rank) and the same threshold algorithm for MSB; for LSB
-PART keeps F but fails the periodic read-out. TRAIN nets carry F with many more heads and a higher-rank code. The output-order advantage
-reported for reversed addition [Lee et al.] does not transfer to base conversion: there, LSB-first needs a mod on a sum and is harder.
-Scratchpads remove the order effect, in line with scratchpad and inductive-scratchpad results [Abbe et al.].
+Reading. The b2d neurons are decreasing hinges in F with a T-scaled offset, that is, a ladder of cuts at multiples of the place value
+(θ ≈ 10^4 for the leading digit); their negative writes release evidence for the larger digit as F rises. The d2b pair writes opposite
+signs and makes oscillations in F, but their sum has wrong bands (c changes sign irregularly across k), so the learned parity is
+approximate. Only the whole-block substitution was tested; a detector identity for single neurons was not.
 
-## Controls and limits
-HAND controls exact; substitution on calibration/evaluation sets disjoint from the earlier fit sets; zeroed-stage control 0. Six
-cell/seed units (best and final), not twelve independent seeds; seeds 3–9 untested for substitution. Displayed 1.000 values from logs are
-rounded; per-seed full-test values are in the manifest. Length transfer is not tested (fixed width). Pending: d2b B LSB, the Newton
-square-root trace task (PART fails, TRAIN .85–.95 in 5 seeds), the controlled-routing scratchpad format, remaining best/final
-diagnostics, checkpoint dynamics, public code.
+## Appendix B. Detailed evidence
+
+The diagnostics of Section 4.2 used 1000 rows and seeds 0–2. The per-seed full-test best and final values are in `manifest.json`.
 
 ## References
-[Lee et al., Teaching Arithmetic to Small Transformers](https://arxiv.org/abs/2307.03381) — research preprint; output-order context.
-[Abbe et al., How Far Can Transformers Reason? The Globality Barrier and Inductive Scratchpad](https://arxiv.org/abs/2406.06467) — research preprint; scratchpad motivation.
-[Zhou et al., Transformers Can Achieve Length Generalization But Not Robustly](https://arxiv.org/abs/2402.09371) — research preprint; length/padding controls.
+
+- Abbe, E., Bengio, S., Lotfi, A., Sandon, C., & Saremi, O. (2024). How far can transformers reason? The globality barrier and
+  inductive scratchpad. *Advances in Neural Information Processing Systems 37 (NeurIPS 2024)*. https://doi.org/10.52202/079017-0874
+  (arXiv: https://arxiv.org/abs/2406.06467) (scratchpad motivation)
+- Lee, N., Sreenivasan, K., Lee, J. D., Lee, K., & Papailiopoulos, D. (2023). Teaching arithmetic to small transformers.
+  *arXiv preprint*. https://arxiv.org/abs/2307.03381 (output-order context)
+- Zhou, Y., Alon, U., Chen, X., Wang, X., Agarwal, R., & Zhou, D. (2024). Transformers can achieve length generalization but not
+  robustly. *arXiv preprint*. https://arxiv.org/abs/2402.09371 (length and padding controls)

@@ -1,6 +1,6 @@
 # Code
 
-MIT licensed ([LICENSE](LICENSE)). Reruns the five entries below on CPU. The other entries publish their networks, test sets and
+This folder holds the code of the atlas under the MIT licence ([LICENSE](LICENSE)). It reruns the five entries below on CPU. The other entries publish their networks, test sets and
 recorded accuracies on [Hugging Face](https://huggingface.co/jc1122/circuit-atlas-nets); their code is not ported yet.
 
 ## Install
@@ -13,7 +13,7 @@ pip install -r requirements.txt      # tested with Python 3.12 on CPU
 
 Run from this folder.
 
-| Entry | Command (main cell; the entry's Reproduce block has the rest) |
+| Entry | Command (main cell; Section 2.4 of each entry has the rest) |
 |---|---|
 | all | `python run.py check`: the hand-built model and the menus are exact |
 | [modular-addition-mlp](../entries/modular-addition-mlp.md) | `python run.py modadd --seeds 0 1 2 3 4 5 6 7 8 9` |
@@ -22,8 +22,8 @@ Run from this folder.
 | [open-bracket-count](../entries/open-bracket-count.md) | `python run.py atlas --task open_count --frac 0.8 --seeds 0 1 2 3 4 5 6 7 8 9` |
 | [base-conversion](../entries/base-conversion.md) | `python run.py convert check`, then `python run.py convert --variant hex2bin --fmt A --rung part --seeds 0 1 2 3 4 5 6 7 8 9` |
 
-Controls (`--kind random --probe`, `--kind scalar`) and the other fractions or variants are listed in each entry's **Reproduce**
-block. Aggregate over seeds: `python run.py table out/<task>_*.json`. Smoke test (about a minute; the numbers are not the entries'):
+Controls (`--kind random --probe`, `--kind scalar`) and the other fractions or variants are listed in Section 2.4 (Reproduction) of
+each entry. Aggregate over seeds: `python run.py table out/<task>_*.json`. Smoke test (about a minute; the numbers are not the entries'):
 `python run.py atlas --task count_mod5 --seeds 0 --steps 400 --every 100`.
 
 ## Output

@@ -1,37 +1,113 @@
 # Multiplication: digit order, number base, sub-step curriculum and a scratchpad
 
-> - **Task.** Multiply two numbers below 256 (`x*y=` → product) in base 2, 10 or 16, either answer only (product written most or least significant digit first) or with a scratchpad of running sums. Example (base 10): 7 × 3 → 21.
-> - **Hand-built net.** None: this entry has no hand-built net (an explicit exception). The trained nets are probed for the column sums and carries that fix each product digit.
-> - **Trained nets.** All trained from scratch (4 layers). Answer only, least significant digit first: base 10 20/20, base 2 17/20 (final cell 10/10); most significant first 1/60. Doubling width rescues decimal and hex (7/10, 6/10), never binary (0/26 over width, data and aux retries). A scratchpad (SP) solves every most-significant-first cell at 1x (18/18).
-> - **Verdict.** Partly solved (answer only: least significant first yes in base 2 and 10, most significant first 1/60; scratchpad 18/18). Closed form: partial (scratchpad Fourier readout only: decimal 6/6, hex 3/6; none for answer only).
-> - **Links.** [Weights](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/multiplication-base-order) · Reproduce: not available yet · [Terms](../GLOSSARY.md)
+This entry studies how digit order, number base, a sub-step curriculum and a scratchpad decide whether a 4-layer transformer trained
+from scratch learns to multiply two numbers below 256. Written answer only, least significant digit first, the product was learned in
+base 10 in 20/20 seeds and in base 2 in 17/20 (final cell 10/10); most significant digit first, it was learned in 1/60. Doubling the
+width rescued decimal and hexadecimal (7/10, 6/10) but never binary (0/26 over width, data and auxiliary-loss retries), while a
+scratchpad of running sums solved every most-significant-first cell at the base width (18/18). The task is partly solved. There is no
+hand-built network; the closed form is partial: a Fourier readout of the scratchpad's final MLP was accepted for decimal in 6/6 seeds
+and for hexadecimal in 3/6, and no closed form exists for answer only.
 
-## Task and status
-**Task.** `x*y=` -> product, x, y in [0, 256), base 2 (8+8 -> 16 digits), 10 (3+3 -> 5) or 16 (2+2 -> 4), zero-padded; answer-only (AO) MSB- or LSB-first, or scratchpad (SP): sums S_j = x (y mod
-B^(j+1)) LSB-first + `;`, then the product MSB-first. Test: 2000 held-out pairs; training draws fresh pairs from the other 63,536; exact = every output token.
-**Formats.**
-- **AO**: answer only, most (MSB) or least (LSB) significant digit first
-- **SP**: scratchpad, sums S_j = x (y mod B^(j+1)) LSB-first and `;`, then the product MSB-first
-- **R1 / D3 / aux**: retries with 2x width, 3x data, and a running-sum probe loss
+| | |
+|---|---|
+| Task | Multiply x and y in [0, 256), written in base 2, 10 or 16, as `x*y=` followed by the product |
+| Input → output example | Base 10, answer only, most significant digit first: 7 × 3 → 21, written as the 5 zero-padded digits 00021 |
+| Model | GPT-NeoX-shaped, 4 layers, d_model 384 (12 heads × 32), MLP 256 ReLU; all weights trained from scratch |
+| Rungs and seeds | TRAIN only (no HAND or PART, an explicit exception); answer only 6 cells × 4 mixes × 5 seeds (120); retries 2x width (45), 3x data (25), auxiliary loss (12); scratchpad 18; final cell 10 seeds |
+| Closed form status | Partial (scratchpad Fourier readout only: decimal 6/6, hex 3/6; none for answer only; complement not tested) |
+| Status | Partly solved (answer only: least significant first yes in base 2 and 10, most significant first 1/60; scratchpad 18/18); last run 2026-11-08 |
+| Weights | [Hugging Face: multiplication-base-order](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/multiplication-base-order) |
+| Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
-**Status.** 2026-11-08; 4 layers, d 384, 30k steps; AO 6 cells x 4 mixes x 5 seeds (120), retries R1 2x width (45), D3 3x data (25), aux (12); SP 18; final cell (binary LSB, anneal) 10 seeds.
-## Summary
-Digit order decides answer-only (AO) learnability: least-significant-digit-first (LSB-first) solves base 10 (20/20) and base 2 (17/20; final cell 10/10), most-significant-first (MSB-first) 1/60. Width rescues decimal/hex MSB (7/10, 6/10), never binary MSB (0/26 over
-width, data, aux). A scratchpad solves every MSB cell at 1x (18/18). Four circuit types (one per base, plus SP) read column variables at MLP3; closed form only for the SP Fourier readout (dec 6/6, hex 3/6).
-## Setup
-[METHODS.md](../METHODS.md). Mix f: a sample is a sub-problem with prob. f (digit x digit, y with one / two nonzero digits), else uniform; f = 0, .3, .6, anneal (.6 -> 0 by 15k). AdamW lr 1e-3, wd .1,
-betas (.9, .98), warmup 1k, cosine to 30k, clip 1, batch 256, TF32, eval every 500; solved = best test >= .99. Final cell: 10 seeds, same recipe, plateau stop. Networks: [huggingface.co/jc1122/circuit-atlas-nets/tree/main/multiplication-base-order](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/multiplication-base-order)
-**Reproduce:** training code for this task is not yet in `code/`; the weights, held-out splits and recorded accuracies are on Hugging Face (link above).
-## Architecture as used
-GPT-NeoX, 4 layers, d_model 384 (12 heads x 32), MLP 256 ReLU (W_in [256, 384], whole residual), no LayerNorm, no positions, untied; vocab 19 (BOS, `*`, `=`, digits 0-15; SP 20 with `;`); all trained.
-R1 d 768 (12 x 64); D3 batch 768; aux = running-sum probe loss at resid_3. Files `<cell>_s<seed>[_final].safetensors`, config.json, manifest.json (sha256, fp32
-re-score; round trip passes for all 43 nets incl. SP and final cell; HF copy re-downloaded, sha256-checked, 2 nets re-scored).
-## Prediction before training
-SPEC.md: b16/b10 solve, b2 MSB fails: half right (hex fails at 1x); LSB helps every base: right; curriculum speeds base 2/10, rescues nothing: right (anneal > .3, not ~); width does not rescue b2 MSB:
-right. SP (MUL_STUDY): b10/b16 >= 2/3 per mix, faster than 2x: right; b2 >= 2/6: right, slower than b10/16: wrong. Final cell >= 9/10: right (10/10).
-## Hand-built reference
-None (explicit exception; no HAND/PART rung). Probed: digit p_k, column sum col_k = sum_{i+j=k} x_i y_j, carry_k, low_k / high_k (product mod/div B^k); SP lines: the same for S_j = S_{j-1} + x y_j B^j.
-## What training finds
+## 1. Task and data
+
+The prompt is `x*y=` and the target is the product x·y, with x, y in [0, 256). Numbers are zero-padded: in base 2 the operands have
+8+8 digits and the product 16, in base 10 3+3 and 5, in base 16 2+2 and 4. The test set is 2000 held-out pairs; training draws fresh
+pairs from the other 63,536, so train and test accuracy stay close. An output is exact when every output token is right; a seed is
+solved when its best test exact match is ≥ .99. Table 1 lists the output formats and the retry variants.
+
+*Table 1. Output formats and retry variants.*
+
+| Label | Meaning |
+|---|---|
+| AO, MSB | answer only, most significant digit first (MSB first) |
+| AO, LSB | answer only, least significant digit first (LSB first) |
+| SP | [scratchpad](../GLOSSARY.md#task-formats): the running sums S_j = x (y mod B^(j+1)), each LSB first and followed by `;`, then the product MSB first |
+| R1 | retry with 2x width |
+| D3 | retry with 3x data |
+| aux | retry with a running-sum probe loss |
+
+Each cell also sets a curriculum mix f: a training sample is a sub-problem with probability f (digit × digit, or y with one or two
+nonzero digits), and otherwise a uniform pair. The mixes are f = 0, .3, .6 and anneal (f from .6 to 0 by step 15k).
+
+## 2. Model
+
+The shared architecture and instrumentation are described in [METHODS.md](../METHODS.md). This entry has only the TRAIN
+[rung](../GLOSSARY.md#the-three-rungs), in which all weights are trained from scratch.
+
+### 2.1 Architecture
+
+The networks are GPT-NeoX-shaped with 4 layers, d_model 384 (12 heads × 32), MLP 256 ReLU (W_in [256, 384], reading the whole
+residual stream), no LayerNorm, no positional encoding and untied embeddings. The vocabulary has 19 tokens (BOS, `*`, `=`, digits
+0-15), and 20 in SP, which adds `;`. The R1 retry uses d 768 (12 × 64); D3 uses batch 768; aux adds a running-sum probe loss at
+resid_3.
+
+### 2.2 Frozen parts and trained part
+
+Nothing is frozen; every weight is trained.
+
+### 2.3 Training
+
+The optimiser was AdamW with learning rate 1e-3, weight decay .1, betas (.9, .98), warmup 1k, cosine decay to 30k steps, gradient
+clip 1 and batch 256, in TF32, with test accuracy evaluated every 500 steps. All cells, in base 2, 10 and 16, used 4 layers, d 384 and 30k steps. The answer-only screen ran 6 cells × 4 mixes × 5 seeds
+(120 networks); the retries were R1 2x width (45), D3 3x data (25) and aux (12); SP ran 18 networks. The final cell (binary LSB, anneal
+mix) reran the same recipe with 10 seeds and a plateau stop.
+
+### 2.4 Reproduction
+
+Reproduce: not available yet: training code for this task is not yet in `code/`; the weights, held-out splits and recorded
+accuracies are on Hugging Face at
+[huggingface.co/jc1122/circuit-atlas-nets/tree/main/multiplication-base-order](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/multiplication-base-order).
+
+### 2.5 Archive
+
+Files are `<cell>_s<seed>[_final].safetensors`, `config.json` and `manifest.json` (sha256, fp32 re-score). The round trip passes for
+all 43 networks, including SP and the final cell; the Hugging Face copy was re-downloaded and sha256-checked, and 2 networks were
+re-scored.
+
+## 3. Hand-built solution
+
+There is no hand-built network for this entry (an explicit exception; no HAND or PART rung). The trained networks were probed instead
+for the variables of long multiplication in base B (Figure 1): the product digit p_k, the column sum col_k = Σ_{i+j=k} x_i y_j, the
+carry carry_k into column k, and low_k / high_k, the product mod / div B^k. For SP lines the same variables were probed for
+S_j = S_{j−1} + x y_j B^j.
+
+```mermaid
+flowchart LR
+    X["operand digits x_i and y_j"] --> C["column sum col_k = sum of x_i y_j over i + j = k"]
+    C --> K["carry carry_k"]
+    C --> P["product digit p_k"]
+    K --> P
+    C --> LH["low_k and high_k: product mod and div B^k"]
+    N["TRAIN network: 4 layers, all weights trained"] -.->|"probed for"| C
+    N -.->|"probed for"| K
+    classDef trained fill:gold,stroke:darkgoldenrod,color:black
+    class N trained
+```
+
+*Figure 1. The reference variables of long multiplication that the trained networks were probed for. No hand-built network exists for
+this entry; the shaded node is the network, trained from scratch in full.*
+
+## 4. What training finds
+
+Digit order decides whether answer only is learnable (Table 2). Least significant digit first solves base 10 in 20/20 seeds (5/5 in
+every mix) and base 2 in 17/20 (final cell 10/10); most significant digit first solves 1/60. Width rescues decimal and hex MSB (7/10,
+6/10), never binary MSB (0/26 over width, data and aux). The aux retries solved base 2 MSB in 0/6 (.90-.98) and base 10 MSB in 0/6
+(.87-.98). A scratchpad solves every MSB cell at 1x (18/18).
+
+*Table 2. Solved seeds per cell (best test exact match ≥ .99). f = curriculum mix, a = anneal; values in parentheses are best test
+accuracies of unsolved seeds; the SP column gives the first step at which test exact match reached .99.*
+
 | base | order | f 0 | .3 | .6 | anneal | R1 2x width | D3 3x data | SP 1x f0 / anneal (first .99) |
 |---|---|---|---|---|---|---|---|---|
 | 2 | LSB | 3/5 | 4/5 | 5/5 | 5/5; final 10/10 | - | - | - |
@@ -39,12 +115,127 @@ None (explicit exception; no HAND/PART rung). Probed: digit p_k, column sum col_
 | 2 | MSB | 0/5 | 0/5 | 0/5 | 0/5 | f0 0/5, a 0/5 (.91-.96) | f0 0/5 (.90-.93) | 3/3 / 3/3 (8.5-10.5k) |
 | 10 | MSB | 0/5 | 0/5 | 0/5 | 1/5 | f0 3/5, f.3 4/5 | f0 1/5, a 2/5 | 3/3 / 3/3 (11.5-16k) |
 | 16 | MSB | 0/5 | 0/5 | 0/5 | 0/5 | f0 5/5, a 1/5 | f0 0/5, a 0/5 (.97-.99) | 3/3 / 3/3 (17.5-21.5k) |
-b10 LSB 5/5 in every mix. Aux: b2 MSB 0/6 (.90-.98), b10 MSB 0/6 (.87-.98). Final cell: test .5 at 6-10k, .99 at 16-23.5k (median 18.75k), stop 28.5k, best = final = 1.0 (10/10); train ~ test
-(fresh pairs). AO MSB retries grok at 25-28k of 30k (budget-limited); b2 MSB under-fits (train .95-.999), b10/b16 MSB at 1x memorise (train 1.0). SP best = final = 1.0.
-Circuit types (per-seed flip at L4 / DAS, non-overlapping): A linear column/carry, binary (b2 LSB 17/17; final cell 10/10, all diagnosed): col_k flip .99-1.0, carry_k .87-1.0. B non-linear column, decimal
-(b10 LSB 20/20, R1 1/1): col_k flip .16-.26, DAS .99-1.0. C per-digit table, hex (b16 LSB 4/4, R1 5/5): col_k flip .03-.15, DAS .21-.28, carry_k flip .99-1.0. D SP scratch-line column (b16 SP 6/6,
-b10 SP 4/4 diagnosed; b2 SP undiagnosed): col_k flip 1.0 at the scratch queries. Unsolved AO nets carry their base's type.
-Diagnostics (best snapshots, seed ranges; var = inter / DAS flip at L4, u untested; R^2 = best probe col/carry (layer); PR = L4 effective rank, no HAND; restrict = L4 exact, vars excluded; JS n/a; final ~ best):
+
+Base 10 LSB (not a row above) solved 5/5 in every mix.
+
+In the final cell, test accuracy reached .5 at 6-10k steps and .99 at 16-23.5k (median 18.75k); training stopped at 28.5k, with best =
+final = 1.0 (10/10). Train accuracy was close to test accuracy because pairs are fresh. The answer-only MSB retries grokked at 25-28k
+of 30k steps, so they were limited by the step budget ([grokking](../GLOSSARY.md#counting-results): test accuracy rising long after
+training accuracy). Binary MSB under-fits (train .95-.999), and decimal and hex MSB at 1x memorise (train 1.0). In SP,
+best = final = 1.0.
+
+### 4.1 Circuit types
+
+Four circuit types were found, one per base for answer only plus one for SP, each reading column variables at MLP3 (Table 3). Types
+were assigned from the per-seed interchange flip at L4 and the DAS flip and do not overlap; an interchange flip counts how often the
+answer changes as predicted when one variable is swapped between two inputs, and DAS does the same through a learned rotation
+([glossary](../GLOSSARY.md#analysis-measures)). Unsolved answer-only networks carry their base's type.
+
+*Table 3. Circuit types (seed counts are of diagnosed networks).*
+
+| Type | Cells | Evidence |
+|---|---|---|
+| A, linear column/carry (binary) | b2 LSB 17/17; final cell 10/10, all diagnosed | col_k flip .99-1.0, carry_k .87-1.0 |
+| B, non-linear column (decimal) | b10 LSB 20/20, R1 1/1 | col_k flip .16-.26, DAS .99-1.0 |
+| C, per-digit table (hex) | b16 LSB 4/4, R1 5/5 | col_k flip .03-.15, DAS .21-.28, carry_k flip .99-1.0 |
+| D, SP scratch-line column | b16 SP 6/6, b10 SP 4/4 diagnosed; b2 SP undiagnosed | col_k flip 1.0 at the scratch queries |
+
+The variables col_k and carry_k fix the answer: excluding them at L4 drops exact match to about 0 (the restrict column of Table B1).
+The failures lie in computing them. MSB networks use more components, carry is decoded with lower R², and errors fall at the longest
+carry chains (b2 bits 6-9, b10 digit 2, b16 digits 1-2). Per-cell diagnostics are in Appendix B.
+
+## 5. Mechanism and verification
+
+### 5.1 Closed form of the scratchpad readout
+
+In SP, the digit map of the final MLP, E = W_out^T U_digits^T (+ bias), where U_digits is the unembedding of the digit tokens, was
+replaced by a few Fourier modes over the digit d:
+
+Ehat[j,d] = c[j,0] + Σ_{k ∈ K} (c[j,k] cos 2πkd/B + s[j,k] sin 2πkd/B),
+
+with coefficients taken as exact DFT projections of the weights and the mode sets K_dec = {1,2,3,5} and K_hex = {1,2,4,8}. The bar was
+exact ≥ .99 × native accuracy on 2048 fresh pairs. Decimal passed in 6/6 best and 6/6 final seeds (lossless in 2/6 and 4/6), hex in
+3/6 and 4/6 (lossless in 1/6). The full DFT keeps all accuracy and the mean-only map keeps none (0). This is supported by substitution;
+the complement was not tested, so the closed form status is partial.
+
+```mermaid
+flowchart LR
+    X["prompt and scratch lines so far"] --> R["layers 0-3: column variables col_k, carry_k at L4"]
+    R --> M["MLP3: largest patching drop"]
+    M --> E["final-MLP digit map E, replaced by Fourier modes K_dec or K_hex in SP"]
+    E --> D["digit logits"]
+    classDef trained fill:gold,stroke:darkgoldenrod,color:black
+    class R,M,E trained
+```
+
+*Figure 2. The readout found in the trained networks. The column variables are present at L4 and read at MLP3; in SP, the final MLP's
+digit map is reproduced by a few Fourier modes. The Fourier closed form is partial (substitution only, SP only); answer-only types A-C
+have no closed form.*
+
+### 5.2 Answer only
+
+Types A-C have no accepted closed form. Substituting a scalar col_k / carry_k (decimal, probe R² .998/.959) drops exact match from
+2041 to 3 of 2048 pairs, so the code is not scalar.
+
+### 5.3 Relation to published work
+
+There is no hand-built network to compare with. The digit-order effect agrees with [Lee et al. (2023)](#references), who found that
+reversed output helps small transformers learn arithmetic, and with [Nogueira et al. (2021)](#references), who found that the number
+representation decides learnability. The auxiliary running-sum loss used by [Bai et al. (2025)](#references) did not rescue binary
+MSB here; a scratchpad did. The non-linear code for decimal col_k fits the periodic number features described by
+[Fu et al. (2026)](#references). The entry's own new
+finding is that the base effect depends on digit order.
+
+## 6. Limitations and open questions
+
+Screening cells used 5 seeds (aux and SP 3 per mix, final cell 10); base 2 diagnostics used 1000 pairs. Length generalisation was
+tested with SP padding or input ranges from [0, 512) to [0, 10000): 0/256 (one network 2/256). The final cell scored 1.0 natively (20/20
+networks), .02-.29 with 9-bit padding and .00-.10 on [0, 512), where the middle bits fail. Binary MSB answer only with 2x the step
+budget is untested (the run was killed).
+
+Missing diagnostics:
+
+- SP base 2 (out of memory);
+- SP base 10, 2 of 6 networks;
+- 11 R1/D3 decimal networks.
+
+## 7. Prediction record
+
+Predictions were recorded in the task specification before training (Table 4).
+
+*Table 4. Prediction record.*
+
+| Source | Prediction | Outcome |
+|---|---|---|
+| SPEC.md | b16 and b10 solve, b2 MSB fails | half right (hex fails at 1x) |
+| SPEC.md | LSB helps every base | right |
+| SPEC.md | curriculum speeds base 2/10, rescues nothing | right (anneal > .3, not ~) |
+| SPEC.md | width does not rescue b2 MSB | right |
+| MUL_STUDY (SP) | b10/b16 ≥ 2/3 per mix, faster than 2x | right |
+| MUL_STUDY (SP) | b2 ≥ 2/6 | right |
+| MUL_STUDY (SP) | b2 slower than b10/16 | wrong |
+| Final cell | ≥ 9/10 | right (10/10) |
+
+## Appendix A. Weights excerpt and reading
+
+The excerpt is taken from the f0 mix, seed 0, best snapshot, final MLP. For neuron j, W_in[j, 0:2] is mapped to E[j, digits 0-3],
+computed through the full W_out and the unembedding; rows are chosen by digit-contrast norm (Table A1).
+
+*Table A1. Final-MLP neurons: W_in[j, 0:2] and the digit votes E[j, digits 0-3].*
+
+| Base | Neuron | W_in[j, 0:2] | E[j, digits 0-3] |
+|---|---|---|---|
+| decimal | N123 | (.0731, .1140) | (1.431, -1.567, 1.452, -1.673) |
+| decimal | N8 | (.1037, .0168) | (-.967, 1.478, -1.314, 1.279) |
+| hex | N215 | (.0499, -.0325) | (-2.169, -1.655, -.871, .071) |
+
+Reading: N123 votes for even digits and N8 for odd ones (parity mode c5 = +1.518 / -1.307); hex N215 has a broad preference
+(c1 = -1.829, s1 = .462). These are outgoing votes and do not show how the inputs activate the neurons.
+
+## Appendix B. Diagnostics per cell
+
+*Table B1. Diagnostics on best snapshots (seed ranges).*
+
 | cell | used H+M of 52 | patch top (drop) | p_k | col_k | carry_k | low_k | high_k | R^2 col/carry | PR | restrict | best / final |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | b2 LSB 1x | 22-42 | MLP3 (MLP2) .94-1.0 | .87-.92/1.0 | 1.0/1.0 | 1.0/1.0 | .83-.88/1.0 | .41-.63/1.0 | .88-.95/.93-.95 (L4) | 1.5-3.1 | .01 | .63-1.0 |
@@ -56,19 +247,19 @@ Diagnostics (best snapshots, seed ranges; var = inter / DAS flip at L4, u untest
 | b16 MSB 1x | 33-46 | MLP3 (MLP0) .99-1.0 | .91-.97/.91-.96 | .10-.13/.26-.31 | .98-.99/.95-.97 | .06-.08/.22-.24 | .06-.08/.22-.24 | .90-.92/.89-.93 (L3) | 7.0-7.5 | .00 | .72-.98 |
 | b16 2x (LSB+MSB) | 27-31 | MLP3 .98-1.0 | .99-1.0/.98-.99 | .09-.11/.21-.24 | 1.0/.97-.98 | .03-.06/.19-.23 | .05-.09/.18-.23 | .92-.95/.92-.96 (L3) | 4.9-8.5 | .00-.01 | .99-1.0 |
 | SP b16 (6+1 final); b10 (4+1) | 23-30; 13-19 | MLP3 .99-1.0; .98-1.0 | 1.0/.99; .99-1.0/1.0 | 1.0/.99-1.0; 1.0/1.0 | u | .07-.10/.26-.29; .11-.16/.33-.43 | .08-.09/.26-.29; .13-.19/.33-.43 | .81-.83/.62-.66 (L4/L3); .88-.89/.67-.79 (L4) | 4.4-6.7; 4.9-7.7 | .00 | 1.0 / 1.0 |
-Reading: col_k / carry_k fix the answer (L4 exclusion -> exact ~0); failures are in computing them: MSB nets use more components, lower-R^2 carry, errors at the longest carry chains (b2 bits 6-9, b10 digit 2, b16 digits 1-2).
-## Closed form
-SP final-MLP digit map E = W_out^T U_digits^T (+ bias) replaced by Fourier modes over digit d: Ehat[j,d] = c[j,0] + sum_{k in K} (c[j,k] cos 2pi kd/B + s[j,k] sin 2pi kd/B), coefficients = exact DFT
-projections of the weights; K_dec = {1,2,3,5}, K_hex = {1,2,4,8}. Bar: exact >= .99 x native on 2048 fresh pairs: decimal 6/6 best, 6/6 final seeds (lossless 2/6, 4/6), hex 3/6, 4/6 (lossless 1/6);
-full DFT keeps all, mean-only 0. Types A-C (AO): no accepted closed form; a scalar col_k/carry_k substitution (decimal, probe R^2 .998/.959) drops exact from 2041 to 3 of 2048: the code is not scalar.
-## Weights excerpt and reading
-f0 seed 0 best, final MLP neuron j: W_in[j, 0:2] -> E[j, digits 0-3] (full W_out and unembedding; rows by digit-contrast norm): decimal N123 (.0731, .1140) -> (1.431, -1.567, 1.452, -1.673); N8
-(.1037, .0168) -> (-.967, 1.478, -1.314, 1.279); hex N215 (.0499, -.0325) -> (-2.169, -1.655, -.871, .071). N123 votes even digits, N8 odd (parity mode c5 = +1.518 / -1.307); hex N215 a broad
-preference (c1 = -1.829, s1 = .462): outgoing votes, not how inputs activate them.
-## Comparison
-No HAND. Agrees with Lee et al. 2023 (reversed output) and Nogueira et al. 2021 (representation decides learnability); Pres et al. 2025's aux loss did not rescue binary MSB, a scratchpad did; decimal col_k's non-linear code fits Fu et al. 2026 (periodic number features). New: the base effect depends on digit order.
-## Controls and limits
-5 seeds per screening cell (aux/SP 3 per mix, final 10); base 2 diags on 1000 pairs. Length: SP padding or ranges [0, 512)-[0, 10000) 0/256 (one
-net 2/256); final cell native 1.0 (20/20 nets), 9-bit padding .02-.29, [0, 512) .00-.10 (middle bits fail). b2 MSB AO 2x budget untested (run killed). Missing: SP b2 diags (OOM), SP b10 2 of 6 nets, 11 R1/D3 decimal diags.
+
+Key: used H+M = used heads and MLPs, of 52 components; patch top (drop) = the component with the largest
+patching drop and that drop, with a second component in parentheses as recorded; variable columns = interchange / DAS flip at L4, u = untested; R^2 = best
+ridge-probe R² of col / carry (layer); PR = effective rank at L4 (no HAND to compare); restrict = exact match at L4 with the variables
+excluded; JS is not applicable (no HAND); final ≈ best. Terms are defined in the [glossary](../GLOSSARY.md#analysis-measures).
+
 ## References
-Lee et al. 2023, Teaching Arithmetic to Small Transformers, https://doi.org/10.48550/arxiv.2307.03381 (research preprint); Pres et al. 2025, Why Can't Transformers Learn Multiplication?, https://doi.org/10.48550/arxiv.2510.00184 (research preprint); Nogueira et al. 2021, Investigating the Limitations of Transformers with Simple Arithmetic Tasks, https://doi.org/10.48550/arxiv.2102.13019 (research preprint); Fu et al. 2026, Convergent Evolution: How Different Language Models Learn Similar Number Representations, https://doi.org/10.48550/arxiv.2604.20817 (research preprint)
+
+- Bai, X., Pres, I., Deng, Y., et al. (2025). Why can't transformers learn multiplication? Reverse-engineering reveals long-range
+  dependency pitfalls. *arXiv preprint*. https://doi.org/10.48550/arxiv.2510.00184 (auxiliary running-sum loss for multiplication)
+- Fu et al. (2026). Convergent evolution: How different language models learn similar number representations. *arXiv preprint*.
+  https://doi.org/10.48550/arxiv.2604.20817 (periodic number features)
+- Lee, N., Sreenivasan, K., Lee, J. D., Lee, K., & Papailiopoulos, D. (2023). Teaching arithmetic to small transformers.
+  *arXiv preprint*. https://doi.org/10.48550/arxiv.2307.03381 (reversed output order)
+- Nogueira, R., Jiang, Z., & Lin, J. (2021). Investigating the limitations of transformers with simple arithmetic tasks.
+  *arXiv preprint*. https://doi.org/10.48550/arxiv.2102.13019 (representation decides learnability)

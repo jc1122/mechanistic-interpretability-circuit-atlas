@@ -1,98 +1,89 @@
 # Entry template
 
-Spelling: British (-ise, centre, behaviour, generalise, memorise) in prose; code, output keys and label names stay as they are.
-Numbers: never rounded or recomputed when copied between sections. Terms used in more than one entry are defined once in
-[GLOSSARY.md](GLOSSARY.md); link it, do not redefine. Entry-specific variables (e.g. LK_k, PA) are defined in words at their first
-use in the top block and in the Summary.
+Write every entry to [STYLE.md](STYLE.md) (register, citations, figures, checks). Terms used in more than one entry are defined once
+in [GLOSSARY.md](GLOSSARY.md); link them at first use and also define them in a clause. Numbers are never rounded or recomputed when
+copied between sections. Worked examples: [count-mod-5](entries/count-mod-5.md), [multiplication](entries/multiplication.md).
 
-```
+````
 # <Task name, not a claim>
 
-> - **Task.** <one sentence>. Example: `<input>` → `<output>`.
-> - **Hand-built net.** <the algorithm the exact hand-written network implements, one sentence>.
-> - **Trained nets.** <what training from scratch and on frozen hand-built parts learns, with seed counts>.
-> - **Verdict.** <Solved | Partly solved | Unsolved> (<cell, n/N seeds>). Closed form: <verified | partial | sufficient readout only | rejected | none> (<deciding number>).
-> - **Links.** [Weights](<Hugging Face folder>) · Reproduce: <[commands](#setup) | not available yet> · [Terms](../GLOSSARY.md)
+<Lede: 3-5 sentences of prose. What was studied (task, model, what was trained); the main finding with its seed count; the verdict
+(Solved | Partly solved | Unsolved) and the closed-form status, with any audit caveat in its own words.>
 
-## Task and status
-**Task.** Input/output format, ranges, train/test split.
-**Formats.** One bullet per format letter used in this entry: `A` answer only; `<letter>` <what the scratchpad writes>.
-**Status.** <date of the last run> · rungs run: <HAND, PART, TRAIN> · seeds: <per cell> · training budget · <audit caveat if any>.
+| | |
+|---|---|
+| Task | <one sentence> |
+| Input → output example | <small example, checkable by eye> |
+| Model | <architecture in one line; which part is trained> |
+| Rungs and seeds | <HAND / PART / TRAIN cells with seeds per cell; retries> |
+| Closed form status | <verified | partial | sufficient readout only | rejected | none> (<deciding number>; <audit caveat>) |
+| Status | <Solved | Partly solved | Unsolved> (<cell, n/N>); last run <YYYY-MM-DD>[; audit <YYYY-MM-DD>] |
+| Weights | [Hugging Face: <folder>](<Hugging Face folder URL>) |
+| Reproduce | <[Commands](#24-reproduction), run from `code/`> or <Not available yet: training code for this task is not yet in `code/`> |
 
-## Summary
-Two to four sentences: which circuit, how often, verified closed form. Expand each rung/format letter and diagnostic at its first use
-here or link it to GLOSSARY.md.
+## 1. Task and data
+Prompt format, label rule, ranges, number of cells or pairs, train/test split and fractions, the correctness criterion (exact
+match of what), length or size tests. Output formats as a table with their letters (answer only, scratchpad variants).
 
-## Setup
-Link [METHODS.md](../METHODS.md) for the shared architecture and instrumentation; then only what is task-specific: prompt format and
-generator, label rule, number of cells and classes, menu width, hidden width, optimiser values if they differ, steps, evaluation
-interval, train fractions, seeds, controls, hardware class (no host names). Give the Hugging Face folder link, then end with the
-reproduce command(s), runnable from `code/` (no paths outside the repository), and the output keys that carry the headline numbers.
+## 2. Model
+### 2.1 Architecture (or Frozen hand-built network)
+Layers, d_model, heads (d_head), MLP width, activation, normalisation, positions, vocabulary, parameter counts.
+### 2.2 Frozen parts and trained part
+What is frozen, what is trained (with shapes, e.g. W_in [256, 326]), and which inputs the trained part reads (index ranges as a table).
+### 2.3 Training
+Optimiser, learning rate, weight decay, schedule, steps, batch, evaluation interval, precision, seeds, controls, hardware class (no
+host names). Several runs: a table with one row per run.
+### 2.4 Reproduction
+Commands runnable from `code/` and the output keys that carry the headline numbers, or exactly: "Reproduce: not available yet:
+training code for this task is not yet in `code/`; the weights, held-out splits and recorded accuracies are on Hugging Face at <link>."
+### 2.5 Archive
+The archived files (safetensors, config JSON, manifest with seed, rung, accuracy, sha256) and the round-trip check.
 
-    python run.py <command> --task <task> --seeds 0 1 2 ...
+## 3. Hand-built solution
+The algorithm in words, then the weights as formulas per layer, head or neuron block, and the exactness check. Figure 1 (Mermaid
+flowchart of the hand-built circuit, trained part marked) with a numbered caption.
 
-If the task is not in `code/` yet, write exactly: "**Reproduce:** not available yet: this task's training and analysis code is not in
-`code/`. The weights, test splits and recorded accuracies are in the Hugging Face folder above."
+## 4. What training finds
+Table of results per cell (seeds, solved k/n, best and final test accuracy, steps to criterion, length tests), then prose: learning
+curve and grokking, circuit types clustered by mechanism with seed counts, which frozen parts are read (ablations), and failures
+explained from diagnostics. Subsections per format when formats behave differently.
 
-## Architecture as used
-Required. The exact configuration of every network in the entry, as run: layers, d_model, heads (d_head), MLP width, activation,
-vocabulary and positions; the frozen parts and the trained parts (with shapes, e.g. W_in [256, 326]); the input blocks of the trained
-part and their index ranges. Name the archived files (safetensors + config JSON + manifest with seed, rung, accuracy, sha256) and
-point to the Hugging Face folder.
+## 5. Mechanism and verification
+Closed form per circuit type (equation; accuracy when substituted; agreement with the network), the verdict in the entry's own words,
+resample ablation of the complement and controls (or a statement that none was reported), wiring and causal evidence, Figure 2 where
+training finds a different circuit, and the relation to the hand-built design and to published work (author-year citations).
 
-## Prediction before training
-Required. What the hand-built design and earlier entries predicted the trained networks would do (circuit, parts read, closed form,
-grokking), written before the TRAIN/PART runs, and whether it held. If no prediction was recorded in advance, say so; a retrospective
-prediction must be labelled as such. This is the record on which the atlas is scored as a predictor of new circuits.
+## 6. Limitations and open questions
+What was not run, what the evidence cannot show, open questions.
 
-## Hand-built reference
-Mechanism in words, then the weights as formulas (per layer / head / neuron block). Exactness check.
+## 7. Prediction record
+What the hand-built design and earlier entries predicted before training, and whether it held. If nothing was recorded in advance,
+say so; label any retrospective prediction as such.
 
-## What training finds
-- Setups: fully trained; frozen hand-built parts + trained stage (name the frozen parts and the trained stage).
-- Learning curve: memorisation step, 50% / 90% test step, final accuracy.
-- Circuit types, clustered by mechanism (not by weights), with seed counts.
-- Which frozen parts are read (ablation per part).
-- Diagnostics (per setup): used heads + neurons, best linear-probe R² per hand-built variable (layer), residual effective rank vs the
-  hand-built net, attention divergence (JS) to the matching hand-built head, best vs final test; failures explained from these.
-  Each table gets a one-line key under it naming its abbreviations (or a link to GLOSSARY.md).
+## Appendix A. Weights excerpt and reading
+Small exact excerpts from the archived weights (hand-built constants, trained closed-form parameters per seed, selected rows or
+neurons), how each number is computed (weight slice or fit), and the reading.
 
-## Closed form
-Equation per circuit type; accuracy when substituted for the trained part; agreement with the network.
-
-## Weights excerpt and reading
-Required. The key matrices or vectors of the circuit, small and exact, taken from the archived weights: the hand-built formula weights
-(constants and the non-zero pattern), the trained closed-form parameters per circuit type and seed (a table), and selected rows,
-neurons or heads (a table or a short code block; full tensors stay in the archive). Then the reading: what each component computes and
-why these numbers produce it. State how each number is computed (weight slice or fit) so it can be recomputed from the published weights.
-
-## Comparison
-Hand-built vs trained: same algorithm? Differences. Relation to published circuits.
-
-## Controls and limits
+## Appendix B. Detailed evidence
+Full diagnostics tables (used heads and neurons, probe R² per variable and layer, effective rank, attention JS, patching,
+interchange, edges), per-seed data, with a key under each table.
 
 ## References
-DOI / arXiv links only for works that were checked.
-```
+- Author, A., & Author, B. (Year). Title. *Venue*. https://doi.org/... (what the work is cited for)
+````
 
-## Top-block rules
+## Fact-table rules
 
-1. Five labelled lines, each a list item inside the blockquote (`> - **Label.** ...`), so that GitHub renders them on separate lines.
-   At most 40 words each, except "Trained nets" (at most 60).
-2. Every number in the block occurs verbatim in the entry body (same rounding, same range). No new numbers, no derived means.
-3. No unexplained shorthand: write "trained from scratch", "trained on frozen hand-built parts", "answer only", "with a scratchpad
-   (intermediate steps written out)". Rung and format letters may follow in parentheses, e.g. "(TRAIN, format O)", so the reader can
-   find them in the tables below.
-4. The example is copied from the entry's Task paragraph if it has one; otherwise it is built only from the stated prompt format and
-   label rule, with values small enough to check by eye. If the format is not fully specified (operand bit order, separators), give the
-   example in words or numbers, not as a token string. If even that is not possible, omit "Example:".
-5. Verdict words: *Solved* = the entry's final cell meets its own criterion in all its seeds, or the entry calls it solved; *Partly
-   solved* = some cells, seeds or ranges solved, others not; *Unsolved* = the entry's headline cell fails. The parenthesis names the
-   cell and seed count exactly as the entry states it. The closed-form word follows the entry; if the entry carries an audit caveat,
-   the caveat wins.
-6. Links line: copy the entry's Hugging Face URL (folder names do not always match the entry name); Reproduce links to the Setup
-   anchor only if a runnable command exists.
-7. Then a `## Task and status` heading holding the Task and Status paragraphs, with format letters as a short list.
+1. Every number in the lede and the fact table occurs verbatim in the body or the appendix (same rounding, same range). No new
+   numbers, no derived means.
+2. The example is copied from Section 1 if it gives one; otherwise it is built from the stated prompt format and label rule, with
+   values small enough to check by eye. If the format is not fully specified (operand bit order, separators), give the example in
+   words or numbers, not as a token string; if even that is not possible, write "see Section 1".
+3. Verdict words: *Solved* = the entry's final cell meets its own criterion in all its seeds, or the entry calls it solved; *Partly
+   solved* = some cells, seeds or ranges solved, others not; *Unsolved* = the headline cell fails. The parenthesis names the cell and
+   seed count as the entry states it. The closed-form word follows the entry; if the entry carries an audit caveat, the caveat wins.
+4. Weights: copy the entry's Hugging Face URL (folder names do not always match the entry name). Reproduce links to Section 2.4 only
+   if a runnable command exists.
 
 ## Index and README lines
 
@@ -103,7 +94,7 @@ README line:
 ```
 - [<entry>](entries/<entry>.md)<repro>: <main result, at most 15 words>
 ```
-`<repro>` is ` ⟳` when the entry's Setup has a `python run.py ...` command that runs from `code/`, else empty. Main result in plain
+`<repro>` is ` ⟳` when the entry's Reproduce row links a `python run.py ...` command that runs from `code/`, else empty. Main result in plain
 words, no format letters; lead with the circuit, then the contrast ("...; answer only never trains"); at most one seed count.
 
 INDEX row:
