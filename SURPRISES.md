@@ -91,3 +91,9 @@ Short notes on results that went against expectation. Each says whether it is **
   Linear interpolation between two seeds of one cell: on frozen parts the loss barrier is .0001–.09 after a permutation alignment; between two
   solved nets trained from scratch it is 1.1–8.2 (median 1.8), and no alignment lowers it, although both use the same variables (above).
   Confirming experiment: more pairs per cell and the same check on the tasks without an entry yet.
+- **Swapping one part at a time is not verification** (verified in the "Circuit found in trained nets" probes). Component substitutions on
+  trained nets usually keep accuracy one at a time, but scrubbing the whole proposed circuit at once fails in the group-automata,
+  base-conversion, division, subtraction and decimal/hex-addition probes; where it holds on the full net (binary addition, GF(2) trace) it
+  fails on the greedily pruned circuit. A working replacement is a sufficient readout, not a verified mechanism.
+- **Frequency use differs by domain** (verified; [modular-addition-mlp](entries/modular-addition-mlp.md), [open-bracket-count](entries/open-bracket-count.md)):
+  modular addition spreads over 22–27 frequencies; the non-modular count uses only the lowest 1–3.

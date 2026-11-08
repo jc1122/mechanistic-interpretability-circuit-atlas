@@ -185,3 +185,35 @@ The fit uses test inputs too: it says which variable the stage needs, not that t
 and its agreement with the net on all inputs. Reported sizes use mean-ablation of heads and neurons (a head or MLP is "used" if
 replacing its output by its mean over inputs costs more than 5% exact; neurons: the smallest set, ranked by output spread, that keeps
 exact within .01 when the rest are mean-ablated); the input-independent position frame (layer-0 head and MLP) is not counted.
+
+## Reading an entry
+
+| Term | Meaning |
+|---|---|
+| **HAND** | every weight set by a formula; exact on every input in range |
+| **PART** | frozen hand-built parts plus one trained stage (`PARTp`: the trained stage is an attention layer instead of an MLP) |
+| **TRAIN** | trained from scratch |
+| **Format** | `A` = answer only; other letters (`T`, `G`, `S`, `C`, ...) are scratchpad variants, defined in each entry's Task paragraph |
+| **Seeds** | "6/10" = 6 of 10 seeds meet the criterion named in that cell (usually held-out exact match ≥ .99) |
+| **Closed form verified** | substituting the formula for the trained weights keeps accuracy; "partial" or "rejected" says what failed |
+| **menu** | a frozen hand-written layer that re-encodes integers (one-hot, thermometer, scalar); section 3 |
+
+Every entry follows [TEMPLATE.md](TEMPLATE.md): Summary, Setup (with the reproduce command), Prediction before training, Hand-built reference,
+What training finds, Closed form, Controls and limits.
+
+## Related work
+
+Hand-built transformers as ground truth exist: [Tracr](https://arxiv.org/abs/2301.05062) (paper) compiles RASP programs into transformer weights, and
+[InterpBench](https://arxiv.org/abs/2407.14494) (paper) trains models to implement known circuits so that circuit-discovery methods can be scored.
+Both evaluate interpretability tools. Single-task reverse engineering across seeds also exists: the modular-addition clock
+([Nanda et al.](https://arxiv.org/abs/2301.05217), paper), group operations ([Chughtai et al.](https://arxiv.org/abs/2302.03025), paper), clock vs pizza
+([Zhong et al.](https://arxiv.org/abs/2306.17844), paper); and trained nets constrained to be readable programs
+([Learning Transformer Programs](https://arxiv.org/abs/2306.01128), paper). This atlas asks what gradient descent finds instead of an exact
+hand-built solution, with one protocol across many tasks: three rungs, 10 seeds per final cell, circuit types counted per seed, and a closed
+form accepted only if substituting it keeps accuracy, with zero and shuffle controls on the rest of the net.
+
+## How this was made
+
+One author, with most experiments, analyses and entry drafts run by LLM coding agents under a written research protocol (fixed seeds,
+predictions recorded before training, every run logged, failures diagnosed rather than dropped). Every number comes from a logged run;
+the networks are public so any claim can be checked.
