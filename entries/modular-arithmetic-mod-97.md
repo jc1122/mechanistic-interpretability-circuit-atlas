@@ -1,141 +1,60 @@
-# Modular arithmetic mod 97 in five number formats: token multiplication learns a discrete-log clock at the output; digit multiplication memorises
-**Task.** a + b and a · b mod 97 (a, b in 0..96) and x² mod 97 (x in 0..9408): 9409 inputs per cell, answer r = S mod 97, exact match.
-Formats: `tok` (one token per residue; not for x²), binary LSB-first `b2l` / MSB-first `b2m`, decimal `b10`, hex `b16` (MSB first), and
-`s10` (decimal intermediate outputs `S ; S div 97 ; r`). Sequence `BOS a op b = answer`. Per seed a random split of the 9409 inputs:
-train fraction .3 (2823 train / 6586 test) or .9 (8468 / 941).
-**Status.** 2026-11-06. HAND: 17 cells, all exact. TRAIN: 16 cells × 10 seeds at fraction .3; failed cells retried at .9 (and once more
-with weight decay .1 for decimal/hex multiplication). Final cell: token multiplication at .9, 10 seeds. PART: a state-scratchpad variant
-(7 cells × 3 seeds) fails everywhere and is reported as a localised failure.
-
+# Modular arithmetic mod 97 in six number formats: token multiplication learns a discrete-log clock; digit multiplication memorises
+**Task.** a+b, a·b (a, b in 0..96), x² (x in 0..9408) mod 97, all 9409 inputs; formats `tok` (one token per residue), binary LSB/MSB first
+(`b2l`/`b2m`), decimal `b10`, hex `b16`, decimal scratchpad `s10` (S ; S div 97 ; r). Answer r = S mod 97, exact match.
+**Status.** DRAFT 2026-11-08, after the final run (10 seeds: mul tok x3 = ENTRY cell, add tok x3, add b16, add s10, mul b2l, sq b16); not published.
 ## Summary
-Does modular arithmetic in any number format converge to Fourier features? Only with residue tokens. Token multiplication (fraction .9)
-solves 6/10 seeds; their output logits are a "clock" in discrete-log coordinates: logit(c) ≈ Σ_k α_k cos(2πk(log₅a + log₅b − log₅c)/96) +
-β_k sin(..) with 1–6 frequencies reproduces 9409/9409 answers and agrees with the net on ≥ .9947 of held-out inputs in all six solved
-seeds. This is an output-level surrogate, not a recovered internal circuit. The hand-built net computes the same group isomorphism
-Z₉₇* ≅ Z₉₆ with a scalar log ramp and a lookup instead of circles. Decimal and hex multiplication memorise at every data and decay setting
-tried: operands and the raw product are decodable, the residue is not.
-
+No binary/decimal/hex TRAIN net carries a circular code of a or r; only token formats do. Token multiplication (frac .9) embeds residues as
+circles in discrete-log order in 10/10 seeds (K-high multi-frequency clock 8, K-low ramp-like clock 2; 6/10 >= .99 test). Its output is a
+<= 6-frequency clock in d = log a + log b - log c (substitution keeps accuracy on all 8 seeds >= .98). Digit multiplication memorises.
 ## Setup
-[METHODS.md](../METHODS.md) for the shared conventions. TRAIN: AdamW lr 1e-3, weight decay 1.0 (decimal/hex multiplication retry .1),
-betas (.9, .98), warmup 1000, cosine over 40k steps, clip 1, batch 512, TF32; evaluation every 500 steps; stop at test 1.0 or no gain >
-.005 over 5k steps after 20–30k (per cell); snapshots: best training accuracy ("best", not best held-out) and final, plus
-checkpoints every 2500 steps. All seeds of a cell in one process on consumer GPUs. Archived nets were re-scored in fp32 on CPU: within
-1 test row of the recorded TF32 accuracy for token multiplication, within .0012 for binary addition.
-Networks: [huggingface.co/jc1122/circuit-atlas-nets/tree/main/modular-arithmetic-mod-97](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/modular-arithmetic-mod-97)
-(35 files: hand-built token multiplier; token multiplication s0–9 best/final; binary addition s3/s4/s0 best/final; PART scratchpad
-binary multiplication s0–2 best/final + its hand-built base; splits; `manifest.json` with sha256 and accuracies).
-**Reproduce:** the training and analysis code for this task is not yet in `code/`; weights, splits and accuracies are in the folder above.
-
+[METHODS.md](../METHODS.md). AdamW lr 1e-3, wd 1.0 (x3wd .1), betas (.9, .98), warmup 1000, cosine over 40k, clip 1, batch 512, TF32; early
+stop at test 1.0 or a 5k plateau; best-training and final snapshots, checkpoints every 2500. Split per seed: frac .3 (2823 train) or .9
+(8468 train, 941 test). Consumer/rented GPUs; diagnostics and substitution on CPU in fp32. Reproduce: TODO (code/ port at publish).
 ## Architecture as used
-TRAIN (every cell): GPT-NeoX 4 layers × 4 heads (d_head 64), d_model 256, MLP 512 ReLU, sequential residuals, no LayerNorm, no positional
-encoding, untied readout; vocabulary 103 (BOS, values 0..96 = residues or digits, `+ * ^ = ;`). HAND: 8 layers × 8 heads, d_model 512,
-MLP 2304 (one config for all 17 cells); the token multiplier uses 1 head and 194 neurons of layer 0 (10,864 non-zero of 27.4M weights;
-`hand_mul_tok` stores the non-zero tensors only). PART (scratchpad S, binary LSB multiplication): 3 layers × 9 heads (d_head 4),
-d_model 36, MLP 130, vocabulary 395; only the layer-2 MLP is trained (`dense_h_to_4h` [130, 36], `dense_4h_to_h` [36, 130] + biases).
-
+TRAIN: GPT-NeoX 4 layers x 4 heads (d_head 64), d_model 256, MLP 512 ReLU, no LayerNorm, NoPE, untied; vocabulary 103 (BOS, 97 residues/
+digits, + * ^ = ;); all parameters trained. HAND: 8 x 8, d 512, same vocabulary, every weight by formula. Archive `modular-arithmetic-formats/`:
+hand_{mul,add}_tok, train_{mul,add}_tok_f90_{best,final}_s<seed> (mul s0,1,2,4,7,9; add s0-2), split_{mul,add}_tok (perm, ntrain, seeds),
+config.json, manifest.json (seed, rung, circuit type, fp32 accuracy, sha256). Networks: huggingface.co/jc1122/circuit-atlas-nets/tree/main/modular-arithmetic-formats; earlier round: huggingface.co/jc1122/circuit-atlas-nets/tree/main/modular-arithmetic-mod-97.
 ## Prediction before training
-Recorded in the design file before training. Token addition 10/10 with Fourier embeddings: refuted at .3 (3/10), held at .9 (10/10).
-Token multiplication 10/10 with Fourier in log coordinates: at .3 0/10, at .9 6/10 (+2 at ≥ .98), log-order code held. Binary: no
-circular code: held (0 binary nets carry ≥ 2 circular key frequencies). Digit formats: lookup/compare, no p-periodic code: mostly held;
-the heuristic Fourier screen flags decimal addition in 3/10 best (1/10 final) and decimal square in 2/10, which is not a causal clock
-certificate. `s10` beats `b10`: held (square at .3: `s10` best .84–.99 vs `b10` .01).
-
+Recorded before training: tok add Fourier, tok mul Fourier in log coordinates, no p-periodic code in digit formats, s10 beats b10. Held, except
+that frac .3 was below the grokking data threshold for tok add (3/10) and tok mul (0/10); 3x data fixed both.
 ## Hand-built reference
-Token addition: the "pizza" construction (Zhong et al., 2023), 4 frequencies. Token multiplication: discrete-log adder; the embedding
-holds log₅v and [v = 0]; one head averages the two operands (S = la + lb, zero flag), an MLP0 lookup writes 5^(S mod 96) (or 0 if a
-zero flag is set). Digit formats: index heads fetch digits, place-value sums give A, B (or x); addition: lookup on A + B;
-multiplication: thermometer [A ≥ k] and partial products relu(B − M(1 − [A ≥ k])), compare-subtract steps [P ≥ 97j] → q, r; square:
-compare-subtract on x → x mod 97, then a square lookup. All 17 are exact on all 9409 inputs (minimum logit margin 23.6).
-
+tok add: pizza (Zhong 2023), frequencies 17, 25, 32, 43. tok mul: discrete-log adder: embedding log_5 v and [v = 0], one averaging head, MLP
+lookup 5^(la+lb mod 96). Digit formats: index heads fetch digits, place-value sums; add: lookup on A+B; mul: thermometer partial products and
+compare-subtract [P >= 97j] -> q, r; sq: compare-subtract on x, square lookup. All 17 exact on all 9409 inputs (logit margin >= 23.6).
 ## What training finds
-| Cell | Fraction | Solved (test ≥ .99) | Test, best snapshot |
+| cell (final, 10 seeds) | exact / >= .99 | test range | circuit types (seeds) |
 |---|---|---|---|
-| add tok | .3 → .9 | 0/10 (3 at .93–.98) → 10/10 | .067–.982 → .997–1 |
-| add b10 / b16 / `s10` | .3 | 10/10 each | .993–1 |
-| add b2l / b2m | .3 | 4/10 / 3/10 | .121–.999 / .947–.999 |
-| mul tok | .3 → .9 | 0/10 → 6/10 | .033–.253 → .425–1 |
-| mul b10 / b16 | .3; .9; .9 decay .1 (3 seeds) | 0 each | .9: .055–.247; decay .1: .124–.580 |
-| mul b2m | .3; .9 | 0/10; 0/10 | .9: .133–.437 |
-| mul `s10` | .9 (3 seeds) | 0/3 | .876–.911 |
-| sq b10 / b16 | .3 → .9 | 0 → 9/10 / 4/10 | .9: .976–1 / .693–1 |
-| sq b2l / b2m; sq `s10` | .3 and .9; .3 | 0 each; 1/10 | binary near chance (train ≈ .02: under-fit); `s10` .841–.990 |
-Low-data `s10` and high-data b2l multiplication endpoints could not be verified from saved records and are excluded.
-- Learning curve, token multiplication at .9: test rises with train (no memorisation phase at this fraction); first test ≥ .99 at
-  21.5k, 22k, 26k, 28.5k, 35.5k, 36k steps (s0, s4, s8, s2, s3, s1); s5 .983, s9 .988, s6 .837, s7 .425 at the 40k budget.
-- Circuit type, token multiplication: log-order clock in all 10 seeds' embeddings (see Weights excerpt); the output surrogate is
-  certified in the 6 solved seeds. Embedding-level: replacing the residue embedding by its 24 strongest discrete-log Fourier modes keeps
-  9409/9409 in best s4 (s0 8482/9409); other solved seeds are not certified at this level.
-- Digit multiplication fails at the reduction: in decimal/hex multiplication (.9, 3 seeds each) A and S probe at R² .62–.80, B .37–.72 (layers 2–4),
-  but r stays at .47–.49 (layer 0), and S→r distributed alignment ≤ .14. Binary square (train ≈ .02): x² mod 97 from 14 bits needs unit
-  thresholds on x ~ 2^13 first.
-- Binary LSB addition (.3): MLP0 is a causal prefix-count rectifier, m̂0(p) = ReLU(φ_p C) L_r R_r + b, φ_p = (onehot(t_p), c_p/(p+1), 1),
-  c_p = counts of each token in the prefix (at `=`: popcount(a) + popcount(b)). Substituted for MLP0 at rank 4–8 on 1024 fresh test rows it
-  keeps accuracy (≥ .99 × native) and agrees .9922–1 in 5/10 seeds (s2, 3, 5, 6, 8; best and final); 2 failed seeds pass only at full rank,
-  3 reject. The later arithmetic is not resolved.
-- PART (scratchpad S, binary LSB multiplication, 3 seeds): 0/3, exact ≤ .0085. Local states C, A, B reach layer 2 intact (probe R² 1);
-  the trained MLP2 ranks first in activation patching (drop .49–.60). A fitted 10-coefficient affine writer fails substitution in all 6
-  snapshots; replacing only this MLP by the hand-built modular update gives 941/941 in every snapshot: the failure is the writer.
-- Scratchpad S vs answer only (multiplication, .9; S changes batch, decay, padding and target together, so not a format-only effect):
-  TRAIN S solves 15/15 (5 formats × 3 seeds, first ≥ .99 at 13–28k) where answer only solves 6/10 token and 0 decimal/hex/MSB seeds; S nets depend on
-  their written states but fail state-only restarts (.14–.73), and reach 0–.76 at padding 64 (trained 0–12). PART S 0/15.
-- Diagnostics (token multiplication .9; best snapshot 9 seeds, final 10; used = heads with mean-ablation drop > .05 + whole MLP blocks):
-
-| Snapshot | Used heads + MLPs | Best probe R² (layer): la / lb / la+lb mod 96 | A, B, r | Attention JS to HAND | Test |
+| mul tok x3 | 4 / 6 | .425-1 | K-high log clock 8 (s0,2-8), K-low ramp-clock 2 (s1,s9) |
+| add tok x3 | 6 / 10 | .998-1 | Fourier clock on Z_97 10 |
+| add b16 | 0 / 9 | .990-.999 | r read at L4 (DAS .47-.72): r-only 9, S+r 1 |
+| add s10 | 7 / 9 | .988-1 | q-transfer route (3/3 measured) |
+| mul b2l, sq b16 | 0 / 0 | .013-.077 | memorised (failed); 3-seed rounds: mul b10/b16 memorise at every data/wd |
+mul tok te90 21-30.5k (6 seeds); no HAND variable reaches probe .9 at any checkpoint. Length generalisation: not defined (fixed domain).
+Diagnostics (final snapshot, ranges over seeds; L0 = embedding; neuron counts unmeasured, whole MLPs only):
+| cell | used heads + MLPs | best probe R² per HAND var @L | eff. rank (PR) vs HAND | attn JS | best / final test |
 |---|---|---|---|---|---|
-| best | 7–16 + 4 | ≤ .62 / ≤ .40 / ≤ .78 (0–4) | ≤ .12 | .17–.37 | .425–1 |
-| final | 11–16 + 4 | same range | ≤ .12 | .17–.37 | .425–1 |
-Linear probes of the scalar logs stay low because the net stores them as angles; interchange was untested (no answer-fixing pairs).
-
+| mul tok x3 | 11-16 h + 4 M | A/B/S/q/r <= .12; la .62, lb .40, ls .78 (K-low) @3-4 | U vs 1.01 | .17-.37 | .425-1 / .425-1 |
+| add tok x3 | 13-16 h + 4 M | A, B, S, q <= .04; r <= .31 @4 | 4.1-8.7 vs 4.41 | .26-.28 | .997-1 / .998-1 |
+| add b16 | 9-16 h + 4 M | S .99, q .93, r .93 @4; A .88, B .80 | 3.1-6.4 vs 4.02 | .15-.26 | .993-.999 / .990-.999 |
+| add s10 | 7-8 h + 4 M | S .86, q .89, r .57 @4 | 5.0-7.1 vs 7.04 | .18-.24 | .997-1 / .988-1 |
+| mul b16 (r1/x3) | 0-4 h | A .80, B .72, S .80 @4; r .49 @0 (chance) | 37-43 vs 1 | .19-.26 | .02-.25 |
 ## Closed form
-Token multiplication, output replacement on nonzero a, b (a or b = 0 keeps answer 0): logit_hat(c) = Σ_{k∈K} [α_k cos(2πkδ/96) +
-β_k sin(2πkδ/96)], δ = log₅a + log₅b − log₅c. K = the m strongest frequencies of the net's mean logit as a function of δ, α, β by least
-squares on the seed's training rows; pass = held-out accuracy ≥ .99 and agreement ≥ .99 at some m ≤ 6.
-
-| Seed | Net test (best / final) | m | K (best) | Fit R² | Surrogate, all 9409 | Agreement, test (best / final) |
-|---|---|---|---|---|---|---|
-| 4 | 1 / 1 | 1 | 43 | .49 | 1 | 1 / 1 |
-| 8 | 1 / 1 | 2 | 17, 16 | .20 | 1 | 1 / 1 |
-| 0 | 1 / 1 | 3 (final 6) | 10, 48, 21 | .52 | 1 | 1 / 1 |
-| 2 | 1 / 1 | 3 (final 2) | 38, 36, 29 | .18 | 1 | 1 / 1 |
-| 1 | .9947 / .9957 | 6 | 6, 4, 8, 2, 10, 1 | .42 | 1 | .9947 / .9957 |
-| 3 | .9957 / .9957 | 6 | 6, 12, 18, 45, 48, 8 | .37 | 1 | .9957 / .9957 |
-The argmax is unique only if gcd(K ∪ {96}) = 1; every passing set satisfies this. In failed s6 and s7 the top-6 sets are all even, so c and
-−c (log₅(−1) = 48) tie exactly and the surrogate's accuracy is not meaningful there. The surrogate is fitted to the net's own logits on all
-frequencies ranked over all inputs: it shows what the output computes, not how the layers compute it.
-
+mul tok (both types): logit(c) = sum_{k in K} alpha_k cos(2 pi k d/96) + beta_k sin(2 pi k d/96), d = (log5 a + log5 b - log5 c) mod 96, c != 0;
+answer 0 iff a or b = 0; K = top-m frequencies of the net's mean logit vs d, alpha, beta fit on train rows. Substituted for the network output:
+accuracy kept on all 9216 nonzero pairs for every seed >= .98 (smallest m: s4 1, s5 1, s2 2, s8 2, s9 3, s0/s1/s3 6); agreement with the net =
+its accuracy (>= .99 on the six >= .99 seeds); s6 (.838) agree .837, s7 none. Output-level only (true discrete log); internally MLP3 = lookup
+T[ls] keeps accuracy in s0,2,4,5,6,9. add tok: the same form on Z_97 with d = (a + b - c) mod 97; substitution not yet measured.
 ## Weights excerpt and reading
-Residue embedding of the TRAIN nets (rows 1..96 of `gpt_neox.embed_in.weight`, residues 1..96): R² of the top-6 Fourier modes when the
-rows are ordered by residue v vs by log₅v (final snapshot; fit over Z₉₆):
-
-| Seed | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |
-|---|---|---|---|---|---|---|---|---|---|---|
-| residue order | .21 | .17 | .20 | .26 | .15 | .29 | .24 | .23 | .22 | .19 |
-| log order | .83 | .89 | .90 | .76 | .72 | .67 | .57 | .85 | .88 | .92 |
-| top log frequencies (share) | 36 .36, 24 .18 | 2 .28, 4 .24 | 38 .48, 20 .25 | 6 .36, 12 .20 | 36 .44, 30 .22 | 37 .48, 22 .09 | 2 .37, 46 .32 | 40 .56, 16 .19 | 28 .39, 40 .27 | 1 .55, 2 .23 |
-Reading: in every seed the embedding is periodic in the discrete log, not in the residue: the net transports the modular-addition clock
-to Z₉₆ through log₅. The output frequency set (closed form) can differ from the embedding's leading modes (s4: output 43, embedding 36,
-30, 43). Seed 4 final: one output frequency (k = 43, coprime to 96) with amplitude √(α²+β²) = 23.49 (best 8.43) carries every answer.
-Hand-built token multiplier: embedding column LG = log₅v, column ZF = [v = 0]; layer-0 head 0 averages the two operand tokens
-(key = value-token flag, query bias 240: uniform over a and b); MLP0 is a one-hot lookup on SL = la + lb (input weight 2, ZF weight −1000) writing Y_{5^s mod 97}.
-Values: embedding fit by `fourier` (power of the rFFT of the embedding rows reordered), closed-form K, R², amplitudes by least squares on
-the archived nets (recomputable from the HF files and `split_mul_x3`).
-
+Clock frequencies K and amplitudes sqrt(alpha²+beta²) per seed (final, clock_fit): s4 k 43 amp 23.5; s5 7 39.2; s2 38, 29 16.5, 8.3; s8 17,
+16 9.5, 6.4; s9 6, 2, 9 28.8, 9.9, 9.3; s1 6, 4, 8, 2, 10, 1 52.4 ... 7.4. Embedding top log-order frequencies: `excerpts.py modp` (DFT over
+residues sorted by log_5, power share). Reading: each seed rotates log a and log b on a few circles and reads cos(k(la + lb - lc)).
 ## Comparison
-HAND and TRAIN share the isomorphism Z₉₇* ≅ Z₉₆ but not the code: scalar ramp + lookup vs circles in log order; TRAIN is the
-modular-addition clock (Nanda et al., 2023; Zhong et al., 2023; Gromov, 2023) in log coordinates. Data decided token cells: fraction .3
-memorises (multiplication 0/10), .9 groks, as in grokking on small algorithmic datasets with p = 97 (Power et al., 2022). Digit formats
-never form circles; solved digit nets read r out categorically. Intermediate outputs help (S multiplication 15/15, `s10` square), in line
-with scratchpads (Nye et al., 2021), but the trained S nets are not the hand-built autonomous recurrence.
-
+HAND tok mul and TRAIN share the isomorphism Z_97* = Z_96 but not the code: ramp + lookup vs circles (the Nanda 2023 / Zhong 2023 clock moved
+by the discrete log). Digit formats never form circles; solved digit nets read r out as a categorical code at L4.
 ## Controls and limits
-The Fourier label was checked on all 17 HANDs (token addition F, the other 16 not). Best = best-training snapshot. Diagnostics cover
-token multiplication fully (one best seed missing) and other cells partially; neuron-level sizes are measured only for best s4/s0
-(12 heads + 1872 neurons / 14 + 1984 in deletion-local tests vs HAND 1 + 194). No length or range generalisation was tested (fixed
-operand widths; padding shifts context only). Answer-only digit cells were run once per retry step; S cells have 3 seeds.
-
+Fourier label checked on all 17 HANDs (tok add F, other 16 L). The closed form is output-level with the oracle log; seeds differ in weights
+(lmc barrier 12-19). r1 add b16/s10 nets were lost (log numbers only); final-run nets exist. Neuron counts and TRAIN align are unmeasured.
 ## References
-- Nanda, N., et al. (2023). Progress measures for grokking via mechanistic interpretability. arXiv preprint. https://doi.org/10.48550/arxiv.2301.05217
-- Zhong, Z., Liu, Z., Tegmark, M., & Andreas, J. (2023). The clock and the pizza. Conference paper (NeurIPS). https://doi.org/10.52202/075280-1186
-- Gromov, A. (2023). Grokking modular arithmetic. arXiv preprint. https://doi.org/10.48550/arxiv.2301.02679
-- Power, A., et al. (2022). Grokking: generalization beyond overfitting on small algorithmic datasets. arXiv preprint. https://doi.org/10.48550/arxiv.2201.02177
-- Nye, M., et al. (2021). Show your work: scratchpads for intermediate computation with language models. arXiv preprint. https://doi.org/10.48550/arxiv.2112.00114
+Nanda et al. 2023, https://doi.org/10.48550/arxiv.2301.05217; Zhong et al. 2023, https://doi.org/10.48550/arxiv.2306.17844; Gromov 2023,
+https://doi.org/10.48550/arxiv.2301.02679; Howe 2026, https://doi.org/10.48550/arxiv.2607.04333 (preprints, verified via scite).
