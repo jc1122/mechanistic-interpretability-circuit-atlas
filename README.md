@@ -40,6 +40,7 @@ Full table with seed counts and closed-form results: [INDEX.md](INDEX.md). Readi
 - [long-division-square-root](entries/long-division-square-root.md): one shared compare-and-subtract step; answer only needs 16–90x more data
 - [gcd-euclid](entries/gcd-euclid.md): a learned three-rule router on frozen Euclid parts
 - [quadratic-roots](entries/quadratic-roots.md): the register executor is one AND neuron; the parent tasks fail
+- [compose-arithmetic-registers](entries/compose-arithmetic-registers.md): compositions learned without the register lookup; the bare primitive fails
 
 **Number formats**
 - [base-conversion](entries/base-conversion.md): hex to binary groks as a nibble lookup; carry-type conversions are never learned
