@@ -1,105 +1,46 @@
-# Symbol-level algebra on term atoms: collecting like terms is learned at every rung; expansion is not, and solving a linear equation is learned from scratch only with a scratchpad
-
-**Task.** Each term is one token (side, power, coefficient). Three operations: **collect** (sum like terms of a polynomial),
-**expand** (binomial product), **solve** (`ax + b = cx + d` → a rational atom). Prompt `BOS <left terms> ; <right terms> =` with
-independently permuted terms; two terms per side, coefficients −9…9 without ±8 (±8 held out). Outputs are integer/rational atoms, not
-digit strings. Format **A** writes only the answer; format **T** writes a scratchpad (expand: distribution products then collection;
-collect: copy/copy/sum triples; solve: `D N ; solution`). Split by canonical-input hash mod 97 (one residue = test); fresh training
-sequences every batch; 1000 held-out sequences per seed. Exact = whole teacher-forced output.
-**Status.** 2026-11-07. HAND exact for all six cells. Three-seed screening runs (30k steps) for PART and TRAIN in all six cells, plus
-PART collect T seeds 3–9, PART expand A/T at 60k and TRAIN expand T at 60k. Ten-seed finals: PART collect T 10/10, TRAIN expand T (60k)
-10/10, TRAIN solve T (30k) 10/10. Pending: ten-seed finals of the other cells, diagnostics of the two new ten-seed TRAIN finals, most
-best/final diagnostics, native-vs-closed-form agreement on a fresh batch, literal trained-weight excerpts, public code.
-
+# Symbol-level algebra: collection, expansion and linear equations
+**Task.** Structured `(side,power,coefficient)` term atoms; ops: collect like terms, expand `(a x+b)(c x+d)`, solve `ax+b=cx+d`. Outputs are integer/reduced-rational atoms (no digit arithmetic, no parsing). Two terms per side, coefficients −9…9 without ±8 (held out), hash-disjoint test (mod 97). A = answer-only; T = scratchpad (expand: 4 products then 3 coefficients; collect: copy/copy/sum triples; solve: `D N ; solution`).
+**Status.** 2026-11-08. HAND 6/6 exact. PART + TRAIN, 3 seeds in all 6 cells (30k; retries 60k). 10-seed finals (wd .1): PART collect T 10/10, TRAIN expand T (60k) 10/10 on best (9/10 on final snapshot: s3 .998), TRAIN solve T (30k) 10/10. CPU fp32 and TF32 GPU (TRAIN).
 ## Summary
-Collection is easy: training only the last arithmetic MLP on frozen hand-built routing (PART) solves A and T in every seed (10/10 for T)
-within 0.5–1k steps, and a three-number addition formula (A) or an eight-number phase-gated copy/copy/sum (T) replaces the trained MLP
-with 4096/4096 exact sequences in all six fitted seeds. Training from scratch (TRAIN) also collects (A ≥ .996, T 1.0, 3/3). Expansion is
-not learned in the answer-only format at either rung (PART ≤ .96 even at 60k, TRAIN ≤ .13), but TRAIN with the scratchpad solves it at
-60k (3/3). Solving the equation needs the scratchpad from scratch (TRAIN T 3/3 exact, TRAIN A ≤ .97); PART fails both formats because its
-quadratic stage lacks precision.
-
+Every scratchpad (T) cell trains to saved-test exact = 1; answer-only expand and solve never do (expand A ≤ .126; solve A best .997/.506/.439 at 60k). PART recovers HAND's addition stage in collect (13/13 seeds; the closed form substitutes for the trained MLP with exact 1.0 → 1.0 and agreement 1.0). TRAIN expand T and solve T each form one circuit type in 10/10 seeds: an MLP chain (MLP0 → MLP1 → L2 heads → MLP2) on top of layer-0/1 fetch heads, with a categorical product code (expand) or a difference code (solve) instead of HAND's bit-gated scalars. Every head and MLP is needed under resample ablation, and no TRAIN closed form is accepted. Nothing generalises to the untrained ±8 coefficients (exact ≤ .008).
 ## Setup
-[METHODS.md](../METHODS.md) for the shared conventions. AdamW lr 1e-3, wd .1, warmup 1000, cosine over the run (30k; retries 60k),
-clip 1, batch 128 fresh sequences per step, eval every 500 steps on the 1000 held-out sequences (best snapshot = highest there), stop
-when all seeds are exact or on a 5k plateau after 75% of the steps. PART fp32, TRAIN TF32; all seeds of a cell in one process on
-consumer GPUs; re-scores fp32 on CPU.
-Networks: [huggingface.co/jc1122/circuit-atlas-nets/tree/main/symbolic-algebra-atoms](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/symbolic-algebra-atoms)
-(66 nets + 6 HAND, incl. the ten-seed TRAIN T finals' seeds 3–9 `train_{expand,solve}_T_final_s3_9_s<seed>`; best snapshots; each run's
-held-out sequences in `test_<run>`). Reloaded in fp32, all 66 reproduce their recorded
-held-out exact (TF32 nets within 3/1000) and every HAND scores 1.0.
-**Reproduce:** the generator, HAND and trainer for this task are not yet in `code/`; weights, test sequences and accuracies are in the folder above.
-
+See [METHODS.md](../METHODS.md). Prompt `BOS <left terms> ; <right terms> =`, terms permuted per batch. Fresh hash-disjoint batches (≤ 3.84M draws/seed at 30k), AdamW lr 1e-3, wd .1, bs 128, warmup 1000, cosine, clip 1; eval every 500 steps on 1000 saved test rows/seed; checkpoints every 2500; plateau stop 5000 after 75% of budget. PART fp32, TRAIN TF32. Seeds 0–2 screen, 3–9 final. Networks: huggingface.co/jc1122/circuit-atlas-nets/tree/main/symbolic-algebra-atoms.
 ## Architecture as used
-GPT-NeoX, ReLU, no LayerNorm, no positional encoding (causal mask only), untied read-out, vocabulary 2328, d_model 64, 4 heads of 16,
-MLP 256, positions up to 128. Solve A: 2 layers; all other cells: 3 layers. TRAIN learns every tensor. PART: HAND frozen; the stage MLP
-(solve A layer 1, others layer 2: `dense_h_to_4h` [256, 64] + bias, `dense_4h_to_h` [64, 256] + bias) re-initialised and trained with
-input columns and output rows masked to the HAND interface. Zero-based input columns: collect A {27, 28}; collect T adds 18…25 (phases);
-expand A {27, 29…33, 34, 36…40, 18…25}; expand T {27, 29…33, 41, 18…25}; solve A {42, 43}; solve T {27, 28, 42, 43, 18…25}; output rows
-{44} (solve A {45…47}, solve T {44…47}). Files: `hand_<op>_<fmt>`, `part_*` (trained tensors only; insert into the HAND), `train_*` (full
-state dicts), `test_<run>`, `config.json`, `manifest.json` (seed, best step, recorded and re-scored exact, final exact, sha256).
-
+GPT-NeoX shape, ReLU, no LayerNorm, no positions (NoPE); vocab 2328, d_model 64, 4 heads × 16, d_mlp 256, 3 layers (HAND solve A: 2). PART trains only the last MLP (`layers.2.mlp`, W_in [256, 64], W_out [64, 256]; solve A `layers.1`), non-arithmetic input columns / output rows masked to zero; TRAIN learns everything from the HF init. Archive: `hand_<op>_<fmt>.safetensors`, `part_*/train_*_s<seed>.safetensors` (best snapshots), `test_<run>.safetensors`, `config.json`, `manifest.json` (seed, rung, accuracy, sha256).
 ## Prediction before training
-Recorded before training (exact ≥ .99): collection PART 3/3 by 5k and TRAIN 3/3 by 15k; expansion PART ≥ 2/3 and expansion T TRAIN
-≥ 2/3 by 15k; solve A TRAIN ≤ 1/3, solve T TRAIN ≥ 2/3. Collection and solve held (collect T TRAIN later than predicted: best at
-17.5–22.5k); the expansion predictions failed at 30k (expansion T TRAIN succeeded only at 60k).
-
+(commit 4c558035, E ≥ .99) collect PART 3/3 by 5k, TRAIN 3/3 by 15k; expand PART ≥ 2/3, expand T TRAIN ≥ 2/3 by 15k; solve A ≤ 1/3, solve T TRAIN ≥ 2/3; quotient is the solve bottleneck. Held: collect PART (final 10/10 at 1000 steps), solve A, solve T (10/10). Failed: expand PART 0/6; expand T TRAIN needed 60k (0/7 exact by 30k); collect T TRAIN crossed later (17.5–22.5k). Mechanism fields (product reuse, quotient errors) were not observable: best nets make no errors.
 ## Hand-built reference
-Except solve A, L0 builds a reciprocal-position frame, L1 anchors phases at `=`, L2 heads fetch operands by squared side/power match
-(score −24(side − s)² − 24(power − p)² + 256·is_term). Signed ReLU pairs add/subtract; multiplication sums bit-gated signed pairs with
-weights (1, 2, 4, 8, −16). Expansion T reads the written products. Solve A fetches and subtracts coefficients in L0 and forms quadratics in
-L1; solve T does the arithmetic in L2; the ratio score 2r·DN − r²D² (plus ALL/NONE scores) picks a bounded rational atom (not Euclid).
-Checks: 34,454 sequences across the six HANDs (exhaustive local products, 3721 solve states, stratified full inputs, permutations,
-greedy generation); minimum margin .0011 (solve), 1 elsewhere. Heads + neurons: collect A 4+22, T 4+147; expand A 6+41, T 5+60;
-solve A 4+244, T 6+270.
-
+L0 reciprocal-position frame, L1 phase anchor at `=`, L2 fetches operands by squared side/power match (score `−24(side−s)²−24(power−p)²+256·is_term`). Signed ReLU pairs add/subtract; multiply = bit-gated signed pairs (weights 1,2,4,8,−16). T expand reuses written products. Solve: ratio score `2r·DN − r²D²` (+ ALL/NONE) classifies bounded rationals. Sizes (heads+neurons): expand A 6+41, T 5+60; collect A 4+22, T 4+147; solve A 4+244, T 6+270. 34,454 checks pass (exhaustive primitives, all 3,721 solve states); min margin .0011 (solve), 1 elsewhere.
 ## What training finds
-Held-out exact, best snapshot (final in brackets where lower by > .005); 3 seeds unless marked.
-| Cell | PART | TRAIN |
-|---|---|---|
-| collect A | 1, 1, 1 (step .5k) | 1, 1, .996 (11–20k) |
-| collect T | 1 in 10/10 (1k) | 1, 1, 1 (17.5–22.5k) |
-| expand A | .90, .90, .80; 60k: .95, .96, .88 | .11, .12, .13 [.09–.11] |
-| expand T | .71, .74, .78; 60k: .78, .81, .86 | .11, .16, .99; 60k: 1, 1, 1 (29.5–36.5k); ten-seed final 60k: 10/10 best 1, final 1 (s3 .998), 29.5–44k |
-| solve A | .97, .96, .96 | .97, .29 [.24], .42 [.33] |
-| solve T | .41, .40, .39 | 1, 1, 1 (25–26.5k); ten-seed final 30k: 10/10, best = final = 1, 24–26.5k |
-Out of range (256 selected rows, all ten-seed TRAIN T finals): held-out ±8 coefficients exact 0–.008, wide coefficient range .08–.09,
-reordered terms .996–1. Learning curves show no separate memorisation phase: collection TRAIN A crosses test .5/.9 at 2–3.5k/4.5–5.5k, before train exact
-(13.5–18k). Diagnostics (best snapshot, one seed each): PART collect A/T decode the sum with probe R² = 1 at L3, residual rank99 = HAND;
-PART solve A decodes D, N exactly at L1 but D², N², DN only at R² .91/.61/.84 at L2; TRAIN collect A sum R² .92 at L3 (12 heads matter,
-JS to HAND .16), collect T .42, solve T difference .998 at L3 and D/N .98 at L2. Failure localisation, solve A PART seed 0: exact D, N
-reach the learned quadratic stage; substituting exact arithmetic there repairs .971 → 1, so the failure is precision of the quadratic.
-
+| Cell | PART best/final (perfect) | TRAIN best/final (perfect) | Retry / 10-seed final | first exact (k steps) |
+|---|---|---|---|---|
+| expand A | .796–.903 / .795–.895 (0/3) | .112–.126 / .090–.106 (0/3) | PART 60k .884–.959 (0/3) | — |
+| expand T | .710–.782 / .698–.782 (0/3) | 30k: .112–.986 (0/3) | TRAIN 60k: 10/10 best = 1 (final s3 .998) | 29.5–44 |
+| collect A | 1 / 1 (3/3) | .996–1 (2/3) | — | PART .5; TRAIN 11–13.5 |
+| collect T | 1 / 1 (3/3); final 10/10 | 1 / 1 (3/3) | — | PART 1; TRAIN 17.5–22.5 |
+| solve A | .959–.971 (0/3) | .289–.973 (0/3) | TRAIN 60k .997/.506/.439 (0/3) | — |
+| solve T | .386–.405 (0/3) | 1 / 1 (3/3) | TRAIN 30k: 10/10 best = final = 1 | 24–26.5 |
+Circuit types (clustered by edges, patching, ablation, interchange): PART collect A *HAND scalar add* 3/3, collect T *HAND phase-gated copy/copy/sum* 10/10; TRAIN collect A *pooled same-power routing* 2/2 solved, collect T *written-operand reuse* 3/3; TRAIN expand T *MLP-chain categorical product* 10/10; TRAIN solve T *fetch → MLP difference code → L2 → classifier* 10/10 (D,N linearly decodable in 9/10; s4 encodes them non-linearly with the same edges and patch profile). The strongest L2 edge head varies by seed (H0–H3), but resample ablation of any single head or MLP drops exact by .01–1 in all 20 nets, so the circuit is the whole net. Frozen parts read by PART: L2H0/H1 fetch (patch drop .65–1), others 0.
+Failures: PART expand/solve = learned MLP precision (product R² .9994–.9999, quadratics .61–.92, below unit resolution); TRAIN expand A never fetches operands (R² ≤ .12 at every layer); TRAIN solve A lacks D,N (s2) or DN (s0). Scratchpad supplies the missing intermediate.
+## Diagnostics
+Used = heads (of 12) + MLP blocks whose single resample ablation (donor = another test row) drops exact by ≥ .01; mean-ablation count (drop > .05) in brackets; PART rows: zero-ablation of the frozen HAND heads + trained MLP2. Probe = best R² (layer), range over seeds. r99 = L3 residual PCA rank (99% var). JS = mean nearest-HAND attention JS. Final nets.
+| Cell (seeds) | Used | Best probe R² (layer) | r99 (HAND) | JS | Best/final exact |
+|---|---|---|---|---|---|
+| PART collect A (3) | 4H + M2 | l/r/sum 1 @3, power 1 @0 | 3 (3) | 0 | 1 / 1 |
+| PART collect T (10) | 4H + M2 | l/r/sum 1 @3, power/phase 1 @2 | 5 (5) | 0 | 1 / 1 |
+| TRAIN expand T (10) | 12H + 3 MLP (resample; 9–12H by mean) | power .98–.99 @1–2, rewrite .82–.97 @2, written_mean .11–.53, coefficient .15–.58, product ≤ .49 | 25–32 (5) | .17–.20 | 1 / 1 (s3 final .998) |
+| TRAIN solve T (10) | 12H + 3 MLP (resample; 6–12H by mean) | difference .99–1 @1–3, D/N .66–.98 @1–2 (s4 ≤ 0), DN .38–.76 | 8–13 (7) | .08–.13 | 1 / 1 |
+Causal: expand T `product` interchange flip 1.00 at L3 (nf 493–508, 10/10), DAS k16 .79–.98; written_mean flip ≤ .005 (s1, s4): the written-product reuse of HAND is not used. Solve T difference/coefficient flip 1.00 at L3 (nf 240–253, 10/10), DAS k16 .85–.94; internal layers untested (nf 0). Edges pass (spearman_exact .87–.96) on all 20 TRAIN finals; Jaccard vs HAND .14–.27. PART edges = HAND (Jaccard 1).
 ## Closed form
-**PART collection:** A: S = a + b; T: S = g0·a + g1·b + g2·(a + b) (phase gates g, separator 0), from the fetched operands. Replacing the
-whole stage-MLP output with these response fits scores 4096/4096 fresh held-out sequences in each of the six seeds (exact-sum control
-also 4096/4096); no fitting on the evaluation set. The original best-snapshot runs also record native → fitted exact 1 → 1 for all six.
-Native-net agreement on the fresh batch is pending. No TRAIN closed form is accepted.
-
+PART collect A: `S = a + b`; T: `S = (g0+g2)·a + (g1+g2)·b` (rewrite-phase one-hot g; every other MLP2 output 0), read from the frozen fetched slots A0, B0. Substituting it for the whole trained MLP2 output: exact 1.0 → 1.0 in 13/13 seeds (A 3, T 10) on the 1000 saved and 4096 fresh test rows, prediction agreement with the network 1.0; the trained S output differs from the formula by at most .13–.39 at answer positions (below the half-unit readout margin). TRAIN: no closed form accepted (collect A s1 joint analytic substitute 0/1000; expand/solve T circuits are stated at component level only).
 ## Weights excerpt and reading
-HAND collect A, input (a, b): neuron 0 (W_in, b_in, W_out) = ((1, 1), 0, 1), neuron 1 ((−1, −1), 0, −1): ReLU(a + b) − ReLU(−a − b).
-Trained PART response-fit coefficients (fits of the stage's response, rounded; A on [a, b, 1], T on [g0·a, g1·b, g2·(a+b), g0, g1, g2, g3, 1]):
-| Seed | Collect A | Collect T |
-|---|---|---|
-| 0 | (.998348, .999904, .020512) | (.999751, .999719, .999953, −.001477, .003338, −.002098, .000132, −.000105) |
-| 1 | (.995752, .998575, −.009040) | (1.000926, 1.001168, 1.001172, −.001005, −.002591, −.002531, .004153, −.001974) |
-| 2 | (.998967, 1.002262, .005735) | (1.000948, 1.001930, 1.002163, −.000087, .000327, −.001392, .002057, .000906) |
-Reading: slopes ≈ 1 implement copy/add; offsets stay below half a unit over all 289 legal operand pairs per phase, so the integer
-read-out 2tS − t² picks the right atom. In PART collect A, 193/256 learned neurons point within cosine .95 of signed-sum directions;
-ablating them as a group drops exact to .004, i.e. the sum is spread over many hinge pairs rather than HAND's single pair.
-Literal trained rows are now in the archive; their excerpt is pending.
-
+Layer-2 MLP rows `[W_in on a=A0, b=B0, ONE | bias → W_out[S]]` (weight slice of the archived files). HAND collect A: `n0 [1, 1, 0] | 0 → 1`, `n1 [−1, −1, 0] | 0 → −1`, so S = ReLU(a+b) − ReLU(−a−b) = a+b. HAND collect T: four gated rows `[±1, 0, 0] | −1024 → ±1`, `[0, ±1, 0] | −1024 → ±1` (the phase gate lifts the −1024 bias). Trained PART (top-3 of 256 by |W_out[S]|·|W_in[a,b]|): collect A s0 `n165 [−.08, −.12, 0] | .02 → −.134`, `n199 [−.08, −.11, 0] | .02 → −.131`, `n241 [−.10, −.10, 0] | .02 → −.116`; collect T s3 `n111 [−.05, −.07, 0] | .02 → −.247`, `n231 [.08, .06, 0] | −.02 → .200`. Reading: many small hinges read a and b with similar weight and sum to S (equal-weight share of the top 20: A .40–.45, T .10–.20, where phase-gated copy rows read a or b alone); the network's S stays within .39 of the closed form, so the integer readout picks the same atom.
 ## Comparison
-PART collection computes HAND's variable (the sum) with a distributed implementation, not HAND's sparse weights. Scratchpads decide
-the TRAIN outcome for expansion and solving, not for collection. Held-out ±8 coefficients: TRAIN collect A/T and solve T score 0;
-PART collect at 6 terms and wide coefficients .66/.008. Progress-measure methods [Nanda et al.] are methodological context only.
-
+Hand-built vs trained: PART keeps HAND's algorithm (same edges, same closed form) with distributed hinges in place of HAND's 2-neuron signed pair. TRAIN does not use HAND's algorithm: 9–12 heads vs 5–6, products and differences as categorical codes (no linear bits; JS .08–.20) and no reuse of written products. Answer-only vs scratchpad (TRAIN): expand 0 / 10 of 10, solve 0 / 10 of 10, collect 2/3 vs 3/3 (answer-only faster). Consistent with scratchpad results for multi-step computation (Nye et al. 2021) and intermediate supervision making composite tasks learnable (Wies et al. 2022).
 ## Controls and limits
-HAND controls exact; substitution evaluated on fresh hash-held-out sequences, fits not tuned on them. Sampling is with replacement;
-saved perfection is not exhaustive exactness. Not established: natural-notation parsing, learned fraction reduction, unseen rational
-atoms, length or range transfer. Pending: ten-seed finals of the other cells, best/final diagnostics for most nets, fresh native-vs-formula agreement,
-trained-weight excerpts, sufficient-neuron counts, checkpoint dynamics, public code.
-
+Length: expand and solve are fixed at two terms per side (no longer inputs exist in the grammar). Collect PART: exact 1.0 at n = 1…6 terms per side (512 fresh rows per n, 13/13 seeds, native and closed form; trained at n = 2); collect TRAIN (r1) exact 0 at n = 3…6. Out of range (256 rows, TRAIN T finals): held-out ±8 exact 0–.008, wider coefficients .08–.09, reordered terms .996–1. Saved-test exact is 1000 sampled rows/seed, not exhaustive. No claim of natural-notation parsing, learned fraction reduction or unseen coefficient tokens (±8 embeddings never train). Probe R² ≠ use; inter flip with nf > 0 is the use test (nf 0 = untested).
 ## References
-[Nanda et al., Progress measures for grokking via mechanistic interpretability](https://arxiv.org/abs/2301.05217) — research preprint; methodological comparison.
-[Wen et al., Understanding Warmup-Stable-Decay Learning Rates: A River Valley Loss Landscape Perspective](https://arxiv.org/abs/2410.05192) — research preprint; retry-budget motivation only.
+- [Nanda et al. 2023, Progress measures for grokking via mechanistic interpretability](https://arxiv.org/abs/2301.05217) — preprint; methods context.
+- [Wen et al. 2024, Understanding Warmup-Stable-Decay Learning Rates](https://arxiv.org/abs/2410.05192) — preprint; budget-retry motivation.
+- [Nye et al. 2021, Show your work: scratchpads for intermediate computation](https://doi.org/10.48550/arxiv.2112.00114) — preprint; scratchpad.
+- [Wies et al. 2022, Sub-task decomposition enables learning in sequence to sequence tasks](https://doi.org/10.48550/arxiv.2204.02892) — preprint; intermediate supervision.
