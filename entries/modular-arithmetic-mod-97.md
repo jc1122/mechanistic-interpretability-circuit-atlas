@@ -1,15 +1,30 @@
-# Modular arithmetic mod 97 in six number formats: token multiplication learns a discrete-log clock; digit multiplication memorises
+# Modular arithmetic mod 97 in six number formats
+
+> - **Task.** Compute a + b, a·b or x² modulo 97 when the numbers are written as residue tokens, binary, decimal, hex or a decimal scratchpad. Example: (96 + 2) mod 97 = 1.
+> - **Hand-built net.** Residue tokens: addition by a Fourier pizza at frequencies 17, 25, 32, 43; multiplication by adding base-5 discrete logs and looking up 5^(la+lb mod 96). Digit formats: fetch digits, place-value sums, compare-subtract. 17 nets, all exact on 9409 inputs.
+> - **Trained nets.** Token multiplication at fraction .9: embeddings are circles in discrete-log order in 10/10 seeds (K-high clock 8, K-low ramp-like clock 2), 6/10 reach ≥ .99 test; token addition is a Fourier clock in 10/10. Binary multiplication and hex squaring memorise (test .013–.077).
+> - **Verdict.** Partly solved (token multiplication 6/10 seeds ≥ .99 at fraction .9, 0/10 at .3; digit multiplication memorises). Closed form: partial (output-level only: substitution keeps accuracy ≥ .98 on all 9216 nonzero pairs in 8/10 token-multiplication seeds).
+> - **Links.** [Weights](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/modular-arithmetic-formats) · Reproduce: not available yet · [Terms](../GLOSSARY.md)
+
+## Task and status
 **Task.** a+b, a·b (a, b in 0..96), x² (x in 0..9408) mod 97, all 9409 inputs; formats `tok` (one token per residue), binary LSB/MSB first
 (`b2l`/`b2m`), decimal `b10`, hex `b16`, decimal scratchpad `s10` (S ; S div 97 ; r). Answer r = S mod 97, exact match.
-**Status.** DRAFT 2026-11-08, after the final run (10 seeds: mul tok x3 = ENTRY cell, add tok x3, add b16, add s10, mul b2l, sq b16); not published.
+**Formats.**
+- `tok`: one token per residue.
+- `b2l` / `b2m`: binary, least / most significant bit first.
+- `b10`, `b16`: decimal, hexadecimal digits.
+- `s10`: decimal scratchpad (S ; S div 97 ; r).
+
+**Status.** 2026-11-08, after the final run (10 seeds: mul tok x3 = ENTRY cell, add tok x3, add b16, add s10, mul b2l, sq b16).
 ## Summary
-No binary/decimal/hex TRAIN net carries a circular code of a or r; only token formats do. Token multiplication (frac .9) embeds residues as
+No binary/decimal/hex net trained from scratch (TRAIN) carries a circular code of a or r; only token formats do. Token multiplication (frac .9) embeds residues as
 circles in discrete-log order in 10/10 seeds (K-high multi-frequency clock 8, K-low ramp-like clock 2; 6/10 >= .99 test). Its output is a
 <= 6-frequency clock in d = log a + log b - log c (substitution keeps accuracy on all 8 seeds >= .98). Digit multiplication memorises.
 ## Setup
 [METHODS.md](../METHODS.md). AdamW lr 1e-3, wd 1.0 (x3wd .1), betas (.9, .98), warmup 1000, cosine over 40k, clip 1, batch 512, TF32; early
 stop at test 1.0 or a 5k plateau; best-training and final snapshots, checkpoints every 2500. Split per seed: frac .3 (2823 train) or .9
-(8468 train, 941 test). Consumer/rented GPUs; diagnostics and substitution on CPU in fp32. Reproduce: TODO (code/ port at publish).
+(8468 train, 941 test). Consumer/rented GPUs; diagnostics and substitution on CPU in fp32.
+**Reproduce:** training code for this task is not yet in `code/`; the weights, held-out splits and recorded accuracies are on Hugging Face (link above).
 ## Architecture as used
 TRAIN: GPT-NeoX 4 layers x 4 heads (d_head 64), d_model 256, MLP 512 ReLU, no LayerNorm, NoPE, untied; vocabulary 103 (BOS, 97 residues/
 digits, + * ^ = ;); all parameters trained. HAND: 8 x 8, d 512, same vocabulary, every weight by formula. Archive `modular-arithmetic-formats/`:

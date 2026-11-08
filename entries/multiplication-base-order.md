@@ -1,13 +1,27 @@
 # Multiplication: digit order, number base, sub-step curriculum and a scratchpad
+
+> - **Task.** Multiply two numbers below 256 (`x*y=` → product) in base 2, 10 or 16, either answer only (product written most or least significant digit first) or with a scratchpad of running sums. Example (base 10): 7 × 3 → 21.
+> - **Hand-built net.** None: this entry has no hand-built net (an explicit exception). The trained nets are probed for the column sums and carries that fix each product digit.
+> - **Trained nets.** All trained from scratch (4 layers). Answer only, least significant digit first: base 10 20/20, base 2 17/20 (final cell 10/10); most significant first 1/60. Doubling width rescues decimal and hex (7/10, 6/10), never binary (0/26 over width, data and aux retries). A scratchpad (SP) solves every most-significant-first cell at 1x (18/18).
+> - **Verdict.** Partly solved (answer only: least significant first yes in base 2 and 10, most significant first 1/60; scratchpad 18/18). Closed form: partial (scratchpad Fourier readout only: decimal 6/6, hex 3/6; none for answer only).
+> - **Links.** [Weights](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/multiplication-base-order) · Reproduce: not available yet · [Terms](../GLOSSARY.md)
+
+## Task and status
 **Task.** `x*y=` -> product, x, y in [0, 256), base 2 (8+8 -> 16 digits), 10 (3+3 -> 5) or 16 (2+2 -> 4), zero-padded; answer-only (AO) MSB- or LSB-first, or scratchpad (SP): sums S_j = x (y mod
-B^(j+1)) LSB-first + `;`, then the product MSB-first. Test: 2000 held-out pairs; training draws fresh pairs from the other 63,536; exact = every output token. **Status.** 2026-11-08; 4 layers, d 384,
-30k steps; AO 6 cells x 4 mixes x 5 seeds (120), retries R1 2x width (45), D3 3x data (25), aux (12); SP 18; final cell (binary LSB, anneal) 10 seeds.
+B^(j+1)) LSB-first + `;`, then the product MSB-first. Test: 2000 held-out pairs; training draws fresh pairs from the other 63,536; exact = every output token.
+**Formats.**
+- **AO**: answer only, most (MSB) or least (LSB) significant digit first
+- **SP**: scratchpad, sums S_j = x (y mod B^(j+1)) LSB-first and `;`, then the product MSB-first
+- **R1 / D3 / aux**: retries with 2x width, 3x data, and a running-sum probe loss
+
+**Status.** 2026-11-08; 4 layers, d 384, 30k steps; AO 6 cells x 4 mixes x 5 seeds (120), retries R1 2x width (45), D3 3x data (25), aux (12); SP 18; final cell (binary LSB, anneal) 10 seeds.
 ## Summary
-Digit order decides AO learnability: LSB-first solves base 10 (20/20) and base 2 (17/20; final cell 10/10), MSB-first 1/60. Width rescues decimal/hex MSB (7/10, 6/10), never binary MSB (0/26 over
+Digit order decides answer-only (AO) learnability: least-significant-digit-first (LSB-first) solves base 10 (20/20) and base 2 (17/20; final cell 10/10), most-significant-first (MSB-first) 1/60. Width rescues decimal/hex MSB (7/10, 6/10), never binary MSB (0/26 over
 width, data, aux). A scratchpad solves every MSB cell at 1x (18/18). Four circuit types (one per base, plus SP) read column variables at MLP3; closed form only for the SP Fourier readout (dec 6/6, hex 3/6).
 ## Setup
 [METHODS.md](../METHODS.md). Mix f: a sample is a sub-problem with prob. f (digit x digit, y with one / two nonzero digits), else uniform; f = 0, .3, .6, anneal (.6 -> 0 by 15k). AdamW lr 1e-3, wd .1,
-betas (.9, .98), warmup 1k, cosine to 30k, clip 1, batch 256, TF32, eval every 500; solved = best test >= .99. Final cell: 10 seeds, same recipe, plateau stop. Networks: huggingface.co/jc1122/circuit-atlas-nets/tree/main/multiplication-base-order
+betas (.9, .98), warmup 1k, cosine to 30k, clip 1, batch 256, TF32, eval every 500; solved = best test >= .99. Final cell: 10 seeds, same recipe, plateau stop. Networks: [huggingface.co/jc1122/circuit-atlas-nets/tree/main/multiplication-base-order](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/multiplication-base-order)
+**Reproduce:** training code for this task is not yet in `code/`; the weights, held-out splits and recorded accuracies are on Hugging Face (link above).
 ## Architecture as used
 GPT-NeoX, 4 layers, d_model 384 (12 heads x 32), MLP 256 ReLU (W_in [256, 384], whole residual), no LayerNorm, no positions, untied; vocab 19 (BOS, `*`, `=`, digits 0-15; SP 20 with `;`); all trained.
 R1 d 768 (12 x 64); D3 batch 768; aux = running-sum probe loss at resid_3. Files `<cell>_s<seed>[_final].safetensors`, config.json, manifest.json (sha256, fp32

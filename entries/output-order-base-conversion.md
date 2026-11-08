@@ -1,18 +1,29 @@
-# Output order in 16-bit base conversion: most-significant-first answers are threshold ladders and are learned; least-significant-first answer-only cells need a residue readout and mostly fail
+# Output order in 16-bit base conversion
 
+> - **Task.** Convert integers 0…65535 between 5 decimal digits and 16 bits, with the answer written most-significant-bit first (MSB) or least-significant-bit first (LSB). Example: decimal 65535 → sixteen 1 bits.
+> - **Hand-built net.** A 3-layer net, every weight set by formula, exact on 65536/65536 integers in all 8 cells: MSB-first answers are a threshold ladder on the remaining magnitude F = x − W; LSB-first answers read F mod the output base.
+> - **Trained nets.** Trained on frozen hand-built routing (PART), MSB-first answer-only cells are learned (≥ .99 in all seeds; TRAIN decimal to binary ≥ .996 in 10/10); LSB-first answer-only cells mostly fail (PART .46–.59 decimal to binary, .18–.38 binary to decimal; TRAIN binary to decimal ≤ .045). Scratchpads solve binary to decimal in 10/10 PART seeds in both orders.
+> - **Verdict.** Partly solved (MSB-first and scratchpad cells learned; LSB-first answer-only fails, PART .18–.38 and TRAIN ≤ .045 for binary to decimal). Closed form: partial (PART only: identical token predictions in 12/12 tested snapshots of seeds 0–2; TRAIN scalar template rejected 0/12; seeds 3–9 untested).
+> - **Links.** [Weights](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/output-order-base-conversion) · Reproduce: not available yet · [Terms](../GLOSSARY.md)
+
+## Task and status
 **Task.** Convert integers x = 0…65535 between 5 decimal digits and 16 bits, both directions (d2b: decimal to binary, b2d: binary to
 decimal). The answer is written MSB-first or LSB-first. Format **A** writes only the answer; format **B** first writes 16 scratchpad
 lines (d2b: halving lines `r_{k−1} q_k`, q_k = x >> k; b2d: doubling lines v_k = x >> (16−k)), then copies the answer from them.
 Prompt `BOS input =`, vocabulary 18. Split per seed: a random permutation of all 65536 integers, 90% train (58982), 10% test (6554).
 Exact = every teacher-forced output token of the row.
+**Formats.**
+- **A**: answer only.
+- **B**: 16 scratchpad lines first (decimal to binary: halving lines `r_{k−1} q_k`; binary to decimal: doubling lines v_k), then the answer is copied from them.
+
 **Status.** 2026-11-07. HAND exact in all 8 conversion cells (65536/65536 each). Published here: A cells b2d MSB (PART, TRAIN 10 seeds),
 d2b MSB (PART, TRAIN 10), d2b LSB (PART, TRAIN 10), b2d LSB (PART 10, failed), B cells d2b MSB, b2d MSB, b2d LSB (10 seeds trained,
 seeds 0–2 archived). Pending: d2b B LSB (training interrupted), a companion integer-Newton square-root trace task, a controlled-routing
 scratchpad format, ten-seed substitution checks and most best/final diagnostics.
 
 ## Summary
-Answer order changes difficulty in the opposite direction from the recorded prediction: MSB-first answer-only conversion needs one
-threshold ladder on a magnitude F = x − (value already written) and is learned (PART ≥ .99 in all seeds, TRAIN d2b ≥ .996 in 10/10),
+Answer order (MSB-first or LSB-first) changes difficulty in the opposite direction from the recorded prediction: MSB-first answer-only conversion needs one
+threshold ladder on a magnitude F = x − (value already written) and is learned (trained on frozen hand-built routing, PART, ≥ .99 in all seeds; trained from scratch, TRAIN, decimal to binary d2b ≥ .996 in 10/10),
 while LSB-first answer-only conversion needs a periodic readout (u mod base) of a summed residue and mostly fails (PART .46–.59 d2b,
 .18–.38 b2d; TRAIN b2d ≤ .045, also at 2x width). Scratchpads remove the difference: b2d B is solved by PART in 10/10 seeds in both
 orders. For PART (trained last MLP on frozen hand-built routing) two weight-derived closed forms — a 366-threshold thermometer for b2d
@@ -27,7 +38,7 @@ B cells PART 10k / TRAIN 40k. PART fp32, TRAIN TF32; all seeds of a cell in one 
 Networks: [huggingface.co/jc1122/circuit-atlas-nets/tree/main/output-order-base-conversion](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/output-order-base-conversion)
 (88 nets + 7 HAND; best snapshots; each run's held-out integers in `test_<run>`). Reloaded in fp32, every net reproduces its recorded
 eval-subset exact (TF32 nets within 3/2048) and every HAND scores 1.0.
-**Reproduce:** the generator, HAND and trainer for this task are not yet in `code/`; weights, test integers and accuracies are in the folder above.
+**Reproduce:** training code for this task is not yet in `code/`; the weights, held-out splits and recorded accuracies are on Hugging Face (link above).
 
 ## Architecture as used
 GPT-NeoX, 3 layers, d_model 512, 4 heads of 128, MLP 256, ReLU, no LayerNorm, no positional encoding (causal mask only), untied

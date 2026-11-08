@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+message: "If you use this atlas, its networks or its code, please cite it as below."
+type: dataset
+title: "Mechanistic Interpretability Circuit Atlas"
+abstract: >-
+  For algorithmic tasks, an exact hand-built transformer is compared with networks trained over many seeds on frozen hand-built
+  parts and from scratch: which circuit each seed converges to, how often, and whether a closed form of it keeps accuracy when
+  substituted back into the network.
+authors:
+  - alias: jc1122
+repository-code: "https://github.com/jc1122/mechanistic-interpretability-circuit-atlas"
+url: "https://github.com/jc1122/mechanistic-interpretability-circuit-atlas"
+repository-artifact: "https://huggingface.co/jc1122/circuit-atlas-nets"
+license: CC-BY-4.0
+date-released: "2026-11-08"
+keywords:
+  - mechanistic interpretability
+  - transformer circuits
+  - algorithmic tasks
+  - hand-built transformers
+  - grokking

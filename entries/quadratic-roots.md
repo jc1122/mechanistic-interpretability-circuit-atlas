@@ -1,11 +1,25 @@
-# Quadratic roots: only a scaffolded NAND scratchpad is learned (10/10); answer-only, sub-result and full-trace stages memorise or underfit; the learned executor stage is a bank of AND hinges replaceable by one neuron
+# Quadratic roots
 
+> - **Task.** Given integers b and c, compute for x² + bx + c the discriminant D = b² − 4c, its integer square root s, the two floored roots and a flag (negative / integer / other real). Example: b = −3, c = 2 → D = 1, s = 1, roots 1 and 2, flag integer.
+> - **Hand-built net.** Four variants (answer only, sub-result, full trace, register executor), all exact at n 3–5. The executor runs the whole computation as a fixed program of Boolean NAND updates, each fetching two addressed registers by binary address match and computing the new bit with one AND neuron whose readout emits its complement (NAND).
+> - **Trained nets.** Only the scaffolded NAND executor is learned. With frozen hand-built routing a trained MLP learns it in 500 steps on 10/10 seeds, and the whole trained MLP can be replaced by one neuron, ReLU(A + B − 1). Trained from scratch (2× width) it gets 0/10 and never learns to fetch the addressed registers. The other completed cells memorise or underfit (0/10).
+> - **Verdict.** Partly solved (executor with frozen routing 10/10, from scratch 0/10; answer only at n 6 pending). Closed form: partial (accepted for the executor stage only, 1,792/1,792 packets kept per seed; none for the parent cells).
+> - **Links.** [Weights](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/quadratic-roots) · Reproduce: not available yet · [Terms](../GLOSSARY.md)
+
+## Task and status
 **Task.** x² + bx + c with integers |b|, |c| ≤ R in binary sign/magnitude (n = 5 bits: R 15, 961 pairs; R 31, 3,969; n = 6: R 63,
 16,129). Outputs are specified integers, not exact irrational roots: D = b² − 4c, s = ⌊√max(D, 0)⌋, r∓ = ⌊(−b ∓ s)/2⌋ and a flag
 (negative / integer / other real). Formats: A answer only (29 tokens at n 5); S writes D and s first (49); T writes every arithmetic step
 (170); **S_exec** (scratchpad): the whole computation as an input-independent program of Boolean NAND updates on a register file, one
 update per step — each packet supplies the shuffled register bank and the gate's two source addresses, and the net predicts the new bit.
 Exact = every output token correct, teacher forced.
+
+**Formats.**
+- **A**: answer only
+- **S**: sub-result (writes D and s first)
+- **T**: full trace (every arithmetic step)
+- **S_exec**: executor scratchpad (one Boolean NAND update per step)
+
 **Status.** 2026-11-07. HAND A/S/T/S_exec exact at n 3–5 (T not exact at n 6, closed); ten-seed finals: S_exec PART 10/10, S_exec TRAIN
 (2× width) 0/10. Open: **answer-only A at n 6 / R 63** (its 40k run's host was lost at 23.5k with test .91–.93; the cosine tail is being
 rerun as a decay from the 22.5k snapshot, pending); most parent-format nets (A/S TRAIN, T TRAIN, S/T PART r2/r3) were lost with rented
@@ -13,9 +27,9 @@ hosts, so for those cells the run-time diagnostics below are the evidence and th
 (rollouts, not all 16,129 traces); public reproduction code pending.
 
 ## Summary
-The hand-built trace shrinks the arithmetic (compact T: 62 neurons for every n vs A's ~6R), but every trained parent stage fails: one
+The hand-built trace (format T) shrinks the arithmetic (compact T: 62 neurons for every n vs answer-only A's ~6R), but every trained parent stage fails: one
 frozen-parts MLP must place unit-resolution thresholds on scalars up to ~2¹¹ and memorises or underfits (0/10 in every cell). The
-scaffolded executor reduces the learned part to one Boolean rule: PART learns it in 500 steps on 10/10 seeds, keeps it exact at widths 7
+scaffolded executor reduces the learned part to one Boolean rule: PART (one MLP trained on frozen hand-built parts) learns it in 500 steps on 10/10 seeds, keeps it exact at widths 7
 and 8 and in its own predicted-state rollouts, and its whole trained MLP is replaced by the hand-built neuron AND = ReLU(A + B − 1) with
 1,792/1,792 packets kept per seed. From scratch (TRAIN, 2× width) the executor never learns to fetch the addressed registers and outputs
 the majority bit. This is a learned addressed-NAND stage inside supplied routing and microcode, not a from-scratch quadratic solver.
@@ -28,6 +42,7 @@ R 63 coefficient pairs for training (held-out pairs per seed in `split_S_exec`),
 widths 3–6, shuffled memory, renamed addresses; program, source/destination addresses and state copying are supplied. Tests: local =
 next-bit exact on 1,024 held-out packets; trace = all updates of a whole program for held-out pairs (8 per cell at n 5/R 15, n 5/R 31,
 n 6/R 63); length n 7/8; rollout = the net's own predictions fed back through a whole program, answer checked by a verifier.
+**Reproduce:** training code for this task is not yet in `code/`; the weights, held-out splits and recorded accuracies are on Hugging Face (link above).
 
 ## Architecture as used
 GPT-NeoX, ReLU, no LayerNorm, no positional encoding, untied embeddings. Parent A/S/T: 4 layers, d_model 768, 12 heads (d_head 64), MLP

@@ -1,10 +1,25 @@
 # Symbol-level algebra: collection, expansion and linear equations
+
+> - **Task.** Do algebra on `(side,power,coefficient)` term atoms: collect like terms, expand a binomial product, or solve `ax+b=cx+d`. Example (expand, in words): (2x+1)(3x+4) → 6x² + 11x + 4.
+> - **Hand-built net.** Fetch heads pick out each operand atom by matching side and power; signed ReLU pairs then add or subtract, and multiplication uses bit-gated pairs; solving classifies the ratio of two integers. Exact in all 6 cells.
+> - **Trained nets.** Every scratchpad cell trains to exact: collect with frozen parts (PART) 10/10, expand from scratch (TRAIN) 10/10 at 60k (best snapshot; 9/10 final), solve from scratch 10/10. Answer-only expand and solve never do (from scratch: expand ≤ .126, solve best .997; frozen-part 0/3 too). PART collect keeps HAND's addition; TRAIN builds a different MLP chain with categorical codes.
+> - **Verdict.** Partly solved (scratchpad 10/10 in three cells; answer-only expand and solve 0/3). Closed form: partial (PART collect substitutes exactly in 13/13 seeds; no TRAIN closed form accepted).
+> - **Links.** [Weights](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/symbolic-algebra-atoms) · Reproduce: not available yet · [Terms](../GLOSSARY.md)
+
+## Task and status
 **Task.** Structured `(side,power,coefficient)` term atoms; ops: collect like terms, expand `(a x+b)(c x+d)`, solve `ax+b=cx+d`. Outputs are integer/reduced-rational atoms (no digit arithmetic, no parsing). Two terms per side, coefficients −9…9 without ±8 (held out), hash-disjoint test (mod 97). A = answer-only; T = scratchpad (expand: 4 products then 3 coefficients; collect: copy/copy/sum triples; solve: `D N ; solution`).
+**Formats.**
+- **A**: answer only.
+- **T**: scratchpad (expand: 4 products then 3 coefficients; collect: copy/copy/sum triples; solve: `D N ; solution`).
+
 **Status.** 2026-11-08. HAND 6/6 exact. PART + TRAIN, 3 seeds in all 6 cells (30k; retries 60k). 10-seed finals (wd .1): PART collect T 10/10, TRAIN expand T (60k) 10/10 on best (9/10 on final snapshot: s3 .998), TRAIN solve T (30k) 10/10. CPU fp32 and TF32 GPU (TRAIN).
+
 ## Summary
-Every scratchpad (T) cell trains to saved-test exact = 1; answer-only expand and solve never do (expand A ≤ .126; solve A best .997/.506/.439 at 60k). PART recovers HAND's addition stage in collect (13/13 seeds; the closed form substitutes for the trained MLP with exact 1.0 → 1.0 and agreement 1.0). TRAIN expand T and solve T each form one circuit type in 10/10 seeds: an MLP chain (MLP0 → MLP1 → L2 heads → MLP2) on top of layer-0/1 fetch heads, with a categorical product code (expand) or a difference code (solve) instead of HAND's bit-gated scalars. Every head and MLP is needed under resample ablation, and no TRAIN closed form is accepted. Nothing generalises to the untrained ±8 coefficients (exact ≤ .008).
+Every scratchpad (T) cell trains to saved-test exact = 1; answer-only expand and solve never do (expand A ≤ .126; solve A best .997/.506/.439 at 60k). Training only the last MLP on frozen hand-built parts (PART) recovers the hand-built net's (HAND) addition stage in collect (13/13 seeds; the closed form substitutes for the trained MLP with exact 1.0 → 1.0 and agreement 1.0). Training from scratch (TRAIN) gives expand T and solve T each one circuit type in 10/10 seeds: an MLP chain (MLP0 → MLP1 → L2 heads → MLP2) on top of layer-0/1 fetch heads, with a categorical product code (expand) or a difference code (solve) instead of HAND's bit-gated scalars. Every head and MLP is needed under resample ablation, and no TRAIN closed form is accepted. Nothing generalises to the untrained ±8 coefficients (exact ≤ .008).
 ## Setup
 See [METHODS.md](../METHODS.md). Prompt `BOS <left terms> ; <right terms> =`, terms permuted per batch. Fresh hash-disjoint batches (≤ 3.84M draws/seed at 30k), AdamW lr 1e-3, wd .1, bs 128, warmup 1000, cosine, clip 1; eval every 500 steps on 1000 saved test rows/seed; checkpoints every 2500; plateau stop 5000 after 75% of budget. PART fp32, TRAIN TF32. Seeds 0–2 screen, 3–9 final. Networks: huggingface.co/jc1122/circuit-atlas-nets/tree/main/symbolic-algebra-atoms.
+**Reproduce:** training code for this task is not yet in `code/`; the weights, held-out splits and recorded accuracies are on Hugging Face (link above).
+
 ## Architecture as used
 GPT-NeoX shape, ReLU, no LayerNorm, no positions (NoPE); vocab 2328, d_model 64, 4 heads × 16, d_mlp 256, 3 layers (HAND solve A: 2). PART trains only the last MLP (`layers.2.mlp`, W_in [256, 64], W_out [64, 256]; solve A `layers.1`), non-arithmetic input columns / output rows masked to zero; TRAIN learns everything from the HF init. Archive: `hand_<op>_<fmt>.safetensors`, `part_*/train_*_s<seed>.safetensors` (best snapshots), `test_<run>.safetensors`, `config.json`, `manifest.json` (seed, rung, accuracy, sha256).
 ## Prediction before training

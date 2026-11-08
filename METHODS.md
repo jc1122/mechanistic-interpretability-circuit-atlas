@@ -1,17 +1,20 @@
 # Methods: architecture, instrumentation and experimental conditions
 
-Background for every entry. All code is in [code/](code/) (MIT); `code/run.py` reproduces each entry. The numbers below are those
-of the code; each entry's Setup section lists its task-specific values and the command.
+Background for every entry. Code: [code/](code/README.md) (MIT); `code/run.py` reproduces the five entries listed in
+[code/README.md](code/README.md); the others publish their networks, test sets and recorded accuracies on Hugging Face. The numbers
+below are those of the code; each entry's Setup section lists its task-specific values and the command. Plain-language terms:
+[GLOSSARY.md](GLOSSARY.md).
 
 ## 1. Three rungs
 
 | Rung | What is trained | What it shows |
 |---|---|---|
 | HAND | nothing: every weight is set by a formula and checked exact on all inputs in range | an existence proof and a reference algorithm |
-| PART | one trained stage on top of frozen hand-built parts, 10 seeds | which frozen parts training reads, which algorithm it builds from them |
-| TRAIN | a network trained from scratch, 10 seeds | whether the same algorithm appears without any hand-built help |
+| PART | one trained stage on top of frozen hand-built parts, 10 seeds (fewer in screening cells) | which frozen parts training reads, which algorithm it builds from them |
+| TRAIN | a network trained from scratch, 10 seeds (fewer in screening cells) | whether the same algorithm appears without any hand-built help |
 
-Most entries in this atlas are PART experiments (plus controls); the base-conversion entry (section 7) covers all three rungs, with the HAND networks and a single-network PART / TRAIN trainer in the code release. For each
+The first entries (count and modular-addition tasks on the frozen m2) are PART experiments with controls; most later entries cover all three
+rungs, and the code release has the HAND networks and a single-network PART / TRAIN trainer for base conversion (section 7). For each
 trained network the analysis reports: an ablation map (which frozen parts are read), the circuit type (clustered by mechanism, with seed
 counts), a closed form accepted only if substituting it for the trained part keeps accuracy, and the learning curve (grokking step).
 
@@ -81,7 +84,7 @@ the count tasks: one network per process on consumer CPU machines (14 to 29 minu
 fractions: all networks of a batch in one process on one consumer 12 GB GPU, stacked as batched matrix multiplies with padded inputs
 (extra input weights start at 0 and receive no gradient; absent classes are masked; loss = sum of each network's own mean
 cross-entropy; fused AdamW; fp32, TF32 not enabled), which is exactly independent training (batched and unbatched agree to 3 decimals).
-`code/` contains the single-network trainer only; it needs no GPU (a 200,000-step count network takes about 5 minutes on 4 CPU threads, an open-bracket network at fraction .8 about 17 minutes on a busy machine, plus about a minute to build the menu).
+`code/` trains one network per process (`train.py`, and `convert.py` for base conversion); it needs no GPU (a 200,000-step count network takes about 5 minutes on 4 CPU threads, an open-bracket network at fraction .8 about 17 minutes on a busy machine, plus about a minute to build the menu).
 
 ## 4. Tasks and prompt generation
 
@@ -188,17 +191,9 @@ exact within .01 when the rest are mean-ablated); the input-independent position
 
 ## Reading an entry
 
-| Term | Meaning |
-|---|---|
-| **HAND** | every weight set by a formula; exact on every input in range |
-| **PART** | frozen hand-built parts plus one trained stage (`PARTp`: the trained stage is an attention layer instead of an MLP) |
-| **TRAIN** | trained from scratch |
-| **Format** | `A` = answer only; other letters (`T`, `G`, `S`, `C`, ...) are scratchpad variants, defined in each entry's Task paragraph |
-| **Seeds** | "6/10" = 6 of 10 seeds meet the criterion named in that cell (usually held-out exact match ≥ .99) |
-| **Closed form verified** | substituting the formula for the trained weights keeps accuracy; "partial" or "rejected" says what failed |
-| **menu** | a frozen hand-written layer that re-encodes integers (one-hot, thermometer, scalar); section 3 |
-
-Every entry follows [TEMPLATE.md](TEMPLATE.md): Summary, Setup (with the reproduce command), Prediction before training, Hand-built reference,
+Terms used across entries (rungs, formats, seed counts, closed form, the diagnostics) are defined in plain language in
+[GLOSSARY.md](GLOSSARY.md). Every entry follows [TEMPLATE.md](TEMPLATE.md): a short top block (task, hand-built net, trained nets,
+verdict, links), then Task and status, Summary, Setup (with the reproduce command), Prediction before training, Hand-built reference,
 What training finds, Closed form, Controls and limits.
 
 ## Related work

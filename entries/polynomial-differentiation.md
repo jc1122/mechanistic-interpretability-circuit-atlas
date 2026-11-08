@@ -1,11 +1,25 @@
 # Polynomial differentiation by the power rule (deriv)
+
+> - **Task.** Differentiate an integer polynomial of degree 3 term by term, one token per integer, answer only or with a trace. Example (answer only): `5 4 1 1 =` (coefficients a_0 to a_3) → `4 0 2 1 3 2`, the pairs (k·a_k, k−1).
+> - **Hand-built net.** Uniform attention builds the position; quadratic-score attention fetches a_k; signed gates on the bits of k sum to k·a_k and an integer read-out picks the closest integer.
+> - **Trained nets.** With addressing frozen, one masked MLP learns the low-bit multiplier on all 10 seeds in 2–3k steps, but never the unseen bit. From scratch the net needs width 2 and 60k steps and solves 6/10 (scratchpad format); failed seeds miss only the position-indexed copy of a_k, stuck near 1/3.
+> - **Verdict.** Partly solved (frozen-part 10/10 per format; from scratch 6/10 in the selected final cell). Closed form: partial (frozen-part nets: MLP2 = k·a on the two observed bits, 1.000 on 40/40 snapshots; from scratch only a numerical compression, 4 of 6 solved seeds).
+> - **Links.** [Weights](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/polynomial-differentiation) · Reproduce: not available yet · [Terms](../GLOSSARY.md)
+
+## Task and status
 **Task.** Input `BOS a0 … a_d =`; output the derivative of Σ a_k x^k, ascending k, no zero trimming. Answer-only A emits `(k·a_k, k−1)` per term; scratchpad T emits `(k, a_k, k·a_k, k−1)`. One token per integer. HAND: degree 1–6, coefficients −15..15. Training: degree 3, −9..9; pairs (k,a)=(2,±3),(3,±2) withheld as inputs (their product labels still occur elsewhere).
+
+**Formats.**
+- **A**: answer only, (k·a_k, k−1) per term
+- **T**: scratchpad, (k, a_k, k·a_k, k−1) per term
+
 **Status 2026-11-08.** All cells finished and diagnosed (108/108 trained best/final snapshots + 2 HAND controls). PART A/T 10/10; selected TRAIN T (width 2) 6/10. PART closed form accepted (MLP2 = k·a on the two observed bits); TRAIN only a numerical substitute (4 of 6 solved final seeds).
 ## Summary
-With addressing frozen from HAND, one masked MLP learns the local low-bit multiplier in 2–3k steps on every seed. From scratch, the same 3-layer NoPE shape learns the multiply but stalls on **fetching a_k by position**: every failed TRAIN seed is exact on all tokens except the coefficient-copy slot(s), stuck near 1/3. Solved TRAIN nets split into several copy-routing types and do not extrapolate (degree 1/2/4–6, unseen pairs, wide coefficients: ≤ .06).
+With addressing frozen from HAND (PART), one masked MLP learns the local low-bit multiplier in 2–3k steps on every seed. From scratch (TRAIN), the same 3-layer NoPE shape learns the multiply but stalls on **fetching a_k by position**: every failed TRAIN seed is exact on all tokens except the coefficient-copy slot(s), stuck near 1/3. Solved TRAIN nets split into several copy-routing types and do not extrapolate (degree 1/2/4–6, unseen pairs, wide coefficients: ≤ .06).
 ## Setup
 Fresh hash-disjoint draws with replacement (104329 primary polynomials -> 103251 train / 1078 test). AdamW lr 1e-3, wd .1, warmup 1000, cosine, clip 1, bs 256; eval 1024 draws / 500 steps; ckpt every 2500. PART fp32, 30k budget; TRAIN TF32 updates, fp32 evals.
 Selected final: `train.py --fmts T --kinds train --width 2 --steps 60000 --min_steps 45000 --plateau 5000 --tf32 1 --seeds 3 … 12` (launch_final_train.sh; 14.72M draws/seed, plateau stop 57.5k). PART final: launch_final_part.sh, seeds 0–9. Networks: huggingface.co/jc1122/circuit-atlas-nets/tree/main/polynomial-differentiation.
+**Reproduce:** training code for this task is not yet in `code/`; the weights, held-out splits and recorded accuracies are on Hugging Face (link above).
 ## Architecture as used
 GPT-NeoX shape, 3 layers × 1 head, d_model = d_head 16, ReLU MLP 48 (TRAIN width 2: 32/96), vocab 183, ctx 64, untied, no LayerNorm, no
 positional encoding. PART freezes all but masked MLP2 (W_in 48×16 on input cols AA=12 / bits 9–11, output col S=13; 289 free scalars).

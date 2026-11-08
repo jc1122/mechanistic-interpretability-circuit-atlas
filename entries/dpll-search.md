@@ -1,28 +1,39 @@
-# DPLL search on small 3-SAT: a trained last MLP completes both hand-built solvers (3/3); neither format is learned from scratch (0/3)
+# DPLL search on small 3-SAT
 
+> - **Task.** Decide whether a 3-SAT formula (n = 4–6 variables, m = 10–25 clauses) is satisfiable, either answer only or after writing out the DPLL solver state at each step. Example (in words): a formula that some assignment satisfies → SAT; one that every assignment falsifies → UNSAT.
+> - **Hand-built net.** Answer only: 1 head + 130 neurons check 128 witness assignments and threshold the count of survivors. Scratchpad: 14 heads + 71 neurons run unit propagation, decision and backtrack on the full solver state.
+> - **Trained nets.** With every earlier stage frozen at the hand-built values, a trained last MLP solves both formats on 3/3 seeds (answer only in 0.5–1k steps, scratchpad in 3–5.5k). Trained from scratch, answer only reaches .72–.86 and the scratchpad .00–.02 complete traces: the state update is not learned.
+> - **Verdict.** Partly solved (frozen-parts setup 3/3 in both formats; from scratch 0/3; ten-seed final not finished). Closed form: partial (T PART seven-field update keeps 52/52 traces per seed, zero/shuffle 0/52; A PART threshold not substituted).
+> - **Links.** [Weights](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/dpll-search) · Reproduce: not available yet · [Terms](../GLOSSARY.md)
+
+## Task and status
 **Task.** Ordered 3-SAT, n = 4–6 variables, m = 10–25 clauses, outcome-balanced, UNSAT proposals core-enriched. Answer-only A: one
 SAT/UNSAT token. Scratchpad T: after each DPLL update (unit propagation, decision, backtrack) the full solver state — assignment,
 decision levels and tried flags, a clock, the clause in focus and the conflict flag — then SAT/UNSAT. Canonical clause-multiset hashing
 gives train/monitor/test buckets 8:1:1, so clause-order or clock variants never cross splits. Test: 192 formulas per seed; exact = every
 non-PAD teacher-forced output token correct (T: the complete trace).
+**Formats.**
+- **A**: answer only (one SAT/UNSAT token).
+- **T**: scratchpad; the full solver state after each DPLL update, then SAT/UNSAT.
+
 **Status.** 2026-11-07. HAND A/T; PART A/T and TRAIN A/T, 3 screening seeds each, all runs finished. Open: **the ten-seed final cell
 (T PART, seeds 3–9) has not finished** (four launches lost to host failures; the current one is in training); the T PART learned-update
 closed form is accepted with zero/shuffle controls (below), other component claims stay frozen-HAND identities; no admissible TRAIN retry (data already ≥ 3×; size needs train < 1,
 unmeasured); A PART n = 7 replay and the A PART threshold substitution are not run; public code pending.
 
 ## Summary
-With every earlier stage frozen at HAND, a trained last MLP solves both formats on 3/3 seeds (A in 0.5–1k steps, T in 3–5.5k). In T the
+With every earlier stage frozen at the hand-built values (HAND), a trained last MLP (PART) solves both formats on 3/3 seeds (A in 0.5–1k steps, T in 3–5.5k). In T the
 learned MLP5 sits on HAND's retrieval and controller outputs and does the conditional copy/clear/flip of the state; in A the learned MLP1
 reads HAND's witness count and thresholds it, on HAND's four-edge pooling → count → threshold path (edge check ρ = 1, Jaccard 1). From
-scratch, A reaches only .72–.86 and T .00–.02 test exact at the same data; the trained nets decode the step clock and variable well but
+scratch (TRAIN), A reaches only .72–.86 and T .00–.02 test exact at the same data; the trained nets decode the step clock and variable well but
 not the new state or conflict, and every compact bottleneck fitted to them fails substitution.
 
 ## Setup
 [METHODS.md](../METHODS.md) for shared conventions. AdamW lr 1e-3, wd .1, betas (.9, .98), warmup 1,000, cosine, clip 1, batch 8 fresh
 formulas per step, 30k budget, plateau stop 5k after 22.5k; eval every 500, checkpoints every 2,500. PART fp32; TRAIN TF32 updates,
 fp32 evals. Best is selected by a 96-formula monitor (exact, then CE), not by test. Success = best test exact ≥ .99. GPU accelerators
-for training, CPU fp32 for re-scoring. Test formulas are regenerated from their seed (see `config.json`). Public reproduction code for
-this entry is pending; the archived networks re-score to the recorded accuracies.
+for training, CPU fp32 for re-scoring. Test formulas are regenerated from their seed (see `config.json`).
+**Reproduce:** training code for this task is not yet in `code/`; the weights, held-out splits and recorded accuracies are on Hugging Face (link above). The archived networks re-score to the recorded accuracies.
 
 ## Architecture as used
 GPT-NeoX, ReLU, no LayerNorm, no positional encoding (clocks are explicit tokens), untied embeddings, vocabulary 1,104, context 16,384.

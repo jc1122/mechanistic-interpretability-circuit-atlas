@@ -1,6 +1,26 @@
-# Binary multiplication: with a running-sum scratchpad each step is the adder's sum lookup; answer only fails at the parity staircase
+# Binary multiplication
+
+> - **Task.** Multiply two 6-bit numbers given as `a*b=`, either answer only (the 12-bit product, most significant bit first) or with
+>   a scratchpad of running sums S_0 .. S_5 that add one shifted copy of a per bit of b. Example: a = 5, b = 3 → `000000001111` (15).
+> - **Hand-built net.** Answer only: AND neurons form the partial products, and their sum is read bit by bit through a parity
+>   staircase of threshold neurons. Scratchpad: each step is one binary-adder column, a truth table of sum bit = x ⊕ b_j·a ⊕ carry.
+> - **Trained nets.** With a scratchpad, the stage trained on frozen hand-built parts is the adder's step, a lookup on
+>   x + b_j·a + carry, in 10/10 seeds, and training from scratch solves 8/10 on the retry. Answer only never trains: the frozen-part
+>   stage cannot fit the parity staircase (best .10–.19) although its input is linearly present, and from scratch the nets memorise
+>   (train 1.0, test ≤ .80).
+> - **Verdict.** Partly solved (scratchpad yes, answer only no). Closed form: sufficient readout only (substitution 1.00 in 10/10
+>   frozen-part nets; per the 2026-11-07 audit no closed form passes the full bar).
+> - **Links.** [Weights](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/binary-multiplication) · Reproduce: not
+>   available yet · [Terms](../GLOSSARY.md)
+
+## Task and status
 **Task.** `a*b=` → a·b, a and b 6-bit (all 4096 pairs; train fraction .6: 2457 train / 1639 test per seed). A: product p_11..p_0 (MSB first,
 answer only); B: running sums S_0 `;` S_1 .. `;` S_5 with S_j = S_{j−1} + b_j (a << j), each 12 bits LSB first (S_5 = a·b). Exact match of all output tokens.
+
+**Formats.**
+- `A`: answer only, product p_11..p_0, most significant bit first.
+- `B`: running sums S_0 `;` S_1 .. `;` S_5, S_j = S_{j−1} + b_j (a << j), each 12 bits, least significant bit first.
+
 **Status.** 2026-11-05. HAND A, B; PART and TRAIN 10 seeds per format; failed cells retried once (both runs kept).
 Audit 2026-11-07: none of the closed forms below passes the full bar (best and final snapshots, native/zero/shuffle exact controls,
 fewer fitted reals than the replaced component); they are keyed on task-derived labels and stay sufficient-readout results.
@@ -15,7 +35,7 @@ best-test snapshot. PART run 1: lr 1e-3, wd 1, constant, 10k, 2k-plateau stop. P
 + warmup 1000, cosine, clip 1, 30k, 10k-plateau stop. TRAIN run 1: lr 1e-3, wd 1, constant, 20k; run 2: lr 3e-4, wd .1, warmup 1000, cosine,
 clip 1, 30k. Batch 256 (B 64). Length: 7 and 12 bits. Consumer GPUs.
 Networks: [huggingface.co/jc1122/circuit-atlas-nets/tree/main/binary-multiplication](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/binary-multiplication) (41: 3 HAND, 30 PART, 8 TRAIN).
-**Reproduce:** the training and analysis code for this task is not yet in `code/` (`python run.py` has no multiplication task), so the learned cells cannot be rerun from this repository; the weights, test splits and the table of accuracies are in the folder above.
+**Reproduce:** training code for this task is not yet in `code/`; the weights, held-out splits and recorded accuracies are on Hugging Face (link above).
 ## Architecture as used
 GPT-NeoX 4 layers × 12 heads, d_model 384, d_head 32, MLP 256 ReLU, no LayerNorm, NoPE; vocabulary 7 (BOS, unk, `0 1 * = ;`). PART trains the
 L3 MLP only (dense_h_to_4h [256, 384] + bias, dense_4h_to_h [384, 256] + bias) on top of frozen HAND layers 0–2 and the L3 attention; it reads

@@ -1,13 +1,26 @@
-# Subtraction (base 10 and 2): a per-column lookup on the signed difference a − b − borrow, not the adder's sum
+# Subtraction (base 10 and 2)
+
+> - **Task.** Subtract b from a (a ≥ b) for 3-digit decimal numbers or 6-bit binary numbers (`a-b=` → a − b), written three ways: answer only, with a borrow token, or with signed column differences first. Example (base 10, answer only): 742 − 358 → 384.
+> - **Hand-built net.** Each column digit is (a − b − borrow) mod base; the borrow comes from one chain head that finds the first lower column where the digits differ, or from the previous borrow token.
+> - **Trained nets.** With the hand-built parts frozen and one stage MLP trained (PART), the stage is a lookup on a − b − borrow (10/10 in base 10 A/B and base 2 A/C, 9/10 in base 10 C, 8/10 in base 2 B). Trained from scratch (TRAIN), the retried cells solve 10/10 (base 10 A, C; base 2 A, C) and the last MLP uses the same key in 34/40 retry nets; no from-scratch net generalises to longer inputs (PART A does, to 4 and 6 digits).
+> - **Verdict.** Partly solved (retried from-scratch cells 10/10; no from-scratch net generalises to longer inputs). Closed form: sufficient readout only (f(a − b − borrow) substitution = net accuracy; the 2026-11-07 audit finds none passes the full bar).
+> - **Links.** [Weights](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/subtraction) · Reproduce: not available yet · [Terms](../GLOSSARY.md)
+
+## Task and status
 **Task.** `a-b=` → a − b with a ≥ b; base 10, 3 digits (per seed 20k train / 2k test random pairs); base 2, 6 bits (train fraction .6 of
 the 2080 pairs: 1248 / 832). A: n answer digits, MSB first; B: d_0 k_1 d_1 .. k_n (LSB first, k = borrow token); C: signed column
 differences e_i = a_i − b_i (n tokens), `=`, d_{n−1}..d_0. Exact match of all output tokens.
+**Formats.**
+- **A**: answer only, n digits, most significant first
+- **B**: d_0 k_1 d_1 .. k_n (least significant first, k = borrow token)
+- **C**: signed column differences e_i = a_i − b_i, `=`, then d_{n−1}..d_0
+
 **Status.** 2026-11-05. HAND per base × format (6 cells); PART and TRAIN 10 seeds per cell; failed cells retried once (both runs kept).
 Audit 2026-11-07: none of the closed forms below passes the full bar (best and final snapshots, native/zero/shuffle exact controls,
 fewer fitted reals than the replaced component); they are keyed on task-derived labels and stay sufficient-readout results.
 ## Summary
 Every trained stage that works computes its digit as a lookup keyed on diff = a_i − b_i − borrow_in (closed form f(diff); the prediction held):
-PART 10/10 in base 10 A/B and base 2 A/C, 9/10 in base 10 C, 8/10 in base 2 B; TRAIN's last MLP in 21/30 (base 10, run 1), 29/30 (base 2, run 1) and 34/40 (retries).
+PART (a stage trained on frozen hand-built parts) 10/10 in base 10 A/B and base 2 A/C, 9/10 in base 10 C, 8/10 in base 2 B; TRAIN's (trained from scratch) last MLP in 21/30 (base 10, run 1), 29/30 (base 2, run 1) and 34/40 (retries).
 The adder's key a + b + c never substitutes (≤ .01 in base 10, ≤ .88 in base 2, except binary A where the two keys coincide). PART A extrapolates
 to 4 and 6 digits; B and C do not, because their trained stage reads absolute position; holding those weights at 0 restores length (B .87–.98 at n + 1).
 TRAIN never length-generalises.
@@ -16,7 +29,7 @@ TRAIN never length-generalises.
 plateau (base 2 20k); best-test snapshot. Retries: warmup 1000 + cosine + clip 1, 30k (base 2 wd 1, base 10 wd .1). Control: PART with the
 stage's position inputs held at 0. Length: 4 and 6 digits (base 10), 7 and 12 bits (base 2). Consumer GPUs.
 Networks: [huggingface.co/jc1122/circuit-atlas-nets/tree/main/subtraction](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/subtraction) (112: 6 HAND, 60 PART, 30 PART with position mask, 16 TRAIN).
-**Reproduce:** the training and analysis code for this task is not yet in `code/` (`python run.py` has no subtraction task), so the learned cells cannot be rerun from this repository; the weights, test splits and the table of accuracies are in the folder above.
+**Reproduce:** training code for this task is not yet in `code/`; the weights, held-out splits and recorded accuracies are on Hugging Face (link above).
 ## Architecture as used
 GPT-NeoX 4 layers × 4 heads, d_model 256, d_head 64, MLP 256 ReLU, no LayerNorm, NoPE; vocabulary BOS, unk, the 2b − 1 signed values
 −(b−1)..b−1 and `- = . c` (25 tokens in base 10, 9 in base 2). PART trains the stage MLP only (A layer 3, B/C layer 2: dense_h_to_4h [256, 256] + bias,

@@ -1,5 +1,18 @@
 # Count mod 5: MLP on a frozen menu
 
+> - **Task.** Count how often a letter occurs in a line of a's and b's (up to 45 letters) and answer the count mod 5. Example:
+>   after the fixed one-shot prefix, `COUNT a: a a b a a a b a a` → `2` (seven a's).
+> - **Hand-built net.** A frozen 6-layer transformer, every weight set by formula, counts the letter with one attention head (it
+>   writes 1/(c+1)) and decodes the count c into a scalar, a one-hot and a thermometer code; only one MLP layer (256 ReLU) on top is trained.
+> - **Trained nets.** All 30 trained MLPs (10 seeds × train fractions .4/.6/.8) learn a flat lookup from the count to its residue
+>   mod 5 and ignore the line length, reading mainly the one-hot code; test accuracy equals train accuracy from the first evaluation
+>   (no grokking).
+> - **Verdict.** Solved (30/30). Closed form: verified (two cosines with equal amplitudes, i.e. a delta on the residue; accuracy 1.000
+>   in every network).
+> - **Links.** [Weights](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/count-mod-5) · Reproduce: [commands](#setup) ·
+>   [Terms](../GLOSSARY.md)
+
+## Task and status
 **Task.** Prompt `COUNT b: a b\nANSWER: 1\nCOUNT a: <c a's and L−c b's, shuffled>\nANSWER: `, answer c mod 5 (5 classes). Cells (c, L)
 with L = 1..45, c = 0..L (1080 cells, one prompt each); the train/test split is over cells, so every c value appears in training.
 **Status.** 2026-11-04. 30 networks (10 seeds × train fractions .4/.6/.8) + 18 control runs. Trained part: one MLP layer, 256 ReLU,
@@ -15,7 +28,7 @@ Networks: [huggingface.co/jc1122/circuit-atlas-nets/tree/main/count-mod-5](https
 Full architecture, optimiser and instrumentation: [METHODS.md](../METHODS.md).
 A frozen hand-built transformer (6 layers, every weight set by formula) computes the count c (a segment-match attention head gives
 1/(c+1), an MLP step ladder decodes it) and the line length L. A frozen menu places three encodings of each integer at the answer
-position, each centered and scaled to rms 1: the raw scalar, a one-hot and a thermometer, plus distractor features. Only the MLP on top is trained.
+position, each centred and scaled to rms 1: the raw scalar, a one-hot and a thermometer, plus distractor features. Only the MLP on top is trained.
 
 Menu width 326; hidden width 256 ReLU, 5 outputs; 200,000 steps, evaluation every 500 steps, no early stop; 10 seeds at each train fraction
 .4 / .6 / .8; controls (random base, scalar-only menu) 3 seeds at each fraction.
@@ -47,7 +60,7 @@ Headline per network: `final` (test accuracy), `form_res5` and `form_u_only` (su
 - **Trained stage:** `logits = W2 ReLU(W1 x + b1) + b2`, W1 [256, 326], b1 [256], W2 [5, 256], b2 [5] (84,997 parameters).
 - **Archive.** Per network one safetensors file (`W1`, `b1`, `W2`, `b2`, `test_idx`), plus `config.json`, `inputs.safetensors` (the frozen
   menu rows X, the integers and the labels) and `manifest.json` (seed, rung, train fraction, accuracy, circuit type, sha256). Every file
-  was re-loaded and its forward pass reproduces the recorded test accuracy exactly. Public hosting of the weights is pending. 30 networks (`s<seed>_f<40|60|80>`).
+  was re-loaded and its forward pass reproduces the recorded test accuracy exactly. Published on Hugging Face (link in Setup). 30 networks (`s<seed>_f<40|60|80>`).
 
 ## Prediction before training
 No prediction was recorded before these runs (the entry predates this section). Retrospective, labelled as such: the hand-built

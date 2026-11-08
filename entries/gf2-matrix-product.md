@@ -1,14 +1,27 @@
-# GF(2) matrix product: each trace step is a 3-bit XOR-AND lookup; trained nets fetch A_ij and B_jk one layer later than HAND
+# GF(2) matrix product
+
+> - **Task.** Multiply two 3×3 bit matrices over GF(2) (AND for products, XOR for sums), writing either only the 9 answer bits or a trace of running parities. Example: row (1, 1, 0) times column (1, 0, 1) gives running parities 1, 1, 1, so the entry is 1.
+> - **Hand-built net.** Each trace token is a 3-bit XOR-AND lookup on (previous running parity, A_ij, B_jk), after two attention heads fetch A_ij and B_jk.
+> - **Trained nets.** With frozen hand-built routing, one retrained MLP relearns the lookup in 10/10 seeds within 500 steps. Trained from scratch, the trace solves 10/10 (grokking at 3–7.5k steps) and computes the same variables, but fetches A_ij and B_jk with 2–7 heads one layer later, in another code; answer only also solves 10/10. Nothing generalises to m = 4, 5 (0).
+> - **Verdict.** Solved (10/10 in every cell). Closed form: partial (frozen-part stage only: substituted 1.0 = native in 20/20, zeroed 0, shuffled keys ≤ .002; none for the from-scratch nets).
+> - **Links.** [Weights](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/gf2-matrix-product) · Reproduce: not available yet · [Terms](../GLOSSARY.md)
+
+## Task and status
 **Task.** C = A B over GF(2), m = 3. Prompt `B column-major ; A row-major =` (bits, `,` between groups). T: per column k a segment of running
 parities s_ij = s_i,j−1 ⊕ A_ij B_jk (s_i2 = C_ik; `,` between rows, `;` between columns); A: the 9 bits of C column-major (answer only).
 Per seed 100k train / 2k test disjoint random (A, B) pairs of 2^18; exact match of all output tokens; extra evals m = 2, 4, 5 (500 random).
+
+**Formats.**
+- **T**: trace of running parities s_ij, per column k
+- **A**: answer only, the 9 bits of C column-major
+
 **Status.** 2026-11-05. HAND T; PART T, TRAIN T, TRAIN A, 10 seeds each: 10/10 solved in every cell (no retry needed); best = final in every
 cell. Controls 2026-11-08: the PART closed form passes the full bar (best and final snapshots, matched zero and shuffle controls); the TRAIN
 candidates of the earlier audit still lack these controls.
 ## Summary
-HAND T computes each trace token as a lookup on (s_i,j−1, A_ij, B_jk) after two 3-D attribute-match heads fetch A_ij and B_jk. PART (L3 MLP
+The hand-built net with a trace (HAND T) computes each trace token as a lookup on (s_i,j−1, A_ij, B_jk) after two 3-D attribute-match heads fetch A_ij and B_jk. PART (layer-3 MLP
 re-learnt on frozen HAND) solves 10/10 in 500 steps and reads only HAND's two fetch heads
-(diag: used = L2H0, L2H1, MLP3 in 10/10, attention JS 0 to HAND). TRAIN T groks (Power et al., 2022) at 3–7.5k and computes
+(diag: used = L2H0, L2H1, MLP3 in 10/10, attention divergence JS 0 to HAND). TRAIN T (trained from scratch, trace format) groks (Power et al., 2022) at 3–7.5k and computes
 HAND's variables (and, s flip 1.0 under interchange at L4) but fetches A_ij/B_jk with 2–7 L3 heads, one layer later than HAND, in another code.
 TRAIN A solves 10/10 with no compact HAND (13 heads + 4 MLPs on s0). Nothing generalises to m = 4, 5 (0 everywhere).
 ## Setup
@@ -16,7 +29,7 @@ TRAIN A solves 10/10 with no compact HAND (13 heads + 4 MLPs on s0). Nothing gen
 500, best-test snapshot; early stop at test 1.0 or 5k-plateau after 15k. PART fp32, TRAIN TF32. Consumer GPUs, all seeds of a cell in one process.
 Networks: [huggingface.co/jc1122/circuit-atlas-nets/tree/main/gf2-matrix-product](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/gf2-matrix-product)
 (15: 1 HAND, 10 PART, 4 TRAIN; train/test split per seed in `split.safetensors`).
-**Reproduce:** the training and analysis code for this task is not yet in `code/`; the weights, split and accuracies are in the folder above.
+**Reproduce:** training code for this task is not yet in `code/`; the weights, held-out splits and recorded accuracies are on Hugging Face (link above).
 ## Architecture as used
 GPT-NeoX 4 layers × 12 heads (d_head 32), d_model 384, MLP 256 ReLU, no LayerNorm, NoPE; vocab 6 (BOS `0 1 , ; =`), 256 positions (3.16M
 params). HAND T: 1295 non-zero weights; 7 heads, neurons L0 256 / L1 72 / L2 4 / L3 7. PART trains the L3 MLP only (dense_h_to_4h [256, 384]

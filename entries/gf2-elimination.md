@@ -1,18 +1,31 @@
-# GF(2) Gauss-Jordan elimination: the hand-built row update is relearned at once; trained nets solve only with enough distinct matrices
+# GF(2) Gauss-Jordan elimination
+
+> - **Task.** Solve A x = b over GF(2) for an invertible bit matrix (3×3, later 4×4), writing either only the solution or each elimination step first. Example: A with rows (1, 1) and (0, 1), b = (1, 1) → x = (0, 1).
+> - **Hand-built net.** Match heads fetch three bits of the previous block; a last-layer MLP writes each new row bit as OLD ⊕ (K ∧ PB ∧ ¬EQ), the old bit XOR the pivot-row bit when the row has a 1 in the pivot column and is not the pivot row.
+> - **Trained nets.** With frozen hand-built routing, one retrained MLP relearns the update in 10/10 seeds (1000 steps). From scratch at m = 3 only 5/10 seeds per format solve; the rest memorise the 118 training matrices. With 6000 matrices at m = 4, answer only solves 10/10 in three circuit types. No size transfer.
+> - **Verdict.** Partly solved (answer only at m = 4 10/10; from scratch at m = 3 5/10 per format). Closed form: partial (frozen-part nets accepted, 1.0 = native in 20/20 snapshots; from scratch only the L2-complete type, 4/4 snapshots).
+> - **Links.** [Weights](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/gf2-elimination) · Reproduce: not available yet · [Terms](../GLOSSARY.md)
+
+## Task and status
 **Task.** Solve A x = b over GF(2), A invertible m × m. Input `f r_0 , .. , f r_{m-1} ;`, row r_i = a_i0 .. a_i,m-1 b_i, flag f `.` unused / `*`
 pivot used. T (scratchpad): per step k a block `p_k f r_0 , .. ;` (pivot p_k = first unused row with a 1 in column k−1; new_r = old_r ⊕
 (old_r[k−1] ∧ [r ≠ p_k]) old_{p_k}), then `= x_0 .. x_{m-1}`; A (answer only): input, `= x`. Split 70/30 *by matrix* (test = unseen matrices).
 m = 3: all 168 matrices (944 / 400 systems); m = 4: 6000 of 20160, 67.2k train, 2000 test. Exact match; size axis 500 systems at m = 2–5.
+
+**Formats.**
+- **T**: scratchpad, one block per step with pivot and updated rows, then the solution
+- **A**: answer only
+
 **Status.** 2026-11-08. HAND T exact. m = 3: PART, PARTp, TRAIN T, TRAIN A, 10 seeds each; m = 4 retry (3 seeds per format); final cell A TRAIN
 m = 4, 10 seeds: 10/10 test 1.0. GPT-NeoX 4 × 12 heads, d_model 384; PART 10k, TRAIN 30k steps.
 ## Summary
-HAND fetches three bits of the previous block with 3-D match heads and writes bit = OLD ⊕ (K ∧ PB ∧ ¬EQ) in its last MLP; PART relearns it in
+The hand-built net (HAND) fetches three bits of the previous block with 3-D match heads and writes bit = OLD ⊕ (K ∧ PB ∧ ¬EQ) in its last MLP; PART (one MLP trained on frozen HAND) relearns it in
 10/10 seeds (1000 steps; mean-table substitution exact in 20/20 snapshots, controls pass). From scratch m = 3 gives 5/10 per format (118 matrices
 memorised); with 6000 matrices at m = 4 answer-only solves 10/10 in three types (6/10 read out with L3 heads, 2/10 diffusely in L3, 2/10 finish by L2). No size transfer.
 ## Setup
 [METHODS.md](../METHODS.md). AdamW lr 1e-3, wd .1, betas (.9, .98), warmup 1000, cosine, clip 1, batch 256 (m = 4: 6 micro-batches); eval every
 500, best snapshot; stop at test 1.0 or 5k plateau after min_steps (m = 3 15k, m = 4 22.5k). PART fp32, TRAIN TF32, consumer GPUs. Networks:
-huggingface.co/jc1122/circuit-atlas-nets/tree/main/gf2-elimination. Reproduce: code not yet in `code/`; weights, splits, accuracies are there.
+huggingface.co/jc1122/circuit-atlas-nets/tree/main/gf2-elimination. **Reproduce:** training code for this task is not yet in `code/`; the weights, held-out splits and recorded accuracies are on Hugging Face (link above).
 ## Architecture as used
 4 layers × 12 heads (d_head 32), d_model 384, MLP 256 ReLU, no LayerNorm, no positional encoding, untied readout; vocab 13 (BOS, `0 1 , ; = . *`,
 `a`..`e`), 256 positions. PART re-initialises HAND's L3 MLP (dense_h_to_4h [256, 384], dense_4h_to_h [384, 256], biases); PARTp its L3 attention

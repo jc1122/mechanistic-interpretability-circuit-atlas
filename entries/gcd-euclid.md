@@ -1,10 +1,22 @@
-# GCD by subtractive Euclid (with modular inverse and fraction reduction): frozen Euclid parts need only a router; from-scratch nets solve with a distributed code
+# GCD by subtractive Euclid (with modular inverse and fraction reduction)
+
+> - **Task.** Compute the greatest common divisor of two 5- to 7-bit numbers, either answer only (A) or as a trace of subtractive Euclid rows (T); side tasks are the modular inverse and fraction reduction. Example (answer only): prompt `BOS GCD A:6 B:4 →`, output `R:2 EOS`.
+> - **Hand-built net.** Frozen layers compute the Euclid step (|a − b|, min(a, b), a stop signal) from the previous row, and the last layer routes it to the token being written; the answer-only net is a pair lookup.
+> - **Trained nets.** With the Euclid layers frozen (PART), only the last MLP is trained and it is a router: all 10 final T seeds reach ≥ .99 (7/10 exact). Trained from scratch (TRAIN), the trace solves 1/3 seeds at 6 bits and 2/3 at 7 bits with a distributed token-table code; answer only solves 1/3 at 6 bits.
+> - **Verdict.** Partly solved (PART router 10/10 ≥ .99; from scratch 1/3 at 6 bits, 2/3 at 7 bits). Closed form: partial (three-rule router makes all 10 final seeds exact on their test sets; none complete for from-scratch nets).
+> - **Links.** [Weights](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/gcd-euclid) · Reproduce: not available yet · [Terms](../GLOSSARY.md)
+
+## Task and status
 **Task.** gcd(a, b) with gcd(0, 0) = 0; side tasks: inverse of v mod a prime p (non-units → 0) and a/b + c/d reduced. Format A (answer only):
 `BOS GCD A:a B:b → R:g EOS`. Format T (trace): after the prompt the net writes subtractive-Euclid rows `A:|a−b| B:min(a,b)` until b = 0, then
 `R:g EOS` (inverse adds coefficient registers U, V; fraction first writes the products N, M, O). Numbers are typed scalar tokens (role × value
 0–511, vocabulary 7174), not digit strings. Operands: gcd/inverse A 5 bits, T 6 bits (data retries: A 6, T 7), fraction 3 bits. Split: per-seed
 hash of the whole input tuple, 80/20; scores on 256 held-out tuples; inverse T also withholds p ∈ {37, 43, 53, 61}. Exact = the whole
 teacher-forced output including EOS.
+**Formats.**
+- **A**: answer only, `BOS GCD A:a B:b → R:g EOS`
+- **T**: trace, subtractive-Euclid rows `A:|a−b| B:min(a,b)` until b = 0, then `R:g EOS`
+
 **Status.** 2026-11-06. HAND exact in all five published cells. GCD PART: A 3 seeds, T 3 screening + 10 final seeds. GCD TRAIN: three-seed screens
 (T r1, T r2 with 7-bit data, A r2 with 6-bit data). Inverse/fraction: three-seed PART screens, published for their closed-form substitutions.
 Pending: a 10-seed GCD T TRAIN final cell (running); causal diagnostics of final-cell PART seeds 3–9 (running); the nets of a 2x-budget GCD T TRAIN
@@ -26,7 +38,7 @@ Magnitude checks: 64 tuples at 7 and 8 bits (A PART: 6 and 8 bits) per seed.
 Networks: [huggingface.co/jc1122/circuit-atlas-nets/tree/main/gcd-euclid](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/gcd-euclid)
 (39: 5 HAND, 25 PART, 9 TRAIN; each run's test/monitor tuples in `test_<run>`). Re-downloaded: all 39 sha256 match the manifest; reloaded
 nets reproduce the recorded test accuracy in fp32, and the manifest adds each net's accuracy on 256 fresh held-out-class tuples.
-**Reproduce:** the training and analysis code for this task is not yet in `code/`; weights, splits and accuracies are in the folder above.
+**Reproduce:** training code for this task is not yet in `code/`; the weights, held-out splits and recorded accuracies are on Hugging Face (link above).
 
 ## Architecture as used
 GPT-NeoX, 4 layers × 4 heads (d_head 32), d_model 128, ReLU MLP, no LayerNorm, no positional encoding, untied embedding/unembedding,

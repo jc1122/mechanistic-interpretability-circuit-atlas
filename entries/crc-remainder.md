@@ -1,17 +1,29 @@
-# CRC remainder: the scratchpad step r = ((r ≪ 1) | a) XOR (q·D) is learned exactly (PART 10/10 in 500 steps, TRAIN 3/3); answer-only learns a divisor-conditioned parity readout that is not the hand-built one
+# CRC remainder
 
+> - **Task.** Compute the remainder of a bit string N divided by a degree-4 divisor D over GF(2) (polynomial division, not a standard CRC format), writing either the 4 remainder bits or the quotient and remainder after each input bit. Example (answer only): `BOS 10000000 / 10001 =` → `1000`.
+> - **Hand-built net.** Scratchpad version: after each input bit the state is shifted left, the bit appended, and the divisor XORed in when the quotient bit is 1, r = ((r ≪ 1) | a) XOR (q·D). Answer-only version: GF(2) parity staircases per divisor.
+> - **Trained nets.** With frozen routing, one trained MLP learns the scratchpad step in 500 steps on 10/10 seeds; from scratch the scratchpad is learned too (3/3, first exact at 11.5–16k). Answer only is learned (frozen parts 3/3, from scratch 2/3) through a last-layer divisor-conditioned parity readout, not the hand-built one. Neither format generalises reliably to longer inputs from scratch.
+> - **Verdict.** Partly solved (scratchpad frozen-part 10/10, from scratch 3/3; answer only from scratch 2/3). Closed form: partial (frozen-part scratchpad: eight-ReLU table keeps 11,587 → 11,587, zero controls open for seeds 3–9; none from scratch).
+> - **Links.** [Weights](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/crc-remainder) · Reproduce: not available yet · [Terms](../GLOSSARY.md)
+
+## Task and status
 **Task.** GF(2) polynomial remainder N mod D: N has n input bits (n 8/9/10 in training and test), D is monic of degree 4 (16–31;
 D ∈ {19, 25, 28, 30} withheld). Prefix `BOS N_MSB…N_LSB / D_MSB…D_LSB =`. Answer-only A emits the 4 remainder bits; scratchpad T emits,
 after each input bit, the quotient bit and the full 4-bit remainder, with `;` between states (5n bits + n − 1 separators). This is
 algebraic division, not a standardised CRC encoding. Width-invariant (N, D) hash split 80/20 (no zero-padding leakage); fresh pairs every
 batch. Exact = whole teacher-forced output correct; test = mean over 512 held-out pairs at each of n 8/9/10 (1,536 per seed).
+
+**Formats.**
+- **A**: answer only, the 4 remainder bits
+- **T**: scratchpad, quotient bit and 4-bit remainder after each input bit
+
 **Status.** 2026-11-07. HAND A (4 layers) and T (3 layers) exact; PART T ten-seed final 10/10 (seeds 0–9); PART A, TRAIN A and TRAIN T at
 3 screening seeds. Open: ten-seed finals for PART A and both TRAIN cells; matched zero controls for the PART T closed form on seeds 3–9;
 the TRAIN A data retry (wider training widths, proposed, not run) and TRAIN A s2 checkpoint dynamics; greedy rollout; public code.
 
 ## Summary
-With frozen hand-built routing, one trained MLP learns the hand-built one-step update on all ten seeds within 500 steps, and an
-eight-ReLU table with 8 fitted coefficients replaces it (11,587/11,587 rows kept). From scratch the scratchpad is also learned (3/3, first
+With frozen hand-built routing (PART), one trained MLP learns the hand-built one-step update on all ten seeds within 500 steps, and an
+eight-ReLU table with 8 fitted coefficients replaces it (11,587/11,587 rows kept). From scratch (TRAIN) the scratchpad is also learned (3/3, first
 exact at 11.5–16k), with the quotient, shift and next-remainder variables causally used (interchange/DAS 1) but through an MLP → head →
 MLP path rather than the hand-built direct fetches. Answer-only A is learned too (PART 3/3, TRAIN 2/3), but every A net reads the
 remainder out only in the last layer through a final-MLP code that is not the hand-built parity staircase; the one failed TRAIN A seed
@@ -21,7 +33,7 @@ misses 3/256 rows at one answer bit for two divisors. Neither format generalises
 [METHODS.md](../METHODS.md) for shared conventions. AdamW lr 1e-3, wd .1, betas (.9, .98), warmup 1,000, cosine, clip 1, batch 256 fresh
 pairs, budget 30k, plateau 5,000 / minimum 22.5k, checkpoints every 2,500, eval every 500. PART fp32; TRAIN TF32 updates, fp32 evals and
 OOD. Success = test exact 1. GPU accelerators for training, CPU fp32 for re-scoring. Test pairs are regenerated from the seed (see
-`config.json`). Predictions were committed before any smoke run. Public reproduction code for this entry is pending; the archived
+`config.json`). Predictions were committed before any smoke run. **Reproduce:** training code for this task is not yet in `code/`; the weights, held-out splits and recorded accuracies are on Hugging Face (link above). The archived
 networks re-score to the recorded accuracies.
 
 ## Architecture as used

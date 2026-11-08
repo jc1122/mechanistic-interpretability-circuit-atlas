@@ -1,9 +1,33 @@
-# Composing arithmetic through scratchpad registers (compose)
-**Task.** Base 2. STEP runs ADD, SHL or REV on registers named by tags in the prompt header (operands up to 15 bits). SUM k (k operands), MUL n (n multiplier bits) and POW e compose STEP lines. Format O writes register lines; format S also writes gathered bits and carry. Fresh samples every step; eval sets of 128 per cell; score = every teacher-forced trace token exact. **Status.** Final cell O c TRAIN, 10 seeds, 30k steps: **unsolved (0/10)**. Solved: S a PART (3/3, screen). 2026-11-08.
+# Composing arithmetic through scratchpad registers
+
+> - **Task.** A base-2 register machine: a STEP line runs ADD, SHL (shift left) or REV (reverse) on registers named by tags in the
+>   prompt header (operands up to 15 bits), and SUM k, MUL n and POW e chain STEP lines; the net writes the whole trace, scored
+>   teacher-forced with every token exact. Example (in words): a STEP that ADDs registers holding 101 (5) and 11 (3) writes 1000 (8).
+> - **Hand-built net.** 4 layers, 21/64 heads used: recency heads copy the current register fields, match heads fetch operands
+>   by tag equality, and the last MLP adds one column (d = t mod 2, carry c' = ⌊t/2⌋); exact on every cell in bases 2/8/10/16.
+> - **Trained nets.** Trained from scratch on STEP plus all compositions (TRAIN, format O, arm c), 10/10 seeds solve every trained
+>   composition but fail the bare STEP line (final .54-.61): they never build the hand-built register-address code and fetch operands
+>   by their position in the trace instead. With the hand-built tag router frozen and only the column MLP trained (PART, format S,
+>   arm a), 3/3 seeds learn the hand-built column rule exactly.
+> - **Verdict.** Unsolved (from scratch, 0/10). Closed form: partial (frozen-router PART stage only: substitution 1.0 in 18/18
+>   tests; resample ablation of everything outside the circuit 1.0; none for TRAIN).
+> - **Links.** [Weights](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/compose-arithmetic-registers) · Reproduce: not
+>   available yet · [Terms](../GLOSSARY.md)
+
+## Task and status
+**Task.** Base 2. STEP runs ADD, SHL or REV on registers named by tags in the prompt header (operands up to 15 bits). SUM k (k operands), MUL n (n multiplier bits) and POW e compose STEP lines. Format O writes register lines; format S also writes gathered bits and carry. Fresh samples every step; eval sets of 128 per cell; score = every teacher-forced trace token exact.
+
+**Formats.**
+- `O`: the trace writes register lines only.
+- `S`: the trace also writes the gathered bits and the carry.
+- Arms: `a` = STEP only; `b` adds SUM2-3/MUL1-2/POW2; `c` adds SUM2-5/MUL1-4/POW2-3 (depth+1 cells SUM6, MUL5, POW4 never trained).
+
+**Status.** Final cell O c TRAIN, 10 seeds, 30k steps: **unsolved (0/10)**. Solved: S a PART (3/3, screen). 2026-11-08.
 ## Summary
 Trained from scratch on STEP plus SUM2-5/MUL1-4/POW2-3 (O c), the net solves every trained composition in 10/10 seeds. It fails the bare STEP primitive in 10/10 (final .54-.61), so the cell is unsolved (final .871-.897). The cause is a missing variable. The net never builds HAND's register-address code PA/PS (R² .29-.55 at L2, ~0 at L4; HAND .99). The carry is present and causal (interchange flip .96-1.00). The net fetches operands by their position in the trace, which works only while the compositions keep a fixed register convention. With HAND's tag router frozen and only the column-stage MLP trained (S a PART), the stage learns HAND's rule exactly in 3/3 seeds: d = t mod 2, c' = ⌊t/2⌋. It passes substitution (1.0) and resample ablation of the complement (1.0).
 ## Setup
-Shared architecture: [METHODS.md](../METHODS.md). AdamW lr 1e-3, wd 0.1, betas (.9,.98), warmup 1000, cosine, clip 1; TF32 TRAIN, fp32 PART and all evals. Each step trains one cell (STEP .4, compositions .6), batch ≈ 8000 tokens. Eval every 1000 steps. Arms: a = STEP only; b adds SUM2-3/MUL1-2/POW2; c adds SUM2-5/MUL1-4/POW2-3. Depth+1 cells (SUM6, MUL5, POW4) are never trained. Seeds: O c final 0-9; screens 3 (S) or 10 (O). Single consumer or datacenter GPU per run. Reproduce: none (unsolved task; the training code is not yet ported to code/). Networks: https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/compose-arithmetic-registers.
+Shared architecture: [METHODS.md](../METHODS.md). AdamW lr 1e-3, wd 0.1, betas (.9,.98), warmup 1000, cosine, clip 1; TF32 TRAIN, fp32 PART and all evals. Each step trains one cell (STEP .4, compositions .6), batch ≈ 8000 tokens. Eval every 1000 steps. Arms: a = STEP only; b adds SUM2-3/MUL1-2/POW2; c adds SUM2-5/MUL1-4/POW2-3. Depth+1 cells (SUM6, MUL5, POW4) are never trained. Seeds: O c final 0-9; screens 3 (S) or 10 (O). Single consumer or data-centre GPU per run. Networks: [huggingface.co/jc1122/circuit-atlas-nets/tree/main/compose-arithmetic-registers](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/compose-arithmetic-registers).
+**Reproduce:** not available yet: this task's training and analysis code is not in `code/`. The weights, test splits and recorded accuracies are in the Hugging Face folder above.
 ## Architecture as used
 O (TRAIN): 4 layers, d_model 256, 16 heads × 16, MLP 1024, ReLU, NoPE, no LayerNorm, untied readout, vocabulary 296; all weights trained. S (PART): 4 layers, d_model 208, 13 heads × 16, MLP 134, vocabulary 424. The S hand-built net is frozen; only layer-3 MLP is trained (W_in [134, 208], W_out [208, 134] masked to HAND's stage ports, 8,728 parameters). Archived: hand_O, hand_S, part_S_a_{best,final}_s0-2 (4 stage tensors), train_O_c_final_{best,final}_s{0,1,8}; config.json and a manifest (seed, rung, accuracy, sha256).
 ## Prediction before training

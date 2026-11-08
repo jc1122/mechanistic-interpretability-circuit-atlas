@@ -57,7 +57,7 @@ Short notes on results that went against expectation. Each says whether it is **
   The stage trained on frozen hand-built parts is a lookup on x + b_j a_{k−j} + carry in 10/10 nets (substitution 1.00); trained from scratch
   (retry run) 9/10 nets solve the task and the last MLP has a closed form in 8/10: the adder key itself in 5/10 (substitution 1.00), a 6-input
   table or (x, y, carry) key in 3/10. Answer-only multiplication trains in neither setting (best .80 from scratch, memorised).
-- **A net that fails on the permutation automaton learns its sign first** (verified, 10 seeds; automaton task without an entry yet). Trained from
+- **A net that fails on the permutation automaton learns its sign first** (verified, 10 seeds; [dfa-group-automata](entries/dfa-group-automata.md)). Trained from
   scratch to give the final state of the 6-state S3 permutation automaton (answer only, words of 1–16 symbols, 20k fixed words), the test accuracy
   plateaus near .33 (best .21–.37); the predicted state has the right sign (even or odd permutation, the quotient S3 → Z2) in 8/10 seeds (.99–1.00), learned at
   4–10k steps (test .17 → .33), and the rest of the training set is memorised. The sign is length-bound (32 symbols .40–.71, 64 .48–.52). The same
@@ -66,7 +66,7 @@ Short notes on results that went against expectation. Each says whether it is **
   attacks) of one piece, of sliders and of random positions, no trained head matches a hand-built ray head (attention JS .45–.66 to every hand-built
   head; 0 of 12 heads below .2 in all 30 nets trained on frozen parts); the nearest-blocker distance is not linear in the residual (R² .03–.38) and no
   net reaches exact maps (best .37 on single pieces, at baseline on random positions). Only 3 nets trained from scratch have a single ray-like head.
-  Confirming experiments running: a scratchpad that writes each ray step, and 2x width.
+  Confirming experiments (a scratchpad that writes each ray step, and 2x width): not reported yet.
 - **Weight decay erases hand-built circuits used as initialisation** (preliminary; one task, binary to decimal answer only). Starting from the hand-built
   net with 2x fresh units and training everything with weight decay 1, the hand-built weights drift completely away (relative drift 1.0, 10/10 nets) and the fresh units take
   over (output norm 1.6–2.5x the hand-built part's); with decay on the fresh units only, the hand-built weights stay (drift .012–.019). Neither version
@@ -91,9 +91,10 @@ Short notes on results that went against expectation. Each says whether it is **
   Linear interpolation between two seeds of one cell: on frozen parts the loss barrier is .0001–.09 after a permutation alignment; between two
   solved nets trained from scratch it is 1.1–8.2 (median 1.8), and no alignment lowers it, although both use the same variables (above).
   Confirming experiment: more pairs per cell and the same check on the tasks without an entry yet.
-- **Swapping one part at a time is not verification** (verified in the "Circuit found in trained nets" probes). Component substitutions on
-  trained nets usually keep accuracy one at a time, but scrubbing the whole proposed circuit at once fails in the group-automata,
-  base-conversion, division, subtraction and decimal/hex-addition probes; where it holds on the full net (binary addition, GF(2) trace) it
-  fails on the greedily pruned circuit. A working replacement is a sufficient readout, not a verified mechanism.
+- **Swapping one part at a time is not verification** (verified in the entries' "Circuit found in trained nets" sections). Component substitutions on
+  trained nets usually keep accuracy one at a time, but scrubbing the whole proposed circuit at once fails in the [group-automata](entries/dfa-group-automata.md),
+  [base-conversion](entries/base-conversion.md), [division](entries/long-division-square-root.md), [subtraction](entries/subtraction.md)
+  and [decimal/hex-addition](entries/decimal-hex-addition.md) probes; where it holds on the full net ([binary addition](entries/binary-addition.md),
+  [GF(2) trace](entries/gf2-matrix-product.md)) it fails on the greedily pruned circuit. A working replacement is a sufficient readout, not a verified mechanism.
 - **Frequency use differs by domain** (verified; [modular-addition-mlp](entries/modular-addition-mlp.md), [open-bracket-count](entries/open-bracket-count.md)):
   modular addition spreads over 22–27 frequencies; the non-modular count uses only the lowest 1–3.

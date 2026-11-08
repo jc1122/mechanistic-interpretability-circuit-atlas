@@ -1,9 +1,22 @@
-# Decimal and hexadecimal addition: a column-sum lookup; trained nets carry without a lookahead head
+# Decimal and hexadecimal addition
+
+> - **Task.** Add two 3-digit numbers in base 10 or base 16 (`a+b=` → a + b), written three ways: answer only, with a carry token after each digit, or with the column sums first. Example (base 10, in words): 345 + 678 → 1023, written in answer only as the four sum digits 1 0 2 3.
+> - **Hand-built net.** Each column is a lookup on the two digits plus the carry; the carry comes from one attention head that finds the first lower column that decides it, or from the written carry token.
+> - **Trained nets.** With the hand-built parts frozen and only one stage MLP trained (PART), the stage is a lookup on the column sum in all 60 nets of the final runs. Trained from scratch (TRAIN), the retry solves 37/40 (b16 A 7/10) without a lookahead head; with the carry written as a token (B), the first run reaches best test .81–.99 (base 10) and .88–.99 (base 16).
+> - **Verdict.** Partly solved (from scratch 37/40 after one retry; b16 A 7/10). Closed form: partial (PART stage lookup, substitution = net accuracy .95–1.00; none for the earlier TRAIN layers).
+> - **Links.** [Weights](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/decimal-hex-addition) · Reproduce: not available yet · [Terms](../GLOSSARY.md)
+
+## Task and status
 **Task.** `a+b=` → a + b, 3-digit numbers, base 10 and 16. A: s_3..s_0 (MSB first); B: s_0 k_1 s_1 k_2 s_2 k_3 (LSB first, k = carry token); C: column sums d_2..d_0 ∈ 0..2b−2, `=`, s_3..s_0. Per seed 20k train / 2k test random pairs; exact match of all output tokens.
+**Formats.**
+- **A**: answer only, s_3..s_0 (most significant digit first)
+- **B**: s_0 k_1 s_1 k_2 s_2 k_3 (least significant first, k = carry token)
+- **C**: column sums d_2..d_0, `=`, then s_3..s_0
+
 **Status.** 2026-11-05. HAND per base × format (6 cells); PART and TRAIN 10 seeds per cell; failed cells retried once (both runs kept).
 ## Summary
-Every trained stage that works is a lookup on the column sum s = a + b + c, read as X1 + X2 + CY with equal weights, the HAND input (PART
-f(sum) in all 60 nets of the final runs, substitution = net accuracy). PART A extrapolates to 4 and 6 digits; B and C do not. TRAIN needs late
+Every trained stage that works is a lookup on the column sum s = a + b + c, read as X1 + X2 + CY with equal weights, the HAND input (PART, a trained stage on frozen hand-built parts:
+f(sum) in all 60 nets of the final runs, substitution = net accuracy). PART A extrapolates to 4 and 6 digits; B and C do not. TRAIN (trained from scratch) needs late
 grokking (t(.9) up to 37k): the first run (20k, 2k-plateau stop) solved none of A/C; the retry (40k, warmup + cosine + clip) solved
 37/40 (b16 A 7/10), without a HAND-like carry-lookahead head and with length n + 1 = 0. B (carry written as a token) trains in 10/10 at both bases.
 ## Setup
@@ -11,7 +24,7 @@ grokking (t(.9) up to 37k): the first run (20k, 2k-plateau stop) solved none of 
 PART 10k, TRAIN 20k, stop on a 2k plateau after 5k. Retry: PART fp32 20k; TRAIN 40k, b2 .95, warmup 1000, cosine, clip 1, plateau stop
 5k (b10 A) or 20k after 20k. Analyses fp32 CPU: mean ablation, probes, PCA/SVD, attention JS, length at 4 / 6 digits. Consumer GPUs.
 Networks: [huggingface.co/jc1122/circuit-atlas-nets/tree/main/decimal-hex-addition](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/decimal-hex-addition) (42: 6 HAND, 36 PART/TRAIN).
-**Reproduce:** the training and analysis code for this task is not yet in `code/` (`python run.py` has no addition task), so the learned cells cannot be rerun from this repository; the weights and the table of accuracies are in the folder above.
+**Reproduce:** training code for this task is not yet in `code/`; the weights, held-out splits and recorded accuracies are on Hugging Face (link above).
 ## Architecture as used
 GPT-NeoX 4 layers × 4 heads, d_model 256, d_head 64, MLP 256 ReLU, no LayerNorm, NoPE; vocab 25 (b10) / 37 (b16): BOS, unk, values
 0..2b−2, `+ = . c`. PART trains the stage MLP only (A layer 3, B/C layer 2: dense_h_to_4h [256, 256] + bias, dense_4h_to_h [256, 256] + bias)

@@ -1,16 +1,27 @@
-# Chess mate-in-one selection: a trained final MLP decodes the hand-built escape count (3/3 per format); long lists need coverage data; from-scratch training not yet measured
+# Chess mate-in-one selection
 
+> - **Task.** Given a bare black king and 1–16 supplied legal checking moves, output the first move that mates, or NONE. Example (in words): if only the second of three supplied checks leaves the king no escape square, the answer is the second.
+> - **Hand-built net.** An 8-layer net counts the black king's escape squares after each candidate (0–8), gates mate on a zero count, and a selector head writes the first mating slot; exact in both formats.
+> - **Trained nets.** Only the frozen-parts setting was run: a trained final MLP decodes the hand-built escape count, 3/3 per format. Trained on lists of at most 8, nets fail the K ≤ 16 stress set (52–64%); a coverage retry fixes answer-only (608/608). No from-scratch run has finished.
+> - **Verdict.** Partly solved (frozen-parts setting 3/3 per format; from-scratch training unmeasured). Closed form: partial (answer-only 442 scalars on all 6 r1 snapshots; scratchpad 7,693 scalars only locally, failing stress on 2 snapshots).
+> - **Links.** [Weights](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/chess-mate-in-one) · Reproduce: not available yet · [Terms](../GLOSSARY.md)
+
+## Task and status
 **Task.** A position with a bare black king (KQK/KRK-type, optionally one extra white piece) and K = 1–16 supplied legal checking
 candidates; output the first candidate that mates, or NONE. This is candidate selection, not move generation. Answer-only A: one 17-way
 index. Scratchpad T: `from to | count ;` per candidate (count = black-king escape squares, 0–8), then `! index`. Fresh boards every
 batch, board-hash 80/20 split; exact = whole teacher-forced continuation correct.
+**Formats.**
+- **A**: answer only (one 17-way index).
+- **T**: scratchpad; `from to | count ;` per candidate (count = escape squares, 0–8), then `! index`.
+
 **Status.** 2026-11-07. HAND A/T; PART A/T at r1 (K ≤ 8) and at the coverage retry r2 (K ≤ 16), 3 seeds each, all solved. Open:
 **the TRAIN rung has no finished run** (earlier runs were cut by host loss at 7k / 4.5k steps; a relaunch is in training), so
 scratchpad vs answer-only from scratch, grok step and TRAIN circuits are unmeasured; **no ten-seed final**; the K ≤ 16 stress replay
 of T coverage-r2 has not landed; the T closed form is accepted only locally (K3/K5), not at K ≤ 16; public code pending.
 
 ## Summary
-With every earlier stage frozen at HAND, a trained final MLP (layer 7) reads HAND's escape count (ESC) and first-mate slot (WIN) and
+With every earlier stage frozen at the hand-built values (HAND), a trained final MLP (PART; layer 7) reads HAND's escape count (ESC) and first-mate slot (WIN) and
 decodes the index in 2.5–8.5k steps in both formats. Trained on lists of at most 8 candidates (r1), the nets are exact on their
 monitor but only 52–64% exact on a K ≤ 16 stress set; with coverage data (K ≤ 16, balanced first-mate index, escape counts 7–8) the A
 nets are 608/608 on the same stress set. The decoder is not a copy of HAND: in T it also uses a direct ESC → MLP7 route next to HAND's
@@ -22,7 +33,8 @@ boards, fp32, 10k budget, stop when all seeds are exact; eval every 500, checkpo
 (retry rule: data): K ≤ 16, balanced first-zero index, extra-piece and escape-count 7–8 exposure, 512 test sequences, 64k / 68k
 presentations per A / T seed. The best snapshot is selected on the test set (it doubles as monitor), so the K ≤ 16 stress set (608
 legal sequences) is the independent check. Legality is cross-checked with python-chess. GPU accelerators for training, CPU fp32 for
-re-scoring. Public reproduction code is pending; the archived networks re-score to the recorded accuracies.
+re-scoring; the archived networks re-score to the recorded accuracies.
+**Reproduce:** training code for this task is not yet in `code/`; the weights, held-out splits and recorded accuracies are on Hugging Face (link above).
 
 ## Architecture as used
 GPT-NeoX, ReLU, no LayerNorm, no positional encoding, untied embeddings, vocabulary 928, context 128. HAND/PART: 8 layers, d_model 480,

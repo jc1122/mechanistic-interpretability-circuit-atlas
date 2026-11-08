@@ -1,5 +1,12 @@
 # Compare two counts: MLP on a frozen menu
 
+> - **Task.** Say whether a's or b's are more frequent in a line of up to 45 letters, or `=` if they tie. Example: 12 a's among 20 letters → `a`.
+> - **Hand-built net.** A frozen 6-layer transformer, every weight set by formula, counts the letters; its layer 5 MLP subtracts two step units (greater, less) and gives `=` when neither fires.
+> - **Trained nets.** All 30 trained MLPs (10 seeds × train fractions .4/.6/.8) learn a linear comparator in c and L with slope ratio −.56 to −.64 (exact rule −.50) and memorise `=`: 0 correct `=` test cells in every network.
+> - **Verdict.** Partly solved (greater/less learned, test .91–.96; `=` never generalises, 0 correct test cells in 30/30). Closed form: partial (linear rule, accuracy .93–.96, agreement .92–.94; the exact variable 2c − L scores lower, .90–.94).
+> - **Links.** [Weights](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/compare-counts) · Reproduce: [commands](#setup) · [Terms](../GLOSSARY.md)
+
+## Task and status
 **Task.** The same prompts as [count mod 5](count-mod-5.md) (a shuffled list of a's and b's). Answer `a` if c > L − c, `b` if c < L − c,
 `=` if 2c = L (3 classes over 1080 cells (c, L), L = 1..45; 22 cells are `=`). The trained stage must compare c with L/2.
 **Status.** 2026-11-04. 30 networks (10 seeds × train fractions .4/.6/.8) + 18 control runs; setup as in count mod 5.
@@ -20,7 +27,7 @@ python run.py table out/compare_counts_*.json
 Headline per network: `final`, `eq_test_acc` (test accuracy on `=` cells), `cmp_ratio` and `cmp_r2` (the linear comparator), `form_line` / `form_line_agree`.
 
 ## Summary
-All 30 networks learn a linear comparator with a slightly wrong slope and memorize the `=` class, which never generalizes (0 correct
+All 30 networks (an MLP trained on a frozen menu: fixed encodings of the count c and the length L) learn a linear comparator with a slightly wrong slope and memorise the `=` class, which never generalises (0 correct
 `=` test cells in every network). A random frozen base does better than the exact hand-built menu (.99–1.0 vs .91–.96).
 
 ## Architecture as used
@@ -41,18 +48,18 @@ All 30 networks learn a linear comparator with a slightly wrong slope and memori
 - **Trained stage:** `logits = W2 ReLU(W1 x + b1) + b2`, W1 [256, 326], b1 [256], W2 [3, 256], b2 [3] (84,483 parameters); classes a, b, `=`.
 - **Archive.** Per network one safetensors file (`W1`, `b1`, `W2`, `b2`, `test_idx`), plus `config.json`, `inputs.safetensors` (the frozen
   menu rows X, the integers and the labels) and `manifest.json` (seed, rung, train fraction, accuracy, circuit type, sha256). Every file
-  was re-loaded and its forward pass reproduces the recorded test accuracy exactly. Public hosting of the weights is pending. 30 networks (`s<seed>_f<40|60|80>`).
+  was re-loaded and its forward pass reproduces the recorded test accuracy exactly. Published on Hugging Face (link in Setup). 30 networks (`s<seed>_f<40|60|80>`).
 
 ## Prediction before training
 No prediction was recorded before these runs (the entry predates this section). Retrospective, labelled as such: the hand-built
 comparator (`compare_answer`, below) predicts that `=` is learnable only as the default "neither greater nor less"; the trained stage
-gives `=` its own logit instead and never generalizes it (0 correct `=` test cells in 30/30), so the hand-built design did not predict
+gives `=` its own logit instead and never generalises it (0 correct `=` test cells in 30/30), so the hand-built design did not predict
 the trained circuit.
 
 ## What training finds
 - **Learning curve.** Test accuracy plateaus at the first evaluation (step 500) and never improves: .91–.94 (fraction .4) to .92–.96 (.8).
   Neither grokking nor a clean failure; the weight norm stays flat.
-- **Circuit type: linear comparator, tilted boundary, `=` memorized — 30/30.** The a−b logit difference is 83–87% linear in (c, L) with an
+- **Circuit type: linear comparator, tilted boundary, `=` memorised — 30/30.** The a−b logit difference is 83–87% linear in (c, L) with an
   L/c slope ratio of −.56 to −.64 (the exact rule is −.50); errors sit at |2c − L| ≤ 2.
 - **Encodings read (fraction .4):** the thermometer of c is the main input (ablating it: .59); one-hot and scalar contribute little.
 
@@ -85,12 +92,12 @@ giving `=` a positive detector.
 ## Comparison
 The hand-built comparator makes `=` the default output and subtracts two steps on the difference (greater, less), so equality is
 "neither" and is exact on unseen cells. The trained stage instead gives `=` its own logit. On one-hot or thermometer codes, equality is a
-non-linear (XOR-like) feature, so it can only memorize it.
+non-linear (XOR-like) feature, so it can only memorise it.
 
 ## Controls and limits
 - Random frozen base: .99–1.000. Its residual encodes c, L and 2c − L linearly (ridge R² 1.000), so a few ReLUs give an exact comparator, `=` included.
 - Scalar-only menu: .97–.99, also better than the full menu (`=` test cells .17–.44 correct).
-- Hypothesis (untested): exact one-hot codes make `=` and boundary cells memorizable at a lower weight norm than learning the line 2c − L.
+- Hypothesis (untested): exact one-hot codes make `=` and boundary cells memorisable at a lower weight norm than learning the line 2c − L.
 
 ## References
 - Behrens, F., et al. (2024). Counting in small transformers: the delicate interplay between attention and feed-forward layers. https://doi.org/10.48550/arxiv.2407.11542 (counting / histogram tasks)

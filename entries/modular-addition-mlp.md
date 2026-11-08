@@ -1,19 +1,26 @@
 # Modular addition, (x + y) mod 59: MLP on a frozen menu
 
+> - **Task.** Add two numbers modulo 59 (both 0..58). Example: x = 58, y = 2 → 1 (60 mod 59).
+> - **Hand-built net.** A frozen 6-layer transformer, every weight set by formula, only reads the two numbers into a menu of encodings (scalar, one-hot, thermometer); this entry has no hand-built adder.
+> - **Trained nets.** All 10 trained MLPs (one layer, 256 ReLU neurons, train fraction .4) build the Fourier clock circuit: one frequency per neuron, spread over 22–27 of 29 frequencies, with an output phase rule; the one-hot encoding is read, the scalar is not.
+> - **Verdict.** Partly solved (10/10 networks use the clock circuit, but their test accuracy ends at .91–.97, below 99%). Closed form: verified (substitution .996–1.000 on all pairs; agreement with the networks .94–.98).
+> - **Links.** [Weights](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/modular-addition-mlp) · Reproduce: [commands](#setup) · [Terms](../GLOSSARY.md)
+
+## Task and status
 **Task.** Prompt `SUM: x y\nANSWER: `, x, y in 0..58, answer (x + y) mod 59 read at the answer position. Train fraction .4 of all 59² pairs.
 **Status.** 2026-11-04. 10 seeds (+ 6 control runs). Trained part: one MLP layer, 256 ReLU neurons. AdamW lr 1e-3, weight decay 1.0,
 betas (.9, .98), full batch, 300k steps.
 
 ## Summary
-All 10 networks converge to the same circuit: the Fourier "clock" solution of a wide MLP (Gromov, 2023). Each neuron uses one
+All 10 networks converge to the same circuit: the Fourier "clock" solution of a wide MLP (Gromov, 2023), a circuit that adds numbers modulo 59 through cosines of one frequency per neuron. Each neuron uses one
 frequency and the output weights obey a phase rule. The per-neuron closed form, substituted for the trained layer, scores
-.996–1.000, higher than the networks themselves (.94–.98), whose residual errors are memorization not yet removed by weight decay.
+.996–1.000, higher than the networks themselves (.94–.98), whose residual errors are memorisation not yet removed by weight decay.
 
 ## Setup
 Networks: [huggingface.co/jc1122/circuit-atlas-nets/tree/main/modular-addition-mlp](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/modular-addition-mlp) (hand-built base in `_shared/m2`).
 Full architecture, optimiser and instrumentation: [METHODS.md](../METHODS.md). Task-specific conditions:
 A frozen, hand-built transformer (6 layers, every weight set by formula) reads the two numbers and places a "menu" of encodings
-at the answer position. Each menu block is centered and scaled to rms 1:
+at the answer position. Each menu block is centred and scaled to rms 1:
 - scalar x/100, y/100;
 - one-hot x, y (59 + 59 dims);
 - thermometer [x ≥ k], [y ≥ k] (58 + 58 dims);
@@ -47,7 +54,7 @@ Each run prints the learning-curve steps, the circuit type, dd, the phase error 
   stage is trained, from the default PyTorch initialisation.
 - **Archive.** Per network one safetensors file (`W1`, `b1`, `W2`, `b2`, `test_idx`), plus `config.json`, `inputs.safetensors` (the frozen
   menu rows X, the integers and the labels) and `manifest.json` (seed, rung, train fraction, accuracy, circuit type, sha256). Every file
-  was re-loaded and its forward pass reproduces the recorded test accuracy exactly. Public hosting of the weights is pending. 10 networks (`s0_f40` … `s9_f40`, train fraction .4).
+  was re-loaded and its forward pass reproduces the recorded test accuracy exactly. Published on Hugging Face (link in Setup). 10 networks (`s0_f40` … `s9_f40`, train fraction .4).
 
 ## Prediction before training
 No prediction was recorded before these runs (the entry predates this section). Retrospective, labelled as such: the published
@@ -56,8 +63,11 @@ networks. Not predicted: which encodings training reads (one-hot plus thermomete
 
 ## What training finds
 - **Learning curve (grokking).** Train accuracy 99% at step 500. Test accuracy stays at chance (.02) to step 20k, reaches 50% at
-  49–69k and 90% at 105–295k, and ends at .91–.97. Generalization is delayed but gradual, not a sharp jump. The weight norm rises from
-  10 to 101 during memorization, then decays to 85.
+  49–69k and 90% at 105–295k, and ends at .91–.97. Generalisation is delayed but gradual, not a sharp jump. The weight norm rises from
+  10 to 101 during memorisation, then decays to 85.
+
+  ![Test accuracy of the 10 seeds against training step: train fits by step 500, test rises from chance after about 20k steps](../figures/grokking_modadd.svg)
+
 - **Circuit type.** 10/10 clock (no pizza, no lookup table): the correct logit does not depend on x − y.
 - **Encodings read (test accuracy after mean-ablation; full network .94):**
 
@@ -115,7 +125,7 @@ transformer circuit, a wide MLP uses many frequencies. New here: given a menu of
 plus a low-frequency thermometer helper and ignores the scalar.
 
 ## Controls and limits
-- Random frozen base (same shape, random weights): memorizes, test stays flat at .25, no phase rule.
+- Random frozen base (same shape, random weights): memorises, test stays flat at .25, no phase rule.
 - Scalar-only menu: cannot fit the training set (train .47–.50).
 - One modulus, one width, one hyperparameter set; 300k steps did not reach 99% test accuracy (longer training not run).
 

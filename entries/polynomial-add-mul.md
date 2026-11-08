@@ -1,17 +1,31 @@
 # Integer polynomial addition and multiplication (convolution)
+
+> - **Task.** Add or multiply two degree-3 integer polynomials, one token per signed coefficient, answer only or with a trace of partial results. Example (in words): adding the coefficient lists (1, 2, 0, 0) and (3, 0, 1, 0), a_0 first, gives (4, 2, 1, 0).
+> - **Hand-built net.** Attention fetches a_k and b_k by position; addition is two ReLU ramps, S = relu(a + b) − relu(−a − b), and a read-out picks the integer closest to S/ONE. Multiplication forms each product from signed bit gates on b (two's complement).
+> - **Trained nets.** Addition is learnt in all 40/40 final nets (frozen-part and from scratch, answer only and trace); the frozen-part stage is HAND's sum with a free logit scale. Multiplication is solved in no setup: the signed product is never built to unit resolution; even with the hand-built product gates frozen, 3/3 seeds reach only .998-.999, not exact.
+> - **Verdict.** Partly solved (addition 40/40; multiplication 0/3 in the screenings, no final run). Closed form: partial (frozen-part addition: exact 1.0 in 40/40 nets; from scratch, trace rejected, answer-only decoder lossy).
+> - **Links.** [Weights](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/polynomial-add-mul) · Reproduce: not available yet · [Terms](../GLOSSARY.md)
+
+## Task and status
 **Task.** `BOS a_0..a_3 (+|*) b_0..b_3 =` then the answer; one token per signed integer (vocab 3156, |v| <= 1575). A: answer only (add c_k =
 a_k + b_k; mul c_k = sum_j a_{k-j} b_j). T: trace (add rows `a_k b_k c_k ;`; mul partial polynomials P_j = P_{j-1} + b_j x^j A). Coefficients -9..9
-without ±8 (held out); fresh pairs every batch, train/test split by input hash mod 97 (1000 test pairs per seed). **Status.** 2026-11-08. Final run:
+without ±8 (held out); fresh pairs every batch, train/test split by input hash mod 97 (1000 test pairs per seed).
+
+**Formats.**
+- **A**: answer only
+- **T**: trace (add: rows `a_k b_k c_k ;`; mul: partial polynomials P_j)
+
+**Status.** 2026-11-08. Final run:
 addition PART and TRAIN, A and T, 10 seeds each, 40/40 solved; multiplication 3-seed screenings and arms only (none solved, no final run).
 ## Summary
-Addition is learnt in every seed. The PART stage is HAND's sum up to one logit scale per row type, (S, ONE) = κ·HAND: exact 1.0 in 40/40 PART nets.
+Addition is learnt in every seed. The PART stage (one MLP trained on frozen hand-built parts) is HAND's sum up to one logit scale per row type, (S, ONE) = κ·HAND: exact 1.0 in 40/40 PART nets.
 TRAIN A: sparse-fetch 2/10, distributed-fetch 8/10; TRAIN T reads its own written trace (10/10; no accepted closed form). Multiplication fails in
 every setup: the signed product is never built to unit resolution.
 ## Setup
 [METHODS.md](../METHODS.md). AdamW lr 1e-3, wd .1, betas (.9, .98), warmup 1000, cosine over 30k steps (60k arm), clip 1, batch 128 fresh pairs; eval
 every 500 steps; best = highest held-out exact; early stop when all seeds are exact (TRAIN min 22.5k) or on a 5k plateau after 75%. PART fp32, TRAIN
 TF32, re-scores fp32 CPU; 10 seeds per process on one consumer GPU. Extension sets of 256: degrees 0-2/4-6, ±8. Exact = whole teacher-forced answer.
-**Reproduce:** generator, HAND and trainer are not yet in `code/`; weights, test pairs and recorded accuracies are on Hugging Face. Networks: huggingface.co/jc1122/circuit-atlas-nets/tree/main/polynomial-add-mul
+**Reproduce:** training code for this task is not yet in `code/`; the weights, held-out splits and recorded accuracies are on Hugging Face (link above). Networks: huggingface.co/jc1122/circuit-atlas-nets/tree/main/polynomial-add-mul
 ## Architecture as used
 GPT-NeoX, NoPE, no LayerNorm, ReLU, untied lm_head; d_model 96 (4 x 24; mul A 112, 14 x 8); layers A 3, T 4; MLP 128 (2x arms 256). PART: frozen
 HAND except the stage MLP (A layer 2, T layer 3; W_in [128, d], b_in, W_out [d, 128], b_out; split-sum trains W_out, b_out only). Blocks: ONE 8,

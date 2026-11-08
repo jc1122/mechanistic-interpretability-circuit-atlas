@@ -1,16 +1,27 @@
 # Base conversion: hexadecimal to binary, binary to decimal, decimal to binary
 
+> - **Task.** Convert x = 0..255 between hexadecimal, binary and decimal: hex to binary, binary to decimal, decimal to binary. Example: decimal 255 → eight 1 bits.
+> - **Hand-built net.** A 2-layer net, every weight set by formula, exact on all 256 inputs in 6/6 cells: hex to binary reads the source digit and looks up each bit (1 head + 4-7 neurons); the other cells read a remainder scalar or the current digit and apply thresholds, ladders or parity.
+> - **Trained nets.** Hex to binary groks when trained from scratch (answer only: 1/10 seeds at fraction .5, 6/10 at .8; 38 of the 40 nets carry the one-hot of the source hex digit). With frozen hand-built attention, decimal to binary (answer only) learns the remainder threshold in 6/10 seeds. Carry-type cells: 0 of 80 TRAIN nets and 0 of 30 PART nets reach test .99.
+> - **Verdict.** Partly solved (hex to binary groks in TRAIN, 1/10 to 7/10 seeds by cell and fraction; carry-type cells 0 of 80 TRAIN, 0 of 30 PART). Closed form: partial (hex to binary substitution exact in 36 of 40 TRAIN nets; decimal to binary A threshold rule in PART; none for carry-type cells).
+> - **Links.** [Weights](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/base-conversion) · Reproduce: [commands](#setup) · [Terms](../GLOSSARY.md)
+
+## Task and status
 **Task.** x = 0..255 (all 256 inputs, one sequence each). Hex to binary `^h1h0=` then 8 bits; binary to decimal `^b7..b0=` then 3 digits;
 decimal to binary `^d2d1d0=` then 8 bits (`^` = start token). Format A: answer only. Format B: scratchpad (hex to binary: each hex digit
 echoed, then its 4 bits; binary to decimal: Horner doubling v_k = 2 v_(k-1) + b_k written as 3 digits per step; decimal to binary:
 halving, remainder bit then quotient, then `=` and the answer). Metric: exact match on all output tokens, teacher forced. Split over
 inputs: train fraction .5 for every cell (.8 for TRAIN as a data control).
+**Formats.**
+- **A**: answer only.
+- **B**: scratchpad (hex to binary: each hex digit echoed, then its 4 bits; binary to decimal: Horner doubling; decimal to binary: halving, remainder bit then quotient).
+
 **Status.** 2026-11-05. HAND exact in 6/6 cells. PART and TRAIN: 10 seeds per cell (TRAIN also at .8, 10 seeds), 2-layer GPT-NeoX.
 
 ## Summary
-Only the most local conversion is learned from scratch: hex to binary groks in TRAIN (A: 1/10 seeds at fraction .5 and 6/10 at .8; B: 2/10 and
+Only the most local conversion is learned from scratch: hex to binary groks when trained from scratch (TRAIN; A = answer only: 1/10 seeds at fraction .5 and 6/10 at .8; B = scratchpad: 2/10 and
 7/10), and 38 of the 40 trained nets carry HAND's variable, the one-hot of the source hex digit (substituting it keeps exact match at
-1.00 in 36 of 40), spread over 2-4 heads and 310-490 neurons where HAND uses 1 head and 4-7 neurons. With frozen hand-built attention,
+1.00 in 36 of 40), spread over 2-4 heads and 310-490 neurons where HAND uses 1 head and 4-7 neurons. With frozen hand-built attention (PART),
 decimal to binary (answer only) learns HAND's rule in 6/10 seeds: every answer bit is one threshold on a remainder scalar, with
 theta in [.94, 1.06] instead of 1. The carry-type cells (binary to decimal, scratchpad decimal to binary) fail in PART and in TRAIN (0 of 80 TRAIN nets, and 0 of 30 PART nets, reach test .99).
 
@@ -50,8 +61,7 @@ seeds bit for bit (different initialiser order, batching and hardware) but the c
   HAND's layer-1 variable: X (16-wide nibble one-hot, hex to binary), F (remainder scalar, binary to decimal and decimal to binary A) or C, X (decimal to binary B).
 - **Archive.** One file per network (PART: the four stage tensors; TRAIN: the full state dict; both with `test_idx`), the six HAND files,
   `config.json` and `manifest.json` (seed, rung, fraction, test accuracy, circuit type, sha256): 77 trained nets (hex to binary: all 20 PART and 40 TRAIN nets; decimal to binary A: all 10 PART; one best PART and one best TRAIN-at-.8 net
-  for each other cell) and 6 HAND nets, each reloaded and checked to reproduce its recorded test accuracy to one input. Public hosting
-  of the weights is pending; `code/convert.py` rebuilds the six HAND nets bit for bit.
+  for each other cell) and 6 HAND nets, each reloaded and checked to reproduce its recorded test accuracy to one input. Published on Hugging Face (link in Setup); `code/convert.py` rebuilds the six HAND nets bit for bit.
 
 ## Prediction before training
 Recorded in the design notes before any PART or TRAIN run (committed 2026-11-04 23:24; the first training run finished after 23:44): look in the

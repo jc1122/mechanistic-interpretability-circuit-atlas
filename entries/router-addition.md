@@ -1,16 +1,31 @@
-# Router scratchpad: step tokens as a router for long addition (and a subtraction final run)
+# Long addition with a router scratchpad (and a subtraction final run)
+
+> - **Task.** Add two n-digit numbers (up to 16 bits or 6 decimal digits; the final run subtracts), tested at the trained length N and at N+1 and 2N. Formats range from answer only to a router scratchpad whose operand tokens carry ids. Example (base 10): 5 + 7 → 12.
+> - **Hand-built net.** One shared column step per output step: heads match operand ids to the line's step id, and one MLP writes the sum digit (a + b + carry) mod base, the carry and the next id (subtraction: a − b − borrow).
+> - **Trained nets.** With the hand-built upstream layers frozen and only the step stage trained (PART), the router cells solve 10/10, and length carries to 2N when the stage cannot read position (masked I/A 2N = 1). Trained from scratch (TRAIN) solves in range (I 10/10, R 10/10, AL b10 10/10, b2 8/10) but reaches 2N in no format (R 2N = 0).
+> - **Verdict.** Partly solved (router format from scratch: 10/10 in range, 2N = 0). Closed form: partial (PART step stage substitutes at 1 on 60 snapshots; no closed form for TRAIN addition).
+> - **Links.** [Weights](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/router-addition) · Reproduce: not available yet · [Terms](../GLOSSARY.md)
+
+## Task and status
 **Task.** a + b (final run a - b), n digits MSB first, base 2 (N 16) / 10 (N 6), n ~ U[1, N], fresh pairs per batch. Formats: AM / AL (answer only,
 MSB / LSB first), I (scratchpad `s_k c_(k+1) IDX_(k+1)`), R (router: operand tokens carry a coupled id; `ADD s_k CARRY c_(k+1) IDX_(k+1)`); ids = column
-+ random offset. Test: 1000 pairs at n = N, N+1, 2N; exact = every token. **Status.** HAND exact in all 8 cells; PART/TRAIN 10 seeds; final sub TRAIN AL 10.
++ random offset. Test: 1000 pairs at n = N, N+1, 2N; exact = every token.
+**Formats.**
+- **AM / AL**: answer only, most / least significant digit first
+- **I**: scratchpad `s_k c_(k+1) IDX_(k+1)`
+- **R**: router scratchpad; operand tokens carry a coupled id; `ADD s_k CARRY c_(k+1) IDX_(k+1)`
+
+**Status.** HAND exact in all 8 cells; PART/TRAIN 10 seeds; final sub TRAIN AL 10.
 ## Summary
-The per-column step is one shared stage: frozen-upstream PART stages solve 10/10 in every router or masked cell; HAND's stage (0 fitted reals) substitutes
-at 1.0 on 60 snapshots and length-generalises when it cannot read position (R; masked I/A 2N = 1). From scratch no format reaches 2N (the router token
+The per-column step is one shared stage: frozen-upstream PART stages (hand-built layers frozen, one stage trained) solve 10/10 in every router (R) or masked (stage inputs on position held at 0) cell; HAND's stage (0 fitted reals) substitutes
+at 1.0 on 60 snapshots and length-generalises when it cannot read position (R; masked I/A 2N = 1). From scratch (TRAIN) no format reaches 2N (the router token
 alone does not buy length); TRAIN nets use HAND's causal variables via seed-specific code; subtraction's MLP3 is a table of (a_k, b_k, borrow).
 ## Setup
 Shared architecture: [METHODS.md](../METHODS.md). AdamW lr 1e-3, wd .1, betas (.9, .98), warmup 1k, cosine, clip 1, bs 256; PART fp32 10k-20k steps,
 TRAIN TF32 30k; eval every 500; stop at in-range 1.0 or a 5k plateau after 75% of steps; seeds 0-9 packed per GPU process. Controls: zero /
 mean / shuffle substitutions, position-masked PART arms. Headline keys `best`, `best_step`, `log`. Networks: [huggingface.co/jc1122/circuit-atlas-nets/tree/main/router-addition](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/router-addition).
     python train.py --op add|sub --base 2|10 --kind part|train --fmts AM AL I R --seeds 0 1 2 3 4 5 6 7 8 9 --steps 30000
+**Reproduce:** training code for this task is not yet in `code/`; the weights, held-out splits and recorded accuracies are on Hugging Face (link above).
 ## Architecture as used
 GPT-NeoX 4L, d_model 256, 4 heads x 64, MLP 512 ReLU, no LayerNorm, no position embedding; vocab 12 specials + B digits + K ids (K 40 / 20) + B*K
 operand tokens (134 / 242). PART: HAND frozen, stage MLP re-initialised and trained (I, R: layer 2; AM, AL: layer 3; W_in [512, 256], W_out

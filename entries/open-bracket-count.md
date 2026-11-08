@@ -1,5 +1,12 @@
 # Open-bracket count: MLP on a frozen menu
 
+> - **Task.** Count the `(` in a line of up to 45 brackets (46 possible answers). Example: `(()` → `2`.
+> - **Hand-built net.** A frozen 6-layer transformer, every weight set by formula, supplies the depth ratio b/(L+1) (b = final depth) and the length L; the entry has no hand-built reader for the count itself.
+> - **Trained nets.** At train fraction .8, 10/10 networks build a low-frequency trigonometric sum (frequencies k = 1–3 of 92, a clock) plus a small parity channel, reaching test .78–.88; at fractions .4 and .6 all networks memorise (20/20).
+> - **Verdict.** Partly solved (fraction .8: 10/10 networks, none reaches 90%; fractions .4 and .6: memorisation in 20/20). Closed form: partial (accuracy .91–.93, agreement .88–.92; the networks score .96–.98 on all cells).
+> - **Links.** [Weights](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/open-bracket-count) · Reproduce: [commands](#setup) · [Terms](../GLOSSARY.md)
+
+## Task and status
 **Task.** Prompt `VALID_BRACKETS: ()\nANSWER: YES\nVALID_BRACKETS: <line>\nANSWER: `, answer the number of `(` = (L + b)/2 (46 classes),
 where b is the final depth (#`(` − #`)`) and L the length, L = 1..45, b = −L..L in steps of 2 (1080 cells, one shuffled line each).
 **Status.** 2026-11-04. 30 networks (10 seeds × train fractions .4/.6/.8) + 18 control runs; setup as in [count mod 5](count-mod-5.md),
@@ -21,9 +28,9 @@ python run.py table out/open_count_*.json
 Headline per network: `final`, `t50`, `form_clock` / `form_clock_agree`, `clock_k_top`.
 
 ## Summary
-The only task in this set that groks, and only with 80% of cells in training: 10/10 networks build a low-frequency trigonometric sum
+The only task in this set that groks (test accuracy rises long after training accuracy), and only with 80% of cells in training: 10/10 networks build a low-frequency trigonometric sum
 (frequencies k = 1–3 of 92), a Gromov-style clock on a non-modular domain, plus a
-small parity channel at the Nyquist frequency. With 40% or 60% training data all networks memorize.
+small parity channel at the Nyquist frequency. With 40% or 60% training data all networks memorise.
 
 ## Architecture as used
 - **Frozen base, hand-built m2** (no training): GPT-NeoX-shaped decoder, 6 layers, d_model 528, 4 heads (d_head 132), MLP width 512, exact
@@ -38,7 +45,7 @@ small parity channel at the Nyquist frequency. With 40% or 60% training data all
 - **Trained stage:** `logits = W2 ReLU(W1 x + b1) + b2`, W1 [256, 416], b1 [256], W2 [46, 256], b2 [46] (118,574 parameters).
 - **Archive.** Per network one safetensors file (`W1`, `b1`, `W2`, `b2`, `test_idx`), plus `config.json`, `inputs.safetensors` (the frozen
   menu rows X, the integers and the labels) and `manifest.json` (seed, rung, train fraction, accuracy, circuit type, sha256). Every file
-  was re-loaded and its forward pass reproduces the recorded test accuracy exactly. Public hosting of the weights is pending. 30 networks (`s<seed>_f<40|60|80>`; the clock sum is in the `_f80` files).
+  was re-loaded and its forward pass reproduces the recorded test accuracy exactly. Published on Hugging Face (link in Setup). 30 networks (`s<seed>_f<40|60|80>`; the clock sum is in the `_f80` files).
 
 ## Prediction before training
 No prediction was recorded before these runs (the entry predates this section). Retrospective, labelled as such: the nearest

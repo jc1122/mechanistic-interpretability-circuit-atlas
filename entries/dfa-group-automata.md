@@ -1,15 +1,27 @@
-# Group automata (parity, Z3, S3): a scratchpad state table is learned at once; answer-only nets learn count → residue only in range
+# Group automata (parity, Z3, S3)
+
+> - **Task.** Give the final state of a parity, Z3 or S3 automaton after a word of 1..16 symbols. Example: parity word with three symbols of value 1 → state 1.
+> - **Hand-built net.** A 6-layer net, every weight set by formula, exact in all 6 cells: with a scratchpad one recency head copies the previous state and a G² neuron table applies the transition; answer-only uses a symbol sum (parity, Z3) or prefix doubling (S3, exact for n ≤ 31).
+> - **Trained nets.** With a scratchpad, PART (last MLP trained on frozen hand-built parts) and TRAIN (from scratch) learn the transition table within 2500 steps in 10/10 seeds per group; PART is exact to n = 128, TRAIN breaks at about twice the training length. Answer only: S3 PART 10/10; abelian PART learns S mod G only for S ≤ 11–18; TRAIN with fresh words parity and Z3 10/10, S3 2/10 at ≥ .99.
+> - **Verdict.** Partly solved (scratchpad 10/10 per group; answer-only S3 TRAIN 2/10 at ≥ .99). Closed form: partial (δ table keeps accuracy 1.0 on the stated words but is rejected as universal; audit 2026-11-07: no closed form passes the full bar).
+> - **Links.** [Weights](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/dfa-group-automata) · Reproduce: not available yet · [Terms](../GLOSSARY.md)
+
+## Task and status
 **Task.** Words s_1..s_n over a group: parity (Z2, 2 symbols), a Z3 counter (3 symbols), S3 (the 6 permutations of 3 objects).
 q_0 = identity, q_t = q_{t-1} · s_t. A (answer only): `BOS s_1 .. s_n = Q(q_n)`. B (scratchpad): `BOS s_1 Q(q_1) .. s_n Q(q_n)` (teacher
 forced). n uniform in 1..16; per seed 20k unique training words and 2k disjoint test words; exact match of every answer token. Length
 axis: 1000 random words at n = 32, 64, 128.
+**Formats.**
+- **A**: answer only, `BOS s_1 .. s_n = Q(q_n)`.
+- **B**: scratchpad, `BOS s_1 Q(q_1) .. s_n Q(q_n)` (teacher forced).
+
 **Status.** 2026-11-05. HAND exact for all 6 cells (3 groups × 2 formats). PART and TRAIN 10 seeds per cell; every failed cell retried
 (fresh words per batch, then tail-balanced symbol counts; S3 answer-only TRAIN then one size step, d_model 512); all saved nets kept.
 Audit 2026-11-07 (unrounded curves): S3 answer-only TRAIN r2 has 2/10 seeds ≥ .99 (max .9995, none exact), not 3/10; no closed form
 below passes the full bar (every substitution is on best snapshots; none on final snapshots).
 
 ## Summary
-With a scratchpad (B), PART and TRAIN learn the transition table δ(q_{t-1}, s_t) within 2500 steps in all three groups (10/10 each). PART
+With a scratchpad (format B), PART (the last MLP trained on frozen hand-built parts) and TRAIN (all weights trained from scratch) learn the transition table δ(q_{t-1}, s_t) within 2500 steps in all three groups (10/10 each). PART
 keeps the hand-built recency head and stays exact to n = 128; TRAIN fetches q_{t-1} with its own heads and breaks at about twice the
 training length. Answer-only (A): S3 PART reproduces the hand-built composition tables (10/10, exact to n = 31, the hand-built depth
 bound). The abelian PART stage computes the symbol sum S exactly but learns S mod G only for S ≤ 11–18, even when large S are made
@@ -22,7 +34,7 @@ words every batch (test words masked), PART 30k, TRAIN 40k. r3: PART with tail-b
 ~ Dirichlet(1)). "mask": the PART stage's input weights on the position dimensions held at 0. Consumer GPUs (10–24 GB).
 Networks: [huggingface.co/jc1122/circuit-atlas-nets/tree/main/dfa-group-automata](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/dfa-group-automata)
 (219: 6 HAND, 200 PART, 13 TRAIN; held-out test words per group and seed in `test_<group>.safetensors`).
-**Reproduce:** the training and analysis code for this task is not yet in `code/`; the weights, test words and accuracies are in the folder above.
+**Reproduce:** training code for this task is not yet in `code/`; the weights, held-out splits and recorded accuracies are on Hugging Face (link above).
 
 ## Architecture as used
 GPT-NeoX 6 layers × 4 heads (d_head 64), d_model 256, MLP 512 ReLU, no LayerNorm, no positional encoding (causal mask only), untied

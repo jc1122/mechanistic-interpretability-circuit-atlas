@@ -1,18 +1,29 @@
-# Grid BFS: a scratchpad of reached-set maps is learned from scratch (3/3 with 3× data); answer-only fails with error growing with distance; the frozen-parts update MLP is a three-input hinge
+# Grid BFS
 
+> - **Task.** Give the shortest-path distance (0–10) between a start and a target on a 6×6 maze with at most 14 walls. Example (in words): start and target side by side, no wall between → 1.
+> - **Hand-built net.** Scratchpad: a 3-layer net writes, after each BFS step, a map marking each square unreached, reached or wall (a square is reached if it or a neighbour was, unless it is a wall). Answer only: a 38-layer net with 35 synchronous updates.
+> - **Trained nets.** From scratch with 3× fresh data the scratchpad is learned on 3/3 seeds (grok 63.5–72k steps), while answer only fails 0/3 (test .93–.95; exact up to distance 3, falling with distance). With frozen hand-built addressing, the trained update MLP solves 3/3 within 500 steps.
+> - **Verdict.** Partly solved (scratchpad from scratch 3/3, answer only 0/3; ten-seed final not run). Closed form: partial (PART update, a three-input hinge, keeps 176/176 on all seeds; zero/shuffle controls open; no TRAIN form).
+> - **Links.** [Weights](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/grid-bfs) · Reproduce: not available yet · [Terms](../GLOSSARY.md)
+
+## Task and status
 **Task.** Four-neighbour 6×6 mazes, ≤ 14 walls, connected free start and target, shortest-path distance 0–10. Answer-only A: one
 distance token. Scratchpad T: after each BFS step the reached-set map (every square: unreached / reached / wall), a CHECK of the target,
 then the next step index or END. Square tokens encode coordinates. Split by wall-mask hash 80/10/10; fresh mazes every batch. Test: 16
 mazes per distance (176 per seed); exact = whole teacher-forced output correct (T includes END).
+**Formats.**
+- **A**: answer only (one distance token).
+- **T**: scratchpad; reached-set map after each BFS step, a CHECK of the target, then the next step index or END.
+
 **Status.** 2026-11-07. HAND T (3 layers) and A (38 layers); PART T 3 seeds; TRAIN A/T 3 seeds each at r1 (30k) and r2 (90k, 3× fresh
 data). Open: **the ten-seed final cell (T PART + T TRAIN) has not run**; the TRAIN A rung is unsolved (0/3 after the data retry; the
 depth-8 / distance-curriculum retry is proposed, not run); TRAIN A r2 diagnostics and 7 of the 12 r2 diagnostics have not landed; greedy
 rollout and OOD (distance 11–20, 8×8) are unmeasured for TRAIN; no substitution test on the solved r2 TRAIN nets; public code pending.
 
 ## Summary
-With 3× fresh data the 4-layer net learns the T scratchpad from scratch on 3/3 seeds (grok 63.5–72k steps); the answer-only format
+With 3× fresh data the 4-layer net (TRAIN) learns the T scratchpad from scratch on 3/3 seeds (grok 63.5–72k steps); the answer-only format
 fails at matched size and data (0/3, test .93–.95): exact for distance ≤ 3, worse with every further step (distance 10: .50–.88), the
-signature of a fixed-depth net that cannot unroll 10 serial BFS steps (the hand-built A needs 38 layers). Frozen hand-built addressing
+signature of a fixed-depth net that cannot unroll 10 serial BFS steps (the hand-built A needs 38 layers). Frozen hand-built (HAND) addressing
 plus one trained MLP (PART T) solves 3/3 within 500 steps, and its whole output is replaced by a three-input hinge, Y = (1, a, w)·B,
 with 176/176 kept on all seeds. Solved TRAIN T nets use the hand-built update variables (`or`, `next`) in their last layers but in a
 high-rank code unrelated to the hand-built basis.
@@ -21,8 +32,8 @@ high-rank code unrelated to the hand-built basis.
 [METHODS.md](../METHODS.md) for shared conventions. AdamW lr 1e-3, wd .1, warmup 1,000, cosine, clip 1, batch 8 fresh mazes per step
 (memory bound on long maps); checkpoints every 2,500; eval every 500. PART fp32, 10k budget (stopped solved at 500). TRAIN TF32 updates,
 fp32 evals; r1 30k; r2 (retry rule: data) 90k with 3× fresh data, T stopped solved at 79k, A ran to budget. Success = best test exact
-≥ .99. GPU accelerators for training, CPU fp32 for re-scoring. Test mazes are regenerated from their seed (see `config.json`). Public
-reproduction code for this entry is pending; the archived networks re-score to the recorded accuracies.
+≥ .99. GPU accelerators for training, CPU fp32 for re-scoring. Test mazes are regenerated from their seed (see `config.json`).
+**Reproduce:** training code for this task is not yet in `code/`; the weights, held-out splits and recorded accuracies are on Hugging Face (link above). The archived networks re-score to the recorded accuracies.
 
 ## Architecture as used
 GPT-NeoX, ReLU, no LayerNorm, no positional encoding, untied embeddings, vocabulary 565, context 8192. HAND T: 3 layers, d_model 80,

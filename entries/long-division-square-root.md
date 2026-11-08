@@ -1,16 +1,28 @@
-# Binary long division and long-hand square root: a scratchpad step is one learned compare; answer-only nets need 16–90x more data
+# Binary long division and long-hand square root
+
+> - **Task.** Divide an 8-bit by a 4-bit binary number, or take the long-hand square root of an 8-bit number (wider ranges too), either answer only or with a per-step scratchpad. Example: 7 / 2 → quotient 3, remainder 1.
+> - **Hand-built net.** One shared step: compare x with a threshold T for the next quotient (or root) bit, then subtract it from the remainder; the scratchpad step needs 14–34 neurons, answer only needs tables of compares.
+> - **Trained nets.** With the hand-built parts frozen (PART), the trained scratchpad stage reproduces the step (division 10/10 exact at both ranges, square root .985–.992 at the wide range); the answer-only stage fails (≤ .29). Trained from scratch (TRAIN) memorises at 8 bits (train 1.0, test ≤ .81) but generalises at the wide range with 16–90x more data (division A .995–1.0).
+> - **Verdict.** Partly solved (scratchpad PART division 10/10; no trained net is exact on all inputs). Closed form: partial (PART scratchpad stage only: the hand-built compare-and-subtract substitutes exactly on all inputs at both ranges; none for answer only or from scratch).
+> - **Links.** [Weights](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/long-division-square-root) · Reproduce: not available yet · [Terms](../GLOSSARY.md)
+
+## Task and status
 **Task.** Division `n..n0 / d3..d0 =` → A (answer only): quotient bits, remainder bits; B (scratchpad): per step [q_i, r3..r0]. Square root
 `n..n0 =` → A: root bits, remainder bits; B: per step [b_i, remainder bits]. 8-bit range: dividend N 8 bits / divisor D 4 bits (3840 pairs),
 square root N 8 bits (256 numbers), train fraction .5. Wide range: division N 12 bits (61440 pairs, train .5), square root N 14 bits
 (16384 numbers, train .7). Exact match of the whole answer on the held-out split.
+**Formats.**
+- **A**: answer only; division: quotient bits, remainder bits; square root: root bits, remainder bits
+- **B**: scratchpad, per step [q_i, r3..r0] (division) or [b_i, remainder bits] (square root)
+
 **Status.** 2026-11-05. HAND exact in all 8 cells (2 operations × 2 formats × 2 ranges). PART and TRAIN 10 seeds per cell; every failed cell
 retried (all runs kept). Pending: 2x-width division B seeds 0–4; square root B TRAIN 2x-width rerun; continued runs (+30k from the final nets at
 lr 3e-4) of the cells still rising at their budget: division B and square root B TRAIN (wide), square root A PART (wide, annealed), square root B PART (8-bit).
 ## Summary
-With a scratchpad (B) the trained stage reproduces the hand-built per-step compare-and-subtract as one circuit shared by all steps: division B
+With a scratchpad (B) the trained stage (PART: stage trained on frozen hand-built parts) reproduces the hand-built per-step compare-and-subtract as one circuit shared by all steps: division B
 PART 10/10 exact at both ranges (90% test by step 250–500), square root B PART .985–.992 at the wide range (errors only at the last step).
 Answer-only (A) PART stages fail at every range and schedule (≤ .29): they get every input exactly but cannot place unit-resolution thresholds
-on 2^8–2^14-scale values. From scratch nothing generalises at 8 bits (train 1.0, test ≤ .81), but at the wide range (16–90x the data) it does,
+on 2^8–2^14-scale values. From scratch (TRAIN) nothing generalises at 8 bits (train 1.0, test ≤ .81), but at the wide range (16–90x the data) it does,
 even answer-only: division A .995–1.0 (10/10 ≥ .99), square root A .981–.993 (2/10; 6/10 at 2x width), division B .88–.999 (7/10), square
 root B .21–.95 at the 30k budget and still rising. No trained net is exact on all inputs.
 ## Setup
@@ -19,7 +31,7 @@ wd 1, constant for 10k steps; retry warmup 1000 + cosine + clip 1, 30k. TRAIN: T
 wd .1, warmup 1000, cosine, clip 1, 30–60k steps, stop on a 5k plateau after 15k (8-bit also constant lr with wd 1, and lr 3e-4). Size ladder
 step 1 = hidden 512. Consumer GPUs (8–24 GB).
 Networks: [huggingface.co/jc1122/circuit-atlas-nets/tree/main/long-division-square-root](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/long-division-square-root) (202: 8 HAND, 160 PART, 34 TRAIN; continued runs added when finished).
-**Reproduce:** the training and analysis code for this task is not yet in `code/` (`python run.py` has no division or square-root task), so the learned cells cannot be rerun from this repository; the weights, test splits (`test_idx` in each file) and the table of accuracies are in the folder above.
+**Reproduce:** training code for this task is not yet in `code/`; the weights, held-out splits and recorded accuracies are on Hugging Face (link above).
 ## Architecture as used
 GPT-NeoX 3 layers × 4 heads (d_head 64), d_model 256 (ladder: 512, d_head 128), MLP 1024 ReLU, no LayerNorm, NoPE; vocabulary 5 (BOS, `0 1 / =`).
 PART re-initialises and trains the compare stage on frozen HAND: 8-bit the layer-1 MLP, wide the layer-2 MLP (dense_h_to_4h [1024, 256] + bias,

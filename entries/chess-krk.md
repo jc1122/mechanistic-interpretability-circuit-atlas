@@ -1,21 +1,36 @@
-# KRK mate (king + rook vs king): an exact hand-built rule router; a scratchpad net reaches .99, but its circuit is not the hand-built one
+# KRK mate (king + rook vs king)
+
+> - **Task.** In a king + rook vs king position with white to move, write the move chosen by a fixed 8-rule fence policy (not the tablebase-optimal move). Example (in words): from the 64-square board with the three pieces, the answer-only output is the chosen move's from square and to square.
+> - **Hand-built net.** A sparse ReLU net (4 heads + 6,666 neurons) computes the fence frame, each rule's candidate moves and the first rule that applies; 0 wrong tokens on all states.
+> - **Trained nets.** A 3 × 512 router on frozen hand-built rule features reaches .993–.999 in 60/60 seed-runs, none exact. From scratch with a scratchpad (G), 120k steps give .990–.997 in 7/7 final seeds, none exact; answer only gives .968–.976. The trained nets code kings as coordinates, not as hand-built squares.
+> - **Verdict.** Partly solved (scratchpad G from scratch, 7/7 at ≥ .99 but none exact). Closed form: partial (PART phase rule 20/20 and TRAIN G source-square rule 7/7 keep accuracy; an additive model of G's `to` decoding fails, .995 → .34).
+> - **Links.** [Weights](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/chess-krk) · Reproduce: not available yet · [Terms](../GLOSSARY.md)
+
+## Task and status
 **Task.** King + rook vs king, white to move; all 175,168 won white-to-move positions, 10% held out by a fixed permutation (17,516; 157,652
 train). Prompt 73 tokens (BOS, side, castling, en passant, 64 squares, `=`). Label: the move of a deterministic 8-rule fence policy (FLEE,
 SHRINK, CHECK, WAIT, REPOS, APPROACH, DIVIDE, FAR in priority order; integer keys break ties), not DTM-optimal play. Formats: **A** from, to;
 **G** scratchpad fl fh rl rh (box), area, rook-safety flag, phase (active rule), from, to; **C** G plus the active rule's candidates in key
 order (padded to 14). Metric: exact match of the whole output, teacher-forced.
+**Formats.**
+- **A**: answer only (from, to).
+- **G**: scratchpad; box, area, rook-safety flag, phase (active rule), then from, to.
+- **C**: G plus the active rule's candidate moves in key order.
+
 **Status.** 2026-11-08. HAND exact. PART 10 seeds per setting. TRAIN 30k (10 seeds), 60k (3), 120k (3 per A/G/C); final G 120k: 7 of 10 seeds.
+
 ## Summary
 The policy mates from every position (worst case 48, mean 24.1 moves; DTM 9.86) and compiles to 4 heads + 6,666 ReLU neurons. A 3 x 512
-router over frozen HAND features reaches .993-.999 (60/60, none exact); the HAND priority replaces its phase output without loss (20/20). From
-scratch G grows with budget: 30k .72-.86, 60k .96-.98, 120k **.990-.997 in 7/7 final seeds (none exact)**, win vs tablebase .85-1.0; A .968-.976
+router over frozen hand-built (HAND) features reaches .993-.999 (60/60, none exact); the HAND priority replaces its phase output without loss (20/20). From
+scratch (TRAIN) the scratchpad format G grows with budget: 30k .72-.86, 60k .96-.98, 120k **.990-.997 in 7/7 final seeds (none exact)**, win vs tablebase .85-1.0; answer only (A) .968-.976
 (win .53-.60). G nets read kings as coordinates, pick the source from the written phase (closed form, 7/7) and decode 'to' in a non-additive last MLP.
 ## Setup
 [METHODS.md](../METHODS.md). TRAIN: AdamW lr 1e-3, wd .1, betas (.9, .98), warmup 1000, cosine, clip 1, batch 64 fresh train positions per step,
 TF32, eval every 250 steps on a fixed 2,048-row held-out batch, best snapshot, 5k plateau stop after 75%. PART: fp32, batch 256, eval on all
 held-out; OHEM keeps the 256 highest-loss of 1,024 rows ([Köksal et al.](https://doi.org/10.1109/ICIP46576.2022.9897806)). Games: greedy, 512
 held-out starts, 60-move cap, tablebase and random defenders, legality by [python-chess](https://python-chess.readthedocs.io/). Consumer GPUs.
-Nets: [jc1122/circuit-atlas-nets/chess-krk](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/chess-krk) (manifest `recorded_test`, `rescored_test`); training and analysis code not yet in `code/`.
+Nets: [jc1122/circuit-atlas-nets/chess-krk](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/chess-krk) (manifest `recorded_test`, `rescored_test`).
+**Reproduce:** training code for this task is not yet in `code/`; the weights, held-out splits and recorded accuracies are on Hugging Face (link above).
 ## Architecture as used
 TRAIN: GPT-NeoX 6 layers x 12 heads (d_head 32), d_model 384, MLP 1536 ReLU, no LayerNorm, no positional encoding, untied readout, vocab 293,
 length A/G/C 75/82/96. HAND: sparse ReLU levels on the piece one-hots (1 counting + 3 gather heads; 2592/662/647/430/1282/137/2/7/907). PART: 3,122 frozen HAND features below the priority level; h1 = ReLU(x W1 + pos[p] + b1), two ReLU layers, logits = h3 W4 + b4;

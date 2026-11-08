@@ -1,17 +1,32 @@
 # Polynomial integration with reduced fractions (integ) — ENTRY 2026-11-08
+
+> - **Task.** Integrate an integer polynomial and write each integrated coefficient as a reduced fraction. Example (answer only): `M:2 C:4 C:6 =` (4 + 6x) → `J:1 N:4 D:1 J:2 N:3 D:1`.
+> - **Hand-built net.** Answer only: a reduction table of ReLU hinges on the (coefficient, term index) code. Scratchpad: it first writes every subtractive-Euclid row for the gcd, then the reduced fraction; exact in both formats.
+> - **Trained nets.** With a scratchpad, training from scratch solves 9/10 seeds (the one failure, .875 at the 30k budget, fails exactly at numerator emission); with frozen hand-built parts and a trained last-stage MLP, 3/3 seeds learn it in 5,500 steps and it alone transfers to withheld fractions (1.0). Answer-only nets solve in range 3/3 (frozen-part and from scratch) but do not transfer to withheld fractions (frozen-part 0, from scratch 0–.19).
+> - **Verdict.** Partly solved (scratchpad from scratch, 9/10). Closed form: partial (layer-0 prefix pooling substitutes exactly in 20/20 snapshots; layer-2 reader passes in s0, fails s2; no gcd/division form).
+> - **Links.** [Weights](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/polynomial-integration) · Reproduce: not available yet · [Terms](../GLOSSARY.md)
+
+## Task and status
 **Task.** Prompt `BOS M:m C:c₀ … C:cₘ₋₁ =`; per term j emit `J:j N:c/g D:j/g`, g = gcd(|c_{j−1}|, j) (zero = 0/1). Typed integer
 tokens. **A** = answer only; **T** (scratchpad, main) first writes every subtractive-Euclid row `A:a B:b` ((a,b)→(|a−b|,min)) until
 b = 0, then `G:g N D`. Train: 2–4 terms, c ∈ −9…9 without ±8, fractions ±2/3, ±3/4 withheld; ~80/20 whole-polynomial hash split.
+**Formats.**
+- **A**: answer only (the reduced fractions).
+- **T**: scratchpad; subtractive-Euclid rows `A:a B:b`, then `G:g N D`, for each term.
+
 **Status.** HAND A/T exact. Screen 3 seeds × {A,T} × {PART,TRAIN} all solved; final **T TRAIN 9/10** (s4 .875 at the 30k budget).
+
 ## Summary
-Scratchpad cuts PART stop 26,000 → 5,500 steps and is the only cell that transfers (withheld fractions 1.0, 5 terms .59–.88) but slows
-TRAIN 14,500 → 27,000. TRAIN nets solve IID with a distributed MLP-heavy code, not HAND's (align fit R² < 0, CKA ≤ .27); their verified
-pieces are L0 lexical prefix pooling (exact formula) and, in one seed, a coefficient reader. Euclid state is used by ≤ 2.5–5k steps, the
+Scratchpad cuts the stop for training a last stage on frozen hand-built parts (PART) 26,000 → 5,500 steps and is the only cell that transfers (withheld fractions 1.0, 5 terms .59–.88) but slows
+training from scratch (TRAIN) 14,500 → 27,000. TRAIN nets solve in-distribution with a distributed MLP-heavy code, not the hand-built net's (HAND; align fit R² < 0, CKA ≤ .27); their verified
+pieces are layer-0 (L0) lexical prefix pooling (exact formula) and, in one seed, a coefficient reader. Euclid state is used by ≤ 2.5–5k steps, the
 signed numerator last (flip 5–12.5k, 90% test 14.5–22k); the one unsolved seed fails exactly at numerator emission.
 ## Setup
 AdamW lr 1e-3, wd .1, warmup 1,000, cosine 30k, clip 1, batch 16 fresh draws/step, eval 500, ckpt 2,500, plateau 5k after 22.5k;
 PART fp32, TRAIN TF32, re-scored fp32. 256 held-out polys/seed, teacher-forced whole-output exact. Runs: PART `train-37a3d5`, A TRAIN
 `train-36ab3a`, T TRAIN `train-b23cca` (s0–2) + `train-2c76ff` (s3–9). One GPU per pack; diagnostics and substitutions on CPU. Networks: huggingface.co/jc1122/circuit-atlas-nets/tree/main/polynomial-integration.
+**Reproduce:** training code for this task is not yet in `code/`; the weights, held-out splits and recorded accuracies are on Hugging Face (link above).
+
 ## Architecture as used
 GPT-NeoX, 4 layers, d_model 64, 4 heads × 16, ReLU MLP 384 (A) / 448 (T), no LayerNorm, NoPE, vocab 130, context ≤ 218. TRAIN learns
 all (A 16 heads + 1,536 neurons, T 16 + 1,792). PART: HAND frozen, L3 MLP re-initialised and trained (W_in masked to HAND columns).
