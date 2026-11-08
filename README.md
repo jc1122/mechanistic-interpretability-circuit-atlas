@@ -1,22 +1,68 @@
 # Mechanistic Interpretability Circuit Atlas
 
-An encyclopedia of circuits that neural networks use to solve well-defined tasks.
+What circuits do small transformers actually learn on algorithmic tasks, and how do they compare with a circuit written by hand?
 
-Each entry describes one task and the circuit types that trained networks converge to. It has three parts:
+For each of 30 tasks (arithmetic, base conversion, automata, GF(2) linear algebra, symbolic algebra, search, chess endgames), the
+atlas builds an exact **hand-built** network, then trains networks over many seeds, both from scratch and on top of frozen hand-built parts. It reports
+which circuit each seed converges to, how often, and whether a closed-form description of it survives being **substituted back** into the
+network. Negative results (cells that never learn, closed forms that fail) are kept.
 
-- **Hand-built reference:** a network whose every weight is set by a formula, exact on the task.
-- **What training finds:** many seeds, both fully trained from scratch and trained on top of frozen hand-built parts. Each
-  entry gives how often each circuit type appears, which frozen parts training chooses to reuse, and how fast it generalizes (grokking).
-- **Closed form:** a formula for the trained part. It is accepted only if *substituting* it for the trained weights keeps the accuracy.
+## Headline results
 
-Entries call the three network settings **HAND** (hand-built), **PART** (frozen hand-built parts plus one trained stage) and **TRAIN** (trained from scratch).
+- **Swapping one part at a time is weak evidence that a circuit is right.** Replacing components of a trained net one at a time with their
+  proposed closed form usually keeps accuracy. Scrubbing the whole proposed circuit at once fails in five tasks (automata,
+  base conversion, division, subtraction, decimal/hex addition). Where it holds, it fails again on the greedily pruned circuit. A working
+  replacement is a sufficient readout, not a verified mechanism.
+- **Same variables, different wiring.** Nets trained from scratch compute the hand-built intermediate variables (interchange tests pass),
+  but share only 6–9% of their top circuit edges with the hand-built net, and no rotation or permutation maps one onto the other. Nets
+  trained on frozen hand-built parts share 79–100%.
+- **Failed nets still compute the right variables; they fail to generalise.** This holds across 981 nets in three arithmetic tasks.
+- **A scratchpad makes the circuit up to 10x smaller** and makes one shared step (e.g. compare-and-subtract) serve every step of division and square root.
+  However, trained stages read absolute position and break on longer inputs until that input is masked.
+- **Training reuses the adder.** With a running-sum scratchpad the trained multiplication step is the adder's column-sum lookup (10/10
+  on frozen parts, 5/10 from scratch).
+- **Exact hand-built circuits break under TF32 matmuls.** Their large weights and sharp thresholds need full fp32.
+
+More, each marked verified or preliminary: [SURPRISES.md](SURPRISES.md).
+
+## Relation to prior work
+
+Hand-built transformers as ground truth exist: [Tracr](https://arxiv.org/abs/2301.05062) (paper) compiles RASP programs into transformer weights, and
+[InterpBench](https://arxiv.org/abs/2407.14494) (paper) trains models to implement known circuits so that circuit-discovery methods can be scored.
+Both target *evaluating interpretability tools*. Single-task reverse engineering across seeds also exists: the modular-addition clock
+([Nanda et al.](https://arxiv.org/abs/2301.05217), paper), group operations ([Chughtai et al.](https://arxiv.org/abs/2302.03025), paper), clock vs pizza
+([Zhong et al.](https://arxiv.org/abs/2306.17844), paper); and trained nets constrained to be readable programs
+([Learning Transformer Programs](https://arxiv.org/abs/2306.01128), paper).
+
+This atlas asks a different question: given an exact hand-built solution, *what does gradient descent find instead?* It uses one protocol across
+many tasks: three rungs per task, 10 seeds per final cell, circuit types counted per seed, and a closed form accepted only if substituting it keeps
+accuracy, with zero and shuffle controls on the rest of the net.
+
+## How to read an entry
+
+| Term | Meaning |
+|---|---|
+| **HAND** | every weight set by a formula; exact on every input in range |
+| **PART** | frozen hand-built parts plus one trained stage (`PARTp`: the trained stage is an attention layer instead of an MLP) |
+| **TRAIN** | trained from scratch |
+| **Format** | `A` = answer only; other letters (`T`, `G`, `S`, `C`, ...) are scratchpad variants, defined in each entry's Task paragraph |
+| **Seeds** | "6/10" = 6 of 10 seeds meet the criterion named in that cell (usually held-out exact match ≥ .99) |
+| **Closed form verified** | substituting the formula for the trained weights keeps accuracy; "partial" or "rejected" says what failed |
+| **menu** | a frozen hand-written layer that re-encodes integers (one-hot, thermometer, scalar); [METHODS.md](METHODS.md) §3 |
+
+Each entry has the same sections ([TEMPLATE.md](TEMPLATE.md)): Summary, Setup (with the reproduce command), Prediction before training,
+Hand-built reference, What training finds, Closed form, Controls and limits. Cells marked *pending*, *open* or *not run* are still in progress; the entry's Status line gives its date.
+
+## How this was made
+
+One author, with most experiments, analyses and entry drafts run by LLM coding agents under a written research protocol (fixed seeds,
+predictions recorded before training, every run logged, failures diagnosed rather than dropped). Every number comes from a logged run;
+the networks are public so any claim can be checked.
 
 **Weights:** the trained networks and frozen inputs behind each entry are on Hugging Face: [https://huggingface.co/jc1122/circuit-atlas-nets](https://huggingface.co/jc1122/circuit-atlas-nets) (safetensors, CC BY 4.0).
-
-Entries are written as encyclopedia articles: the mechanism in plain words, the equations, the evidence (ablations, accuracies,
-seed counts) and the limits. [METHODS.md](METHODS.md) describes the architecture, the experimental conditions and the instrumentation common to all entries, and
+[METHODS.md](METHODS.md) describes the architecture, the experimental conditions and the instrumentation common to all entries, and
 [code/](code/) is a self-contained CPU reimplementation (Python, torch) that rebuilds the hand-built network, generates the synthetic data,
-trains and runs the analysis; every entry has a Setup section with the command that reproduces it.
+trains and runs the analysis.
 
 ## Quick start
 
@@ -47,7 +93,6 @@ python run.py atlas --task count_mod5 --seeds 0 --steps 400 --every 100    # smo
 | [router-addition](entries/router-addition.md) | a + b, 16 bits and 6 decimal digits; answer only (both digit orders), inductive scratchpad, router scratchpad (op tokens + coupled digit ids); 4-layer net | one shared column step (sum / carry / next-id groups); PART length-generalises when its stage cannot read position (R unmasked, I/A masked: 10/10 at 2N); TRAIN solves in range (I, R, AL; MSB-first answers 0/10 binary, 2/10 decimal) but reaches 2N in no format, router included; trained nets deliver operands by input-dependent attention mixtures | 10 per setting | yes, 1.00 in range (PART R stage; PART AL spline) |
 | [gcd-euclid](entries/gcd-euclid.md) | gcd(a, b) by subtractive Euclid (plus modular inverse, fraction reduction), operands 5–7 bits as scalar tokens; answer only and Euclid trace; 4-layer net | PART on frozen Euclid parts = a learned 3-rule router (T 13/13 seeds ≥ .99, 7/10 exact in the final cell); TRAIN trace 1/3 (6 bits), 2/3 (7 bits) with a distributed token-histogram front end; answer-only TRAIN 1/3 with parity/divisible-by-3 features; no 8-bit transfer | 10 (T PART final), 3 per other cell | yes, router 1.00 (all PART cells incl. inverse/fraction); TRAIN front end only (.99/.93) |
 | [modular-arithmetic-mod-97](entries/modular-arithmetic-mod-97.md) | a + b, a · b mod 97 and x² mod 97 in residue tokens, binary, decimal, hex and decimal scratchpad; 4-layer net | token multiplication: discrete-log clock at the output (6/10 at 90% data, 0/10 at 30%), embeddings periodic in log₅ v in 10/10, hand-built uses a log ramp + lookup instead; binary/decimal/hex never form circles; digit multiplication memorises (operands decodable, residue not); binary addition MLP0 = prefix-count rectifier (5/10); scratchpad PART fails at its state writer | 10 per setting (scratchpad 3) | yes, output surrogate 9409/9409 with 1–6 frequencies, agreement ≥ .9947 (6/6 solved seeds); internal circuit not recovered |
-| [chess-krk](entries/chess-krk.md) | king + rook vs king mate: move of a fixed 8-rule fence policy; answer only, rule-router scratchpad, scratchpad + candidate list; 6-layer net | PART (frozen hand-built rule features + trained router) .993–.999 in 60/60 seed-runs, never exact; TRAIN scratchpad .993–.998 (3/3 ≥ .99 at 120k steps), answer only .97 (0/3) and wins far fewer games; trained nets code kings as coordinates, last MLP not additive in the hand-built variables | 3–10 per setting | partial: PART phase decoder 20/20; destination not |
 | [chain-rule-differentiation](entries/chain-rule-differentiation.md) | symbolic derivative of prefix expressions (x^1–x^8, sin, cos, exp, +, *), depth ≤ 2; answer only (15-layer net) and per-node register-rewrite scratchpad (5-layer net) | TRAIN solves both formats (A 3/3, T 3/3 and 10/10) with a content-weighted token-histogram front end; PART (trained emitter on the frozen hand-built parser) fails 12/12 seed-runs: it bypasses the frozen address interface; no depth-3 or power 7–8 transfer | 10 (T TRAIN final), 3 per other cell | front end only (histogram heads 1.00, 3/3); last-MLP state table exact but not compact (rejected) |
 | [polynomial-add-mul](entries/polynomial-add-mul.md) | integer polynomial addition and multiplication (convolution), degree 3, signed coefficients as scalar tokens; answer only (3-layer net) and partial-product scratchpad (4-layer net) | addition learned in every seed (final runs, 10/10 per cell: PART and TRAIN, A and T): PART = HAND's sum with a free logit scale; TRAIN A sparse-fetch 2/10 vs distributed-fetch 8/10; TRAIN T reads its own trace 10/10; multiplication not learned (PART 0/3, TRAIN A 0/3, TRAIN T 2/3 non-exact only at 60k) unless the hand-built signed-bit product gates stay frozen (split-sum A 3/3 at .998-.999) | 10 (add PART/TRAIN finals), 3 per other cell | yes for PART add: (S, ONE) = κ·HAND substituted, exact 1.0 in 40/40 nets; TRAIN add A fitted MLP2 decoder .993-1.0 (lossy); TRAIN add T rejected |
 | [output-order-base-conversion](entries/output-order-base-conversion.md) | 16-bit decimal to binary and binary to decimal, answer MSB-first or LSB-first; answer only and halving/doubling scratchpad; 3-layer net | MSB-first answer only = threshold ladder on the remaining magnitude, learned (PART all seeds ≥ .99, TRAIN decimal to binary 10/10 ≥ .996); LSB-first answer only needs a residue (mod) read-out and mostly fails (binary to decimal TRAIN ≤ .045); scratchpads solve both orders (PART 10/10) | 10 per A cell, 10 trained / 3 archived per B cell | yes, PART thermometer (366 thresholds) and failing parity spline reproduce every token, 12/12; TRAIN scalar template rejected 0/12 |
@@ -62,7 +107,8 @@ python run.py atlas --task count_mod5 --seeds 0 --steps 400 --every 100    # smo
 | [quadratic-roots](entries/quadratic-roots.md) | integer discriminant/isqrt/roots of x² + bx + c; answer only, sub-result, full trace and an addressed-NAND register-executor scratchpad; 4-layer parent / 2-layer executor nets | executor PART 10/10 in 500 steps (exact at widths 7/8 and in own rollouts): addressed AND-hinge bank with NAND readout; executor TRAIN 0/10 (never fetches registers); every parent PART/TRAIN cell 0/10 (memorises or underfits large-scalar thresholds) | 10 per final | yes: executor stage → one neuron ReLU(A + B − 1), 1,792/1,792 per seed, 10/10; parent cells none (answer-only n 6 final pending) |
 | [crc-remainder](entries/crc-remainder.md) | GF(2) polynomial remainder N mod D (degree-4 divisors, 8–10 input bits); answer only and quotient/remainder scratchpad; 3-/4-layer nets | scratchpad step r = ((r ≪ 1) \| a) XOR (q·D) learned with frozen routing 10/10 in 500 steps and from scratch 3/3 (MLP → head → MLP path); answer only PART 3/3, TRAIN 2/3, last-layer divisor-conditioned parity readout, not the hand-built staircase | 10 (PART T), 3 elsewhere | yes: PART T eight-ReLU table 11,587/11,587 (s0–2; s3–9 zero controls open); PART A native ridge bank; TRAIN none |
 
-Planned: counting and bracket tasks. See [TEMPLATE.md](TEMPLATE.md) for the entry format.
+
+Planned: counting and bracket tasks.
 
 ## Cross-entry findings
 
