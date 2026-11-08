@@ -5,7 +5,7 @@ menu used by the counting and modular-addition entries, the small whole-network 
 to every trained network, and the rule by which a closed form is accepted. Each entry gives its task-specific values in its Section 2
 (Model), including the training settings and, where available, the command that reproduces it. The code in [code/](code/README.md)
 (MIT licence) reruns the five entries listed in [code/README.md](code/README.md); the other entries publish their networks, test sets
-and recorded accuracies on Hugging Face. The numbers below are those of the code. Plain-language definitions of the terms are in
+and recorded accuracies on Hugging Face (links in each entry's fact table). The numbers below are those of the code. Plain-language definitions of the terms are in
 [GLOSSARY.md](GLOSSARY.md), and works are cited by author and year with links to [REFERENCES.md](REFERENCES.md).
 
 ## 1. Three rungs
@@ -126,12 +126,12 @@ L = 1..45 and c = 0..L, which gives 1080 cells. Their labels are the count mod 5
 `VALID_BRACKETS: ()\nANSWER: YES\nVALID_BRACKETS: <line>\nANSWER: `, with a shuffled line of (L+b)/2 `(` and (L-b)/2 `)`, L = 1..45 and
 b = -L..L in steps of 2 (1080 cells); the label is the number of `(`, (L+b)/2 (46 classes), with (u, v) = (b, L).
 
-The fixed shot line before the question is needed: without a preceding newline the has-letter head of m2 misses the question letter.
+The fixed worked-example line (the shot) before the question is needed: without a preceding newline the has-letter head of m2 misses the question letter.
 
 ## 5. Instrumentation (the analysis code)
 
 This section describes the analysis of the trained stage on m2 (`analyze_atlas.py`, `analyze_modadd.py`). Accuracy is always arg-max
-accuracy on the true task labels; "test" means held-out cells and "all" means every cell.
+accuracy (the class with the highest logit is the answer) on the true task labels; "test" means held-out cells and "all" means every cell.
 
 ### 5.1 Learning curve
 
@@ -279,7 +279,7 @@ resample-ablated. A small sparse autoencoder on one residual or MLP site ([Brick
 [Cunningham et al., 2023](REFERENCES.md#cunningham2023)) gives a dictionary of features, which count only when they beat the raw basis
 of the site and when splicing the reconstruction back keeps exact match near the network's. Path patching, layer-level ablation (which
 finds heads that matter only together) and interchange split by input bucket complete the set. A weight-decay perturbation probe and the
-top Hessian eigenvalue are recorded as well; both are correlational and are compared only within one run.
+top Hessian eigenvalue (the sharpest curvature of the loss) are recorded as well; both are correlational and are compared only within one run.
 
 ## 9. Verification and the acceptance rule
 

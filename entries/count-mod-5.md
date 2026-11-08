@@ -8,7 +8,7 @@ amplitudes, which is a delta on the residue, reproduces every network with accur
 from the first evaluation, so the networks did not grok. The task is solved (30/30). The closed form is partial: it is supported by
 substitution, but no resample ablation of the complement was run.
 
-| | |
+| Fact | Value |
 |---|---|
 | Task | Count how often a letter occurs in a line of a's and b's (up to 45 letters) and answer the count mod 5 |
 | Input → output example | After the fixed one-shot prefix, `COUNT a: a a b a a a b a a` → `2` (seven a's) |
@@ -107,7 +107,7 @@ The menu decodes X with pairs of GELU steps, `step(z; c, s) = (gelu(s(z − c) +
 values of X. The one-hot unit is the difference of neighbouring thermometer units. The decoder is exact on all cells.
 
 ```mermaid
-flowchart LR
+flowchart TD
     P["Prompt: COUNT a: line of a's and b's"] --> H["m2 layer 4 head 1: uniform attention over the c matches and the newline"]
     H --> X["X = 1/(c+1)"]
     P --> R["m2 position scalar R, gives L"]
@@ -177,7 +177,7 @@ same value for c and c + 5 (14.25 and 13.40 for c = 0 and 5 in Table A1). The L 
 averages out, since setting L to its mean keeps .995–1.000.
 
 ```mermaid
-flowchart LR
+flowchart TD
     OU["one-hot of c (ou), largest W1 column norm"] --> W["W1 columns: c and c + 5 map to nearly the same hidden pattern"]
     TU["thermometer of c (tu), redundant copy"] --> W
     W --> H["hidden pattern of residue class r = c mod 5"]

@@ -2,13 +2,13 @@
 
 This entry studies how small transformers subtract b from a (a ≥ b) for 3-digit decimal and 6-bit binary numbers, in three output
 formats: answer only, with a borrow token, and with signed column differences written first. A stage trained on frozen hand-built
-parts learned a lookup on the column difference a − b − borrow in 10/10 seeds in base 10 formats A and B and base 2 formats A and C,
+parts learned a lookup on the column difference a − b − borrow (the borrow is 1 when the next lower column had to take one from this column, else 0) in 10/10 seeds in base 10 formats A and B and base 2 formats A and C,
 9/10 in base 10 C and 8/10 in base 2 B. Networks trained from scratch solved every retried cell 10/10 (base 10 A and C, base 2 A and
 C), and their last MLP uses the same key in 34/40 retry networks, but no network trained from scratch generalises to longer inputs.
 The task is partly solved. The closed forms reproduce the networks, but an audit on 2026-11-07 found that none passes the full bar,
 so they are sufficient readouts and not verified mechanisms.
 
-| | |
+| Fact | Value |
 |---|---|
 | Task | Subtract b from a (a ≥ b), 3-digit decimal or 6-bit binary, written as `a-b=` followed by the difference |
 | Input → output example | Base 10, answer only: 742 − 358 → `384` |
@@ -24,7 +24,7 @@ so they are sufficient readouts and not verified mechanisms.
 The prompt is `a-b=` and the target is a − b with a ≥ b. In base 10 the operands have 3 digits and each seed draws 20k random
 training pairs and 2k test pairs. In base 2 the operands have 6 bits; of the 2080 pairs with a ≥ b, a train fraction of .6 gives 1248
 training and 832 test pairs. An output counts as correct only on exact match of all output tokens. Length generalisation, accuracy on
-operands longer than any seen in training ([glossary](../GLOSSARY.md#task-formats)), was tested at 4 and 6 digits in base 10 and at 7
+operands longer than any seen in training ([glossary](../GLOSSARY.md#task-formats)), was tested at n + 1 and 2n, that is 4 and 6 digits in base 10 and 7
 and 12 bits in base 2. Three output formats were studied (Table 1); B and C are [scratchpad](../GLOSSARY.md#task-formats) formats, in
 which the network writes intermediate results before or between the answer digits.
 
@@ -106,7 +106,7 @@ for n = 1..12 in both bases. Table 3 gives their sizes.
 For base 2 the record gives only the compact note "L3 6/6/0, L2 4/3/11", without saying which formats these counts belong to.
 
 ```mermaid
-flowchart LR
+flowchart TD
     P["Prompt a-b= and output so far"] --> F["L2 index heads copy a_i, b_i and a_j at b_j"]
     subgraph FA["Format A: answer only"]
         A1["L2 MLP on D = b_j - a_j: EQ = D != 0, GEN = D >= 1"] --> A2["L3H0 chain head: first lower column with EQ, copies GEN = borrow_in"]
@@ -272,7 +272,7 @@ sit in L3 and forcing HAND's hard b route keeps only .273, so attention-mass lab
 refines the stage-level f(diff) closed form and does not contradict it.
 
 ```mermaid
-flowchart LR
+flowchart TD
     H["frozen L2H0, L2H1: operand fetches"] --> M2["trained MLP2: m2 = mu[q, d]"]
     M2 -->|"digit write at digit queries, deleting it gives 0"| Y["answer logits"]
     DIG["HAND DIG register, d mod 2"] -.->|"deleting DIG keeps 1.000"| L3["frozen layer 3: L3H0 borrow relay; MLP3 m3 = mu[q, d negative]"]

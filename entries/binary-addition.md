@@ -10,7 +10,7 @@ closed form status is partial: the stage's sum-bit lookup substitutes at 1.00 in
 and 3/10 for carry tokens (supported by substitution, complement not tested), and for the networks trained from scratch there is only a
 seed-specific joint replacement.
 
-| | |
+| Fact | Value |
 |---|---|
 | Task | Add two n-bit binary numbers (`a+b=` → a + b), answer only, with carry tokens, or with column sums first; trained at n = 6 |
 | Input → output example | n = 6, a = 5, b = 3 → answer only s_6..s_0 = 0001000 (8); 1 + 1 → 10 in binary |
@@ -103,7 +103,7 @@ The networks use 3 + 8 / 3 + 6 / 4 + 10 heads + neurons (A / B / C). They are ex
 7..12, with minimum logit margin 30.
 
 ```mermaid
-flowchart LR
+flowchart TD
     P["Prompt a+b= and output so far"] --> POS["positions: r, r_plus, r squared, thermometers T and VT"]
     POS --> IDX["index heads copy a_i, b_i"]
     subgraph FA["Format A"]
@@ -219,7 +219,7 @@ semantic scrub (.980 / .985 / .983), although the joint formulas restore 4096/40
 and explanation do not compose.
 
 ```mermaid
-flowchart LR
+flowchart TD
     T["layers 0-2: token and position means T[j, t_j]"] --> H0["L3H0: copy current a_i"]
     T --> H3["L3H3: copy current b_i"]
     T --> H1["L3H1: attention switched by the current token"]

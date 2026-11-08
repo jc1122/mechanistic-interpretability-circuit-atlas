@@ -9,7 +9,7 @@ networks use the clock circuit, but their test accuracy ends below 99%). The per
 when substituted (agreement with the networks .94–.98); it is supported by substitution with the complement not tested, so its status
 is partial.
 
-| | |
+| Fact | Value |
 |---|---|
 | Task | Add two numbers modulo 59 (both 0..58) |
 | Input → output example | `SUM: 58 2\nANSWER: ` → `1` (60 mod 59) |
@@ -101,7 +101,7 @@ and the one-hot unit is the difference of two neighbouring steps, `step(100 NA; 
 itself is left entirely to the trained stage.
 
 ```mermaid
-flowchart LR
+flowchart TD
     P["Prompt: SUM: x y"] --> NR["m2 number readers"]
     NR --> NA["NA = x/100, NB = y/100"]
     NA --> D["Menu decode: GELU step pairs at k - 1/2"]
@@ -175,7 +175,7 @@ The closed form is supported by substitution. No [resample ablation of the compl
 reported, so under the atlas acceptance rule the status is partial.
 
 ```mermaid
-flowchart LR
+flowchart TD
     OH["one-hot of x and y, read"] --> N["neuron n at frequency k_n: c_n + a_n cos(w x + phi_n) + b_n cos(w y + psi_n)"]
     TH["thermometer, low frequencies k = 1 to 2"] --> N
     N --> R["ReLU cross term: cos(w(x + y) + phi_n + psi_n)"]

@@ -10,7 +10,7 @@ partly solved (token multiplication 6/10 seeds ≥ .99 at fraction .9, 0/10 at .
 partial and output-level only: substituted for the network output, it keeps the accuracy on all 9216 nonzero pairs of each of the 8
 token-multiplication seeds that score ≥ .98, but it uses the true discrete log, and the complement was not tested.
 
-| | |
+| Fact | Value |
 |---|---|
 | Task | Compute a + b, a·b (a, b in 0..96) or x² mod 97, with the numbers written in one of six formats |
 | Input → output example | a = 96, b = 2, addition: (96 + 2) mod 97 = 1 |
@@ -94,7 +94,7 @@ operands. Multiplication builds thermometer partial products and then compares a
 the remainder r. Squaring compares and subtracts on x and then looks up the square.
 
 ```mermaid
-flowchart LR
+flowchart TD
     subgraph MU["Token multiplication"]
         M1["embedding: log_5 v and v = 0 flag"] --> M2["averaging head: la + lb"]
         M2 --> M3["MLP lookup: 5^(la + lb mod 96)"]
@@ -128,7 +128,7 @@ Table 2 summarises the final cells. Exact match is on held-out inputs; "≥ .99"
 | add s10 | 7 / 9 | .988-1 | q-transfer route (3/3 measured) |
 | mul b2l, sq b16 | 0 / 0 | .013-.077 | memorised (failed); 3-seed rounds: mul b10/b16 memorise at every data/wd |
 
-Key: K-high and K-low = the two clock types as labelled in the run records, a multi-frequency clock and a ramp-like clock; DAS = [distributed alignment
+Key: exact / ≥ .99 = numbers of seeds (so 4 / 6 in the first row is 4 seeds exact and 6 seeds with test ≥ .99, as in the 6/10 above); K-high and K-low = the two clock types as labelled in the run records, a multi-frequency clock and a ramp-like clock; DAS = [distributed alignment
 search](../GLOSSARY.md#analysis-measures); r-only, S+r = which of the HAND variables the network reads at layer 4; q-transfer = a route
 through the quotient q; data/wd = training fraction and weight decay.
 
@@ -162,7 +162,7 @@ by a lookup T[ls] on the summed log ls keeps accuracy in seeds 0, 2, 4, 5, 6 and
 complement](../GLOSSARY.md#verifying-a-circuit) was reported, so the status is partial.
 
 ```mermaid
-flowchart LR
+flowchart TD
     T["tokens a and b"] --> E["embeddings: circles in discrete-log order"]
     E --> K["K-high: many frequencies, 8 seeds; K-low: ramp-like, 2 seeds"]
     K --> M3["MLP3: lookup T on the summed log ls, in 6 seeds"]
@@ -197,7 +197,7 @@ representational priors control the delay of grokking was studied by [Howe (2026
 
 ## Appendix A. Weights excerpt and reading
 
-Table A1 gives the clock frequencies K and the amplitudes √(α² + β²) per seed, from the final snapshots (`clock_fit`).
+Table A1 gives the clock frequencies K and the amplitudes √(α² + β²) per seed, from the final snapshots (`clock_fit`). K is the frequency set of the smallest m per seed given in Section 5; the K-high and K-low labels are the run records' circuit types (Table 2 key), so a K-high seed can have one frequency here.
 
 *Table A1. Clock frequencies and amplitudes per seed, token multiplication.*
 

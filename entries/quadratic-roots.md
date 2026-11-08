@@ -9,7 +9,7 @@ it reached 0/10 and never learned to fetch the addressed registers. Every traine
 MLP can be replaced by one neuron, ReLU(A + B − 1), keeping 1,792/1,792 packets per seed (supported by substitution; complement not
 tested), and no closed form was accepted for the parent cells.
 
-| | |
+| Fact | Value |
 |---|---|
 | Task | For x² + bx + c with integer b, c, output D = b² − 4c, s = ⌊√max(D, 0)⌋, the two floored roots and a flag (negative / integer / other real) |
 | Input → output example | b = −3, c = 2 → D = 1, s = 1, roots 1 and 2, flag integer |
@@ -26,7 +26,7 @@ The coefficients are integers with |b|, |c| ≤ R, written in binary sign/magnit
 and n = 6 gives R 63 (16,129). Outputs are specified integers, not exact irrational roots: D = b² − 4c, s = ⌊√max(D, 0)⌋, the floored
 roots r∓ = ⌊(−b ∓ s)/2⌋, and a flag (negative / integer / other real). An output is exact when every output token is correct, teacher
 forced, that is, each token is scored given the correct previous tokens ([glossary](../GLOSSARY.md#task-formats)). Four formats were
-studied (Table 1).
+studied (Table 1); formats `A`, `S` and `T` are called the parent formats, and `S_exec` the executor.
 
 *Table 1. Output formats (output length in tokens at n 5).*
 
@@ -109,7 +109,7 @@ Used = ablation minima (heads + neurons, frame head included, frame neurons excl
 exact at n 3–5; T is not exact at n 6, and that cell is closed.
 
 ```mermaid
-flowchart LR
+flowchart TD
     P["packet: shuffled register bank, source addresses A and B"] --> L0["layer-0 heads: find the A and B pointer tokens"]
     L0 --> L1["layer-1 heads: fetch registers a and b by binary address match"]
     L1 --> M["layer-1 MLP: one neuron AND = ReLU(a + b - 1), writes Y"]
@@ -164,7 +164,7 @@ path.
 ### 4.3 Executor causal checks
 
 In S_exec PART, the query-mean ablation of every head lowers accuracy to .63–.88; the MLP1 patching drop and recovery are both 1; and
-interchange on the sum / NAND variables flips .93–1 / .57–.84 (answer-fixing n 25–38). A and B have no answer-fixing pairs, which
+interchange on the sum / NAND variables flips .93–1 / .57–.84 (answer-fixing n 25–38, the number of answer-fixing pairs tested). A and B have no answer-fixing pairs, which
 means untested, not unused. Interchange and patching are defined in the [glossary](../GLOSSARY.md#analysis-measures).
 
 ## 5. Mechanism and verification
@@ -184,7 +184,7 @@ stage; no resample ablation of the complement was reported, so the closed form s
 addressed-NAND stage inside supplied routing and microcode, not a from-scratch quadratic solver.
 
 ```mermaid
-flowchart LR
+flowchart TD
     L1["frozen layer-1 heads: fetched a and b"] --> B["trained bank: 28-37 of 128 hinges, each a rescaled AND hinge"]
     B --> S["bank-level sum: Y and O"]
     S --> R["frozen readout: logits -10 O, 10 Y, 5 O"]
@@ -241,7 +241,7 @@ Predictions were recorded before the runs (Table 4).
 ## Appendix A. Weights excerpt and reading
 
 The HAND stage row (A, B, bias) is (1, 1, −1), writing Y with weight 1; all other stage entries are zero. For the trained PART, Table A1
-gives per seed the neuron with the largest contribution wΔ = 5u − 10v to the bit1 − bit0 margin (`part_S_exec_final_s<seed>`; W_in
+gives per seed the neuron with the largest contribution wΔ = 5u − 10v to the bit1 − bit0 margin (u and v are the neuron's output weights into O and Y, Section 5.1) (`part_S_exec_final_s<seed>`; W_in
 columns A = 37, B = 38).
 
 *Table A1. Strongest margin neuron per seed and the number of hinges kept by mean pruning.*

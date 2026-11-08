@@ -11,7 +11,7 @@ partial: the stage substitutes on 60 snapshots with zero, mean and shuffle contr
 ablation of the complement on two best snapshots but not on one final snapshot; there is no closed form for addition trained from
 scratch.
 
-| | |
+| Fact | Value |
 |---|---|
 | Task | Add two n-digit numbers (base 2 up to N = 16 digits, base 10 up to N = 6; the final run subtracts), tested at N, N+1 and 2N |
 | Input → output example | Base 10, answer only, most significant digit first: 5 + 7 → 12 |
@@ -91,10 +91,10 @@ successor IDX_j -> IDX_(j+1) (one neuron per id).
 
 I uses the same stage, with slot flags computed from r - r(last IDX), where r is the position. The answer-only formats use index heads on
 a derived position; AM adds a lookahead thermometer and is exact for n <= 30. All HAND networks are exact (margin 30) on all pairs, or on
-500 pairs per n, for n <= N+1 and at 2N. For subtraction the stage writes s = a - b - c with the borrow [b - a + s >= 1].
+500 pairs per n, for n <= N+1 and at 2N, except binary AM (exact for n <= 30 only). For subtraction the stage writes s = a - b - c with the borrow [b - a + s >= 1].
 
 ```mermaid
-flowchart LR
+flowchart TD
     T["Line so far: operand tokens with ids, ADD s_k CARRY c IDX"] --> L0["L0 heads: recency"]
     L0 --> L1["L1 heads: match operand ids to the line's IDX, fetch a_k and b_k"]
     L1 --> M["L2 MLP stage, gated by the op token"]
@@ -178,7 +178,7 @@ Automatic circuit discovery on the final cell found MLP0 -> MLP1 -> MLP2 -> L3 h
 faithfulness .95-.98 on all 3 (Figure 2).
 
 ```mermaid
-flowchart LR
+flowchart TD
     M0["MLP0"] --> M1["MLP1"]
     M1 --> M2["MLP2"]
     M2 --> H3["L3 heads"]

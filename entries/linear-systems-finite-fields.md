@@ -10,7 +10,7 @@ only never solved. The task is partly solved (microsteps from scratch 10/10 at F
 is partial: a decision surrogate for the update-trace stage scores 1024/1024 in all 24 snapshots, and from scratch the last MLP is an
 operand table in 3/3 tested seeds, but the complement resample (.00-.30) fails the circuit check.
 
-| | |
+| Fact | Value |
 |---|---|
 | Task | Solve an invertible system Ax = b over F₅ or F₇ (m = 2 or 3) by Gauss-Jordan elimination, one residue per token |
 | Input → output example | In words, over F₅: A with rows (1, 2) and (0, 1), b = (3, 1) → x = (1, 1) |
@@ -67,6 +67,9 @@ outputs masked to the blocks of Table 2.
 | input | PB/K/OLD | 106–112/113–119/120–126 |
 | output | NORMAL/PROD/DIFF | 148–154/155–161/162–168 |
 
+Key: PB, K and OLD hold the pivot-row entry pb, the row's entry k in the pivot column and the old entry; NORMAL, PROD and DIFF
+hold the normalised value, the product and the updated entry defined in Section 1.
+
 ### 2.3 Training
 
 The optimiser was AdamW with learning rate 1e-3, weight decay .1 and betas (.9, .98), warmup 1,000 steps, a cosine schedule, clipping
@@ -107,7 +110,7 @@ e_(a−b mod p), and a frozen typed router emits the right candidate or the pivo
 stratified m = 3 fixtures and in greedy rollouts (m = 3 not exhausted).
 
 ```mermaid
-flowchart LR
+flowchart TD
     P["Augmented matrix and trace so far"] --> L0["L0: position R = q/64 from BOS attention, ReLU hinges"]
     L0 --> L1["L1: block, row, column, grammar gates"]
     L1 --> L2["L2: operand fetch, score -24 times squared key-query distance"]
@@ -206,7 +209,7 @@ MLP4 has no closed form here and no whole-net closed form passes the circuit che
 formula on the screen nets was rejected (2/18 numerical passes, none on solved snapshots).
 
 ```mermaid
-flowchart LR
+flowchart TD
     subgraph TR["S TRAIN final, 10/10 seeds"]
         E["embedding"] --> M02["MLP0 to MLP2"]
         M02 --> H34["11 to 20 needed heads, mostly L3 and L4"]

@@ -11,7 +11,7 @@ partly solved. The closed form status is partial: two weight-derived closed form
 predictions in 12/12 tested snapshots of seeds 0–2 (supported by substitution; complement not tested; seeds 3–9 untested), and a
 scalar template for the from-scratch networks was rejected (0/12).
 
-| | |
+| Fact | Value |
 |---|---|
 | Task | Convert an integer 0…65535 from 5 decimal digits to 16 bits or back, answer written MSB-first or LSB-first |
 | Input → output example | Decimal to binary: 00012 → 0000000000001100 (MSB-first) or 0011000000000000 (LSB-first); decimal 65535 → sixteen 1 bits |
@@ -124,7 +124,7 @@ The exhaustive check gives 65536/65536 integers in every cell. Non-zero heads an
 A LSB 3+99; b2d A MSB 3+83, A LSB 3+215; d2b B 3+382 and b2d B 2+346.
 
 ```mermaid
-flowchart LR
+flowchart TD
     P["Prompt: BOS input = and answer so far"] --> L0["L0: positional frame, BOS head and position one-hot"]
     L0 --> L1["L1 MLP: clean positions to an exact one-hot"]
     L1 --> L2H["L2 heads: weighted digit mixtures, BOS sink"]
@@ -216,7 +216,7 @@ zeroing the MLP scores 0. The closed forms are therefore supported by substituti
 | d2b A LSB | 585/562 | 563/566 | 493/470 |
 
 ```mermaid
-flowchart LR
+flowchart TD
     F["F from the frozen L2 heads"] --> TH["b2d MSB: 366 thresholds theta(q, t, a) on F"]
     TH --> Z["thermometer units Z1..Z9 plus Z0"]
     F --> SP["d2b LSB: clip F to 0..33, grid coefficients c(q, t, k), 1054 per snapshot"]

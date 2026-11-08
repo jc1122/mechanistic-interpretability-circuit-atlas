@@ -8,7 +8,7 @@ channel and reached test .78–.88; with 40% or 60% all 20 networks memorised. T
 none reaches 90%; fractions .4 and .6: memorisation in 20/20). The closed form is partial: it is supported by substitution (accuracy
 .91–.93, agreement .88–.92, where the networks score .96–.98 on all cells), and the complement was not tested.
 
-| | |
+| Fact | Value |
 |---|---|
 | Task | Count the `(` in a line of up to 45 brackets (46 possible answers) |
 | Input → output example | `(()` → `2` |
@@ -44,7 +44,7 @@ which gives L (Section 3).
 ### 2.2 Frozen menu and trained part
 
 The [menu](../GLOSSARY.md#hand-built-machinery) is a frozen layer, defined by formula, that places three encodings of each integer at
-the answer position: the raw scalar, a one-hot code and a thermometer code (a vector whose k-th unit is [n ≥ k]), together with
+the answer position: the raw scalar (here BAL for b and R for L), a one-hot code and a thermometer code (a vector whose k-th unit is [n ≥ k]), together with
 distractor features. Here the two integers are u = b, the depth from the bracket head's b/(L+1), and v = L. Each block is centred and
 divided by its rms row norm. Table 1 lists the blocks of the 416-wide input.
 
@@ -108,7 +108,7 @@ No hand-built open-count brick was given. The nearest hand-built design adds the
 the sum (L + b)/2 with step staircases.
 
 ```mermaid
-flowchart LR
+flowchart TD
     P["Prompt: VALID_BRACKETS line"] --> H["m2 layer 5 head 0: uniform attention, value +1 for open and -1 for close"]
     H --> B["BAL = b/(L+1)"]
     P --> R["m2 position scalar R, gives L"]
@@ -180,7 +180,7 @@ terms that the ReLU forms, and their alternating output column adds ± the parit
 accuracy by .01–.05; the networks get the parity of the answer right on .98–.99 of cells.
 
 ```mermaid
-flowchart LR
+flowchart TD
     IN["menu codes of b and L, one-hot main input"] --> LK["low-k neurons, k = 1 to 3 of 92: broad bumps over b and L"]
     IN --> PN["7 to 10 parity neurons: Nyquist terms cos and sin of pi b/2 and pi L/2"]
     LK --> SUM["slowly varying output columns: sum locates (L + b)/2"]

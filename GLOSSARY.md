@@ -34,7 +34,8 @@ Plain-language meanings of the terms used in the entries. Technical definitions 
 - **Grok / grokking**: test accuracy rising long after training accuracy is perfect. The **grok step** is the first step where test
   accuracy crosses a threshold (the entries quote 50%, 90% and 99%). ([METHODS §5](METHODS.md#5-instrumentation-the-analysis-code))
 - **Memorises**: perfect on training inputs, low on held-out inputs.
-- **Best / final snapshot**: the saved network with the highest test accuracy during training / the network at the end of training.
+- **Best / final snapshot**: the saved network with the highest accuracy on the entry's selection set (the test set, or a separate
+  monitor set where the entry says so) / the network at the end of training. A snapshot is one saved network of one seed.
 - **First exact step**: the first evaluation at which test exact match reached 1 (entries that use .99 instead say so).
 
 ## Verifying a circuit
@@ -69,7 +70,7 @@ Plain-language meanings of the terms used in the entries. Technical definitions 
 - **R²** (probe R², "at Lk" = after layer k): how well a linear (ridge) read-out of the residual stream recovers a hand-built variable
   (1 = perfectly). Decodable is not the same as used.
 - **Interchange flip**: swap one variable's value between two inputs inside the network and count how often the answer changes as
-  the variable predicts; a high flip means the variable is causally used. `nf` = number of flips tested; nf 0 means untested, not
+  the variable predicts; a high flip means the variable is causally used. `nf` = number of answer-fixing queries (flips) tested; nf 0 means untested, not
   unused.
 - **Interchange variable**: a hand-built variable (a fetched bit, a carry, a partial sum) whose value is swapped between two inputs
   in the interchange flip test.
@@ -110,11 +111,13 @@ Plain-language meanings of the terms used in the entries. Technical definitions 
   is resample-ablated.
 - **Loss barrier (LMC barrier)**: linear mode connectivity; the largest rise of the loss above the straight line between the two end
   losses when interpolating between two seeds' weights. Near 0 means both sit in one basin.
+- **te90**: the first evaluation step at which test exact match reached .9.
 - **Fourier "clock"**: numbers encoded as angles on a circle, so adding numbers is rotating (known from modular addition).
 - **Pizza**: the variant of the Fourier clock in which the answer is read from the sum of the two angle vectors, so the logit also
   depends on x − y through |cos(w(x − y)/2)|; the clock does not depend on x − y.
 - **Discrete log**: for a prime p and a generator g, the discrete log of a nonzero residue a is the k with g^k = a mod p. It turns
   multiplication into addition of logs, so a clock over the logs computes products.
+- **DFT**: discrete Fourier transform; a projection of a weight vector onto cosine and sine modes of the digit value.
 - **Nyquist frequency**: the highest frequency a grid of integers can carry, one sign change per step: cos(πn) = (−1)^n.
 
 ## Hand-built machinery
@@ -126,10 +129,15 @@ Plain-language meanings of the terms used in the entries. Technical definitions 
   scratchpad bit) to the current position.
 - **Parity staircase**: a layer of paired ReLU steps that reads one bit of a large integer sum: the output steps up and down at
   alternate thresholds, so its output alternates between 0 and 1 as the sum grows.
+- **Attention sink**: a token (usually BOS) that heads attend to when nothing else is relevant; its value adds nothing.
+- **Hinge neuron**: a ReLU unit relu(x − k), zero below its threshold k and rising linearly above it; two hinges, relu(s) − relu(s − 1),
+  make a bounded step.
+- **Tent function**: a triangular bump (1 − |v − j|)₊ that is 1 at v = j and 0 one unit away.
+- **Prefix doubling**: composing the states of blocks pairwise so that the covered length doubles with each layer.
 - **Recency head**: an attention head whose score grows with position, so it attends to the most recent matching token.
 - **Match head**: an attention head that attends to the token whose key equals the query (a tag, an id or a value), used to fetch an
   operand by name.
-- **Chain head**: an attention head that attends to the first lower column with a flag set (for example "this column decides the
+- **Chain head (lookahead head)**: an attention head that attends to the first lower column with a flag set (for example "this column decides the
   carry") and copies its value, which gives carry or borrow lookahead in constant depth.
 - **fp32 / TF32**: full / reduced-precision matrix multiplication; hand-built parts are only exact in fp32.
 
@@ -151,6 +159,7 @@ Plain-language meanings of the terms used in the entries. Technical definitions 
   reading left to right so that each position sees only earlier ones.
 - **d_model / d_head**: the width of the residual stream, and the width of each attention head's query, key and value vectors.
 - **AdamW**: the standard optimiser for transformers; it adapts the step size per weight and applies weight decay separately.
+- **lr / wd**: learning rate / weight decay, as abbreviated in tables.
 - **Weight decay**: a pull of every weight towards zero at each step; larger values favour smaller, simpler solutions.
 - **Warmup and cosine schedule**: the learning rate rises from zero over the first steps (warmup), then falls along half a cosine
   curve towards zero.
@@ -165,6 +174,8 @@ Plain-language meanings of the terms used in the entries. Technical definitions 
 - **sha256**: a fingerprint of a file; any change to the file changes it, so it confirms that a download is the archived file.
 - **BOS token**: the "beginning of sequence" token placed before the prompt.
 - **One-shot prefix**: a single solved example placed before the question, showing the format of the answer.
+- **Tablebase**: an exhaustive table of optimal play for every position of a chess endgame.
+- **Unit propagation**: the DPLL step that assigns the variable forced by a clause with only one unassigned literal.
 - **DTM**: depth to mate, the number of moves to checkmate under optimal play.
 - **Distractor feature**: an input given to the trained stage that carries no information about the answer, to see whether training
   ignores it.

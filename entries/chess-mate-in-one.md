@@ -9,7 +9,7 @@ retry with coverage data fixes answer only (608/608). No from-scratch run has fi
 first-run snapshots, while the 7,693-scalar scratchpad form holds only locally and fails the stress set on 2 snapshots; both are
 supported by substitution with the complement not tested.
 
-| | |
+| Fact | Value |
 |---|---|
 | Task | Given a bare black king and K = 1–16 supplied legal checking moves, output the first move that mates, or NONE |
 | Input → output example | In words: if only the second of three supplied checks leaves the king no escape square, the answer is the second |
@@ -89,7 +89,7 @@ is 30.0 for A and 29.9 for T. Mate is exact only for a bare black king: with a b
 capture of the checker can be legal at 0 escapes.
 
 ```mermaid
-flowchart LR
+flowchart TD
     C["Candidate move and board"] --> V["Virtual board: delete the old square, insert the destination"]
     V --> RY["Nearest-live rays and leaper ORs on each king-neighbour square"]
     RY --> M5["MLP5: sum escapes into ESC, 0-8"]
@@ -159,7 +159,7 @@ by layer 2 head 3 (.66). JS 0 and the layer-6 count probe come from the frozen p
 Edge-attribution checks fail (Spearman .35–.68 < .8), so edge wiring is not claimed.
 
 ```mermaid
-flowchart LR
+flowchart TD
     M5["MLP5: ESC"] --> M6["MLP6: MATE gate"]
     M6 --> SEL["Layer 7 head 0: selector writes WIN"]
     SEL --> M7["MLP7: tent features on WIN and ESC, phase-gated"]
@@ -220,5 +220,5 @@ variance; JS = attention divergence to HAND.
 
 - Fiekas, N. (n.d.). python-chess: a chess library for Python (software). *GitHub*. https://github.com/niklasf/python-chess (legality
   cross-check)
-- Zsámboki, P., Levi, B., Smith, D. A. J., Kagalwala, M., Kell, A., Liechty, S., & Wang, C. (2025). Post-norm can resharpen attention.
+- Zsámboki, P., Levi, B., Smith, D. A. J., et al. (2025). Post-norm can resharpen attention.
   *arXiv preprint*. https://doi.org/10.48550/arXiv.2510.08341 (softmax over more tokens compresses logit gaps)

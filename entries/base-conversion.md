@@ -10,7 +10,7 @@ remainder threshold in 6/10 seeds, while the carry-type cells, which must carry 
 one-hot is exact in 36 of 40 TRAIN nets and the decimal-to-binary threshold rule holds in PART, but a joint scrub of the nibble-only
 story fails, and the carry-type cells have no closed form.
 
-| | |
+| Fact | Value |
 |---|---|
 | Task | Convert x = 0..255 from hexadecimal to binary, binary to decimal, or decimal to binary |
 | Input → output example | Decimal to binary, answer only: `^255=` → `11111111` (eight 1 bits) |
@@ -98,7 +98,7 @@ reproduce the cell-level outcomes.
 
 The archive holds one file per network (PART: the four stage tensors; TRAIN: the full state dict; both with `test_idx`), the six HAND
 files, `config.json` and `manifest.json` (seed, rung, fraction, test accuracy, circuit type, sha256): 77 trained nets (hex to binary:
-all 20 PART and 40 TRAIN nets; decimal to binary A: all 10 PART; one best PART and one best TRAIN-at-.8 net for each other cell) and 6
+all 20 PART and 40 TRAIN nets; decimal to binary A: all 10 PART and one best TRAIN-at-.8 net; one best PART and one best TRAIN-at-.8 net for each remaining cell) and 6
 HAND nets. Each was reloaded and checked to reproduce its recorded test accuracy to one input. They are published on Hugging Face at
 [huggingface.co/jc1122/circuit-atlas-nets/tree/main/base-conversion](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/base-conversion);
 `code/convert.py` rebuilds the six HAND nets bit for bit.
@@ -134,7 +134,7 @@ All six networks are exact on 256/256 inputs (token accuracy 1.0000), with a min
 than the scratchpad here, because with a fixed length one mixture head reads both the input and the answer digits already written.
 
 ```mermaid
-flowchart LR
+flowchart TD
     T["Prompt tokens"] --> F0["Layer 0 head 0: P = 64/(64 + r) from the start token"]
     F0 --> F1["Layer 0 MLP: hinge neurons give the position one-hot POS"]
     F1 --> TH["Layer 1 table heads: weighted mixtures of key tokens"]
@@ -174,8 +174,8 @@ far lower.
 
 Hex to binary is the only conversion learned from scratch: it groks in TRAIN in 1/10 seeds at fraction .5 and 6/10 at .8
 (answer only), and in 2/10 and 7/10 (scratchpad). 38 of the 40 TRAIN nets carry HAND's variable, the one-hot of the source
-hex digit (substituting it keeps exact match at 1.00 in 36 of 40), spread over 2-4 heads and 310-490 neurons where HAND uses 1 head
-and 4-7 neurons (1 + 4 / 7 in Table 3).
+hex digit (substituting it keeps exact match at 1.00 in 36 of 40), read by 2-4 layer-1 heads (4-8 heads in all, counting layer 0) and
+310-490 neurons, where HAND uses 1 head and 4-7 neurons (1 + 4 / 7 in Table 3).
 
 In PART all 20 networks were exact by step 500 (20/20). The only head read is the frozen nibble head, and the trained MLP is a lookup on
 the nibble one-hot: substituting HAND's X fit gives 1.00. The nibble as a linear value does not suffice for format B (.02-.04). The
@@ -185,7 +185,7 @@ Trained from scratch, the networks first memorised, by 2.5-13k steps, and then [
 3k-40.5k steps (16/40 nets). Training was unstable afterwards: the final test fell as low as .02 while the best snapshot was exact.
 38/40 nets are of the nibble one-hot type, meaning that one hex-digit one-hot fit of the residual after layer 1 suffices. The read is
 spread over 2-4 layer-1 heads with fixed attention patterns (2-7 keys, cosine to HAND's pattern .5-.97), after 2-4 layer-0 heads that
-average all positions. The networks use 4-8 heads + 310-490 neurons, against HAND's 1 + 4 / 7.
+average all positions. In all layers the networks use 4-8 heads + 310-490 neurons, against HAND's 1 + 4 / 7.
 
 ### 4.2 Decimal to binary, answer only
 
@@ -278,7 +278,7 @@ probes show that the prefix content matters (equalising affinities drops exact t
 decisions. The 12 / 16-neuron PART decoders are refitted replacements, not the 7–38 / 51–72 used-neuron counts from ablation.
 
 ```mermaid
-flowchart LR
+flowchart TD
     T["prompt and written tokens"] --> L0["L0 attention: content-weighted prefix summary"]
     L0 --> M0["MLP0"]
     M0 --> H1["L1H1: two-key mixture, reads the written echo"]

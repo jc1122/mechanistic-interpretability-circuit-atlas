@@ -9,7 +9,7 @@ The task is unsolved (0/10 from scratch). The closed-form status is partial: the
 substitution (1.0 in 18/18 tests) and a resample ablation of everything outside the circuit (1.0), and there is no closed form for
 the networks trained from scratch.
 
-| | |
+| Fact | Value |
 |---|---|
 | Task | Execute a base-2 register program (STEP: ADD, SHL or REV on tagged registers, operands up to 15 bits; SUM k, MUL n, POW e chain STEP lines) and write the whole trace |
 | Input → output example | In words: a STEP that ADDs registers holding 101 (5) and 11 (3) writes 1000 (8) |
@@ -93,7 +93,7 @@ examples per cell, and uses 21/64 heads. The set of ADD-stage neurons is shared 
 serves every task.
 
 ```mermaid
-flowchart LR
+flowchart TD
     P["Prompt header: program counter, register tags; trace so far"] --> H0["L0H0: uniform attention, position code"]
     H0 --> R["11 L1 recency heads: copy latest P/A/S/GA/ST fields"]
     R --> PA["PA, PS: register addresses"]
@@ -175,7 +175,7 @@ In the solved SUM5 sub-cell PA is also low (R² .40 at L2), the fetched operand 
 has the largest patching drop.
 
 ```mermaid
-flowchart LR
+flowchart TD
     T["trace so far, fixed register convention"] --> F["attention: operand fetch by position in the trace"]
     H["prompt header tags"] -.->|"no tag fetch, PA/PS not formed"| F
     F --> X["operand bits, XA1"]

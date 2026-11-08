@@ -9,7 +9,7 @@ scratch) but did not transfer (frozen parts 0, from scratch 0–.19). The task i
 closed form is partial: a layer-0 prefix-pooling formula substitutes exactly in 20/20 snapshots, a layer-2 reader passes in seed 0
 and fails in seed 2, no gcd or division form was found, and the complement was not tested.
 
-| | |
+| Fact | Value |
 |---|---|
 | Task | Integrate an integer polynomial and write each coefficient as a reduced fraction |
 | Input → output example | Answer only: `BOS M:2 C:4 C:6 =` (4 + 6x) → `J:1 N:4 D:1 J:2 N:3 D:1` (4x + 3x²) |
@@ -82,7 +82,7 @@ runs the Euclid step with ABS = ReLU(a−b) + ReLU(b−a) and MIN = a − ReLU(a
 heads + 769 neurons (665 of them framing). Both are exact on 2,804 polynomials per format, with margin ≥ 10.
 
 ```mermaid
-flowchart LR
+flowchart TD
     P["Prompt: M:m C:c0 ... ="] --> F["coefficient and register fetch heads"]
     subgraph TA["Format A: answer only"]
         RT["reduction table: ReLU hinges on the (c, j) code"]
@@ -141,7 +141,7 @@ the selection of the signed numerator at the step from G to N fails.
 
 Each seed was assigned once. A PART is a frozen reader with a learned response (3/3), T PART a frozen Euclid interface with a
 response (3/3). A TRAIN is a distributed four-MLP type (3/3), with a sign bottleneck in L3 in seeds 0 and 2 and in L2H3 in seed 1.
-T TRAIN is one MLP-heavy family (10/10), in which every MLP lesion gives exact 0; its sign-transport subtypes are 1/1/1 in seeds 0–2.
+T TRAIN is one MLP-heavy family (10/10 seeds, the failed seed 4 included), in which every MLP lesion gives exact 0; its sign-transport subtypes are 1/1/1 in seeds 0–2.
 Full diagnostics are in Appendix B.
 
 ## 5. Mechanism and verification
@@ -157,7 +157,7 @@ by substitution only; no [resample ablation of the complement](../GLOSSARY.md#ve
 partial.
 
 ```mermaid
-flowchart LR
+flowchart TD
     P["prompt and scratchpad tokens"] --> L0["layer 0: content-weighted prefix pooling, N_u e^S v / N_u e^S"]
     L0 --> M["MLP-heavy family: every MLP lesion gives exact 0"]
     M --> R["layer 2 G-query reader b_h + u_h[c] + v_h[j], seed 0"]

@@ -5,12 +5,12 @@ invertible bit matrix (3×3, later 4×4), writing either only the solution or ea
 three bits of the previous block with match heads and writes each new row bit in its last MLP as the old bit XOR the pivot-row bit
 when the row has a 1 in the pivot column and is not the pivot row. With the hand-built routing frozen, one retrained MLP relearned this
 update in 10/10 seeds (1000 steps). From scratch at m = 3 only 5/10 seeds per format solved, and the rest memorised the 118 training
-matrices; with 6000 matrices at m = 4, answer only solved 10/10 in three circuit types. Nothing transfers to other sizes. The task is
+matrices; with 6000 matrices at m = 4, answer only solved 10/10 in three circuit types. Almost nothing transfers to other sizes (Table 2). The task is
 partly solved (answer only at m = 4 10/10; from scratch at m = 3 5/10 per format), and the closed form is partial: the table for the retrained
-MLP on frozen parts (PART) is accepted by substitution with controls (1.0 = native in 20/20 snapshots; complement not tested), and from
+MLP on frozen parts (PART) is accepted by substitution with controls (1.0 = native in 20/20 snapshots; complement not tested, that is, no [resample ablation of everything outside the claimed circuit](../GLOSSARY.md#verifying-a-circuit) was run), and from
 scratch only the L2-complete type has one (4/4 snapshots).
 
-| | |
+| Fact | Value |
 |---|---|
 | Task | Solve A x = b over GF(2) for an invertible m × m bit matrix (m = 3, later 4); write the solution, or each elimination step first |
 | Input → output example | In words: A with rows (1, 1) and (0, 1), b = (1, 1) → x = (0, 1) |
@@ -86,7 +86,7 @@ Y0. Together these write bit = OLD ⊕ (K ∧ PB ∧ ¬EQ). The network has 13 h
 is exact on all systems at m = 2, 3, 4 and on 200 random systems at m = 5.
 
 ```mermaid
-flowchart LR
+flowchart TD
     P["Input rows and previous block"] --> FR["L0 and L1: frame BLK, ROW, J; uniform head, 256 position neurons, 5 anchor heads"]
     FR --> L2["L2: five 3-D match heads fetch OLD, OLDF, K, PB, USED, PX"]
     L2 --> F2["L2 MLP: slot flags and EQ"]
@@ -132,7 +132,7 @@ L2-complete type in 2/10 (L3 idle, R² at L3 .89). Full diagnostics are in Appen
 ### 5.1 Closed forms
 
 For PART, the table μ[OLD, K·PB·¬EQ, query] (the mean stage output per key, on HAND's live registers) replaces MLP3's row-bit write
-and gives 1.0 = native in 20/20 snapshots (944 fit / 400 test systems). The controls hold: zeroed 0, shuffled ≤ .01, negated 0, and
+and gives 1.0 = native in 20/20 snapshots (944 fit / 400 test systems), meaning exact match equal to that of the unmodified (native) network. The [controls](../GLOSSARY.md#verifying-a-circuit) hold: zeroed 0, shuffled ≤ .01, negated 0, and
 another seed's table gives 1.0. The closed form is accepted. For PARTp the table also gives 1.0 in 20/20, but the zero and shuffle
 controls keep ≥ .2 in 7/20, so it is not accepted.
 
@@ -143,7 +143,7 @@ per-slot mean (2000 test systems) gives 1.0 = native in 4/4 snapshots of the L2-
 accepted closed forms are supported by substitution with controls, and the status is partial.
 
 ```mermaid
-flowchart LR
+flowchart TD
     P["Input rows, answer only, m = 4"] --> E["layers 0 to 2"]
     E --> T1["L3-head readout: 4 to 10 L3 heads, 6/10 seeds"]
     E --> T2["L3 diffuse: whole L3 needed, 2/10 seeds"]

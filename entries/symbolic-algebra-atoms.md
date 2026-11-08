@@ -9,7 +9,7 @@ collect stage keeps the hand-built addition, while networks trained from scratch
 The task is partly solved (scratchpad 10/10 in three cells; answer-only expand and solve 0/3). The closed form is partial: the
 collect closed form substitutes exactly in 13/13 seeds (prediction agreement 1.0), with the complement not tested, and no closed form from scratch was accepted.
 
-| | |
+| Fact | Value |
 |---|---|
 | Task | Collect like terms, expand (a x+b)(c x+d) or solve ax+b=cx+d on (side, power, coefficient) term atoms |
 | Input → output example | Expand, in words: (2x+1)(3x+4) → 6x² + 11x + 4 |
@@ -92,7 +92,7 @@ HAND is exact in all 6 cells: 34,454 checks pass (exhaustive primitives and all 
 and 1 elsewhere.
 
 ```mermaid
-flowchart LR
+flowchart TD
     P["Prompt: left terms ; right terms ="] --> L0["L0: reciprocal-position frame"]
     L0 --> L1["L1: phase anchor at ="]
     L1 --> L2["L2 heads: fetch operands by squared side and power match"]
@@ -174,7 +174,7 @@ Edges pass their check (spearman_exact .87–.96) on all 20 TRAIN finals, with J
 (Jaccard 1).
 
 ```mermaid
-flowchart LR
+flowchart TD
     P["Prompt: left terms ; right terms ="] --> F["layer-0 and layer-1 fetch heads"]
     F --> M0["MLP0"]
     M0 --> M1["MLP1"]
@@ -250,8 +250,8 @@ The prediction record (Section 7) is commit 4c558035 of the project repository.
 
 Key: Used = heads (of 12) + MLP blocks whose single resample ablation (donor = another test row) drops exact match by ≥ .01, with the
 mean-ablation count (drop > .05) in brackets; PART rows use zero-ablation of the frozen HAND heads + trained MLP2. Probe = best R²
-(layer), range over seeds ([glossary](../GLOSSARY.md#analysis-measures)). r99 = L3 residual PCA rank at 99% variance. JS = mean
-nearest-HAND attention JS. HAND sizes for comparison are in Table 2.
+(layer), range over seeds ([glossary](../GLOSSARY.md#analysis-measures)). r99 = L3 residual PCA rank at 99% variance, with HAND's rank in brackets. JS = mean
+nearest-HAND attention JS. HAND head and neuron sizes for comparison are in Table 2.
 
 ## References
 

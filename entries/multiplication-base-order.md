@@ -6,9 +6,9 @@ base 10 in 20/20 seeds and in base 2 in 17/20 (final cell 10/10); most significa
 width rescued decimal and hexadecimal (7/10, 6/10) but never binary (0/26 over width, data and auxiliary-loss retries), while a
 scratchpad of running sums solved every most-significant-first cell at the base width (18/18). The task is partly solved. There is no
 hand-built network; the closed form is partial: a Fourier readout of the scratchpad's final MLP was accepted for decimal in 6/6 seeds
-and for hexadecimal in 3/6, and no closed form exists for answer only.
+and for hexadecimal in 3/6 (best snapshots), and no closed form exists for answer only.
 
-| | |
+| Fact | Value |
 |---|---|
 | Task | Multiply x and y in [0, 256), written in base 2, 10 or 16, as `x*y=` followed by the product |
 | Input → output example | Base 10, answer only, most significant digit first: 7 × 3 → 21, written as the 5 zero-padded digits 00021 |
@@ -49,7 +49,7 @@ The shared architecture and instrumentation are described in [METHODS.md](../MET
 
 The networks are GPT-NeoX-shaped with 4 layers, d_model 384 (12 heads × 32), MLP 256 ReLU (W_in [256, 384], reading the whole
 residual stream), no LayerNorm, no positional encoding and untied embeddings. The vocabulary has 19 tokens (BOS, `*`, `=`, digits
-0-15), and 20 in SP, which adds `;`. The R1 retry uses d 768 (12 × 64); D3 uses batch 768; aux adds a running-sum probe loss at
+0-15), and 20 in SP, which adds `;`. The R1 retry uses d 768 (12 × 64); D3 (3x data) uses batch 768, three times the base batch of 256; aux adds a running-sum probe loss at
 resid_3.
 
 ### 2.2 Frozen parts and trained part
@@ -83,7 +83,7 @@ carry carry_k into column k, and low_k / high_k, the product mod / div B^k. For 
 S_j = S_{j−1} + x y_j B^j.
 
 ```mermaid
-flowchart LR
+flowchart TD
     X["operand digits x_i and y_j"] --> C["column sum col_k = sum of x_i y_j over i + j = k"]
     C --> K["carry carry_k"]
     C --> P["product digit p_k"]
@@ -153,13 +153,13 @@ replaced by a few Fourier modes over the digit d:
 
 Ehat[j,d] = c[j,0] + Σ_{k ∈ K} (c[j,k] cos 2πkd/B + s[j,k] sin 2πkd/B),
 
-with coefficients taken as exact DFT projections of the weights and the mode sets K_dec = {1,2,3,5} and K_hex = {1,2,4,8}. The bar was
+with coefficients taken as exact DFT (discrete Fourier transform) projections of the weights and the mode sets K_dec = {1,2,3,5} and K_hex = {1,2,4,8}. The bar was
 exact ≥ .99 × native accuracy on 2048 fresh pairs. Decimal passed in 6/6 best and 6/6 final seeds (lossless in 2/6 and 4/6), hex in
 3/6 and 4/6 (lossless in 1/6). The full DFT keeps all accuracy and the mean-only map keeps none (0). This is supported by substitution;
 the complement was not tested, so the closed form status is partial.
 
 ```mermaid
-flowchart LR
+flowchart TD
     X["prompt and scratch lines so far"] --> R["layers 0-3: column variables col_k, carry_k at L4"]
     R --> M["MLP3: largest patching drop"]
     M --> E["final-MLP digit map E, replaced by Fourier modes K_dec or K_hex in SP"]

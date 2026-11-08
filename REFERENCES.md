@@ -1,6 +1,6 @@
 # References
 
-Central bibliography of the works cited by the atlas entries, [METHODS](METHODS.md), [SURPRISES](SURPRISES.md) and the [README](README.md), plus the standard works its methods rely on. Every record was checked against arXiv, Crossref, the proceedings or the publisher page (venues and author lists of elhage2021, bricken2023, chan2022, nanda2023, chughtai2023, charton2023, frankle2020, weiss2021 and pythonchess re-checked on 2026-11-08); links point to the DOI, the arXiv abstract page or the official post. Author lists are shortened to three plus "et al." when longer than six.
+Central bibliography of the works cited by the atlas entries, [METHODS](METHODS.md) and the [README](README.md) ([SURPRISES](SURPRISES.md) links entries, not works), plus the standard works its methods rely on. Every record was checked against arXiv, Crossref, the proceedings or the publisher page (venues and author lists of elhage2021, bricken2023, chan2022, nanda2023, chughtai2023, charton2023, frankle2020, weiss2021 and pythonchess re-checked on 2026-11-08); links point to the DOI, the arXiv abstract page, the official post or, for software, the repository. A key is a link label, and its year need not equal the printed year (zhang2024 is the 2023 work of Zhang & Nanda). What each work is cited for is stated after it in each entry's References section; the table below names the method or topic of the works that METHODS uses. Author lists are shortened to three plus "et al." when longer than six.
 
 ## Grokking and modular arithmetic
 
@@ -82,11 +82,30 @@ Central bibliography of the works cited by the atlas entries, [METHODS](METHODS.
 ## Other
 
 - <a id="koksal2022"></a>Koksal, A., Tuzcuoglu, O., Ince, K. G., Ataseven, Y., & Alatan, A. A. (2022). Improved hard example mining approach for single shot object detectors. *2022 IEEE International Conference on Image Processing (ICIP)*. <https://doi.org/10.1109/ICIP46576.2022.9897806>
-- <a id="zsamboki2025"></a>Zsámboki, P., Levi, B., Smith, D. A. J., Kagalwala, M., Kell, A., Liechty, S., & Wang, C. (2025). Post-norm can resharpen attention. *arXiv preprint*. <https://arxiv.org/abs/2510.08341>
+- <a id="zsamboki2025"></a>Zsámboki, P., Levi, B., Smith, D. A. J., et al. (2025). Post-norm can resharpen attention. *arXiv preprint*. <https://arxiv.org/abs/2510.08341>
 - <a id="loshchilov2016"></a>Loshchilov, I., & Hutter, F. (2016). SGDR: Stochastic gradient descent with warm restarts. *arXiv preprint*. <https://arxiv.org/abs/1608.03983>
 - <a id="hong2022"></a>Hong, Q., Siegel, J. W., Tan, Q., & Xu, J. (2022). On the activation function dependence of the spectral bias of neural networks. *arXiv preprint*. <https://arxiv.org/abs/2208.04924>
 - <a id="wen2024"></a>Wen, K., Li, Z., Wang, J., Hall, D., Liang, P., & Ma, T. (2024). Understanding warmup-stable-decay learning rates: A river valley loss landscape perspective. *arXiv preprint*. <https://arxiv.org/abs/2410.05192>
 - <a id="pythonchess"></a>Fiekas, N. (n.d.). python-chess: A chess library for Python [Computer software; GPL-3.0; repository since 2012, PyPI package `chess`; version used not recorded]. *GitHub*. <https://github.com/niklasf/python-chess>
+
+## Methods used by the atlas
+
+| Method or topic | Work |
+|---|---|
+| Grokking (delayed generalisation) | [power2022](#power2022) |
+| Fourier clock for modular addition; restricted and excluded losses | [nanda2023](#nanda2023) |
+| Clock and pizza algorithms | [zhong2023](#zhong2023) |
+| Group operations reverse-engineered | [chughtai2023](#chughtai2023) |
+| QK and OV circuits | [elhage2021](#elhage2021) |
+| Causal scrubbing (the complement test) | [chan2022](#chan2022) |
+| Interchange and distributed alignment search | [geiger2023](#geiger2023) |
+| Activation patching | [zhang2024](#zhang2024) |
+| Automatic circuit discovery (ACDC) | [conmy2023](#conmy2023) |
+| Sparse autoencoder dictionaries | [bricken2023](#bricken2023), [cunningham2023](#cunningham2023) |
+| Linear mode connectivity | [frankle2020](#frankle2020) |
+| Programs for transformers (RASP), compiled to weights (Tracr) | [weiss2021](#weiss2021), [lindner2023](#lindner2023) |
+| Benchmark of known circuits (InterpBench) | [gupta2024](#gupta2024) |
+| Networks constrained to be readable programs | [friedman2023](#friedman2023) |
 
 ## Cited by
 

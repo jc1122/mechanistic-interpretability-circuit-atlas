@@ -6,7 +6,8 @@ hand-built transformer was written, with every weight set by a formula, and netw
 single stage on top of frozen hand-built parts and from scratch. For every trained network the atlas reports which circuit it uses,
 how many seeds share it, and whether a closed-form description of it survives substitution. Three tasks are solved, 27 are partly
 solved and one is unsolved. Trained networks usually compute the hand-built variables, but with different wiring: networks trained
-from scratch share 6–9% of their top circuit edges with the hand-built network, against 79–100% for networks trained on frozen parts.
+from scratch share at most .15 of their top circuit edges with the hand-built network (Jaccard), against .78–1.0 for networks trained
+on frozen parts.
 Failed networks still carry the variables and fail to generalise rather than to compute them. A scratchpad shrinks the hand-built
 circuit by about an order of magnitude (long division: 186 neurons without one, 14 with one). A closed form is called verified only if
 substituting it and resampling everything outside the claimed circuit each keep at least .90 of the network's exact match; no entry
@@ -41,14 +42,14 @@ proposed circuit at once fails in five tasks: [group automata](entries/dfa-group
 (.74–.82). A working replacement is therefore reported as a sufficient readout and not as a verified mechanism.
 
 Trained networks compute the hand-built variables with different wiring. In [binary addition](entries/binary-addition.md) and
-[decimal and hexadecimal addition](entries/decimal-hex-addition.md), networks trained from scratch share only 6–9% of their top circuit
-edges with the hand-built network, while networks trained on frozen hand-built parts share 79–100%
+[decimal and hexadecimal addition](entries/decimal-hex-addition.md), networks trained from scratch share at most .15 of their top circuit
+edges with the hand-built network (Jaccard), while networks trained on frozen hand-built parts share .78–1.0
 ([SURPRISES](SURPRISES.md#same-variables-different-wiring)).
 
 Failed networks still use the right variables; they fail to generalise. Swapping a hand-built variable between two inputs flips the
 answer in failed networks about as often as in solved ones, in [binary addition](entries/binary-addition.md),
 [decimal and hexadecimal addition](entries/decimal-hex-addition.md) and
-[long division and square root](entries/long-division-square-root.md) (981 networks analysed across tasks).
+[long division and square root](entries/long-division-square-root.md).
 
 A scratchpad shrinks the hand-built circuit by about an order of magnitude (Figure 1). Long division needs 186 neurons when the network
 writes the answer only and 14 when it writes the steps, and long-hand square root 46 against 20. With a scratchpad of running sums, the

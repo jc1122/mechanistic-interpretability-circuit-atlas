@@ -9,7 +9,7 @@ scratch: scratchpad 10/10, answer only 3/3; frozen-parser setup 0/12). The close
 network is replaced by a rank-4 token-pair table with exact 1.0 kept in 16/16 networks (HAND's uniform average gives `T` 0–.38),
 supported by substitution with the complement not tested, and the rewrite stage behind it has no compact closed form.
 
-| | |
+| Fact | Value |
 |---|---|
 | Task | Write the unsimplified derivative of a prefix expression over x^1..x^8, sin, cos, exp, + and * |
 | Input → output example | In words: sin of x^2 → the product of cos of x^2 and the derivative of x^2, written out without simplification (exact token layout in the archived `config.json`) |
@@ -32,7 +32,7 @@ rows, and expanding the last register gives the answer-only output.
 | Format | Output |
 |---|---|
 | `A` (answer only) | the expanded derivative (≤ 157 symbols at depth 3) |
-| `T` (scratchpad) | a bottom-up register rewrite, one 16-token row per source node (≤ 15 rows) |
+| `T` (scratchpad) | a bottom-up register rewrite, one 16-token row (one register) per source node (≤ 15 rows) |
 
 The training domain is operator depth 0–2, powers 1–6 and padding 0–3; two operator-edge compositions (sin over cos, exp over
 product) are withheld. The split uses the SHA-256 of the canonical expression, 80/20, with 256 held-out expressions per seed. An output counts as
@@ -95,7 +95,7 @@ allocation and not a measured minimum. The networks are exact on 1,497/1,497 exp
 powers 1–8, padding 0–7) and 2,265/2,265 on the widened retry domain, with minimum logit margins 30 (`A`) and 27.5 (`T`).
 
 ```mermaid
-flowchart LR
+flowchart TD
     P["Prompt: pad dots, prefix source symbols, ="] --> U["uniform prefix head: bracket balance, completion counts, position frame"]
     U --> D["depth- and recency-routed heads, child reads: subtree start, end, children"]
     subgraph FT["Format T: 5 layers"]
@@ -193,7 +193,7 @@ derivative addresses off by ±1, so the token decision has no compact form. Whol
 joint fits: 11.3%; refit 56.6%).
 
 ```mermaid
-flowchart LR
+flowchart TD
     P["prompt and rows so far"] --> L0["layer-0 heads: content-weighted prefix count, rank-4 token-pair table"]
     L0 --> M["MLP0 to MLP2"]
     M --> M3["MLP3"]

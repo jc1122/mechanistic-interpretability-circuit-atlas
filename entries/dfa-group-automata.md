@@ -10,7 +10,7 @@ words, parity and Z3 reached 10/10 and S3 2/10 at ≥ .99. The task is partly so
 tables) keep accuracy 1.0 on the stated words, but the transition table is rejected as a universal reduction and an audit on
 2026-11-07 found that no closed form passes the full bar, so they are sufficient readouts, not verified mechanisms.
 
-| | |
+| Fact | Value |
 |---|---|
 | Task | Give the final state of a parity, Z3 or S3 automaton after a word of 1..16 symbols, answer only or with the state written after every symbol |
 | Input → output example | Parity, answer only: a word of five symbols with values 1 0 1 1 0 → state 1 (three symbols of value 1) |
@@ -89,7 +89,7 @@ recorded accuracy, sha256). Every file was reloaded bit-identically and its test
 
 ## 3. Hand-built solution
 
-Layer 0 is a position stage with BOS as attention sink: it computes P = 1/(j+1) at position j, and hinges give R = j/256. The later
+Layer 0 is a position stage with BOS as attention sink (a position that heads can attend to when nothing else is relevant): it computes P = 1/(j+1) at position j, and hinges give R = j/256. The later
 layers differ by format (Figure 1).
 
 Scratchpad (B). A layer-1 recency head, with score 100·[state token] + 20 j, copies the previous state q_{t-1} into a block QP. The
@@ -97,15 +97,15 @@ layer-1 MLP has G² neurons relu(QP_a + TOK_b − 1), each writing OUT[a·b], wh
 head and 4 / 9 / 36 neurons at any n.
 
 Answer only, abelian groups. A BOS-sink head averages the symbols, which gives S, the sum of the symbol values. (G−1)·n hinge neurons
-relu(S − k) are read out as [S mod G = r]. This is one head and 16 / 32 neurons at n = 16, and it grows with n.
+relu(S − k) (each is zero below the threshold k and rises linearly above it) are read out as [S mod G = r]. This is one head and 16 / 32 neurons at n = 16, and it grows with n.
 
-Answer only, S3. The network uses prefix doubling. In layer k an index head fetches the block 2^(k−1) back and a 36-neuron table composes
+Answer only, S3. The network uses prefix doubling: the word is covered by blocks of symbols whose states are composed pairwise, so the covered length doubles with each layer. In layer k an index head fetches the block 2^(k−1) back and a 36-neuron table composes
 the two blocks into the block states ST1..ST4. This is 5 heads and 180 neurons, exact for n ≤ 31.
 
 Every cell is exact on 2000 words with n = 1..16.
 
 ```mermaid
-flowchart LR
+flowchart TD
     P["Word s_1 .. s_t"] --> L0["L0: position stage, P = 1/(j+1), R = j/256"]
     subgraph FB["Format B: scratchpad"]
         B1["L1 recency head: copy q_t-1 into QP"] --> B2["L1 MLP: G squared neurons relu(QP_a + TOK_b - 1)"]
@@ -244,7 +244,7 @@ HAND B has 2H + 292N (256 position hinges + 36 pair gates), not re-minimised. In
 neurons suffice, 256/256.
 
 ```mermaid
-flowchart LR
+flowchart TD
     W["Word and written states so far"] --> H0["L0 heads: weighted prefix histograms"]
     H0 --> F["later heads: previous-state fetch, redundant, distributed pair and position thresholds"]
     F --> M["late MLPs: delta table on fetched state and symbol"]

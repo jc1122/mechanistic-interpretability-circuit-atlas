@@ -9,7 +9,7 @@ both formats; from scratch 0/3; the ten-seed final has not finished). The closed
 replaces the trained scratchpad MLP and keeps 52/52 traces per seed while zero and shuffle controls give 0/52, so it is supported by
 substitution with controls, with the complement not tested; the answer-only threshold was not substituted.
 
-| | |
+| Fact | Value |
 |---|---|
 | Task | Decide whether an ordered 3-SAT formula (n = 4–6 variables, m = 10–25 clauses) is satisfiable, answer only or with the DPLL solver state written at each step |
 | Input → output example | In words: a formula that some assignment satisfies → SAT; one that every assignment falsifies → UNSAT |
@@ -92,7 +92,7 @@ and the minimum logit margin is 30 for A and 15 for T. The formula tests are str
 independent SAT oracle, causal-prefix and right-padding checks, clock shifts and clause reversal.
 
 ```mermaid
-flowchart LR
+flowchart TD
     subgraph HT["Scratchpad (HAND T, 6 layers)"]
         T0["Layer 0: clock and header"] --> T1["Layer 1: previous state and clause operands"]
         T1 --> T2["Layer 2: copy clause, select unknown or deepest-decision variable"]
@@ -177,7 +177,7 @@ F is decision-equivalent on the measured inputs. It is not a reconstruction of t
 flags, takes the argmax of the old state and clamps the old level (Figure 2).
 
 ```mermaid
-flowchart LR
+flowchart TD
     R["Frozen layers 0-4: retrieval and controller outputs"] --> F["MLP5 replaced by F = (state, level, level2), parameter-free"]
     O["old state and level"] --> F
     F --> A1["copy, clear, force, decide or backtrack"]
@@ -227,7 +227,7 @@ Open questions:
 ## 7. Prediction record
 
 The predictions were recorded before the runs. A PART would reach ≥ 2/3 at .99: confirmed (3/3). A TRAIN would reach ≤ 1/3: confirmed
-(0/3). T PART would reach ≥ 2/3 by 5k steps: partly held (first exact hits by 5k but unstable; all seeds exact at 5.5k). T TRAIN would
+(0/3). T PART would reach ≥ 2/3 by 5k steps: partly held (first exact hits by 5k in seeds 0 and 1 but unstable; all seeds exact at 5.5k). T TRAIN would
 reach 1–2/3 by 30k: refuted (0/3, ≤ .016).
 
 ## Appendix A. Weights excerpt and reading

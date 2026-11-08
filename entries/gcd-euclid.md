@@ -8,7 +8,7 @@ bits with a distributed token-table code, and answer only in 1/3 at 6 bits; no n
 partly solved. The closed form is partial: a three-rule router makes all 10 final seeds exact on their test sets and repairs an
 8-bit stress set from 10.6% to 100% (seed 5), supported by substitution with the complement not tested, and no complete closed form was found for the networks trained from scratch.
 
-| | |
+| Fact | Value |
 |---|---|
 | Task | Compute gcd(a, b) of two 5- to 7-bit numbers, answer only or as a trace of subtractive Euclid rows; side tasks modular inverse and fraction reduction |
 | Input → output example | Answer only: prompt `BOS GCD A:6 B:4 →`, output `R:2 EOS` |
@@ -100,7 +100,7 @@ hundred extra inputs per cell), with a minimum logit margin of 10, greedy and te
 tuples after archiving (1.000 in all five cells).
 
 ```mermaid
-flowchart LR
+flowchart TD
     P["Prompt and rows so far"] --> F["layer 0 frame: position clocks from the 1/position signal"]
     F --> H["layer 1 clock-addressed fetch heads: OLD_a, OLD_b of the previous row"]
     H --> S["layer 2 MLP, five ReLU neurons: ABS = abs(a - b), MIN = min(a, b), ZERO = 1 if b = 0"]
@@ -201,7 +201,7 @@ Rejected: a categorical-table MLP3 for TRAIN T run 2 (≈ 29.6k fitted scalars) 
 MLP1–3 of TRAIN T remain unexplained.
 
 ```mermaid
-flowchart LR
+flowchart TD
     T["prompt and row tokens"] --> H0["four layer-0 heads: per-token tables Q, K, O, content-weighted histograms"]
     H0 --> M0["MLP0: u_j = ReLU of a token bias plus a weighted head sum"]
     M0 --> U["later 11 heads and MLP1-3: unexplained"]

@@ -10,7 +10,7 @@ trained network is exact on all inputs. The closed form is partial: the hand-bui
 trained scratchpad stage on all inputs at both ranges (supported by substitution; complement not tested), and there is none for answer
 only or for networks trained from scratch.
 
-| | |
+| Fact | Value |
 |---|---|
 | Task | Divide an 8-bit by a 4-bit binary number, or take the long-hand square root of an 8-bit number (and wider ranges), answer only or with a per-step scratchpad |
 | Input → output example | Division: 7 / 2 → quotient 3, remainder 1 |
@@ -102,7 +102,7 @@ prefix already written. A division quotient bit is [N − d(Wq + 2^j) ≥ 0] gat
 step [N − SQ − T ≥ 0] for all outputs (4 + 3).
 
 ```mermaid
-flowchart LR
+flowchart TD
     P["Prompt and scratchpad so far"] --> H["layer-1 heads"]
     H --> X["X = 2 rem + next bit; sqrt: 4 rem + 2 bits"]
     H --> TT["TT = D; sqrt: 4p + 1"]
@@ -213,7 +213,7 @@ they keep learned step-dependent offsets: averaging the query intercepts across 
 snapping the normals to (1, −1, −1) gives .404 / .813.
 
 ```mermaid
-flowchart LR
+flowchart TD
     R["frozen heads: X, T, b, W"] --> U["1024 native units: ReLU of a linear form in X, T, b, W, plus token and query offsets"]
     U --> XW["48-unit X - W bank: remainder thresholds"]
     U --> TB["90- and 223-unit banks reading the trial T"]
@@ -243,7 +243,7 @@ added, so a working output surrogate can hide a wrong upstream story. Size bound
 accuracy on all 30,720 test inputs and not minima, are 12 heads + 1646 neurons for division A TRAIN seed 0 and 11 + 1097 for seed 3 (of
 12 + 3072); HAND counted the same way, including the position frame, needs 5 + 558.
 
-A seed census covered 78 solved seed-runs; it records readout phenotypes, not circuit types, and repeated seeds across retries are not
+A seed census covered 78 solved seed-runs (the 41 PART stages below and the 37 TRAIN seed-runs of Table 5); it records readout phenotypes, not circuit types, and repeated seeds across retries are not
 independent (Table 5). All 41 PART stages accept the hand-built compare/subtract substitute (division B 8-bit 10, wide 10; square root
 B 21 over five schedules). Solved square root B TRAIN weights were unavailable (not tested).
 

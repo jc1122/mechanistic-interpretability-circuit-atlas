@@ -9,7 +9,7 @@ generalisation. The task is partly solved. The closed form status is partial: th
 network's own accuracy (.95–1.00), which is supported by substitution with the complement not tested, and the earlier layers of the
 networks trained from scratch have no closed form.
 
-| | |
+| Fact | Value |
 |---|---|
 | Task | Add two 3-digit numbers in base 10 or base 16 (`a+b=` → a + b), answer only, with carry tokens, or with column sums first |
 | Input → output example | Base 10, in words: 345 + 678 → 1023, written in answer only as the four sum digits 1 0 2 3 |
@@ -95,7 +95,7 @@ Format C. A chain head attends to the first d_j ≠ b−1; the L2 MLP computes d
 The networks are exact for n = 1..12 with margin 30.
 
 ```mermaid
-flowchart LR
+flowchart TD
     P["Prompt a+b= and output so far"] --> POS["L0 and L1: positions r, anchor on +, thermometers T and VT"]
     subgraph FA["Format A: answer only"]
         A1["index heads copy a_i and b_i"] --> A2["L2 MLP: EQ = [a + b != b-1], GEN = [a + b >= b]"]
@@ -176,7 +176,8 @@ The PART stage was replaced by its mean output given s (in C, given the phase an
 (.95–1.00; retry b16 B seed 7 .69). The sum digit is s mod b and the carry [s ≥ b]. For TRAIN, the last MLP replaced by f(sum) gives
 .88–.99 in B and .50–1.00 in the retry A and C networks (≥ .99 in about half); the earlier layers have no closed form.
 
-Written on the actual internal channels, with the other stage outputs zero, the PART closed forms are: A `Y[(s mod b) + 2] = 1`; B
+Written on the actual internal channels, with the other stage outputs zero, the PART closed forms are (Y is the stage's output over the
+vocabulary, where index v + 2 is the digit v, after BOS and unk): A `Y[(s mod b) + 2] = 1`; B
 `DIG = s mod b`, `MAJ = [s ≥ b]`; C `Y[round(X1 + X2) + 2] = 1` before the phase token and `Y[(round(X3 + CY) mod b) + 2] = 1` after.
 Replacing only the learned stage gives 1.000 in 80/80 PART snapshots (40,960/40,960 pairs), failed seeds included (for those a repair,
 not their mechanism). In b16 B PART it also lifts 4 / 6 digits from .066 / .032 to 1.000, so the length failure is in the learned stage,
@@ -207,7 +208,7 @@ stated, ablation numbers are accuracy retained, and layers are zero-based. s = r
 | b16 B TRAIN seed 4: MLP3 (231 neurons) | sum-coded digit lookup | ablation .001; substitution .993 = baseline, agreement .998 (not identity) |
 | b10 C TRAIN retry seed 0: L3H0 | one head reused: b digits, then written column sums | head ablation .000; joint six-query hard substitution 1.000 |
 
-In b16 B PART the carry is analog: MJP = a + b·s + c·ReLU(s − 15) + d·ReLU(s − 16) on the live predecessor s, with for example (a, b, c,
+In b16 B PART the carry is analog: the carry-out value (MAJ in HAND), written MJP, is MJP = a + b·s + c·ReLU(s − 15) + d·ReLU(s − 16) on the live predecessor s, with for example (a, b, c,
 d) = (−2.0873, .1209, .0511, −.1162) at the first carry query. It scores 1.000 on 1,024 pairs, while a canonical 0/1 output gives .222.
 It is not length-general.
 
@@ -221,7 +222,7 @@ Sizes are local minima of a search, not verified circuits: b10 A TRAIN seeds 1 /
 exact .980 / .985 (failing the 99% bar); HAND under the same procedure keeps 3 + 22 (.992).
 
 ```mermaid
-flowchart LR
+flowchart TD
     E["digit embeddings: Fourier k = 1, 2, 3"] --> M0["MLP0: position and token table"]
     M0 --> ST["MLP1, MLP2 and heads: carry spread over several components, no lookahead head"]
     ST --> M3["last MLP: lookup on the column sum or on the digit pair"]

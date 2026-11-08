@@ -10,7 +10,7 @@ networks trained from scratch memorised the training pairs (train 1.0, test ≤ 
 only no). The closed forms reproduce the networks, but an audit on 2026-11-07 found that none passes the full bar, the audit's
 acceptance rule (Section 5.1), so they are sufficient readouts and not verified mechanisms.
 
-| | |
+| Fact | Value |
 |---|---|
 | Task | Multiply two 6-bit numbers given as `a*b=`, answer only or with a scratchpad of running sums S_0 .. S_5 |
 | Input → output example | Answer only: a = 5, b = 3 → `000000001111` (15) |
@@ -44,7 +44,7 @@ and TRAIN (all weights trained from scratch).
 ### 2.1 Architecture
 
 All networks are GPT-NeoX-shaped with 4 layers × 12 heads, d_model 384, d_head 32, MLP 256 ReLU, no LayerNorm and no positional
-encoding (NoPE). The vocabulary has 7 tokens (BOS, unk, `0 1 * = ;`). Layers are numbered from zero, so L3 is the last layer.
+encoding (NoPE). The vocabulary has 7 tokens (BOS, the beginning-of-sequence token; unk, the unknown token; `0 1 * = ;`). Layers are numbered from zero, so L3 is the last layer.
 TRAIN trains all 3.2M weights.
 
 ### 2.2 Frozen hand-built network and trained part
@@ -92,7 +92,7 @@ Format A (exact for n ≤ 6, 14 heads). Twelve [index heads](../GLOSSARY.md#hand
 the operand bits a_i and b_j. The L2 MLP has 36 AND neurons, relu(a_i + b_j − 1), each of which outputs 1 only when both bits are 1,
 and their outputs are summed into the low partial-product sum LK_k = Σ_{i+j≤k} a_i b_j 2^{i+j}. The L3 MLP writes the
 product bit p_k = parity(⌊LK_k / 2^k⌋) as a gated staircase of 132 neuron pairs (the parity staircase),
-relu(LK_k − m2^k + 1 − M(1−E_k)) − relu(LK_k − m2^k − M(1−E_k)) with M = 2^13, where E_k gates the pair to output bit k. This handles
+relu(LK_k − m2^k + 1 − M(1−E_k)) − relu(LK_k − m2^k − M(1−E_k)) with M = 2^13, where m numbers the thresholds and E_k gates the pair to output bit k. This handles
 all partial products at once in one threshold layer. The scaled variant writes E_k as 1024 E_k plus a constant dimension 1024, so the
 same staircase has O(1) weights (gate 8, constant coefficient ≤ 12); it is still exact.
 
@@ -102,7 +102,7 @@ conjunctions over the six inputs (x, b_j, a, x', a', s'), as the HAND neuron n25
 carry chain: each scratchpad step is one binary-adder column.
 
 ```mermaid
-flowchart LR
+flowchart TD
     P["Prompt a*b= and scratchpad so far"] --> POS["L0 and L1: positions, anchor on *"]
     subgraph FA["Format A: answer only"]
         FA1["12 index heads fetch a_i and b_j"] --> FA2["L2 MLP: 36 AND neurons relu(a_i + b_j - 1)"]
@@ -223,7 +223,7 @@ bottleneck, consistent with Section 4.2. The network's MLP3 neurons n193 and n17
 alternating thresholds; one hypothesis is misplaced or cancelling hinges.
 
 ```mermaid
-flowchart LR
+flowchart TD
     T["scratchpad tokens so far"] --> H6["L3H6: soft previous-sum and context retrieval"]
     T --> F["inputs of the key: x, a, b_j and x', a', s'"]
     F --> C["carry c = [x' + b_j a' - s' >= 1]"]

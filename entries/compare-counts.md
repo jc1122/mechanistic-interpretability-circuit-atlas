@@ -8,7 +8,7 @@ fractions) learned a linear comparator in c and L with a slope ratio of −.56 t
 .91–.96; `=` never generalises, 0 correct test cells in 30/30). The closed form, a linear rule, is partial: it is supported by
 substitution (accuracy .93–.96, agreement .92–.94), and the complement was not tested.
 
-| | |
+| Fact | Value |
 |---|---|
 | Task | Say whether a's or b's are more frequent in a line of up to 45 letters, or `=` if they tie |
 | Input → output example | A line of 20 letters with 12 a's and 8 b's → `a` |
@@ -94,7 +94,7 @@ published on Hugging Face at [huggingface.co/jc1122/circuit-atlas-nets/tree/main
 
 ## 3. Hand-built solution
 
-The hand-built network counts with a single attention head, decodes the count with step functions and compares with two step units on
+The hand-built network counts with a single attention head, decodes the count with step functions and compares with three step pairs, two of which act on
 the difference of the counts (Figure 1).
 
 The count is computed by layer 4, head 1 of m2. Its query is the question letter, supplied by an earlier has-letter head. Every key
@@ -114,7 +114,7 @@ therefore the default output, what remains when neither difference unit fires, a
 Appendix A.
 
 ```mermaid
-flowchart LR
+flowchart TD
     P["Prompt: shuffled line of a's and b's"] --> H["m2 layer 4 head 1: uniform attention over the c matches and the newline"]
     H --> X["X = 1/(c+1)"]
     P --> R["m2 position scalar R, gives L"]
@@ -154,7 +154,7 @@ fraction .8 (Table 2). This is neither [grokking](../GLOSSARY.md#counting-result
 | Control: scalar-only menu | 3 per fraction | | .97–.99 | .17–.44 |
 
 All 30 networks fall into one [circuit type](../GLOSSARY.md#counting-results) (30/30): a linear comparator with a tilted boundary, and
-`=` memorised. The a − b logit difference is 83–87% linear in (c, L), with an L/c slope ratio of −.56 to −.64 where the exact rule is
+`=` memorised. The a − b logit difference is 83–87% linear in (c, L), with an L/c slope ratio (β/α in Section 5) of −.56 to −.64 where the exact rule is
 −.50; the errors sit at |2c − L| ≤ 2. The `=` class never generalises: 0 correct `=` test cells in 30/30.
 
 At fraction .4 the thermometer code of c is the main input: ablating it lowers test accuracy to .59, while the one-hot and the scalar
@@ -177,7 +177,7 @@ very negative on the held-out ones (margin over the best other class +13.7 on tr
 is a per-cell lookup on the one-hot codes, not a function of 2c − L.
 
 ```mermaid
-flowchart LR
+flowchart TD
     TU["thermometer of c (tu), main input"] --> D["a - b logit difference: alpha c + beta L + gamma, beta/alpha -.56 to -.64"]
     LB["L blocks (ov, tv, sv)"] --> D
     D --> AB["answer a or b; boundary tilted away from 2c = L"]

@@ -10,7 +10,7 @@ partial: the trained update of the frozen-parts network is replaced by a three-i
 supported by substitution with zero and shuffle controls open and the complement not tested; the solved from-scratch networks have no
 substitution test yet.
 
-| | |
+| Fact | Value |
 |---|---|
 | Task | Shortest-path distance (0–10) between a start and a target square on a four-neighbour 6×6 maze with at most 14 walls |
 | Input → output example | Start and target side by side with no wall between them → 1 (in words; square tokens encode coordinates) |
@@ -92,7 +92,7 @@ archived, being superseded by run 2.
 ## 3. Hand-built solution
 
 The hand-built T network runs one BFS step per map and writes it out (Figure 1). Layer 0 binds each map cell to its step clock. Jump
-heads fetch the north, east, south, west and self cells of the previous map, with the BOS token as an attention sink at the borders.
+heads (attention heads that fetch a cell of the previous map) fetch the north, east, south, west and self cells of the previous map, with the BOS token as an attention sink at the borders.
 Three neurons compute the update: a wall square stays a wall, and any other square becomes `OR(self, N, E, S, W)`, so a square is
 reached if it or a neighbour was reached. The hinge rows over (N, E, S, W, self, wall) are (1, 1, 1, 1, 1, −5) with biases 0 / −1, and the reached outputs are +1 / −1;
 a wall copy and an unreached bias 1 complete the three channels. CHECK reads the target cell, and a router emits the next step index or
@@ -104,7 +104,7 @@ Both were verified on stratified full-network tests plus exhaustive local and ti
 184/184 cases and A on 41/41, with a minimum logit margin of 30.
 
 ```mermaid
-flowchart LR
+flowchart TD
     P["Maze tokens and the previous reached-set map"] --> L0["Layer 0: bind each map cell to its step clock"]
     L0 --> J["Jump heads: fetch N, E, S, W and self of the previous map, BOS sink at borders"]
     J --> U["Layer-2 MLP update: wall ? wall : OR(self, N, E, S, W)"]
@@ -160,7 +160,7 @@ mazes but .94–.97 on the 32-maze diagnostic batch, so "solved" means the ≥ .
 ### 5.1 Closed form of the PART update
 
 The PART update has a closed form that was accepted at the substitution bar. The six fetched inputs are rounded and clamped to bits r;
-then s = Σr − 5w and a = ReLU(s) − ReLU(s − 1), and the whole MLP2 output is replaced by Y = (1, a, w)·B in the three state channels
+then s = Σr − 5w, where w is the wall bit, and a = ReLU(s) − ReLU(s − 1), and the whole MLP2 output is replaced by Y = (1, a, w)·B in the three state channels
 (zero elsewhere). B (9 scalars) is fitted to the MLP's outputs on all 64 local interfaces, never to maze answers. In all three seeds,
 best and final, exact match stays at 176/176 (from 176/176 native), with agreement 176/176 against a bar of ≥ .99 × native. This is
 output equivalence on valid inputs: the learned local argmax matches the hand-built rule on 48/48 valid tuples (53 / 59 / 53 of all 64
@@ -187,7 +187,7 @@ high-rank code unrelated to the hand-built basis (hand-built CKA, a similarity o
 | A run 1 | decoded-distance tent | 156 → 37, 149 → 56, 156 → 32 |
 
 ```mermaid
-flowchart LR
+flowchart TD
     subgraph PT["PART T: substituted update"]
         IN["Six fetched inputs N, E, S, W, self, wall, rounded to bits r"] --> S["s = sum r - 5w"]
         S --> A["a = ReLU(s) - ReLU(s - 1)"]

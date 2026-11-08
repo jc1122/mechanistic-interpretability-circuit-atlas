@@ -9,7 +9,7 @@ the addressing frozen from the hand-built network, one masked MLP learned the lo
 MLP2 = k·a on the two observed bits keeps 1.000 on 40/40 snapshots when substituted, with the complement not tested; from scratch
 there is only a numerical compression, checked in 4 of 6 solved seeds.
 
-| | |
+| Fact | Value |
 |---|---|
 | Task | Differentiate Σ a_k x^k (degree 3) term by term, one token per integer |
 | Input → output example | Answer only: `BOS 5 4 1 1 =` (coefficients a_0 to a_3) → `4 0 2 1 3 2`, the pairs (k·a_k, k−1) |
@@ -90,7 +90,7 @@ set, sum a·2^j into S = k·a_k, and an integer read-out with logits 30(2vS − 
 2, stratified at 3–6) and on 217 primitive products, with minimum margin 30.0 (`A`) and 29.9998 (`T`).
 
 ```mermaid
-flowchart LR
+flowchart TD
     P["Prompt: BOS a0 ... a_d ="] --> U["uniform BOS attention: P = 1/(r+1)"]
     U --> HG["reciprocal hinges: r/64, r^2/4096"]
     HG --> AN["anchor on = and step thresholds: term, phase, multiplier bits, index"]
@@ -131,7 +131,7 @@ Neither format won uniformly: at width 1 the scratchpad solved 1/3 against 0/3 f
 Circuit types were assigned by donor-flip query patches on the copied a_k. The products read the trace: for k = 2 and 3, the trace
 flip is .56–1 against ≤ .14 for the input. PART has one [circuit type](../GLOSSARY.md#counting-results), a masked bit-gate
 multiplier, in 10/10 seeds per format. In the TRAIN `T` final, 4 of the 6 solved seeds were analysed (the best snapshot has the same
-type as the final one), and they split by copy routing: split copies (a_1 by H1, a_2 and a_3 by H2) 1/4; first copy by H2, later
+type as the final one), and they split by copy routing (H1 and H2 are the attention heads of layers 1 and 2): split copies (a_1 by H1, a_2 and a_3 by H2) 1/4; first copy by H2, later
 copies by H1 1/4; H1 copies with H2 mixed or idle 2/4. The screens add early-fetch and late-fetch types in format `A` and a late-copy
 type in format `T`, so there is no single TRAIN circuit.
 
@@ -172,7 +172,7 @@ together, seed 7 keeps .997/.998, seed 8 .997/1, seed 10 .9985/1 and seed 12 1/1
 of 31488 scalars. In the screens, 12/12 substitutions kept ≥ .99 × native. This is a compression and not a recovered power-rule algebra.
 
 ```mermaid
-flowchart LR
+flowchart TD
     P["Prompt: BOS a0 ... a_d ="] --> H1["H1: copies a_k in some seeds"]
     P --> H2["H2: copies a_k in some seeds"]
     H1 --> C["trace slot: copied a_k"]

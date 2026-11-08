@@ -24,13 +24,13 @@ correctly. Equality is exact only when it is built as "neither greater nor less"
 
 ### Exact hand-built circuits need full-precision matrix multiplication
 
-*Verified on binary addition and base conversion.* With TF32 tensor-core matrix multiplication (a 10-bit mantissa), hand-built adders
+*Verified on binary addition and base conversion; [binary-addition](entries/binary-addition.md) (adders); [METHODS §7](METHODS.md#7-small-two-layer-networks-base-conversion-and-other-whole-network-entries) (converters, 2% exact).* With TF32 tensor-core matrix multiplication (a 10-bit mantissa), hand-built adders
 lose exactness from 7 bits and the converters drop to 2% exact; in full fp32 they are exact. Large hand-set weights and sharp
 thresholds need full precision, so results on frozen hand-built parts are reported in fp32.
 
 ## Scratchpads and length
 
-### A scratchpad shrinks the hand-built circuit by about an order of magnitude
+### A scratchpad shrinks the hand-built circuit (about an order of magnitude for long division)
 
 *Verified on the hand-built networks, ablation size on 500 inputs;
 [long-division-square-root](entries/long-division-square-root.md), [multiplication](entries/multiplication.md).* Long division needs
@@ -71,7 +71,7 @@ than the optimiser (verified on decimal to binary only).
 
 ### Trained networks carry the hand-built variable but are 50–100x larger
 
-*Verified, 36 of 40 hex-to-binary networks; [base-conversion](entries/base-conversion.md).* Replacing the residual after layer 1 by
+*Verified, measured on all 40 hex-to-binary networks (36 pass the substitution); [base-conversion](entries/base-conversion.md).* Replacing the residual after layer 1 by
 its fit on HAND's one-hot of the source hex digit keeps exact match at 1.00, yet the networks use 4–8 heads and 310–490 neurons where
 the hand-built network uses 1 head and 4–7 neurons. The substitution supports the variable; a joint scrub of the nibble-only story
 fails (.556 / .923), so the circuit is not verified.
@@ -99,8 +99,8 @@ only, trained from scratch on 8-bit dividends (1920 training pairs), solved 0/10
 0/10). The prediction written before the rerun ("answer only stays below .5: no scratchpad") failed. Long-hand square root with the
 answer only rose from .10–.28 at 8 bits (128 numbers) to .981–.993 at 14 bits (11468 numbers, 90x) in all 10 seeds (2/10 ≥ .99), and
 division with the steps written out from .53–.69 to .877–.999 (7/10 ≥ .99). The same holds for an automaton: answer-only parity of a
-word (lengths 1–16) trained on 20k fixed words stays at chance (.501–.524, 0/10), while with fresh words in every batch it is exact in
-10/10, but only in the training range (32 symbols .34–.55, 64 at chance).
+word (lengths 1–16) trained on 20k fixed words stays at chance (.50–.52, 0/10; [dfa-group-automata](entries/dfa-group-automata.md)), while with fresh words in every batch it is exact in
+10/10, but only in the training range (parity at 32 symbols at chance).
 
 ### The stage on frozen parts fails the same task on threshold precision
 
@@ -161,10 +161,10 @@ terms.
 
 ### Failed networks trained from scratch still use the hand-built variables
 
-*Verified on binary addition, decimal and hexadecimal addition and long division and square root; 981 networks across tasks.* A
+*Verified on binary addition, decimal and hexadecimal addition and long division and square root; 981 networks across tasks; [binary-addition](entries/binary-addition.md), [decimal-hex-addition](entries/decimal-hex-addition.md), [long-division-square-root](entries/long-division-square-root.md).* A
 variable counts as used when swapping it between two inputs (by linear interchange, or by DAS where interchange reads low) flips the
 answer in at least half of the cases. Failed against solved networks, 116/127 against 135/166 variable tests pass in binary addition,
-185/204 against 155/156 in decimal and hexadecimal addition, and 39/45 against 10/10 in division and square root. Removing the probed
+185/204 against 155/156 in decimal and hexadecimal addition, and 39/45 against 10/10 in division and square root. The counts are pooled over all diagnosed networks of the three tasks; the entries' diagnostics tables give the per-network results. Removing the probed
 variable subspace breaks both groups alike, and keeping only that subspace preserves both. Yet the failed networks end at test .33,
 .04 and .28. The networks fail to generalise, not to compute the variable. Where a variable really is missing, the tools localise it:
 in answer-only binary multiplication the middle partial-product bits, which have the largest fan-in, are the ones not fetched (use .91
@@ -172,9 +172,13 @@ for the first bit, .52 for the eighth).
 
 ### Same variables, different wiring
 
-*Verified on binary addition and decimal and hexadecimal addition; edge attribution trusted in 155/184 networks.* Networks trained from
+*Verified on binary addition and decimal and hexadecimal addition; edge attribution trusted in 155/184 networks;
+[binary-addition](entries/binary-addition.md), [decimal-hex-addition](entries/decimal-hex-addition.md).* Networks trained from
 scratch share only 6–9% of their top circuit edges with the hand-built network (Jaccard), solved and failed alike, and no rotation or
-permutation maps their weights onto it (mean overlap .03–.12); networks trained on frozen hand-built parts share 79–100%. Training
+permutation maps their weights onto it (mean overlap .03–.12); networks trained on frozen hand-built parts share 79–100%. Per task,
+the edge Jaccard is, from scratch, 0–.15 in binary addition and 0–.13 in decimal and hexadecimal addition; on frozen
+parts 1.0 in binary addition and .78–.80 (formats A and B) and 1.0 (format C) in decimal and hexadecimal addition. The pooled 6–9%,
+79–100%, 155/184 and .03–.12 come from the analysis of all diagnosed networks and are not yet in the entries. Training
 recovers the hand-built variables but not its heads, edges or weights.
 
 ### Each seed trained from scratch finds its own solution; seeds on frozen parts share one

@@ -9,7 +9,7 @@ task is partly solved (scratchpad G from scratch, 7/7 at ≥ .99 but none exact)
 and the TRAIN G source-square rule (7/7) keep accuracy under substitution, with the complement not tested, while an additive model of
 how G decodes the destination square fails (from .995 to .34).
 
-| | |
+| Fact | Value |
 |---|---|
 | Task | In a king + rook vs king position with white to move, write the move chosen by a fixed 8-rule fence policy (not the tablebase-optimal move) |
 | Input → output example | In words: the 64-square board with the three pieces → the policy's move as its from square and to square (answer only) |
@@ -30,7 +30,7 @@ and FAR. Integer keys break ties between candidate moves. The policy is not opti
 position in at most 48 moves (mean 24.1) against a mean DTM of 9.86.
 
 An output counts as correct on exact match of the whole [teacher-forced](../GLOSSARY.md#task-formats) output. Length generalisation
-does not apply, because the board is fixed. Games were played greedily from 512 held-out starts with a 60-move cap, against tablebase
+does not apply, because the board is fixed. Games were played greedily from 512 held-out starts with a 60-move cap, against a tablebase defender (one that plays optimally from an exhaustive endgame table)
 and random defenders, with legality checked by python-chess ([Fiekas, n.d.](#references)).
 
 *Table 1. Output formats.*
@@ -91,7 +91,7 @@ to = argmax_t ReLU(10000 g_p + 10000 m_pt + 10000 P_to − 64 key_pt − 20000 �
 so the smallest key among the active rule's candidates wins. The network writes 0 wrong tokens on all states.
 
 ```mermaid
-flowchart LR
+flowchart TD
     P["Piece one-hots on 64 squares"] --> H["1 counting head and 3 gather heads"]
     H --> F["Fence frame from the piece coordinates"]
     F --> M["Per rule p: candidate mask m_pt and keys key_pt"]
@@ -129,7 +129,7 @@ seeds (none exact), with a win rate against the tablebase defender of .85–1.0.
 Scratchpads learn earlier and play better. Fresh positions at every step give no memorisation phase, unlike the grokking runs of
 [Power et al. (2022)](#references).
 
-In the 120k G final, best test is .993–.998 and final test .990–.997 (7/7 ≥ .99, 0 exact). Test accuracy first passed .9 at
+In the 120k G final (seeds 0–2 and 6–9; seeds 3–5 never finished), best test is .993–.998 and final test .990–.997 (7/7 ≥ .99, 0 exact). Test accuracy first passed .9 at
 63.5–75.8k steps. Per position, box, area and flag are 1.0, phase .996–.999, from .9995–1.0 and to .996–.998. Format C reached
 .985–.991, with its errors moved into the candidate list; A reached .968–.976.
 
@@ -184,7 +184,7 @@ test the source rule: always copying the rook gives .869–.875, and a shuffled 
 square stays open, because the additive model fails (Figure 2).
 
 ```mermaid
-flowchart LR
+flowchart TD
     B["Board tokens"] --> M0["MLP0: kings as file and rank"]
     M0 --> L5["Layer-5 heads"]
     L5 --> M5["MLP5: decodes to, not additive in HAND variables"]

@@ -10,7 +10,7 @@ reliably to longer inputs from scratch. The task is partly solved (scratchpad fr
 scratch 2/3). The closed form is partial: for frozen-part scratchpad seeds 0–2 an eight-ReLU table keeps 11,587 of
 11,587 rows (supported by substitution; complement not tested; seeds 3–9 lack matched zero controls), and there is none from scratch.
 
-| | |
+| Fact | Value |
 |---|---|
 | Task | Remainder of an n-bit string N (n 8/9/10) divided by a monic degree-4 divisor D over GF(2); answer only or a per-bit scratchpad |
 | Input → output example | Answer only: `BOS 10000000 / 10001 =` → `1000` (x^7 mod x^4 + 1 = x^3) |
@@ -84,7 +84,7 @@ divisor, step functions whose alternating output gives the parity of a sum of in
 (n ≤ 6 exhaustive, n 7–12 stratified over all D), with margin 30.
 
 ```mermaid
-flowchart LR
+flowchart TD
     P["BOS N / D = and scratchpad so far"] --> HT["T heads: fetch shift bit X, input bit A, divisor bit DB, quotient bit QB"]
     HT --> ST["T layer-2 MLP: r = shift r, append a, XOR q times D"]
     ST --> YT["quotient bit and 4 remainder bits per step"]
@@ -148,7 +148,7 @@ patching restores it 1 / 1. Native donor-path tests agree on 6,155/6,155 T and 2
 substitution and the status is partial.
 
 ```mermaid
-flowchart LR
+flowchart TD
     subgraph TT["TRAIN T, 3/3 seeds"]
         I["input, divisor and previous state"] --> M1["MLP"]
         M1 --> H["head"]
@@ -207,7 +207,7 @@ and the low ten bits only, which is why unseen D and n 12 fail.
 | TRAIN A s2 | 1 / 1 | 16–18/25–28; 4/4 | .74 / .63–.68 (4) | .85–.99 → 1; .98–1 / .07–.08 | MLP3 1.03 / .45–.47 | .83–.86; .03 | 28–29; ≤ .46 |
 | TRAIN A s0 (failed) | .988 / .988 | 20–21/26; 4/4 | .78 / .68–.70 (4) | 1 → 1; .98 / .09 | MLP3 1.01 / .73–.76 | .74–.83; .10 | 40; ≤ .45 |
 
-Key: E = exact; H = used heads, M = used MLPs (mean/zero ablation > 5 pp); probe = best linear R² at the layer in parentheses (T:
+Key: E = exact; H = used heads, M = used MLPs (mean/zero ablation > 5 pp; each cell gives the mean-ablation count, then the zero-ablation count, and the zero counts are the head counts quoted in Section 4); probe = best linear R² at the layer in parentheses (T:
 shift, divisor, quotient, AND, next; A: count, next); the Inter column gives the interchange flip, then the distributed alignment search (DAS) flip; R / X =
 restricted / excluded exact on the probe subspace; edges ρ = EAP-IG exactness check, J = edge Jaccard against HAND; r99 = last-layer
 residual rank; JS = attention divergence to HAND. Terms are defined in the [glossary](../GLOSSARY.md#analysis-measures).

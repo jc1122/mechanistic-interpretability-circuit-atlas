@@ -10,14 +10,14 @@ copied between sections. Worked examples: [count-mod-5](entries/count-mod-5.md),
 <Lede: 3-5 sentences of prose. What was studied (task, model, what was trained); the main finding with its seed count; the verdict
 (Solved | Partly solved | Unsolved) and the closed-form status, with any audit caveat in its own words.>
 
-| | |
+| Fact | Value |
 |---|---|
 | Task | <one sentence> |
 | Input → output example | <small example, checkable by eye> |
 | Model | <architecture in one line; which part is trained> |
 | Rungs and seeds | <HAND / PART / TRAIN cells with seeds per cell; retries> |
 | Closed form status | <verified | partial | sufficient readout only | rejected | none> (<deciding number>; <audit caveat>) |
-| Status | <Solved | Partly solved | Unsolved> (<cell, n/N>); last run <YYYY-MM-DD>[; audit <YYYY-MM-DD>] |
+| Status | <Solved | Partly solved | Unsolved> (<cell, n/N>[; <cell, n/N>]); last run <YYYY-MM-DD>[; audit <YYYY-MM-DD>] |
 | Weights | [Hugging Face: <folder>](<Hugging Face folder URL>) |
 | Reproduce | <[Commands](#24-reproduction), run from `code/`> or <Not available yet: training code for this task is not yet in `code/`> |
 
@@ -79,10 +79,16 @@ interchange, edges), per-seed data, with a key under each table.
 2. The example is copied from Section 1 if it gives one; otherwise it is built from the stated prompt format and label rule, with
    values small enough to check by eye. If the format is not fully specified (operand bit order, separators), give the example in
    words or numbers, not as a token string; if even that is not possible, write "see Section 1".
-3. Verdict words: *Solved* = the entry's final cell meets its own criterion in all its seeds, or the entry calls it solved; *Partly
+3. Verdict words follow the cells, never the closed-form status. The headline cell is the one the lede names as the main result.
+   *Solved* = the entry's final cell meets its own criterion in all its seeds, or the entry calls it solved; *Partly
    solved* = some cells, seeds or ranges solved, others not; *Unsolved* = the headline cell fails. The parenthesis names the cell and
    seed count as the entry states it. The closed-form word follows the entry; if the entry carries an audit caveat, the caveat wins.
-4. Weights: copy the entry's Hugging Face URL (folder names do not always match the entry name). Reproduce links to Section 2.4 only
+3a. Closed-form words: *verified* only under the acceptance rule in STYLE.md (substitution and complement resample both keep accuracy).
+   *partial* = substitution keeps accuracy but the complement was not tested, or only one rung or part is covered. *sufficient readout
+   only* = substitution keeps accuracy but the entry's audit (its check of the closed form against the acceptance rule) found the full
+   bar (substitution plus complement resample) not passed. *rejected* = tested and failed. *none* = not
+   tested. The word starts with a capital letter in the row. The audit date in Status is the date of the entry's audit, left out when the entry records none.
+4. Weights: copy the entry's Hugging Face URL (folder names do not always match the entry name). If the entry gives no URL, write "Not available yet" and list it in your report. Reproduce links to Section 2.4 only
    if a runnable command exists.
 
 ## Index and README lines
@@ -94,12 +100,14 @@ README line:
 ```
 - [<entry>](entries/<entry>.md)<repro>: <main result, at most 15 words>
 ```
-`<repro>` is ` ⟳` when the entry's Reproduce row links a `python run.py ...` command that runs from `code/`, else empty. Main result in plain
+`<repro>` is ` ⟳` when Section 2.4 gives a `python run.py ...` command that runs from `code/` (the Reproduce row then links it), else
+empty. Main result in plain
 words, no format letters; lead with the circuit, then the contrast ("...; answer only never trains"); at most one seed count.
 
 INDEX row:
 ```
-| [<entry>](entries/<entry>.md) | <task, at most 8 words> | <circuit found, at most 15 words> | <[RUNG ]k/n[, RUNG k/n][ *(screen)*]> | <✓|partial|readout only|✗|—>[ <at most 6 words>] | <code|weights> |
+| [<entry>](entries/<entry>.md) | <task, at most 8 words> | <circuit found, at most 15 words> | <[RUNG ]k/n[ criterion][ (note)][; RUNG k/n][ *(screen)*]> | <✓|partial|readout only|✗|—>[: <at most 6 words>] | <code|weights> |
 ```
 Every number in both lines occurs in the entry; the closed-form word follows the entry's own audit caveat. Format letters stay out
-of both lines.
+of both lines. Closed-form column symbols: verified = ✓, partial = partial, sufficient readout only = readout only, rejected = ✗,
+none = —. Reproduce column: code when the Reproduce row links a command, else weights (symbols are defined in the INDEX.md header).

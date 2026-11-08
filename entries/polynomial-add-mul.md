@@ -3,13 +3,13 @@
 This entry studies how small transformers add and multiply two degree-3 integer polynomials given one token per signed coefficient,
 either writing the result directly (answer only) or first writing a trace of partial results. Addition was learned in all 40/40
 final networks, both by a single MLP trained on frozen hand-built parts and by networks trained from scratch, in both formats; the
-partly trained stage computes the hand-built sum up to one free logit scale per row type. Multiplication was solved in no setup: the
+partly trained stage computes the hand-built sum up to one free logit scale per row group. Multiplication was solved in no setup: the
 signed product was never built to unit resolution, and even with the hand-built product gates frozen, 3/3 seeds scored
 .998–.999 exact match. The task is partly solved (addition 40/40; multiplication 0/3 in the screenings, with no final run). The closed
 form is partial: the addition closed form of the partly trained networks keeps exact 1.0 in 40/40 networks when substituted, with the
 complement not tested; from scratch, the trace closed form was rejected and the answer-only decoder is lossy.
 
-| | |
+| Fact | Value |
 |---|---|
 | Task | Add or multiply two degree-3 integer polynomials, one token per signed coefficient |
 | Input → output example | Addition, answer only: `BOS 1 2 0 0 + 3 0 1 0 =` → `4 2 1 0` (coefficients a_0 first: (1, 2, 0, 0) + (3, 0, 1, 0) = (4, 2, 1, 0)) |
@@ -98,7 +98,7 @@ The sizes in heads and neurons are 4+48 for addition `A`, 4+111 for addition `T`
 multiplication `T`. The networks are exact on 17,676 stratified sequences (degree 0–6, |coefficient| ≤ 15), with minimum margin .9985.
 
 ```mermaid
-flowchart LR
+flowchart TD
     P["Prompt: a_0..a_3, + or *, b_0..b_3, ="] --> F["reciprocal-position frame"]
     F --> H["quadratic index heads fetch a_k and b_k, or shifted a, b_j and the previous coefficient"]
     subgraph ADD["Addition"]
@@ -185,7 +185,7 @@ For TRAIN, a fitted MLP2 decoder in format `A` scores .993–1.0 against the net
 `T` the closed form was rejected (.05–.59 against 1.0, seeds 0–2).
 
 ```mermaid
-flowchart LR
+flowchart TD
     P["prompt operands a_k, b_k"] -.->|"patching 0"| M
     W["written trace tokens a_k, b_k"] --> M["TRAIN T network: sum row read from the trace"]
     M --> C["written c_k"]

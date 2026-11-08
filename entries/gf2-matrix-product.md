@@ -9,7 +9,7 @@ later, in another code, and answer only also solved 10/10. Nothing generalises t
 cell); the closed form is partial, because it covers only the stage trained on frozen parts (substituted 1.0 = native in 20/20,
 zeroed 0, shuffled keys ≤ .002) and there is none for the networks trained from scratch.
 
-| | |
+| Fact | Value |
 |---|---|
 | Task | Multiply two 3×3 bit matrices over GF(2) (AND for products, XOR for sums); write the 9 answer bits or a trace of running parities |
 | Input → output example | In words: row (1, 1, 0) of A times column (1, 0, 1) of B gives running parities 1, 1, 1, so the entry of C is 1 |
@@ -22,9 +22,9 @@ zeroed 0, shuffled keys ≤ .002) and there is none for the networks trained fro
 
 ## 1. Task and data
 
-The target is C = A B over GF(2) with m = 3. The prompt is `B column-major ; A row-major =`, written as bits with `,` between groups.
+The target is C = A B over GF(2) with matrix size m = 3. The prompt is `B column-major ; A row-major =`, written as bits with `,` between groups.
 Two output formats were studied (Table 1). In the trace format, a [scratchpad](../GLOSSARY.md#task-formats) in which the network writes
-intermediate results before the answer, the running parity s_ij = s_i,j−1 ⊕ A_ij B_jk is written per column k, so that s_i2 = C_ik.
+intermediate results before the answer, the running parity s_ij = s_i,j−1 ⊕ A_ij B_jk is written per column k (the index j counts from 0), so that s_i2 = C_ik.
 Per seed, 100k training and 2k test pairs (A, B) were drawn disjointly at random from the 2^18 possible pairs; 38% of all pairs were
 seen in training. An output counts as correct only on exact match of all output tokens. Extra evaluations at m = 2, 4, 5 used 500
 random pairs each.
@@ -86,7 +86,7 @@ for each cell with tok1 ⊕ MA·MB = 1, writing Y1 − Y0, plus a Y0 bias neuron
 pairs at m = 2, every m = 3 pair, and 2000 random pairs at m = 4, 5.
 
 ```mermaid
-flowchart LR
+flowchart TD
     P["Prompt: B column-major ; A row-major = and trace so far"] --> L0["L0: position R, uniform head and 256 reciprocal neurons"]
     L0 --> L1["L1: 4 first/last heads; MLP gives SEG, G, J and SEGN, GN, JN"]
     L1 --> H0["L2H0: match SEG 1, G = GN, J = JN"]
@@ -120,7 +120,7 @@ Every cell solved 10/10, and the best snapshot equalled the final one in every c
 PART solved in 500 steps and forms one circuit type in 10/10 seeds: HAND's layer-2 fetch heads with a new layer-3 lookup. Diagnostics found only L2H0, L2H1 and
 MLP3 used in 10/10 seeds, with attention divergence (JS) 0 to HAND. TRAIN T [groks](../GLOSSARY.md#counting-results) (test accuracy
 rising after training accuracy) at 3–7.5k ([Power et al., 2022](#references)) and computes HAND's variables (the AND and the running
-parity s flip with interchange 1.0 at L4), but it builds a frame in L0–L2, fetches the operand bits with 2–7 L3 heads, one layer later
+parity s flip with interchange 1.0 at L4), but it builds a frame in L0–L2 (the position and current-token features that later layers read), fetches the operand bits with 2–7 L3 heads, one layer later
 than HAND, in another code, and computes XOR-AND in MLP2/MLP3 (9/9 diagnosed seeds use 2–7 L3 heads; the operand bits a and b are
 linear only at L4, with R² ≤ .39 at L3 in 8/9). TRAIN A solves 10/10 with no compact HAND counterpart (13 heads + 4 MLPs on seed 0).
 
@@ -145,7 +145,7 @@ fit_r2 < 0, the QK/OV comparison has mean_ov ≤ .05 and the edge Jaccard agains
 wiring. The TRAIN candidates of the earlier audit still lack the zero and shuffle controls.
 
 ```mermaid
-flowchart LR
+flowchart TD
     P["prompt and trace so far"] --> FR["L0 to L2: position and current-token frame"]
     FR --> H3["2 to 7 L3 heads: fetch A_ij and B_jk"]
     H3 --> X["MLP2 and MLP3: XOR-AND"]
@@ -176,7 +176,7 @@ of the early layers. The eight-cell (AND, prev, sep) macro holds in 1/10 TRAIN s
 
 It is supported that L0–L2 form a position and current-token frame (dense whole scrub 100 / 99.85–99.90%); the same account fails on
 the pruned circuits (69.2–71.0% seed 0, 88.7–89.8% seed 8), so it is not a complete minimal mechanism. By size, the joint
-mean-ablation local minima at ≥ 99% of native are seed 0 35 heads + 284 neurons and seed 8 33 + 272, against HAND 6 + 364; on fresh
+mean-ablation local minima at ≥ 99% of native are seed 0 35 heads + 284 neurons and seed 8 33 + 272, against the matrix-vector HAND 6 + 364; on fresh
 instances they give 98.70 / 98.45%, below 99%. Joint substitution on the pruned circuits gives seed 0 54.5% and seed 8 100%.
 
 Size transfer in the matrix-vector variant: count-parity and separator-relative tables restore A PART m = 6, 8 and T PART
