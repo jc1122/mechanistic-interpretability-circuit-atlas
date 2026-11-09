@@ -1,112 +1,54 @@
-# CRC remainder: the scratchpad step r = ((r ≪ 1) | a) XOR (q·D) is learned exactly (PART 10/10 in 500 steps, TRAIN 3/3); answer-only learns a divisor-conditioned parity readout that is not the hand-built one
-
-**Task.** GF(2) polynomial remainder N mod D: N has n input bits (n 8/9/10 in training and test), D is monic of degree 4 (16–31;
-D ∈ {19, 25, 28, 30} withheld). Prefix `BOS N_MSB…N_LSB / D_MSB…D_LSB =`. Answer-only A emits the 4 remainder bits; scratchpad T emits,
-after each input bit, the quotient bit and the full 4-bit remainder, with `;` between states (5n bits + n − 1 separators). This is
-algebraic division, not a standardised CRC encoding. Width-invariant (N, D) hash split 80/20 (no zero-padding leakage); fresh pairs every
-batch. Exact = whole teacher-forced output correct; test = mean over 512 held-out pairs at each of n 8/9/10 (1,536 per seed).
-**Status.** 2026-11-07. HAND A (4 layers) and T (3 layers) exact; PART T ten-seed final 10/10 (seeds 0–9); PART A, TRAIN A and TRAIN T at
-3 screening seeds. Open: ten-seed finals for PART A and both TRAIN cells; matched zero controls for the PART T closed form on seeds 3–9;
-the TRAIN A data retry (wider training widths, proposed, not run) and TRAIN A s2 checkpoint dynamics; greedy rollout; public code.
-
+# CRC remainder (GF(2) polynomial N mod D): local scratchpad step vs answer-only parity readout
+**Task.** N = n input bits (n 8/9/10), D monic degree 4 (16-31; D 19, 25, 28, 30 withheld); held-out (N, D) pairs by a width-invariant 80/20 hash. Answer-only A emits the 4 remainder bits; scratchpad T writes the quotient bit and the full remainder after each input bit (5n bits + n-1 `;`).
+**Status.** HAND A/T; PART T 10 seeds, PART A 3, TRAIN A 3; TRAIN T final run 10 seeds (plus 3 screening seeds); 30k budget; 2026-11-09.
 ## Summary
-With frozen hand-built routing, one trained MLP learns the hand-built one-step update on all ten seeds within 500 steps, and an
-eight-ReLU table with 8 fitted coefficients replaces it (11,587/11,587 rows kept). From scratch the scratchpad is also learned (3/3, first
-exact at 11.5–16k), with the quotient, shift and next-remainder variables causally used (interchange/DAS 1) but through an MLP → head →
-MLP path rather than the hand-built direct fetches. Answer-only A is learned too (PART 3/3, TRAIN 2/3), but every A net reads the
-remainder out only in the last layer through a final-MLP code that is not the hand-built parity staircase; the one failed TRAIN A seed
-misses 3/256 rows at one answer bit for two divisors. Neither format generalises reliably to longer inputs from scratch.
-
+With frozen hand-built routing the trained stage reproduces the hand-built circuit edge for edge in both formats (PART T 10/10, A 3/3; discovered circuit = HAND's, Jaccard 1) and a table in HAND variables replaces it exactly. From scratch, T learns the scratchpad step in 10/10 final seeds (3/3 screening) on a 13-71-edge circuit that contains HAND's edges (recall .67-1); its readout closed form and circuit pass both acceptance checks in 10/10. Answer-only A from scratch (2/3) uses about half of all edges, matches no HAND, and has no accepted closed form.
 ## Setup
-[METHODS.md](../METHODS.md) for shared conventions. AdamW lr 1e-3, wd .1, betas (.9, .98), warmup 1,000, cosine, clip 1, batch 256 fresh
-pairs, budget 30k, plateau 5,000 / minimum 22.5k, checkpoints every 2,500, eval every 500. PART fp32; TRAIN TF32 updates, fp32 evals and
-OOD. Success = test exact 1. GPU accelerators for training, CPU fp32 for re-scoring. Test pairs are regenerated from the seed (see
-`config.json`). Predictions were committed before any smoke run. Public reproduction code for this entry is pending; the archived
-networks re-score to the recorded accuracies.
-
+[METHODS.md](../METHODS.md) for shared conventions. AdamW lr 1e-3, wd .1, betas (.9, .98), warmup 1,000, cosine, clip 1, batch 256 fresh pairs per step, 30k budget, plateau 5,000 / minimum 22.5k, eval every 500. PART fp32; TRAIN TF32 updates, fp32 evals. GPU training, CPU fp32 analysis. Diagnostics on 256 n10 held-out rows; substitution on 3 x 512 rows (n 8/9/10). Public reproduction code is pending; the archived networks re-score to the recorded accuracies.
+Networks: [huggingface.co/jc1122/circuit-atlas-nets/tree/main/crc-remainder](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/crc-remainder) (safetensors, config.json, manifest with seed, rung, accuracy, sha256).
 ## Architecture as used
-GPT-NeoX, ReLU, no LayerNorm, no positional encoding, untied embeddings, vocabulary 7, context 128, d_model 128. A: 4 layers × 16 heads
-(d_head 8), MLP 1,024. T: 3 layers × 4 heads (d_head 32), MLP 256. PART trains only the stage MLP (A layer 3, T layer 2) with W_in masked
-to the hand-built input coordinates; all routing stays frozen HAND. TRAIN: same shapes, all weights from random init.
-Networks: [huggingface.co/jc1122/circuit-atlas-nets/tree/main/crc-remainder](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/crc-remainder):
-`hand_{A,T}`, `part_T_{best,final}_s0…9`, `part_A_{best,final}_s0…2` (the 4 stage-MLP tensors; insert into `hand_<fmt>`),
-`train_{A,T}_{best,final}_s0…2` (full state dicts), `config.json`, `manifest.json` (seed, steps, recorded and fp32 re-scored exact, sha256).
-
+GPT-NeoX, ReLU, no LayerNorm, no positional encoding, vocabulary 7, d_model 128. A: 4 layers x 16 heads (d_head 8), MLP 1024. T: 3 layers x 4 heads (d_head 32), MLP 256. PART trains only the stage MLP (A layer 3, T layer 2; W_in [d_mlp, 128] masked to HAND's read coordinates), all else frozen HAND. TRAIN: same shapes from random init. Files: `hand_{A,T}`, `part_{fmt}_{best,final}_s{i}` (stage tensors only), `train_{fmt}_{best,final}_s{i}` (screening, full), `train_T10_{best,final}_s{0-9}` (T final run, full) safetensors + config.json + manifest (seed, rung, accuracy, sha256): https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/crc-remainder
 ## Prediction before training
-Recorded before the runs: PART T by 2.5k — **confirmed** (500). PART A by 15k with poor unseen-D / n 12 — **confirmed** (5.5–7k; unseen D
-.09–.10). TRAIN T 3/3 by 15k — **mostly confirmed** (s0 took 16k). TRAIN A ≥ 1/3 by 30k — **confirmed** (2/3). TRAIN T fails n 12 —
-**confirmed** (0/3).
-
+Committed before any smoke run. T PART by 2.5k: held (500). A PART by 15k with poor unseen-D/n12: held. T TRAIN all seeds by 15k: solved 10/10 final, but first exact by 15k in only 2/10 (14-19.5k). A TRAIN >=1/3 by 30k: held (2/3). T TRAIN fails n12: held (max .26). Unseen D >= .95 in most seeds: held (7/10).
 ## Hand-built reference
-T (7 used heads + 236 neurons): heads fetch the previous state's shift bit, the input bit, the divisor bit and the quotient bit; one
-XOR-AND stage computes r = ((r ≪ 1) | a) XOR (q·D). A (18 heads + 344 neurons): GF(2) coefficient-parity staircases per divisor. Both exact
-on 9,568 sequences per format (n ≤ 6 exhaustive, n 7–12 stratified over all D), margin 30.
-
+T (3L, 7 used heads + 236 neurons): fetch the previous row's shift bit, input bit, divisor bit and quotient bit, then one MLP computes next = shift XOR (divisor_bit AND quotient) (10 stage neurons, W_in values +-1, -2). A (4L, 18 heads + 344 neurons): 12 L2 heads fetch input bits NB_i, 4 fetch divisor bits; MLP3 holds 262 parity-staircase neurons, one group per (D, bit j) reading S(D, j) = {i: bit j of x^i mod D} (W_in 1, gates 32). Exact on 9,568 sequences per format (n<=6 exhaustive, n7-12 stratified), margin 30.
 ## What training finds
-| Cell | Solved | Best → final test (s0 / s1 / s2) | First exact step (s0 / s1 / s2) | Stop |
-|---|---|---|---|---|
-| PART T, 10 seeds | 10/10 | 1 → 1 (all) | 500 (all) | solved 500 |
-| PART A | 3/3 | 1 / 1 / 1 → 1 / 1 / 1 | 5.5k / 5.5k / 7k | solved 7k |
-| TRAIN T | 3/3 | 1 / 1 / 1 → 1 / 1 / 1 | 16k / 13k / 15k | solved 18k |
-| TRAIN A | 2/3 | .9954 / 1 / 1 → .9935 / 1 / 1 | 26k (best) / 23k / 24.5k | plateau 28k |
-Scratchpad vs answer-only: PART 10/10 at 500 vs 3/3 at 5.5–7k; TRAIN 3/3 vs 2/3; the answer-only nets use about twice the heads (zero
-ablation 16 vs 7 PART, 25–32 vs 12 TRAIN). No classic delayed grokking: test ≥ .9 never lags train ≥ .99. Length: PART T s0–2 pass n 1–12;
-TRAIN T n 11 best → final .84 / .86 / .83 → .18 / .92 / .57 and n 12 ≈ 0; PART A n 12 seen-D ≈ 1/3, unseen D at n 10 .09–.10. Circuit
-types: PART T — one type (hand-built table) 10/10; TRAIN T — one type by diagnostics, 3/3; A (PART and TRAIN) — one coarse cluster
-(last-layer readout), 3/3 each; TRAIN A s2 additionally routes through a single dominant layer-3 head.
+- **T PART** (10/10, step 500): type *HAND XOR-AND stage* 3/3 tested: discovered circuit 9/118 edges = HAND's; resample of the complement keeps 1.0, resampling the circuit drops to 0.
+- **A PART** (3/3, first exact 5.5-7k): type *HAND parity readout* 3/3: 30/1935 edges = HAND's; the top MLP3 neurons read exactly HAND's support sets (D 18, bit 3: NB 3, 6, 9). Probes are weak (R^2 .52-.57) yet the stage writes a pure bit code.
+- **T TRAIN** (final 10/10, all exact at the joint stop 20.5k; first exact 14-19.5k): type *distributed scratchpad step* 10/10 (and 3/3 screening): shift, quotient and next used at L3 (interchange .98-1, DAS 1); L2 heads fetch, MLP2 writes the bit. Discovered 13-71/118 edges, HAND edge recall .67-1, Jaccard .10-.38. Size varies, mechanism does not: compact s1, s5, s6 (13-28 edges, at most 2 layer-0/1 heads) vs wide (42-71 edges). Path MLP1 -> L2 heads -> MLP2 (drop .32-.66, .68-1); MLP1 -> MLP2 directly <= .06. Held-out exact oscillated after the first exact (s1 1.0 -> .375) before all seeds were exact together.
+- **A TRAIN** (2/3): type *dense non-HAND readout* (2/2 solved, failed s0 the same): 848-1000/1935 edges, Jaccard .03; count/next used only at L4 (DAS ~1). Failed s0 (train 1, test .99544 -> .99349): 3/256 rows wrong at bit 3 for D 22/29, a divisor-specific MLP3 readout gap.
+- Diagnostics (final; E = 256-row exact; H; M = used heads / MLPs, mean ablation; n90 = neurons for 90% of ablation effect; probe = best R^2 per HAND var @layer; r99 = residual rank vs HAND; JS = attention JS vs HAND):
 
-**Diagnostics** (n 10 batch of 256 teacher-forced rows; H = used heads, M = used MLPs, mean/zero ablation > 5 pp; probe = best linear
-R² at the layer (T: shift, divisor, quotient, AND, next; A: count, next); inter → DAS = interchange flip, then distributed alignment;
-restrict R / X = restricted / excluded exact on the probe subspace; edges ρ = EAP-IG check, J = edge Jaccard vs HAND; r99 = last-layer
-residual rank; JS = attention divergence to HAND):
-| Cell | E best / final | H; M | Best probe R² | Inter → DAS; R / X | Top patch (drop / rec) | Edges ρ; J | r99 (HAND); JS |
-|---|---|---|---|---|---|---|---|
-| PART T s0–2 | 1 / 1 | 4/7; 1/3 | .88–.91, 1, .90–.91, .66–.68, .88–.89 (3) | .92–1 → 1; 1 / 0 | MLP2 1 / 1 | .996; 1 | 9 (10); 0 |
-| PART A s0–2 | 1, 1, .996 | 14/16; 2/4 | .52–.57 / .51–.60 (4) | .58–.73 → .97–1; .30–.42 / .13–.16 | MLP3 1 / 1 | .94–.97; .60–1 | 25; 0 |
-| TRAIN T s0–2 | 1 / 1 | 4–5/12; 3/3 | .83–.88, .71–.88, .85–.95, .69–.90, .78–.91 (3) | .99–1 → 1; 1 / 0 | MLP2 1 / 1 | .81–.93; .29–.39 | 4–10 (10); ≤ .45 |
-| TRAIN A s1 | 1 / 1 | 19–20/30–32; 4/4 | .74 / .69–.72 (4) | .98–1 → 1; 1 / .04–.05 | MLP0 1.01 / .86–.90 | .82–.87; .09 | 31–33; ≤ .47 |
-| TRAIN A s2 | 1 / 1 | 16–18/25–28; 4/4 | .74 / .63–.68 (4) | .85–.99 → 1; .98–1 / .07–.08 | MLP3 1.03 / .45–.47 | .83–.86; .03 | 28–29; ≤ .46 |
-| TRAIN A s0 (failed) | .988 / .988 | 20–21/26; 4/4 | .78 / .68–.70 (4) | 1 → 1; .98 / .09 | MLP3 1.01 / .73–.76 | .74–.83; .10 | 40; ≤ .45 |
-T divisor / AND have no answer-fixing pairs and step / column / phase are constant at the query: untested, not unused. TRAIN A s0 final
-edge ρ is .74 (< .8), so its edge reading is not trusted. Failure explained: TRAIN A s0 (train 1, test .9954 → .9935) gets 3/256 rows
-wrong, all at answer bit 3, for D = 22 (1/24) and D = 29 (2/23); count and next are both used at layer 4 (inter 1 / .996, DAS 1), so no
-hand-built variable is missing — the fault is a divisor-specific readout in MLP3 (patch rank 1). Checkpoint dynamics: s0 and solved s1
-follow one trajectory to 20k (no memorisation alerts) and split only in the cosine decay (s1 reaches 1 at 25k; s0 peaks .992, ends
-.988): a late residual, not a different path.
-
+| Cell | E best/final | H; M (n90) | Best probe R^2 | r99 vs HAND; JS | Discovered edges; faith |
+|---|---|---|---|---|---|
+| T PART s0-2 | 1/1 | 4; 1 | shift .88-.91, Q .90-.91, next .88-.89 @L3 | 9 vs 10; 0 | 9; 1 |
+| A PART s0-2 | 1, 1, .996 | 14; 2 | count .52-.57, next .51-.60 @L4 | 25; 0 | 30; .99-1 |
+| T TRAIN final s0-9 | 1/1 (10/10) | 3-8; 2-3 (255-360) | shift .83-.97, divisor bit .50-.93, Q .83-.99, AND .55-.89, next .73-.95 @L3 | 3-13 vs 10; L0-1 <= .20, L2 .06-.50 | 13-71; .89-.99 |
+| A TRAIN s1, s2 | 1/1 | 16-20; 4 | count .74, next .63-.72 @L4 | 28-33; <=.47 | 848, 1000; .92-.95 |
+| A TRAIN s0 (fail) | .988/.988 | 20-21; 4 | count .78, next .68-.70 @L4 | 40; <=.45 | 989; .91 |
 ## Closed form
-Accepted on fresh held-out screens (n 8/9/10, 768 rows per snapshot), best and final:
-- **PART T s0–2:** an eight-ReLU table — SEP → `;`, QF → X, else (LOW ? A : X) XOR (DB AND QB) — with 8 fitted coefficients keeps
-  11,587 → 11,587. Seeds 3–9 (the ten-seed final) solve identically but have no matched zero controls yet.
-- **PART A s1–2:** a native ReLU ridge bank over the input bits NB, divisor and column (36,867 numbers vs 263,296 in the stage) reproduces
-  the learned behaviour, errors included (768/768; s2 767/767). Projecting the ridges onto one hand-built low-bit count direction keeps
-  only 191–237/768 (rejected).
-- **TRAIN:** no accepted closed form.
-
+Substitution: the last MLP's output at every answer position replaced by a table in HAND variables (fit and test on separate batches); acceptance needs substitution exact and complement-resample exact >= .90 of the net's.
+- T PART: MLP2 = W[phase, col, next], next = shift XOR (divisor_bit AND quotient): 1.0 (6/6 nets, also with the 35-key HAND-input table); resample 1.0. Accepted.
+- A PART: MLP3 = W[j, next], next = XOR_{i in S(D, j)} NB_i: 1.0 (6/6); resample 1.0. Accepted.
+- T TRAIN final: same readout table on MLP2: 1.0 in 19/20 best/final nets (final s7 .969, only n10 drops), same with the 35-key HAND-input table; resample of the complement of each seed's discovered circuit .915-.994, circuit resampled and random same-size circuit <= .003. Accepted 10/10 for the readout and circuit; layers 0-1 and the L2 heads stay trained (no formula).
+- A TRAIN: table .84/.69 (s1/s2), claimed-component resample .09/.15. Rejected. The failed s0 keeps .998 under the table.
 ## Weights excerpt and reading
-PART T MLP2 bank: a_j = ReLU(β_j0 + β_j·[X, A, DB, QB, QF, LOW, SEP]), 256 units, 2,819 numbers. Its response clusters (159–184
-units) are the 8 truth-table cells of the hand-built XOR-AND step; the substitute ReLUs are not identified native neurons.
-PART A: a_j = ReLU(β_j0 + Σᵢ α_ji·NB_i + u_j[D] + v_j[col]); a dense per-divisor parity surrogate covers the seen divisors and the low ten
-bits only, which is why unseen D and n 12 fail.
-
+Weight slices of the stage MLP, final snapshot. HAND T: 10 stage neurons writing the answer, W_in values {-2, -1, 1}. PART T s0 top neurons by |W_out| x |W_in|, W_in on [X, A, DB, QB, QF, LOW, SEP] | bias -> W_out[0, 1]: n141 [-.06, -.08, -.08, .01, -.01, .02, -.04] | .05 -> [.09, -.09]; n194 [.04, .07, -.03, -.04, -.03, -.03, -.07] | .03 -> [-.12, .10]. Many small units share each truth-table cell. TRAIN T final: 168-194 of 256 MLP2 neurons hold 90% of the |W_out| x |W_in| mass (HAND: 10). HAND A: 262 neurons, W_in {1, 32}. PART A W_in on NB_0..9 (argmax divisor, bit):
+| seed | neuron | NB weights ~ -.4 at | D, bit | HAND S(D, bit) within NB_0..9 |
+|---|---|---|---|---|
+| s0 | n730 | 3, 6, 9 | 18, 3 | 3, 6, 9 |
+| s1 | n213 | 2, 5, 8 | 18, 2 | 2, 5, 8 |
+| s2 | n524 | 1, 4, 6, 9 | 31, 1 | 1, 4, 6, 9 |
+Each such neuron is a native parity-support detector: equal weights on exactly HAND's support set, read out per (D, bit).
 ## Comparison
-The scratchpad reaches the hand-built step 10–20× faster in PART and solves every TRAIN seed; answer-only needs about 2× the heads and
-keeps a divisor-specific readout gap. Learning parities without intermediate supervision is hard and curriculum over widths helps
-(Cornacchia & Mossel, 2023); length transfer of arithmetic transformers depends on the training widths (Jelassi et al., 2023);
-scratchpads as intermediate computation follow Nye et al. (2021).
-
+| A <-> T | Solved | Circuit vs HAND | First E>=.99 | n11 (final) | n12 | unseen D |
+|---|---|---|---|---|---|---|
+| PART | 3/3 <-> 10/10 | = HAND <-> = HAND | 3.5-5.5k <-> .5k | .09 <-> 1 | .11-.14 <-> 1 | .07-.09 <-> 1 |
+| TRAIN | 2/3 <-> 10/10 final | none <-> HAND superset | 20.5-23k <-> 14-19.5k | .13-.23 <-> .13-.98 | .09-.13 <-> 0-.26 | .12-.15 <-> 1 in 7/10 (.30-.75) |
+In range (n 8-10) every solved net is exact; T TRAIN length transfer stays partial (n11 >= .95 in 3/10, short n4 <= .26, n6 <= .71). The scratchpad turns the task into a local step that every T seed learns and wires around HAND's edges; answer-only training spreads one parity readout over half the network. Dense trained nets spreading circuits matches Gao et al. 2025.
 ## Controls and limits
-Zeroing the final MLP drives exact to 0; on shuffled tokens the circuit drops to chance and patching restores it 1 / 1. Native
-donor-path tests agree on 6,155/6,155 T and 2,336/2,336 A queries. PART A's n 12 high-bit repair and a full hand-built-stage swap
-(65,536/65,536) are repairs, not native generalisation. Scores are teacher-forced; neuron necessity was not measured; only PART T has
-ten seeds.
-
+Complement checks pass their self-tests (full = base, empty = source) in every net. The readout table's key includes the emitted bit: it shows a pure bit code, not how next is computed; the HAND-input T key and the A support neurons carry the computation. HAND-free discovery on 256 n10 rows, final snapshot. One HAND per format (no alternative HAND tested). A TRAIN widths 8-12 retry: 0/3 (negative). T TRAIN final: one seed's dynamics only to step 7,500; device not logged. Open: public code.
 ## References
-- Nye, M. et al. (2021). Show Your Work: Scratchpads for Intermediate Computation with Language Models. arXiv preprint.
-  https://doi.org/10.48550/arXiv.2112.00114 (research preprint)
-- Power, A. et al. (2022). Grokking: Generalization Beyond Overfitting on Small Algorithmic Datasets. arXiv preprint.
-  https://doi.org/10.48550/arXiv.2201.02177 (research preprint)
-- Jelassi, S. et al. (2023). Length Generalization in Arithmetic Transformers. arXiv preprint.
-  https://doi.org/10.48550/arXiv.2306.15400 (research preprint)
-- Cornacchia, E., & Mossel, E. (2023). A Mathematical Model for Curriculum Learning for Parities. arXiv preprint.
-  https://doi.org/10.48550/arXiv.2301.13833 (research preprint)
+- Nye et al., *Show Your Work: Scratchpads for Intermediate Computation* (preprint) - https://arxiv.org/abs/2112.00114
+- Jelassi et al., *Length Generalization in Arithmetic Transformers* (preprint) - https://doi.org/10.48550/arxiv.2306.15400
+- Gao et al., *Weight-sparse transformers have interpretable circuits* (preprint) - https://doi.org/10.48550/arxiv.2511.13653
