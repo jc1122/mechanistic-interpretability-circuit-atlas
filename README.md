@@ -66,6 +66,7 @@ Full table with seed counts and closed-form results: [INDEX.md](INDEX.md). Readi
 - [dpll-search](entries/dpll-search.md): trained MLP completes the hand-built solvers; from scratch the state update is not learned
 - [chess-krk](entries/chess-krk.md): rule router at .993–.999, never exact; trained nets code kings as coordinates
 - [chess-mate-in-one](entries/chess-mate-in-one.md): final MLP decodes the hand-built escape count
+- [chess-attack-maps](entries/chess-attack-maps.md): a hint scratchpad makes attack maps learnable (C3 7/10 exact); answer only never
 
 ## Quick start
 
