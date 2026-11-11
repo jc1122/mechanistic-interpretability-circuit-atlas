@@ -53,6 +53,7 @@ Full table with seed counts and closed-form results: [INDEX.md](INDEX.md). Readi
 - [linear-systems-finite-fields](entries/linear-systems-finite-fields.md): microstep scratchpad learned from scratch; fused stages bypass the hand-built subtractor
 - [crc-remainder](entries/crc-remainder.md): shift-XOR step learned; answer only uses a parity readout instead
 - [dyck-k-and-agreement](entries/dyck-k-and-agreement.md): agreement nets copy the first noun; Dyck scratchpad nets build a pop-pointer state circuit, not the hand-built depth match
+- [counter-languages](entries/counter-languages.md): answer-only nets count by ratio and sum violations in one or two heads
 
 **Symbolic math**
 - [polynomial-add-mul](entries/polynomial-add-mul.md): addition learned everywhere; multiplication only with frozen product gates
