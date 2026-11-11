@@ -62,6 +62,7 @@ Full table with seed counts and closed-form results: [INDEX.md](INDEX.md). Readi
 - [chain-rule-differentiation](entries/chain-rule-differentiation.md): solved from scratch with a token-histogram front end; PART bypasses the frozen parser
 - [symbolic-algebra-atoms](entries/symbolic-algebra-atoms.md): collecting terms learned at every rung; expanding and solving need a scratchpad
 - [nested-expressions-mod-7](entries/nested-expressions-mod-7.md): a trained argmax residue table on the frozen parser; from-scratch nets fail held-out literals
+- [euler-decay-ode](entries/euler-decay-ode.md): unsolved; scratchpad PART keeps the hand-built route but misses held-out steps
 
 **Search and games**
 - [grid-bfs](entries/grid-bfs.md): reached-set scratchpad learned; answer only limited by depth
