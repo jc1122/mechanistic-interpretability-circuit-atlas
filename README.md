@@ -70,6 +70,7 @@ Full table with seed counts and closed-form results: [INDEX.md](INDEX.md). Readi
 - [chess-krk](entries/chess-krk.md): rule router at .993–.999, never exact; trained nets code kings as coordinates
 - [chess-mate-in-one](entries/chess-mate-in-one.md): final MLP decodes the hand-built escape count
 - [chess-attack-maps](entries/chess-attack-maps.md): a hint scratchpad makes attack maps learnable (C3 7/10 exact); answer only never
+- [chess-kbbk-mate](entries/chess-kbbk-mate.md): unsolved (0/9); trained nets learn a distributed lookup with no distance-to-mate code
 
 ## Quick start
 
