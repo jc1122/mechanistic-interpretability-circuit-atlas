@@ -16,6 +16,14 @@ url: "https://github.com/jc1122/mechanistic-interpretability-circuit-atlas"
 repository-artifact: "https://huggingface.co/jc1122/circuit-atlas-nets"
 license: CC-BY-4.0
 version: "1.0.0"
+doi: "10.5281/zenodo.24209450"
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.24209450"
+    description: "Concept DOI: all versions, resolves to the latest"
+  - type: doi
+    value: "10.5281/zenodo.24209451"
+    description: "Version 1.0.0"
 date-released: "2026-11-14"
 keywords:
   - mechanistic interpretability

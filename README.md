@@ -258,7 +258,8 @@ The earlier UX snapshot covered 31 transformer tasks, with three called solved, 
 ## Cite and license
 
 The full collection name is Mechanistic Interpretability Circuit Atlas. Cite the atlas via [CITATION.cff](CITATION.cff) (GitHub: "Cite this repository"), and name the task entry and exact revisions used.
-Do not invent a paper citation or DOI. The citation file's release metadata is not a last-run date for every entry; publication
+Archived on Zenodo: [10.5281/zenodo.24209450](https://doi.org/10.5281/zenodo.24209450) (all versions) and
+[10.5281/zenodo.24209451](https://doi.org/10.5281/zenodo.24209451) (version 1.0.0). Do not invent a paper citation. The citation file's release metadata is not a last-run date for every entry; publication
 changes are tracked in [CHANGELOG](CHANGELOG).
 
 Original atlas text, diagrams and first-party networks use [CC BY 4.0](LICENSE); the code in `code/` uses [MIT](code/LICENSE).
