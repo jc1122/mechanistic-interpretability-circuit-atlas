@@ -1,252 +1,298 @@
 # Quadratic roots
 
-This entry studies whether small transformers can compute, for x² + bx + c with integers b and c, the discriminant D = b² − 4c, its
-integer square root s, the two floored roots and a flag. Four hand-built networks (answer only, sub-result, full trace and a register
-executor) are exact at n 3–5. Only the scaffolded executor, which runs the whole computation as a fixed program of Boolean NAND updates,
-was learned: with frozen hand-built routing a trained MLP learned it in 500 steps on 10/10 seeds, while trained from scratch at 2× width
-it reached 0/10 and never learned to fetch the addressed registers. Every trained stage for the parent formats memorised or underfit
-(0/10 in every cell). The task is partly solved (answer only at n 6 pending). The closed form is partial: the whole trained executor
-MLP can be replaced by one neuron, ReLU(A + B − 1), keeping 1,792/1,792 packets per seed (supported by substitution; complement not
-tested), and no closed form was accepted for the parent cells.
+This entry studies whether small transformers can compute the discriminant, integer square root and floored roots of x² + bx + c.
+The only learned format is a scaffolded executor: a supplied program breaks the calculation into Boolean NAND updates, and a trained
+MLP on frozen register-fetching heads solves all 10 final seeds at step 500. The same executor trained from scratch at twice the width
+solves 0/10, and all answer-only and parent-trace cells remain unsolved. The task is partly solved. The executor's closed form is
+verified on the measured inputs: replacing its trained MLP by one AND neuron keeps 1,792/1,792 held-out packets per seed, and resampling
+the claimed circuit's complement keeps 1.0 in all ten seeds; this is not a from-scratch quadratic solver.
 
 | Fact | Value |
 |---|---|
-| Task | For x² + bx + c with integer b, c, output D = b² − 4c, s = ⌊√max(D, 0)⌋, the two floored roots and a flag (negative / integer / other real) |
+| Task | For integer b, c, output D = b² − 4c, s = ⌊√max(D, 0)⌋, two floored roots and a negative / integer / other-real flag |
 | Input → output example | b = −3, c = 2 → D = 1, s = 1, roots 1 and 2, flag integer |
-| Model | GPT-NeoX-shaped, ReLU, no LayerNorm, no positions; parent formats 4 layers, d_model 768, one stage MLP trained; executor 2 layers, d_model 128, the layer-1 MLP trained |
-| Rungs and seeds | HAND A/S/T/S_exec exact at n 3–5; ten-seed finals S_exec PART and S_exec TRAIN (2× width); parent cells 10 seeds per cell with retries run 1 to run 3 |
-| Closed form status | Partial (accepted for the executor stage only, 1,792/1,792 packets kept per seed; complement not tested; none for the parent cells) |
-| Status | Partly solved (executor with frozen routing 10/10, from scratch 0/10; answer only at n 6 pending); last run 2026-11-07 |
-| Weights | [Hugging Face: quadratic-roots](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/quadratic-roots) |
+| Model | GPT-NeoX-shaped, ReLU, no LayerNorm or positions; parent formats have 4 layers, d_model 768; executor has 2 layers, d_model 128, with MLP1 trained in PART |
+| Rungs and seeds | HAND answer only, sub-result, trace and executor; executor PART/TRAIN finals 10 seeds each; parent rounds and retries, with 3–10 seeds in reported subsets |
+| Closed form status | Verified (executor PART only: 1,792/1,792 substitution per seed and complement 1.0 in 10/10; decision equivalence on measured inputs, not raw-logit identity) |
+| Status | Partly solved (executor PART 10/10 exact, TRAIN 0/10; parent answer-only n 6/R 63 final 0/10); last run 2026-11-12 |
+| Weights | [Hugging Face: quadratic-roots](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/quadratic-roots), published revision `e417b9b92a75` |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
 ## 1. Task and data
 
-The coefficients are integers with |b|, |c| ≤ R, written in binary sign/magnitude: n = 5 bits gives R 15 (961 pairs) or R 31 (3,969),
-and n = 6 gives R 63 (16,129). Outputs are specified integers, not exact irrational roots: D = b² − 4c, s = ⌊√max(D, 0)⌋, the floored
-roots r∓ = ⌊(−b ∓ s)/2⌋, and a flag (negative / integer / other real). An output is exact when every output token is correct, teacher
-forced, that is, each token is scored given the correct previous tokens ([glossary](../GLOSSARY.md#task-formats)). Four formats were
-studied (Table 1); formats `A`, `S` and `T` are called the parent formats, and `S_exec` the executor.
+Coefficients are integers with |b|, |c| ≤ R, written in binary sign/magnitude: n = 5 bits gives R 15 (961 pairs) or R 31 (3,969),
+and n = 6 gives R 63 (16,129). The prompt is `BOS sb |b| sc |c| =`, with coefficient-sign tokens sb and sc; the answer contains
+`f sr- |r-| sr+ |r+|`, with a flag f and root-sign tokens sr− and sr+. Outputs are specified integers, not exact irrational roots:
+D = b² − 4c, s = ⌊√max(D, 0)⌋ and r∓ = ⌊(−b ∓ s)/2⌋. The flag N/I/R means negative discriminant / integer roots / other real roots.
+For example, b = −3 and c = 2 give D = 1, s = 1, roots 1 and 2 and the integer flag.
 
-*Table 1. Output formats (output length in tokens at n 5).*
+Exact match means every output token is correct, teacher-forced, with the correct previous tokens supplied
+([glossary](../GLOSSARY.md#task-formats)). The parent formats are A, S and T; S_exec (also written S-exec) is the executor (Table 1).
+
+*Table 1. Output formats; parent output lengths are at n 5.*
 
 | Format | Output |
 |---|---|
-| `A` (answer only) | the answer (29 tokens) |
-| `S` (sub-result) | D and s first, then the answer (49) |
-| `T` (full trace) | every arithmetic step (170) |
-| `S_exec` (executor [scratchpad](../GLOSSARY.md#task-formats)) | the whole computation as an input-independent program of Boolean NAND updates on a register file, one update per step |
+| `A` (answer only) | answer, 29 tokens |
+| `S` (sub-result) | D and s, then answer, 49 tokens |
+| `T` (full trace) | every arithmetic step, 170 tokens |
+| `S_exec` (executor [scratchpad](../GLOSSARY.md#task-formats)) | an input-independent Boolean NAND program on a register file, one update per step |
 
-In S_exec each packet supplies the shuffled register bank and the gate's two source addresses, and the network predicts the new bit.
-Training used 12,903/16,129 R 63 coefficient pairs (held-out pairs per seed in `split_S_exec`), fresh reachable register states every
-batch (128), mixed widths 3–6, shuffled memory and renamed addresses; the program, the source and destination addresses and the state
-copying are supplied. The parent grids train on 480/961 (R 15) and 1,984/3,969 (R 31) pairs.
+Each executor packet supplies a shuffled register bank and the gate's two source addresses; the network predicts the new bit.
+Training used 12,903/16,129 R 63 coefficient pairs, an 80/20 pair split saved in `split_S_exec`, with fresh reachable register states
+in batches of 128, mixed widths 3–6, shuffled memory and renamed addresses. The program, source/destination addresses and state copying
+are supplied. Parent cells train on .5 of coefficient pairs: 480/961 at R 15 and 1,984/3,969 at R 31.
 
-S_exec was tested four ways. Local is next-bit exact on 1,024 held-out packets. Trace is all updates of a whole program for held-out
-pairs (8 per cell at n 5/R 15, n 5/R 31 and n 6/R 63). Length is n 7/8. Rollout feeds the network's own predictions back through a
-whole program and checks the answer with a verifier.
+The executor has four tests. Local is next-bit exact on 1,024 held-out packets. Trace is every update of a whole program for held-out
+pairs (8 per cell at n 5/R 15, n 5/R 31 and n 6/R 63). Width transfer is n 7/8. Rollout feeds the network's predictions back through
+a whole program and checks the answer with a verifier. The separate substitution audit uses 1,792 held-out packets per seed
+(Section 5), not the local test's denominator.
 
 ## 2. Model
 
-The shared conventions are described in [METHODS.md](../METHODS.md). The three [rungs](../GLOSSARY.md#the-three-rungs) are HAND
-(every weight set by formula), PART (frozen hand-built parts with one trained stage) and TRAIN (all weights trained from scratch).
+Shared conventions are in [METHODS.md](../METHODS.md). The [rungs](../GLOSSARY.md#the-three-rungs) are HAND (all weights set by
+formula), PART (HAND with one trained stage) and TRAIN (all weights trained from scratch).
 
 ### 2.1 Architecture
 
-All networks are GPT-NeoX-shaped with ReLU, no LayerNorm, no positional encoding and untied embeddings. The parent A/S/T networks have
-4 layers, d_model 768, 12 heads (d_head 64), MLP 512, vocabulary 10 and context 512 (n 6 A: d_model 1,024, 16 heads, MLP 1,024). The
-S_exec networks have 2 layers, d_model 128, 2 heads, MLP 128, vocabulary 1,029 (register and address tokens) and context 512. TRAIN
-width 2 is d_model 256, 4 heads and MLP 256.
+All networks are GPT-NeoX-shaped with ReLU, no LayerNorm, no positional encoding and untied embeddings. Parent A/S/T has 4 layers,
+d_model 768, 12 heads (d_head 64), MLP 512, vocabulary 10 and context 512. At n 6, answer only has d_model 1,024, 16 heads and MLP
+1,024. The executor has 2 layers, d_model 128, 2 heads × 64, MLP 128, vocabulary 1,029 for register/address tokens and context 512.
+The twice-width TRAIN executor has d_model 256, 4 heads and MLP 256.
 
-### 2.2 Frozen hand-built network and trained part
+### 2.2 Frozen parts and trained part
 
-In the parent formats PART trains one stage MLP on the frozen HAND (A: layer 2; S/T: layer 1). In S_exec PART trains the layer-1 MLP
-(W_in [128, 128] masked to the A/B residual columns, W_out [128, 128], both biases). TRAIN trains all weights.
+Parent PART trains one MLP on frozen HAND: layer 2 for A, layer 1 for S/T. Executor PART trains MLP1: W_in [128, 128] masked to fetched
+A/B residual columns, b_in [128], W_out [128, 128] and b_out [128]. Everything else is frozen. TRAIN learns all weights.
 
 ### 2.3 Training
 
-The optimiser was AdamW with learning rate 1e-3, weight decay .1, betas (.9, .98), warmup 1,000, cosine decay and clip 1. Finals used
-10 seeds (seed = initialisation + split), a 40k budget, a 5k plateau stop with a minimum of 30k, and checkpoints every 2,500 steps. The
-early parent retries, run 1 to run 3, used a constant learning rate and weight decay 1. PART ran in fp32; TRAIN used TF32 updates with
-fp32 evaluations.
+Cross-entropy is applied to output tokens. AdamW used learning rate 1e-3, weight decay .1, betas (.9, .98), warmup 1,000, cosine decay
+and clip 1. Finals packed 10 seeds per process, with each seed determining initialisation and split: 40k budget, minimum 30k,
+5k plateau stop, evaluation every 500 and checkpoints every 2,500. Executor batches contained 128 fresh packets at widths 3–6 with
+register renaming. Early parent retries, run 1 to run 3, used constant learning rate and weight decay 1. PART ran in fp32; TRAIN used
+TF32 updates with fp32 evaluations on GPU accelerators.
+
+The final answer-only n 6/R 63 result is a continuation, not fresh training. The original host was lost at 23.5k, with saved weights
+through 22.5k and test .91–.93. Recovery decayed from that snapshot with fresh optimiser moments, learning rate 1e-4, warmup 1000 and
+a cosine tail over the lost 17.5k steps, on the same splits. It stopped at a 13.5k plateau with test .929–.944, 0/10 exact. This
+historical recovery is not an adopted continuation retry recipe.
 
 ### 2.4 Reproduction
 
 Reproduce: not available yet: training code for this task is not yet in `code/`; the weights, held-out splits and recorded
 accuracies are on Hugging Face at
 [huggingface.co/jc1122/circuit-atlas-nets/tree/main/quadratic-roots](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/quadratic-roots).
-Public reproduction code is pending.
+The source record names `launch_final.sh`, the parent and executor `test_hand.py` harnesses and `subst_check.py`; these are recorded
+artifact names, not commands available in this repository. Headline output keys are `test` and `local`.
 
 ### 2.5 Archive
 
-The Hugging Face folder holds `hand_{A,S,T}`, `hand_T_compact` and `hand_S_exec`; `part_S_exec_final_s0…9` (the 4 MLP tensors, to be
-inserted into `hand_S_exec`; best and final are byte-identical); `train_S_exec_final_s0…2` (full state dicts; the best is the step-0
-initialisation, which was not kept); `part_T_R15_{r1,r2}_s0…9` (early parent PART); `split_S_exec`; `config.json`; and `manifest.json`
-(recorded and fp32 re-scored accuracy, sha256). Most parent-format networks (A/S TRAIN, T TRAIN, S/T PART run 2 and run 3) were lost
-with rented hosts, so for those cells the run-time diagnostics in Section 4 are the evidence and the networks are not archived.
+Published revision `e417b9b92a75` holds `hand_{A,S,T}`, `hand_T_compact`, `hand_S_exec`, `part_S_exec_final_s0…9` (four MLP tensors
+inserted into `hand_S_exec`), `train_S_exec_final_s0…2` (full networks), `part_T_R15_{r1,r2}_s0…9`, `split_S_exec`, `config.json` and
+`manifest.json` with recorded/fp32 re-scored accuracy and sha256. The publication hash check covered 42 files, with no missing or
+mismatched files. Executor PART best/final weights are byte-identical; these are ten networks, not twenty independent replications.
+For TRAIN executor the best was the step-0 initialisation, which was not kept; the listed final archive covers seeds 0–2, although
+ten were analysed.
+
+Most parent networks (A/S TRAIN, T TRAIN and S/T PART runs 2 and 3) were lost with rented compute. Their recorded diagnostics, not
+newly reloadable originals, support those cells. The earlier “answer-only decay finals missing” status is superseded by the completed
+final analysis; it does not restore the other lost networks. Public reproduction code is still pending.
 
 ## 3. Hand-built solution
 
-In the parent networks, a layer-0 frame head reads 1/(1 + position) from BOS and an MLP turns it into a position one-hot; table heads
-read a written number as a weighted token sum. Bit k of V is [V − W ≥ 2ᵏ], computed as ReLU(2u + 1.5) − ReLU(2u + .5) and gated by −G
-per failed condition. Format A computes b² in layer 1, isqrt [D ≥ m²] in layer 2 and the roots in layer 3; S computes b² and the isqrt
-of the written |D| in layer 1; T puts all rules in layer 1 on token values. Compact T moves the bit thresholds into query-position
-weights, which shrinks the arithmetic to 62 neurons for every n, against roughly 6R for answer-only A.
+Parent networks read a position signal 1/(1 + position) from BOS in layer 0, then turn it into a position one-hot. Table heads read
+a written number as a weighted token sum. Bit k of V is [V − W ≥ 2ᵏ], computed as ReLU(2u + 1.5) − ReLU(2u + .5), gated by −G per
+failed condition. A computes b² in layer 1, isqrt [D ≥ m²] in layer 2 and roots in layer 3; S computes b² and isqrt of written |D| in
+layer 1; T puts all rules in layer 1 on token values. Compact T moves bit thresholds into query-position weights, reducing arithmetic
+to 62 neurons for every n, versus roughly 6R for A. The published approximate design crossover n* ≈ 3 concerns hand-built sizes,
+not a trained size-crossover result.
 
-The executor (Figure 1) uses address codes Cⱼ(a) = 2·bitⱼ(a) − 1. Layer-0 heads find the A and B pointer tokens, and layer-1 heads
-fetch registers a and b by binary address match, where a wrong code bit costs 40 logits. One neuron, AND = ReLU(a + b − 1), writes Y,
-and the readout (other −10, bit0 10·Y, bit1 5) emits the complement, NAND. The executor is exact at n 3–8 with margin 5. Table 2 gives
-the sizes.
+The executor (Figure 1) uses address codes Cⱼ(a) = 2·bitⱼ(a) − 1. Layer-0 heads find A/B pointer tokens; layer-1 heads fetch registers
+a and b by binary-address match, with a wrong code bit costing 40 logits. One neuron AND = ReLU(a + b − 1) writes Y. The fixed readout
+(other −10, bit0 10·Y, bit1 5) emits NAND. It is exact at n 3–8 with margin 5 (also recorded as 5.0).
 
-*Table 2. Size of the hand-built networks: designed heads (h) and neurons / used heads + neurons.*
+*Table 2. Hand-built sizes: designed heads (h) and neurons / ablation-used heads + neurons.*
 
 | n (R) | A designed / used | S | T | T compact | S_exec |
 |---|---|---|---|---|---|
 | 5 (31) | 6h 217 / 7h + 194 | 9h 321 / 10h + 260 | 9h 322 / 10h + 187 | 9h 62 / 10h + 44 | 4h + 1 |
-| 6 (63) | 6h 385 (exact) | 9h 507 | not exact | untested | 4h + 1 (1,806 → 2,296 steps) |
+| 6 (63) | 6h 385, exact | 9h 507 | not exact | untested | 4h + 1, 1,806 → 2,296 steps |
 
-Used = ablation minima (heads + neurons, frame head included, frame neurons excluded) on 200–300 rows. HAND A, S, T and S_exec are
-exact at n 3–5; T is not exact at n 6, and that cell is closed.
+Used means ordered ablation minima on 200–300 rows, with frame head included and frame neurons excluded, not global minima. A, S, T
+and executor are exact at n 3–5. The later reference reports A/S exact on all pairs through n 6, excluding T n 6; that T cell is
+not exact and is closed. The compact n-6 T cell remains untested in the earlier size record.
 
 ```mermaid
 flowchart TD
-    P["packet: shuffled register bank, source addresses A and B"] --> L0["layer-0 heads: find the A and B pointer tokens"]
-    L0 --> L1["layer-1 heads: fetch registers a and b by binary address match"]
-    L1 --> M["layer-1 MLP: one neuron AND = ReLU(a + b - 1), writes Y"]
-    M --> R["readout: other -10, bit0 10 Y, bit1 5"]
-    R --> Y["new bit = NAND(a, b)"]
+    P["Packet: shuffled register bank, source addresses A and B"] --> L0["Layer-0 heads: locate A and B pointer tokens"]
+    L0 --> L1["Layer-1 heads: fetch a and b by binary address match"]
+    L1 --> M["MLP1: AND = ReLU(a + b - 1), writes Y"]
+    M --> R["Fixed readout: other -10, bit0 10 Y, bit1 5"]
+    R --> Y["New bit: NAND(a, b)"]
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class M trained
 ```
 
-*Figure 1. The hand-built register executor (format S_exec). Frozen heads locate and fetch the two addressed registers; one AND neuron
-and a fixed readout write their NAND. The shaded layer-1 MLP is the part that PART trains.*
+*Figure 1. The hand-built register executor. Frozen heads locate and fetch the two operands; one AND neuron and a fixed readout write
+NAND. Shaded MLP1 is the only stage trained in PART. The program and state copying are supplied.*
 
 ## 4. What training finds
 
-Table 3 summarises the cells. Arrows give the best and then the final test accuracy.
+Only executor PART solves (Table 3). Its rule transfers to n 7/8 and predicted-state rollouts. Executor TRAIN outputs a constant
+majority bit in all 10 seeds, with P(NAND = 1) ≈ .61: its heads never attend to addressed registers (attention JS .65), so it does
+not read a and b. Answer-only and parent-trace cells memorise or underfit; there is no solved delayed-grokking transition there.
 
-*Table 3. Results per cell (10 seeds; medians where marked).*
+*Table 3. Final round, ten seeds per cell. Test is full held-out exact match; local means next-bit accuracy.*
 
-| Cell | Format | Best / final test (10 seeds) | Train | Stop | Verdict |
+| Cell | Best / final test | Train | Stop | Solved | Reading |
 |---|---|---|---|---|---|
-| S_exec PART final | scratchpad | trace 1 / 1 (10/10); n 7/8 and rollouts R 15/31/63 1 | 1 | solved 500 | solved |
-| S_exec TRAIN width 2 final | scratchpad | trace 0 (best = step 0); local .58–.62 | .58–.62 | plateau 30k | constant output |
-| A n 6 R 63 TRAIN | answer only | .91–.93 at 22.5k; final pending (decay) | .97–1 | host lost 23.5k | memorising slowly |
-| A PART R 15 r1 / r2; R 31 r2 | answer only | .34 → .17 / .59 → .58; .63 → .62 (medians) | | | 0/10 each |
-| A TRAIN r2 R 15 / R 31 | answer only | .73 → .70 / .88 → .87 | 1 | plateau | memorised, 0/10 |
-| S R 31 PART / TRAIN r2 | sub-result | .06 / .86 best | .09–.17 / 1 | 60k / 40k | underfit / memorised |
-| T R 15 PART r2 / r3; T R 31 PART r2 | trace | .63 → .61 / .85 → .83; .65 → .62 | 1; 1; .71 | budget | memorised; underfit |
-| T R 31 TRAIN r2 | trace | .80 | 1 | budget | memorised |
+| S_exec PART | trace 1 / 1; n 7/8 and rollout R 15/31/63 1 | 1 | solved 500 | 10/10 | AND-hinge bank read as NAND |
+| S_exec TRAIN width 2 | trace 0 / 0, best = step 0; local .58–.62 | .58–.62 | plateau 30k | 0/10 | constant output |
+| A n 6/R 63 TRAIN, decay continuation | .929–.944 / same | .97–1 at recovery snapshot | plateau 13.5k | 0/10 | memorised late lookup |
 
-Key: r1, r2, r3 = run 1 to run 3 of a cell. The answer-only A cell at n 6 / R 63 is open: its 40k run's host was lost at 23.5k with
-test .91–.93, and the cosine tail is being rerun as a decay from the 22.5k snapshot.
+### 4.1 Executor circuit type
 
-### 4.1 Executor
+Executor PART has one functional type in 10/10: addressed-bit NAND implemented by a bank of 28–37 of 128 hinges. Aligned
+[linear mode connectivity](../GLOSSARY.md#analysis-measures), which tests loss between aligned weights, has barrier .001–.007; this
+supports one basin up to neuron permutation. The bank has two causal subgroups, 7/10 OR-pool-sufficient and 3/10 mixed
+OR/affine/complement. These are partitions of the bank, not different algorithms; both have the same substituted closed form.
 
-PART learns the executor's single rule in 500 steps on 10/10 seeds, and the rule transfers to n 7/8. PART keeps it exact at widths 7 and 8 and in its own
-predicted-state rollouts. The S_exec PART networks form one functional family, an addressed AND-hinge bank with a NAND readout, in
-10/10 seeds. S_exec TRAIN gives a constant majority output in 10/10: it predicts the majority bit (P(NAND = 1) ≈ .61) everywhere,
-because its heads never attend to the addressed registers (JS .65), so a and b are never read.
+Earlier prose called each component a “rescaled AND hinge”. The native response is pooled across a bank and some biases are positive;
+the exact one-neuron AND formula describes the substituted decision, not an identity for every native neuron (Appendix A).
 
-### 4.2 Parent formats
+*Table 4. Later diagnostics. Executor uses 128 held-out packets per seed; parent n-6 diagnostics use 200 rows. Rank99 is effective
+rank at 99% energy; JS compares attention with HAND; R² measures linear decodability, not causal use.*
 
-No answer-only or parent-trace cell solves at any rung (0/10 in every cell); every trained parent cell memorises or underfits. A
-PART stage here is one MLP on frozen parts that must place unit-resolution thresholds on scalars up to ~2¹¹. There is no solved delayed-grokking transition in the
-parent cells: A TRAIN run 2 crosses 50% test at a median of 1,750 steps and 99% train at 6,125 / 10,375
-([grokking](../GLOSSARY.md#counting-results) is test accuracy rising long after training accuracy is perfect).
+| Cell | Used heads + neurons | Best probe R² (layer) | Rank99 versus HAND | JS | Best / final diagnostic |
+|---|---|---|---|---|---|
+| S_exec PART (10) | 4h + 28–37 of 128 hinges, HAND 1 hinge | a, b, sum 1; NAND .998 (L2) | MLP1 2, L2 17; HAND 1 / 18 | 0, frozen | 1 / 1 |
+| S_exec TRAIN width 2 (10) | none, any ablation within ±.01 | a, b, sum, NAND ≤ 0 | L1–L2 2–3 | .65, ln 2 .69 | 0 / 0 |
+| A n 6/R 63 decay (10) | 5–9 heads + 4 MLPs | s .95–.97, D .92–.96, b² .93–.96 (L3) | MLP1 W_in 582, seed 0; HAND overlap ~0 | .38 (L0) | .945–.975 / .93–.98, 200 rows |
+| S R 31 PART run 2 (3) | stage only, patch drop 1.0 | D .97, s .97, b² .88 (L2) | W_in 41; HAND overlap .03 | 0, frozen | .06 / .025–.035 |
 
-The failures are explained from diagnostics (Table B1). S R 31 PART decodes D (R² .96), but bits 2⁵…2⁰ fail (.47–.77, where the first
-errors fall): these are unit thresholds on |D| ≤ 1,085. T PART fails on inexact high-value, borrow and late-sqrt thresholds and does
-not miss D. In A TRAIN, D is decodable late and non-linearly (DAS rescues D in 3/6 audited seeds), and there is no early D-to-isqrt
-path.
+The older 2026-11-07 diagnostic summary is retained separately in Appendix B: it gives NAND .994–.999, TRAIN a/b ≤ .011 and residual rank 2–4,
+rather than the later compact .998, ≤ 0 and 2–3. Neither metric summary is silently substituted for the other.
 
-### 4.3 Executor causal checks
+### 4.2 Parent failures
 
-In S_exec PART, the query-mean ablation of every head lowers accuracy to .63–.88; the MLP1 patching drop and recovery are both 1; and
-interchange on the sum / NAND variables flips .93–1 / .57–.84 (answer-fixing n 25–38, the number of answer-fixing pairs tested). A and B have no answer-fixing pairs, which
-means untested, not unused. Interchange and patching are defined in the [glossary](../GLOSSARY.md#analysis-measures).
+Every trained parent cell remains at 0/10 in the ten-seed records; the later compact record groups audited subsets of 3–10 seeds
+across runs 1–4 as 0/n. A PART must place unit-resolution thresholds on scalars up to ~2¹¹. S R 31 PART decodes D (earlier R² .96),
+but fails the bits 2⁵…2⁰ at .47–.77 on |D| ≤ 1,085. T PART fails high-value, borrow and late-square-root thresholds, without missing
+D. A TRAIN decodes D late/nonlinearly (DAS rescues D in 3/6 earlier audited seeds), without an early D-to-isqrt path.
+
+The n-6 decay final has a dense HAND-free circuit, 38–55% of 1935 edges and .29–.42 overlap with HAND's discovered circuit. D is
+causally available only at L4 in the reported alignment; the late decodability in Table 4 does not recover the earlier staged
+D-to-isqrt computation. Diagnostic accuracy .93–.98 on 200 rows is not the full-test .929–.944, and neither result solves the cell.
+Earlier A TRAIN run 2 crosses 50% test at median 1,750 steps and 99% train at 6,125 / 10,375; this is not a delayed solved
+[grokking](../GLOSSARY.md#counting-results) transition.
+
+### 4.3 Earlier executor causal checks
+
+Query-mean ablation of every executor PART head lowers accuracy to .63–.88; MLP1 patching drop and recovery are both 1. Interchange on
+sum / NAND flips .93–1 / .57–.84, with 25–38 answer-fixing pairs tested. A and B have no answer-fixing pairs in that bank, meaning
+untested, not unused. Interchange and patching are defined in the [glossary](../GLOSSARY.md#analysis-measures).
 
 ## 5. Mechanism and verification
 
 ### 5.1 Executor closed form
 
-The native bank of S_exec PART is hⱼ = ReLU(cⱼ + aⱼA + bⱼB), O = 1 + β_O + Σuⱼhⱼ and Y = β_Y + Σvⱼhⱼ, with logits (−10·O, 10·Y, 5·O)
-for other / bit0 / bit1; these are direct tensor slices, not a fit. Overwriting all trained MLP tensors with h = ReLU(A + B − 1)
-writing only Y (frozen readout unchanged) takes the fresh held-out packets per seed from 1,792/1,792 (native) to 1,792/1,792, with
-agreement 1, on 10/10 seeds (17,920 unique packets; bar ≥ .99 × native). The packets balance the four Boolean cases at register counts 3–256 and
-add equal-address controls. In predicted-state execution the native and substituted networks agree at every update (507,680 unique
-updates; 2–8 held-out pairs per width/range at n 5–6, 4 boundary/sign/zero pairs at n 7/8). Best and final weights are identical, so
-this is one set of 10 networks, not 20.
+The native bank is hⱼ = ReLU(cⱼ + aⱼA + bⱼB), O = 1 + β_O + Σuⱼhⱼ and Y = β_Y + Σvⱼhⱼ, with logits (−10·O, 10·Y, 5·O) for
+other / bit0 / bit1. These expressions are direct tensor slices, not fitted laws. The closed form replaces all four trained MLP1
+tensors with MLP1(x) = e_Y ReLU(A + B − 1): one HAND neuron, 0 fitted scalars, writing only Y with the frozen readout unchanged.
 
-The substitution certifies the decision on the tested distribution, not logit equality or one basin. It was accepted for the executor
-stage; no resample ablation of the complement was reported, so the closed form status is partial. The learned part is an
-addressed-NAND stage inside supplied routing and microcode, not a from-scratch quadratic solver.
+Substitution keeps 1,792/1,792 from native 1,792/1,792 held-out packets in each of 10 seeds, agreement 1.0, at the ≥ .99 × native bar
+(17,920 unique packets). Packets balance four Boolean cases at register counts 3–256 and include equal-address controls.
+Native/substituted predicted-state execution agrees at every update across 507,680 unique updates: 2–8 held-out pairs per width/range
+at n 5–6 and 4 boundary/sign/zero pairs at n 7/8. Best/final weights are byte-identical; they are not independent samples. A later
+512-packet test with n 6/7/8 rollouts also keeps native/substituted minima 1.0 over 20/20 best/final records.
+
+The 2026-11-12 resample test closes the earlier complement gap. On 512 rows and 3 draws, resampling everything outside HAND's 9 edges
+of 26 keeps exact 1.0 = base in 10/10 seeds, above the .90 acceptance share. Resampling those 9 edges gives .49–.54; a random 9 gives
+.52–.55. HAND-free discovery keeps the same 9 edges in 10/10 seeds, held-out faith 1.0. The closed form is therefore verified for the
+executor stage's decisions on measured inputs. This is not equality of native logits, a neuron-by-neuron identity or a learned
+quadratic algorithm without supplied routing and microcode.
 
 ```mermaid
 flowchart TD
-    L1["frozen layer-1 heads: fetched a and b"] --> B["trained bank: 28-37 of 128 hinges, each a rescaled AND hinge"]
-    B --> S["bank-level sum: Y and O"]
-    S --> R["frozen readout: logits -10 O, 10 Y, 5 O"]
-    R --> Y["NAND(a, b)"]
+    L1["Frozen layer-1 heads: fetched A and B"] --> B["Trained MLP1 bank: 28-37 of 128 hinges"]
+    B --> S["Bank-level O and Y sums"]
+    S --> R["Frozen readout: logits -10 O, 10 Y, 5 O"]
+    R --> Y["NAND(A, B)"]
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class B trained
 ```
 
-*Figure 2. The executor stage that PART training finds. About 30 rescaled AND hinges share the work of HAND's single neuron, and the
-decision is a bank-level sum. The one-neuron closed form substitutes for the whole bank; the status is partial (substitution only,
-complement not tested).*
+*Figure 2. The trained executor stage. Shaded MLP1 pools a bank of hinges, with a 7/10 OR-pool and 3/10 mixed-bank sub-split. One AND
+neuron replaces the whole bank. Closed-form status: verified for decisions on measured inputs by substitution and complement tests
+in ten seeds, not a native-neuron identity or a from-scratch quadratic solver.*
 
 ### 5.2 Parent cells
 
-No complete form was accepted for the parent cells. Earlier contextual-bank substitutions on seven parent finals only preserved their
-errors, and those originals are no longer available for fresh checks.
+No complete form is accepted for parent formats. Earlier contextual-bank substitutions on seven parent finals only preserved their
+errors; those originals are unavailable for fresh checks. The executor avoids their large-scalar thresholds by making each step a
+bounded-bit rule. This does not support a trained size-crossover claim: its program, routing and state copying are supplied.
 
 ### 5.3 Relation to published work
 
-Answer-only and parent-trace stages need unit-resolution thresholds on large scalars. The executor scratchpad turns each step into one
-bounded-bit rule, which a frozen-parts MLP learns at once (500 steps, 10/10) and a from-scratch network of 2× width does not, because it never learns the
-addressing. Scratchpads as supervised intermediate computation follow [Nye et al. (2021)](#references); training curves alone are not
-circuit evidence ([Nanda et al., 2023](#references)). Because the program, routing and state copying are supplied, the results support
-neither a size-crossover claim nor a claim of a from-scratch quadratic solver.
+Scratchpads as supervised intermediate computation follow [Nye et al. (2021)](#references). Training curves alone are not circuit
+evidence ([Nanda et al., 2023](#references)). That study concerns modular addition; [Qiu et al. (2026)](#references) concern integer
+arithmetic, neither being quadratic-root mechanism evidence.
+
+Prior quadratic variants include fuzzy-coefficient solutions ([Buckley and Eslami, 1997](#references); [Buckley et al., 2002](#references)),
+sequence-model polynomial roots ([Saxton et al., 2019](#references)), numerical root approximation ([Freitas et al., 2021](#references))
+and worked solutions ([Hendrycks et al., 2021](#references)). [Palermo et al. (2021)](#references) train solving programs rather than
+NAND traces. [Thomas and Bani-Yaghoub (2026)](#references) study root-type classification rather than bitwise root extraction.
+
+Earlier polynomial-root neural methods include the complex-root and decomposition studies of
+[Huang and Chi (2001)](#references), close/ordered roots ([Huang et al., 2003](#references)), constructive and root-moment approaches
+([Huang, 2004](#references); [Huang et al., 2004](#references)) and constrained learning ([Huang et al., 2005](#references)). Root-count
+and real-root variants include [Epitropakis and Vrahatis (2005)](#references), [Mourrain et al. (2006)](#references) and
+[Das and Seal (2012)](#references). Phase-retrieval roots ([Dilanian et al., 2006](#references)), multiplicity and simultaneous-root
+methods ([Zhang et al., 2008](#references); [Zhu et al., 2008](#references); [Zhang and Zeng, 2009](#references)) are further task
+variants, not evidence of the present circuit. [Bukhsh et al. (2022)](#references) analyse an LSTM root approximator;
+[Nunley (2026)](#references) study broad mathematics training including roots; [Wang et al. (2026)](#references) study a numerical
+root estimator. None is silently equated with exact quadratic bit outputs.
 
 ## 6. Limitations and open questions
 
-Mean pruning is ordered and calibrated on 256 balanced packets and validated on 1,792 per seed, so it is not a global minimum. Head
-ablations are query-mean, not token-global minima. Executor checks are sampled traces and rollouts (not all 16,129 traces), not an
-exhaustive sweep of the coefficient grid. Parent TRAIN curves used TF32 without full-test fp32 confirmation.
+Mean pruning is ordered, calibrated on 256 balanced packets and validated on 1,792 per seed; it is not a global minimum. Head
+ablations are query-mean, not token-global minima. Executor checks are sampled traces and rollouts, not all 16,129 coefficient traces.
+The accepted closed form is a decision rule on measured distributions, not logit equality or proof that every native hinge is AND.
+The bank sub-split is causal, not separate algorithms.
 
-Missing:
-
-- the A n 6 decay finals;
-- the archived parent TRAIN and run 2 / run 3 networks (lost);
-- public reproduction code.
+The answer-only n-6 result is a decay continuation from 22.5k after infrastructure loss, not a fresh 40k run. Its diagnostics use
+200 rows; full-test .929–.944 and diagnostic .93–.98 have different denominators. Parent TRAIN curves used TF32 without full-test
+fp32 confirmation. Most parent TRAIN and run-2/run-3 originals remain lost. Executor TRAIN best step-0 weights were not retained, and
+the listed archived final TRAIN subset is only seeds 0–2. Public reproduction code is pending. The supplied program and state copying
+preclude a claim of an independently learned quadratic solver.
 
 ## 7. Prediction record
 
-Predictions were recorded before the runs (Table 4).
-
-*Table 4. Prediction record.*
+*Table 5. Predictions recorded before the runs; earlier and final outcomes are distinguished.*
 
 | Prediction | Outcome |
 |---|---|
-| PART A 10/10 | refuted (best .05–.31; r2 .58–.62) |
-| PART S ≥ 7/10 | refuted (r2 .03–.06) |
-| PART T 10/10 | refuted (r2 .61, r3 .83, memorised) |
-| TRAIN A ≤ 2/10 and T ≤ 3/10 | confirmed (0/10) |
-| HAND T ~62 neurons vs A ~6R | confirmed |
-| S_exec PART 3/3 within 2.5k | confirmed (500) |
-| S_exec TRAIN ≥ 2/3 at local .999 | refuted (0/3, then 0/10) |
+| PART A 10/10 | Refuted: best .05–.31; run 2 .58–.62 |
+| PART S ≥ 7/10 | Refuted: run 2 .03–.06 |
+| PART T 10/10 | Refuted: run 2 .61, run 3 .83, memorised |
+| TRAIN A ≤ 2/10 and T ≤ 3/10 | Confirmed, 0/10 |
+| HAND T ~62 neurons versus A ~6R | Confirmed for designed sizes, not a trained crossover |
+| S_exec PART 3/3 within 2.5k | Confirmed at 500, then 10/10 final |
+| S_exec TRAIN ≥ 2/3 at local .999 | Refuted: 0/3, then 0/10 |
 
 ## Appendix A. Weights excerpt and reading
 
-The HAND stage row (A, B, bias) is (1, 1, −1), writing Y with weight 1; all other stage entries are zero. For the trained PART, Table A1
-gives per seed the neuron with the largest contribution wΔ = 5u − 10v to the bit1 − bit0 margin (u and v are the neuron's output weights into O and Y, Section 5.1) (`part_S_exec_final_s<seed>`; W_in
-columns A = 37, B = 38).
+HAND constants are BIG 40 (table-attention score offset), U 10 (readout scale) and C_POS 128 (position-signal scale); the threshold step
+pair is (2, 1.5) / (2, .5). The executor stage row (A, B, bias) is (1, 1, −1), writing Y with weight 1; all other stage entries are
+zero. Its bit0/bit1 readout is (10h, 5).
 
-*Table A1. Strongest margin neuron per seed and the number of hinges kept by mean pruning.*
+For trained PART, Table A1 gives the neuron with largest contribution wΔ = 5u − 10v to the bit1 − bit0 margin, where u and v are output
+weights into O and Y. These are archive slices from `part_S_exec_final_s<seed>`, W_in columns A = 37 and B = 38.
 
-| Seed / neuron | bias c | a | b | wΔ | mean-pruned hinges |
+*Table A1. Strongest margin neuron per seed and mean-pruned hinge count.*
+
+| Seed / neuron | bias c | a | b | wΔ | Mean-pruned hinges |
 |---|---:|---:|---:|---:|---:|
 | 0 / 25 | −.0044 | .1240 | .0926 | −1.346 | 33 |
 | 1 / 56 | −.0128 | .0842 | .0894 | −1.509 | 35 |
@@ -255,30 +301,70 @@ columns A = 37, B = 38).
 | 6 / 110 | −.0061 | .1198 | .1646 | −1.050 | 31 |
 | 9 / 45 | −.0086 | .1146 | .1118 | −1.365 | 29 |
 
-Reading: seed 0's neuron responds (00, 01, 10, 11) = (0, .088, .120, .212) and writes ONE / Y with −.056 / .107. Positive operand
-weights raise the suppression of the bit1 margin, strongest at 11, so the neuron is a rescaled AND hinge whose readout gives NAND.
-About 30 such hinges share what HAND does with one. Seeds 3/4 have small positive biases, so not every hinge is off at 00. The decision
-is a bank-level sum.
+Seed 0's response at (00, 01, 10, 11) is (0, .088, .120, .212), writing ONE / Y with −.056 / .107. The later compact excerpt gives
+neuron 25 A .124, B .093, c −.004 and margin −1.35, rather than replacing the more precise values above. Its summary of top hinges
+is A/B .04–.16, c ~0, margins −1.05 to −1.60; it describes ~33 hinges sharing HAND's work. The earlier prose said “about 30”; both
+are descriptions of the 28–37 retained-hinge bank, not a new count. Positive operands suppress the bit1 margin most at 11. Seeds 3/4
+have small positive biases, so not every hinge is off at 00. The decision is a bank-level sum, not a separate exact AND law per neuron.
+The source excerpt routine is named `excerpts.py quad`; it is not shipped here.
 
-## Appendix B. Diagnostics per cell
+## Appendix B. Detailed historical evidence
 
-*Table B1. Diagnostics. S_exec on 128 held-out packets per seed.*
+*Table B1. Earlier parent results. Ten seeds in these cell records; medians where reported. All cells have 0/10 exact solved seeds.*
+
+| Cell | Best → final test | Train | Stop / reading |
+|---|---|---|---|
+| A PART R 15 run 1 / run 2; R 31 run 2 | .34 → .17 / .59 → .58; .63 → .62, medians | | unsolved |
+| A TRAIN run 2 R 15 / R 31 | .73 → .70 / .88 → .87 | 1 | plateau, memorised |
+| S R 31 PART / TRAIN run 2 | .06 / .86 best | .09–.17 / 1 | 60k / 40k, underfit / memorised |
+| T R 15 PART run 2 / run 3; T R 31 PART run 2 | .63 → .61 / .85 → .83; .65 → .62 | 1; 1; .71 | budget, memorised / underfit |
+| T R 31 TRAIN run 2 | .80 | 1 | budget, memorised |
+| A n 6/R 63 original run | .91–.93 at 22.5k | .97–1 | host lost 23.5k; now followed by the decay final |
+
+The later compact earlier-cell summary gives A R31 TRAIN .88, S R31 PART .06, T R31 TRAIN .80 and T R15 PART run 3 .83, with training
+values 1; .13; 1; 1 and 0 solved. The scalar .13 training summary stays distinct from the earlier .09–.17 range.
+
+*Table B2. Earlier diagnostics. Executor: 128 held-out packets per seed; original n-6 answer-only: 200 rows.*
 
 | Cell | Used | Best probe R² (layer) | Rank (HAND) | JS | Best / final |
 |---|---|---|---|---|---|
-| S_exec PART (10) | 4 heads + 28–37 of 128 hinges (HAND 4 + 1) | a, b, sum 1; NAND .994–.999 (2) | stage input 2 (1); residual 17–18 (17–18) | 0 | 1 / 1 |
-| S_exec TRAIN width 2 (10) | none (every ablation within ±.01) | a, b ≤ .011 | residual 2–4 (17–18) | .65 (uniform = .69) | 0 / local .58–.62 |
-| S R 31 PART r2 (s0–2) | stage only (patch drop 1) | D .96, s .97, b² .88 (2) | stage W_in 41 | 0 (frozen) | .06 / .05 |
-| A n 6 R 63 at 22.5k (s0–2) | 10–12 heads + MLPs | s .94–.95, b² .93–.94, D .92–.94 | W_in 362–634 | n/a | .945–.955 (200 rows) |
-| A R 31 TRAIN r2 (3) | 14 heads + 4 MLPs | b² .96, D .95, s .94 (3) | W_in 300 | .44–.49 | .88 / .87 |
-| T R 15 PART r2 (s0–2) | 9 heads + 1 MLP block | D ≈ .94 (2) | stage input 80 (51) | 0 | .63 / .61 |
+| S_exec PART (10) | 4 heads + 28–37 of 128 hinges, HAND 4 + 1 | a, b, sum 1; NAND .994–.999 (2) | stage input 2 (1); residual 17–18 (17–18) | 0 | 1 / 1 |
+| S_exec TRAIN width 2 (10) | none, every ablation within ±.01 | a, b ≤ .011 | residual 2–4 (17–18) | .65, uniform .69 | 0 / local .58–.62 |
+| S R 31 PART run 2, seeds 0–2 | stage only, patch drop 1 | D .96, s .97, b² .88 (2) | stage W_in 41 | 0, frozen | .06 / .05 |
+| A n 6/R 63 at 22.5k, seeds 0–2 | 10–12 heads + MLPs | s .94–.95, b² .93–.94, D .92–.94 | W_in 362–634 | n/a | .945–.955, 200 rows |
+| A R 31 TRAIN run 2 (3) | 14 heads + 4 MLPs | b² .96, D .95, s .94 (3) | W_in 300 | .44–.49 | .88 / .87 |
+| T R 15 PART run 2, seeds 0–2 | 9 heads + 1 MLP | D ≈ .94 (2) | stage input 80 (51) | 0 | .63 / .61 |
 
-Key: used = components with a mean-ablation drop; R² = best linear probe (layer); rank = effective rank at 99% energy; JS = attention
-divergence to the HAND head; s0–2 = seeds 0 to 2.
+Key: used = mean-ablation dependence; rank = effective rank at 99% energy; JS = attention divergence to HAND. Earlier and later S PART
+probe/final summaries are both retained (.96 versus .97 for D; .05 versus .025–.035 final); their recorded summaries do not specify
+an evaluation reconciliation, so none is invented here.
 
 ## References
 
-- Nanda, N., Chan, L., Lieberum, T., Smith, J., & Steinhardt, J. (2023). Progress measures for grokking via mechanistic
-  interpretability. *ICLR 2023 (arXiv preprint)*. https://doi.org/10.48550/arXiv.2301.05217 (training curves are not circuit evidence)
-- Nye, M., Andreassen, A. J., Gur-Ari, G., et al. (2021). Show your work: Scratchpads for intermediate computation with language
-  models. *arXiv preprint*. https://doi.org/10.48550/arXiv.2112.00114 (scratchpads as supervised intermediate computation)
+- Buckley & Eslami. (1997). Neural net solutions to fuzzy problems: the quadratic equation. *Journal article*. https://doi.org/10.1016/S0165-0114(95)00412-2 (fuzzy quadratics)
+- Buckley et al. (2002). Fuzzy equations using evolutionary algorithms and neural nets. *Journal article*. https://doi.org/10.1007/s005000100147 (fuzzy-equation variant)
+- Bukhsh et al. (2022). LSTM interpretation for approximating polynomial roots. *Journal article*. https://doi.org/10.1109/ACCESS.2022.3157306 (root approximation, not a causal-circuit certificate)
+- Das & Seal. (2012). Real polynomial roots with feedforward networks. *Conference paper*. https://doi.org/10.1109/NCCCS.2012.6413004 (real-root variant)
+- Dilanian et al. (2006). Neural polynomial-root finding for phase-retrieval diffractometry. *Journal article*. https://doi.org/10.1063/1.2201447 (application variant)
+- Epitropakis & Vrahatis. (2005). Neural root finding and approximation. *Journal article*. https://doi.org/10.1145/1140378.1140382 (root/count variant)
+- Freitas et al. (2021). Neural approximation of arbitrary polynomial roots. *Journal article*. https://doi.org/10.3390/math9040317 (numerical approximation)
+- Hendrycks et al. (2021). Measuring mathematical problem solving with the MATH dataset. *arXiv preprint*. https://doi.org/10.48550/arXiv.2103.03874 (worked solutions)
+- Huang & Chi. (2001). Complex polynomial roots by feedforward networks. *Conference paper*. https://doi.org/10.1109/IJCNN.2001.1016716 (complex-root variant)
+- Huang & Chi. (2001). Problem decomposition for real polynomial roots. *Conference paper*. https://doi.org/10.1109/IJCNN.2001.1016718 (decomposition variant)
+- Huang et al. (2003). Dilation for close polynomial roots. *Journal article*. https://doi.org/10.1016/S0375-9601(03)00216-0 (close roots)
+- Huang et al. (2003). Ordered polynomial roots by constrained partitioning networks. *Conference paper*. https://doi.org/10.1109/IJCNN.2003.1223844 (ordered roots)
+- Huang. (2004). Constructive neural polynomial-root finding. *Journal article*. https://doi.org/10.1109/TNN.2004.824424 (constructive method)
+- Huang et al. (2004). Neural root finder based on root moments. *Journal article*. https://doi.org/10.1162/089976604774201668 (root moments)
+- Huang et al. (2005). Constrained-learning neural root finders. *Journal article*. https://doi.org/10.1016/j.amc.2004.04.070 (constrained learning)
+- Mourrain et al. (2006). Counting real polynomial roots through neural networks. *Journal article*. https://doi.org/10.1016/j.camwa.2005.07.012 (root-count variant)
+- Nanda, N., Chan, L., Lieberum, T., Smith, J., & Steinhardt, J. (2023). Progress measures for grokking via mechanistic interpretability. *International Conference on Learning Representations (ICLR 2023)*. https://doi.org/10.48550/arXiv.2301.05217 (modular-addition background, not quadratic-root evidence)
+- Nunley. (2026). TANGO: Treating tokens as operators. *arXiv preprint*. https://doi.org/10.48550/arXiv.2608.22117 (broad mathematics training)
+- Nye, M., Andreassen, A. J., Gur-Ari, G., et al. (2021). Show your work: Scratchpads for intermediate computation with language models. *arXiv preprint*. https://doi.org/10.48550/arXiv.2112.00114 (supervised intermediate computation)
+- Palermo et al. (2021). Mathematical reasoning via program synthesis. *arXiv preprint*. https://doi.org/10.48550/arXiv.2107.07373 (solving programs)
+- Qiu et al. (2026). Explaining and tuning arithmetic transformers with human strategies. *arXiv preprint*. https://doi.org/10.48550/arXiv.2607.17166 (integer-arithmetic background)
+- Saxton et al. (2019). Analysing mathematical reasoning abilities of neural models. *arXiv preprint*. https://doi.org/10.48550/arXiv.1904.01557 (sequence-model roots)
+- Thomas & Bani-Yaghoub. (2026). Limits of interpretable learning in quintic root classification. *arXiv preprint*. https://doi.org/10.48550/arXiv.2602.23467 (includes root-type classification, not extraction)
+- Wang et al. (2026). Function-conditioned neural Caputo King–Neta root estimator. *Journal article*. https://doi.org/10.3390/fractalfract10100669 (numerical root estimator)
+- Zhang et al. (2008). Multiple real roots using polynomial discrimination. *Conference paper*. https://doi.org/10.1109/ICCIS.2008.4670918 (multiplicity variant)
+- Zhang & Zeng. (2009). Neural simultaneous extraction of polynomial roots. *Conference paper*. https://doi.org/10.1109/CIS.2009.78 (simultaneous roots)
+- Zhu et al. (2008). Fast neural extraction of all polynomial roots. *Conference paper*. https://doi.org/10.1109/ICOSP.2008.4697750 (all-roots variant)

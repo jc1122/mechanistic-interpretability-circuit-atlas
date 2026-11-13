@@ -1,17 +1,10 @@
 # Mechanistic Interpretability Circuit Atlas
 
-This atlas asks which circuits small transformers learn on algorithmic tasks, and how those circuits compare with one written by hand.
-For 31 tasks (counting, arithmetic, number formats, automata, finite fields, symbolic mathematics, search and chess) an exact
-hand-built transformer was written, with every weight set by a formula, and networks were then trained over many seeds, both as a
-single stage on top of frozen hand-built parts and from scratch. For every trained network the atlas reports which circuit it uses,
-how many seeds share it, and whether a closed-form description of it survives substitution. Three tasks are solved, 27 are partly
-solved and one is unsolved. Trained networks usually compute the hand-built variables, but with different wiring: networks trained
-from scratch share at most .15 of their top circuit edges with the hand-built network (Jaccard), against .78–1.0 for networks trained
-on frozen parts.
-Failed networks still carry the variables and fail to generalise rather than to compute them. A scratchpad shrinks the hand-built
-circuit by about an order of magnitude (long division: 186 neurons without one, 14 with one). A closed form is called verified only if
-substituting it and resampling everything outside the claimed circuit each keep at least .90 of the network's exact match; no entry
-yet meets this rule in full, so the closed forms are reported as partial or as sufficient readouts.
+This atlas asks what small neural networks compute, how we can check their circuits, and how those circuits compare with algorithms written by hand. Its 41 entries cover counting, arithmetic, number formats, automata, finite fields, symbolic mathematics, language, search, chess and external recurrent-model zoos. Each entry explains the task first, then gives the model, results, proposed circuit and tests that support or limit the explanation. Start with [count-mod-5](entries/count-mod-5.md), browse the [domain index](INDEX.md), or use the [glossary](GLOSSARY.md) when a term is unfamiliar.
+
+The transformer studies compare hand-built weights, one stage trained on frozen hand-built parts, and training from scratch. A closed form is an equation-based replacement for a trained computation. It counts as verified only when both substitution and resampling everything outside the claimed circuit retain at least .90 of the network's accuracy under the entry's stated criterion. Several updated entries now pass those tests at a stated scope; others remain partial or sufficient readouts. The external zoos have their own sampled-certificate accounting, with limitations near the top of each page; “proven” there does not mean an all-input theorem or perfect task performance.
+
+In the arithmetic comparisons, trained networks often compute the hand-built variables with different wiring: from-scratch networks share at most .15 of their top circuit edges with HAND (Jaccard), against .78–1.0 for networks trained on frozen parts. Some failed networks still carry the variables but fail to generalise. A scratchpad, which writes intermediate results before the answer, can shrink the hand-built circuit by about an order of magnitude (long division: 186 neurons without one, 14 with one). These are findings at the scopes linked below, not universal claims about every entry.
 
 ## Introduction
 
@@ -28,15 +21,14 @@ scratch, and how often each solution appears over seeds. Because every hand-buil
 probed, patched and ablated against a reference instead of against a guess.
 
 What is new is the protocol rather than any single task. The same three rungs, usually ten seeds per final cell, circuit types counted per
-seed and one acceptance rule are applied to all 31 tasks, and negative results are kept. The acceptance rule follows causal scrubbing
+seed and one acceptance rule are applied across the transformer tasks, and negative results are kept. The acceptance rule follows causal scrubbing
 ([Chan et al., 2022](REFERENCES.md#chan2022)): a formula that reproduces the network when substituted is only a sufficient readout
 until the rest of the network has also been shown to be unnecessary ([METHODS §9](METHODS.md#9-verification-and-the-acceptance-rule);
 [related work](METHODS.md#related-work)).
 
 ## Main findings
 
-Swapping parts one at a time does not verify a circuit. Single-component substitutions usually keep accuracy, but scrubbing the whole
-proposed circuit at once fails in five tasks: [group automata](entries/dfa-group-automata.md) (71.42% and 1.69% on two seeds),
+Swapping parts one at a time does not verify a circuit. Earlier single-component substitutions kept accuracy while joint scrubs failed in five tasks; those failed tests remain failed even where a separately tested successor form now passes: [group automata](entries/dfa-group-automata.md) (71.42% and 1.69% on two seeds),
 [base conversion](entries/base-conversion.md) (.556 / .923), [long division](entries/long-division-square-root.md) (2.9% and 1.8%),
 [subtraction](entries/subtraction.md) (.938 / .933) and [decimal and hexadecimal addition](entries/decimal-hex-addition.md)
 (.74–.82). A working replacement is therefore reported as a sufficient readout and not as a verified mechanism.
@@ -94,20 +86,24 @@ publish their networks, test sets and recorded accuracies on [Hugging Face](http
 - [multiplication](entries/multiplication.md): the scratchpad step reuses the adder's lookup; answer only never trains
 - [multiplication-base-order](entries/multiplication-base-order.md): least significant digit first is learnable, most significant first rarely; a scratchpad solves both
 - [long-division-square-root](entries/long-division-square-root.md): one shared compare-and-subtract step; answer only needs 16–90x more data
-- [gcd-euclid](entries/gcd-euclid.md): the trained stage is a three-rule router on frozen Euclid parts
-- [quadratic-roots](entries/quadratic-roots.md): the register executor reduces to one AND neuron; the parent formats fail
+- [gcd-euclid](entries/gcd-euclid.md): three-rule router on frozen Euclid parts; from scratch, seed-specific distributed circuits
+- [quadratic-roots](entries/quadratic-roots.md): executor PART reduces to one verified AND neuron; from-scratch and parent formats fail
 - [compose-arithmetic-registers](entries/compose-arithmetic-registers.md): compositions learned without register lookup; the bare step fails
+- [integer-matvec](entries/integer-matvec.md): dense last-layer carry circuit reaches 8/10 exact with scratchpad; answer only needs longer training
 
 **Number formats**
 - [base-conversion](entries/base-conversion.md) ⟳: hex to binary groks as a nibble lookup; carry-type conversions are never learned
 - [output-order-base-conversion](entries/output-order-base-conversion.md): most significant first is a threshold ladder; least significant first mostly fails
 
 **Automata and finite fields**
-- [dfa-group-automata](entries/dfa-group-automata.md): transition table learned with a scratchpad; answer-only S3 uses prefix doubling on frozen parts
+- [dfa-group-automata](entries/dfa-group-automata.md): serial scratchpad MLP chain; answer-only S3 uses prefix doubling on frozen parts
 - [gf2-matrix-product](entries/gf2-matrix-product.md): XOR-AND lookup per step; from scratch, the same variables with different wiring
 - [gf2-elimination](entries/gf2-elimination.md): XOR-AND row update; from scratch, three circuit types given enough matrices
 - [linear-systems-finite-fields](entries/linear-systems-finite-fields.md): microstep scratchpad learned from scratch; fused updates bypass the hand-built subtractor
-- [crc-remainder](entries/crc-remainder.md): shift-XOR step learned; answer only uses a different parity readout
+- [crc-remainder](entries/crc-remainder.md): distributed shift-XOR step; readout and circuit checks pass, without an upstream formula
+- [dyck-k-and-agreement](entries/dyck-k-and-agreement.md): agreement copies the first noun; bracket scratchpads learn a pop-pointer circuit with failed complement checks
+- [counter-languages](entries/counter-languages.md): ratio counts and summed violations solve answer-only tasks; scratchpads solve only one language
+- [binding-coreference](entries/binding-coreference.md): one head attends to the referent; substitution works but every type-level complement fails
 
 **Symbolic mathematics**
 - [polynomial-add-mul](entries/polynomial-add-mul.md): addition learned in 40/40 networks; multiplication never reaches exact match
@@ -115,12 +111,20 @@ publish their networks, test sets and recorded accuracies on [Hugging Face](http
 - [polynomial-integration](entries/polynomial-integration.md): only the scratchpad transfers to withheld fractions
 - [chain-rule-differentiation](entries/chain-rule-differentiation.md): solved from scratch with a token-pair front end; frozen-parser setup bypasses the parser
 - [symbolic-algebra-atoms](entries/symbolic-algebra-atoms.md): collecting terms learned at every rung; expanding and solving need a scratchpad
+- [nested-expressions-mod-7](entries/nested-expressions-mod-7.md): verified residue table on a frozen parser; from-scratch nets fail held-out literals
+- [euler-decay-ode](entries/euler-decay-ode.md): frozen-route update misses held-out first steps; from-scratch nets memorise states, with no solved cell
 
 **Search and games**
-- [grid-bfs](entries/grid-bfs.md): reached-set scratchpad learned from scratch; answer only is exact only up to distance 3
-- [dpll-search](entries/dpll-search.md): a trained last MLP completes both hand-built solvers; from scratch the state update fails
+- [grid-bfs](entries/grid-bfs.md): distributed reached-set scratchpad solves 10/10; answer only fails beyond distance 3
+- [dpll-search](entries/dpll-search.md): verified local update completes the frozen solver in 10/10; from-scratch state updates fail
 - [chess-krk](entries/chess-krk.md): rule router at .993–.999, never exact; trained networks code kings as coordinates
 - [chess-mate-in-one](entries/chess-mate-in-one.md): the trained final MLP decodes the hand-built escape count
+- [chess-attack-maps](entries/chess-attack-maps.md): hint scratchpad learns ray pointers, reaching 7/10 recorded-test exact; tested answer-only networks fail
+- [chess-kbbk-mate](entries/chess-kbbk-mate.md): distributed lookup and candidate copying; 0/9 seeds solve held-out moves
+
+**External model zoos**
+- [algzoo-2nd-argmax](entries/algzoo-2nd-argmax.md): sampled forms cover 132 networks, including optimal-only flags; many longer networks remain unexplained
+- [algzoo-median](entries/algzoo-median.md): sampled forms cover 100 nets, with empty-complement exceptions, inexact medians and uncompressed forms
 
 ## Quick start
 
@@ -134,10 +138,9 @@ The full commands per entry are in [code/README.md](code/README.md).
 
 ## Status
 
-The atlas is work in progress. Entries are dated (last runs from 2026-11-04 to 2026-11-08) and state which cells are still open. Five
-entries rerun from `code/`; the others publish their networks, test sets and recorded accuracies, and their code is not ported yet.
-How the atlas was made (one author, with LLM agents working under a written protocol) is described in
-[METHODS.md](METHODS.md#how-this-was-made).
+The atlas is work in progress. The entries include published updates through 2026-11-13. The two external-zoo entries are dated snapshots, not automatically updated counts: second-argmax ends at Sol iteration 12 and median at iteration 22. Each entry states its own last run, evaluation criterion, archive coverage and unresolved tests. Five entries rerun from `code/`; the others link archived networks and recorded checks, with code not yet ported. How the atlas was made (one author, with LLM agents working under a written protocol) is described in [METHODS.md](METHODS.md#how-this-was-made).
+
+The earlier UX snapshot covered 31 transformer tasks, with three called solved, 27 partly solved and one unsolved, and last runs dated 2026-11-04 to 2026-11-08. It reported no entry meeting the full verification rule. Those are historical snapshot claims, not totals for the current 41-entry catalogue; later entries add accepted forms, explicit negative results and external zoos. Current verdicts and their scopes are listed per entry in [INDEX.md](INDEX.md).
 
 ## Cite and license
 
