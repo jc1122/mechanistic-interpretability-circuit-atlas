@@ -8,6 +8,14 @@ Unreleased changes are not a tagged release or a DOI deposit.
 
 ### Changed
 
+- README now opens with a letter-counting picture, four linked finding stories and a three-entry tour. Detailed scrub failures,
+  attribution ranges, acceptance rules and historical counts remain below the catalogue, with their original qualifications.
+- The scratchpad size figure now shows how written intermediate state lets a hand-built compare-and-subtract circuit be reused.
+  The original division, square-root and multiplication counts and their different units remain in a linked text table; the drawing
+  does not claim that trained networks are this small. The counting picture marks supplied and trained parts, with partial status.
+- INDEX adds topic jumps in plain words; GLOSSARY starts with networks, weights, circuits and training before the technical terms.
+  SITE proposes a static reading site for owner review only. No hosting, build workflow or publication setting is enabled.
+
 - The shared catalogue covers the current entries and distinguishes seeds, best/final snapshots, screening cells and sampled
   external-zoo certificates. Task performance and mechanism acceptance are separate claims.
 - Reader routes, reuse instructions, archive-coverage caveats and licence/attribution scope are explicit in README and INDEX.

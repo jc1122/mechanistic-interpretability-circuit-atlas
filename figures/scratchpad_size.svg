@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="540" height="1119.0" viewBox="0 0 360 746" role="img" aria-labelledby="title desc">
-<title id="title">Hand-built circuit sizes with and without a scratchpad</title>
-<desc id="desc">Long division: answer only 186 MLP neurons, with scratchpad 14. Square root: answer only 46 MLP neurons, with scratchpad 20. Six-bit multiplication: answer only 14 attention heads, with scratchpad 7. Neurons and heads have separate scales. These are hand-built designs, not trained-network sizes.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="540" height="696" viewBox="0 0 540 696" role="img" aria-labelledby="title desc">
+<title id="title">Writing the working can shrink a circuit</title>
+<desc id="desc">A simplified picture of hand-built 8-bit long division. Answer only uses many internal comparisons, with 186 used neurons. A scratchpad writes each step so the same compare-and-subtract circuit reads the written state repeatedly, with 14 used neurons. The companion table also records 8-bit long-hand square root: 46 versus 20 neurons, and 6-bit multiplication: 14 versus 7 attention heads. These compare named hand-built designs, not trained networks, seed averages or interchangeable size units. Arrows show information flow, not measured counts of connections.</desc>
 <ns0:metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:ns0="http://www.w3.org/2000/svg" xmlns:ns2="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
   <rdf:RDF>
    <ns2:Work>
@@ -15,37 +15,45 @@
    </ns2:Work>
   </rdf:RDF>
  </ns0:metadata>
-<metadata>CC BY 4.0. Compact redraw; recorded values unchanged. Original figure metadata retained.</metadata>
-<style>text{font-family:system-ui,sans-serif}.fg{fill:#172b3a}.bg{fill:#ffffff}.panel{fill:#f0f4f8;stroke:#63758b;stroke-width:1.5}.trained{fill:#fff0ba;stroke:#63758b;stroke-width:1.5}.ink{fill:#172b3a}.grid{stroke:#7d8c98}.track{fill:#e1e6eb}.blue{fill:#176b9b}.amber{fill:#a05a00}.grey{fill:#697681}.light{fill:#e1e6eb;stroke:#63758b}.blue-line{stroke:#176b9b}.amber-line{stroke:#a05a00}.grey-line{stroke:#697681}
-@media(prefers-color-scheme:dark){.fg{fill:#f0f6fc}.bg{fill:#161b22}.panel{fill:#263746;stroke:#9bacc0}.trained{stroke:#e3b341}.grid{stroke:#8b949e}.track{fill:#303c49}.blue{fill:#58a6ff}.amber{fill:#e3b341}.grey{fill:#a0adba}.light{fill:#303c49;stroke:#9bacc0}.blue-line{stroke:#58a6ff}.amber-line{stroke:#e3b341}.grey-line{stroke:#a0adba}}</style>
-<rect width="360" height="746" rx="8" class="bg"/>
-<text x="20" y="24" font-size="18" class="fg" font-weight="600" text-anchor="start">Hand-built circuit sizes</text>
-<text x="20" y="59" font-size="16" class="fg" font-weight="400" text-anchor="start">Separate scales for neurons and</text>
-<text x="20" y="82" font-size="16" class="fg" font-weight="400" text-anchor="start">heads; these are designed</text>
-<text x="20" y="105" font-size="16" class="fg" font-weight="400" text-anchor="start">circuits, not trained-network</text>
-<text x="20" y="128" font-size="16" class="fg" font-weight="400" text-anchor="start">sizes.</text>
-<text x="20" y="160" font-size="16" class="fg" font-weight="600" text-anchor="start">Long division</text>
-<text x="20" y="192" font-size="16" class="fg" font-weight="400" text-anchor="start">MLP neurons</text>
-<text x="20" y="224" font-size="16" class="fg" font-weight="400" text-anchor="start">Answer only: 186</text>
-<rect x="20" y="251" width="320" height="12" rx="3" class="track"/>
-<rect x="20" y="251" width="320.0" height="12" rx="3" class="amber"/>
-<text x="20" y="287" font-size="16" class="fg" font-weight="400" text-anchor="start">With scratchpad: 14</text>
-<rect x="20" y="314" width="320" height="12" rx="3" class="track"/>
-<rect x="20" y="314" width="24.086021505376344" height="12" rx="3" class="blue"/>
-<text x="20" y="350" font-size="16" class="fg" font-weight="600" text-anchor="start">Square root</text>
-<text x="20" y="382" font-size="16" class="fg" font-weight="400" text-anchor="start">MLP neurons</text>
-<text x="20" y="414" font-size="16" class="fg" font-weight="400" text-anchor="start">Answer only: 46</text>
-<rect x="20" y="441" width="320" height="12" rx="3" class="track"/>
-<rect x="20" y="441" width="79.13978494623656" height="12" rx="3" class="amber"/>
-<text x="20" y="477" font-size="16" class="fg" font-weight="400" text-anchor="start">With scratchpad: 20</text>
-<rect x="20" y="504" width="320" height="12" rx="3" class="track"/>
-<rect x="20" y="504" width="34.40860215053763" height="12" rx="3" class="blue"/>
-<text x="20" y="540" font-size="16" class="fg" font-weight="600" text-anchor="start">Multiplication (6-bit)</text>
-<text x="20" y="572" font-size="16" class="fg" font-weight="400" text-anchor="start">attention heads</text>
-<text x="20" y="604" font-size="16" class="fg" font-weight="400" text-anchor="start">Answer only: 14</text>
-<rect x="20" y="631" width="320" height="12" rx="3" class="track"/>
-<rect x="20" y="631" width="320.0" height="12" rx="3" class="amber"/>
-<text x="20" y="667" font-size="16" class="fg" font-weight="400" text-anchor="start">With scratchpad: 7</text>
-<rect x="20" y="694" width="320" height="12" rx="3" class="track"/>
-<rect x="20" y="694" width="160.0" height="12" rx="3" class="blue"/>
+<metadata>CC BY 4.0. First-party explanatory redraw; no new experimental measurements. Sources: entries/count-mod-5.md; entries/long-division-square-root.md; entries/multiplication.md.</metadata>
+<style>
+text{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--ink)}
+svg{--bg:#ffffff;--ink:#182d3d;--muted:#41586b;--line:#586e80;--blue:#12658e;--bluefill:#e8f3f9;--amber:#875000;--amberfill:#fff2d8;--card:#f4f7fa}
+@media(prefers-color-scheme:dark){svg{--bg:#0d1117;--ink:#eef4fa;--muted:#b5c5d4;--line:#9bafc0;--blue:#79c7ed;--bluefill:#152e40;--amber:#f3c26b;--amberfill:#342b1c;--card:#161f29}}
+.bg{fill:var(--bg)}.card{fill:var(--card);stroke:var(--line);stroke-width:2}
+.given{fill:var(--bluefill);stroke:var(--blue);stroke-width:2;stroke-dasharray:7 5}
+.learned{fill:var(--amberfill);stroke:var(--amber);stroke-width:2.5}
+.paper{fill:var(--bg);stroke:var(--line);stroke-width:2}
+.line{fill:none;stroke:var(--line);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.flow{fill:none;stroke:var(--ink);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;marker-end:url(#arrow)}
+.repeat{stroke-dasharray:6 5}.blue{fill:var(--blue)}.amber{fill:var(--amber)}.muted{fill:var(--muted)}
+</style>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 1 1 L 9 5 L 1 9" fill="none" stroke="var(--ink)" stroke-width="1.6"/></marker></defs>
+<rect x="0" y="0" width="540" height="696" rx="0" class="bg"/>
+<text x="18" y="40" font-size="30" font-weight="650" class="" text-anchor="start">Writing the working can</text>
+<text x="18" y="70" font-size="30" font-weight="650" class="" text-anchor="start">shrink a circuit</text>
+<text x="18" y="108" font-size="25" font-weight="400" class="muted" text-anchor="start">Hand-built 8-bit long division</text>
+<rect x="18" y="130" width="504" height="193" rx="12" class="card"/>
+<text x="36" y="166" font-size="27" font-weight="650" class="" text-anchor="start">Answer only</text>
+<text x="36" y="201" font-size="24" font-weight="400" class="" text-anchor="start">Keep the comparisons inside the network</text>
+<rect x="180" y="217" width="220" height="51" rx="8" class="given"/>
+<text x="290" y="250" font-size="24" font-weight="600" class="blue" text-anchor="middle">comparisons</text>
+<text x="36" y="250" font-size="24" font-weight="400" class="" text-anchor="start">input</text>
+<path d="M 100 243 H 170" class="flow"/>
+<path d="M 410 243 H 430" class="flow"/>
+<text x="475" y="250" font-size="24" font-weight="400" class="" text-anchor="middle">answer</text>
+<text x="290" y="304" font-size="27" font-weight="650" class="blue" text-anchor="middle">186 neurons</text>
+<rect x="18" y="345" width="504" height="291" rx="12" class="card"/>
+<text x="36" y="381" font-size="27" font-weight="650" class="" text-anchor="start">Write each step</text>
+<text x="36" y="414" font-size="24" font-weight="400" class="" text-anchor="start">Read the numbers and written remainder</text>
+<rect x="169" y="439" width="324" height="75" rx="8" class="given"/>
+<text x="331" y="469" font-size="24" font-weight="600" class="blue" text-anchor="middle">compare, then subtract</text>
+<text x="331" y="499" font-size="27" font-weight="650" class="blue" text-anchor="middle">14 neurons</text>
+<path d="M 331 518 V 539" class="flow"/>
+<rect x="169" y="541" width="324" height="84" rx="4" class="paper"/>
+<text x="331" y="573" font-size="24" font-weight="400" class="" text-anchor="middle">write the next bit</text>
+<text x="331" y="605" font-size="24" font-weight="400" class="" text-anchor="middle">and remainder</text>
+<path d="M 164 583 H 137 V 477 H 160" class="flow repeat"/>
+<text x="91" y="524" font-size="24" font-weight="600" class="" text-anchor="middle">reuse</text>
+<text x="18" y="676" font-size="24" font-weight="400" class="muted" text-anchor="start">Design counts, not trained-network sizes.</text>
 </svg>

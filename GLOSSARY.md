@@ -1,6 +1,28 @@
 # Glossary
 
-Plain-language meanings of the terms used in the entries. Technical definitions and the analysis code: [METHODS.md](METHODS.md).
+Plain-language meanings of the terms used in the entries. Start below; the [guided tour](README.md#start-here) puts the words to work.
+Technical definitions and the analysis code: [METHODS.md](METHODS.md).
+
+## First words
+
+A neural network turns an input into an output using stored numbers called weights. For these small tasks, the input might be a line
+of letters and the output a count. A model is the particular network being studied.
+
+A circuit is a set of network parts and connections that carry out a computation. A circuit explanation says what those parts
+compute and how they work together. A correct answer alone does not tell us whether that explanation is right.
+
+Training adjusts weights using examples. Hand-built weights are set by a formula instead. A frozen part keeps its weights fixed
+while another part trains; success with that help does not establish that training can learn the whole algorithm.
+
+Held-out examples are excluded from training. They test performance beyond the training examples, within the entry's stated
+split and range. If the same held-out examples were used to choose the best saved model, that choice is not an independent test.
+
+A closed form is a short formula proposed to replace a learned computation. Substitution tests whether that replacement works.
+Verifying a mechanism also requires tests of the circuitry outside it, at the [stated acceptance scope](#verifying-a-circuit).
+
+Find more detail: [hand-built and trained networks](#the-three-rungs), [answers and written steps](#task-formats),
+[run counts and accuracy](#counting-results), [mechanism tests](#verifying-a-circuit), [analysis measures](#analysis-measures),
+[hand-built machinery](#hand-built-machinery), or [machine-learning terms](#standard-machine-learning-terms).
 
 ## The three rungs
 - **HAND**: a hand-built network. Every weight is set by a formula and nothing is trained. It specifies a reference algorithm,

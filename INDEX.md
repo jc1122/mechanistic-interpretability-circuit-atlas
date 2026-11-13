@@ -1,4 +1,19 @@
-# Index
+# Find an entry
+
+Choose a task you recognise, then follow how the network computes and where the explanation stops. New to the atlas? Take the
+[three-entry tour](README.md#start-here), or read the [first words](GLOSSARY.md#first-words).
+
+## Browse by topic
+
+- [Counting and modular arithmetic](#counting-and-modular-arithmetic): count letters, compare totals and wrap numbers around a fixed range.
+- [Arithmetic](#arithmetic): add, subtract, multiply, divide and work with stored numbers.
+- [Number formats](#number-formats): write the same number with different digits or in a different order.
+- [Automata and finite fields](#automata-and-finite-fields): track a changing state, match brackets and solve small binary systems.
+- [Symbolic mathematics](#symbolic-mathematics): manipulate expressions, differentiate, integrate and repeat a rounded decay step.
+- [Search and games](#search-and-games): explore mazes, search for satisfying assignments and choose chess moves.
+- [External model zoos](#external-model-zoos): inspect recurrent networks trained elsewhere to compare numbers or estimate a median.
+
+## What the evidence columns mean
 
 One row per entry, grouped as in the [README](README.md#entries). The atlas has 41 entries. Each linked article gives the task,
 evaluation examples, criterion, archive coverage and limitations. PART trains a stage on frozen hand-built parts; TRAIN trains the

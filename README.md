@@ -1,85 +1,77 @@
-# Mechanistic Interpretability Circuit Atlas
+# Circuit atlas
 
-This atlas examines what small neural networks learn when they count brackets, multiply numbers or search a maze. It compares
-learned computations with algorithms written by hand. Its 41 entries explain the task, show the proposed circuit and separate what works
-from what remains unexplained. Start with [count-to-remainder lookup](entries/count-mod-5.md), browse the [domain index](INDEX.md),
-or read the [rounded-decay failure](entries/euler-decay-ode.md). The [glossary](GLOSSARY.md) explains the terminology.
+Explore how small neural networks count, multiply and search. This atlas compares hand-built solutions with what training learned,
+keeping the tests and limits beside each explanation.
 
-The transformer studies compare hand-built weights, one stage trained on frozen hand-built parts, and training from scratch. A closed form is an equation-based replacement for a trained computation. It counts as verified only when both substitution and resampling everything outside the claimed circuit retain at least .90 of the network's accuracy under the entry's stated criterion. Several updated entries now pass those tests at a stated scope; others remain partial or sufficient readouts. The external zoos have their own sampled-certificate accounting, with limitations near the top of each page; “proven” there does not mean an all-input theorem or perfect task performance.
+[![A hand-built counter finds seven a's in a line; the trained answer stage groups counts such as two and seven by their remainder after division by five, and answers two. Only the answer stage learns. Open at full size.](figures/atlas-first-look.svg)](figures/atlas-first-look.svg)
 
-For readers, each entry starts with a concrete task and a short evidence summary. For reusers, [five entries have CPU training code](code/README.md);
-others offer archived artifacts with entry-specific gaps. [Reuse and reproducibility](#reuse-and-reproducibility) explains the difference
-between rerunning training, rescoring a model and checking a file. This is a living research collection, not a peer-reviewed benchmark
-or a set of deployment-ready solvers.
+*Figure 1. [Count a's, then remove groups of five](entries/count-mod-5.md). Only the answer stage learns. The formula is partial;
+outside circuitry was not resampled.*
 
-## Introduction
+## Findings worth a look
 
-Hand-built transformers are already used as ground truth in interpretability. Tracr compiles programs into transformer weights
-([Lindner et al., 2023](REFERENCES.md#lindner2023)), and InterpBench trains models to implement known circuits so that circuit-discovery
-methods can be scored ([Gupta et al., 2024](REFERENCES.md#gupta2024)). Both use a known circuit to test interpretability tools. Small
-algorithmic tasks are also where trained networks have been reverse-engineered in detail, most clearly the Fourier circuit that
-appears when a network groks modular addition ([Power et al., 2022](REFERENCES.md#power2022);
-[Nanda et al., 2023](REFERENCES.md#nanda2023)).
+- [A learned lookup largely ignores line length](entries/count-mod-5.md); the count itself is supplied.
+- [Written steps let a small circuit do more](#why-writing-the-working-helps), in these hand-built designs.
+- [A correct replacement can still miss the network's mechanism](entries/multiplication.md#53-circuit-probes).
+- [An exact snapshot can fail by the end of training](entries/euler-decay-ode.md#4-what-training-finds).
 
-The atlas turns the question around. For each transformer task it specifies a hand-built reference, with the exactness scope stated in the entry, and asks what gradient descent finds in
-its place: whether it reads the hand-built parts when they are frozen and available, whether it rediscovers the same algorithm from
-scratch, and how often each solution appears over seeds. Because every hand-built variable is known exactly, a trained network can be
-probed, patched and ablated against a reference instead of against a guess.
+## Start here
 
-What is new is the protocol rather than any single task. The same three rungs, usually ten seeds per final cell, circuit types counted per
-seed and one acceptance rule are applied across the transformer tasks, and negative results are kept. The acceptance rule follows causal scrubbing
-([Chan et al., 2022](REFERENCES.md#chan2022)): a formula that reproduces the network when substituted is only a sufficient readout
-until the rest of the network has also been shown to be unnecessary ([METHODS §9](METHODS.md#9-verification-and-the-acceptance-rule);
-[related work](METHODS.md#related-work)).
+1. [Count modulo five](entries/count-mod-5.md). Follow a learned lookup; its test of outside circuitry is still missing.
+2. [Binary multiplication](entries/multiplication.md). Writing running sums helps, yet a working readout does not verify the mechanism.
+3. [Rounded decay](entries/euler-decay-ode.md). Every final run falls short of exact match on a simple shrinking-number rule.
 
-## Main findings
+Browse all [41 entries by topic](INDEX.md), look up a [plain-language term](GLOSSARY.md#first-words), or inspect the
+[evidence and limits](#main-findings). For reuse, follow the [code and archive guide](#reuse-and-reproducibility).
+This is a living research collection, not a peer-reviewed benchmark or a set of deployment-ready solvers.
 
-Swapping parts one at a time does not verify a circuit. Earlier single-component substitutions kept accuracy while joint scrubs,
-which replace components with states from other inputs matching the proposed variables, failed in five tasks. Those tests remain
-failed even where a separately tested successor form now passes. A working replacement alone supports a readout; verification also
-requires the complement test and the entry's stated controls.
+## Why writing the working helps
 
-| Earlier tested hypothesis | Recorded whole-output exact-match score and scope |
-|---|---|
-| [Group automata](entries/dfa-group-automata.md#53-earlier-circuit-probes) | 71.42% in seed 4 and 1.69% in seed 0; means of 3 donor draws, with native and joint substitution each 100%. |
-| [Base conversion](entries/base-conversion.md#5-mechanism-and-verification) | .556 / .923 in seeds 1 / 4 under the selected-nibble-only joint scrub. |
-| [Long division](entries/long-division-square-root.md#5-mechanism-and-verification) | 2.9% and 1.8% in answer-only TRAIN seeds 0 and 3 under the whole-role scrub. |
-| [Subtraction](entries/subtraction.md#5-mechanism-and-verification) | .938 / .933 in binary borrow-token TRAIN seeds 0 / 3, below the .99 control bar; means of three donor draws on 416 evaluation pairs, also used to select the keep-sets. |
-| [Decimal addition](entries/decimal-hex-addition.md#53-why-the-train-algorithm-remains-unresolved) | .74–.80 in seed 1 and .81–.82 in seed 2. The earlier overview's .74–.82 combined display is historical, not a newly pooled range. |
+A scratchpad is a written record of intermediate results ([glossary](GLOSSARY.md#task-formats)). In the hand-built division design,
+one small circuit compares and subtracts at each step, reading the remainder already written. Without those written steps, the
+answer-only design keeps many comparisons inside the network.
 
-These are selected-seed audits, not failed-seed frequencies. Subtraction used 416 non-training fit pairs and 416 disjoint evaluation
-pairs, with the evaluation pairs also used adaptively for keep-set selection; this was not an untouched validation set. Example counts
-for the other scrub rows are unavailable in this overview and must not be borrowed from a neighbouring substitution batch.
+Neurons are small computing units; attention heads read information from other positions
+([glossary](GLOSSARY.md#standard-machine-learning-terms)). The counts below measure these different parts, not training runs.
 
-Trained networks can use the hand-built variables with different wiring. In [binary addition](entries/binary-addition.md) and
-[decimal and hexadecimal addition](entries/decimal-hex-addition.md), the earlier overview summarised edge overlap with HAND
-(Jaccard) as at most .15 for training from scratch and .78–1.0 for training on frozen parts
-([historical summary](SURPRISES.md#same-variables-different-wiring)). These are attribution screens, not causal circuit matches;
-heads were not aligned in TRAIN. Each entry's Appendix B gives the cell-specific trusted-network counts and the attribution
-exactness criterion, spearman_exact ≥ .8. No common pooled seed denominator is established by these summary ranges.
+![Hand-built long division: an answer-only network keeps many comparisons inside, using 186 neurons. A scratchpad writes the next bit and remainder, letting the same 14-neuron circuit serve each step. These are design counts, not trained-network sizes.](figures/scratchpad_size.svg)
 
-Some failed networks still use the tested hand-built variables. Swapping a hand-built variable between two inputs flips the
-answer in the examined failed networks about as often as in solved ones, in [binary addition](entries/binary-addition.md),
-[decimal and hexadecimal addition](entries/decimal-hex-addition.md) and
-[long division and square root](entries/long-division-square-root.md).
+*Figure 2. Information flow in the named 8-bit long-division designs. Writing each step allows the compare-and-subtract circuit to
+be reused. The schematic omits bit-level wiring; the complete [hand-built solution](entries/long-division-square-root.md#3-hand-built-solution)
+and the comparisons below give its scope.*
 
-A scratchpad can shrink a hand-built circuit (Figure 1). In the 8-bit designs, long division needs 186 neurons when the network
+[Open the scratchpad diagram at full size](figures/scratchpad_size.svg).
+
+*Table 1. Size of the named hand-built designs, with the answer only and with a scratchpad. These are not independent training
+seeds, seed averages or a common order-of-magnitude reduction. Neurons and attention heads are different units.*
+
+| Hand-built task | Answer only | With a scratchpad | Counted unit |
+|---|---|---|---|
+| [8-bit long division](entries/long-division-square-root.md#3-hand-built-solution) | 186 | 14 | Used neurons |
+| [8-bit long-hand square root](entries/long-division-square-root.md#3-hand-built-solution) | 46 | 20 | Used neurons |
+| [6-bit binary multiplication](entries/multiplication.md#3-hand-built-solution) | 14 | 7 | Attention heads |
+
+A scratchpad can shrink a hand-built circuit (Figure 2). In the 8-bit designs, long division needs 186 neurons when the network
 writes the answer only and 14 when it writes the steps, and long-hand square root 46 against 20. These are counts for named
 hand-built designs, not seed averages or a common order-of-magnitude reduction. With a scratchpad of running sums, the
 stage trained on frozen parts in [binary multiplication](entries/multiplication.md) reuses the adder's column-sum lookup in 10/10 seeds
 (a sufficient readout, substitution 1.00), while answer-only multiplication failed in the tested runs. This does not rule out other
 training settings, and the running-sum readout is not a verified whole-network mechanism.
 
-![Hand-built circuit size, answer only vs with a scratchpad: long division 186 vs 14 neurons, square root 46 vs 20 neurons, 6-bit multiplication 14 vs 7 heads](figures/scratchpad_size.svg)
-
-*Figure 1. Size of the hand-built circuits with the answer only and with a scratchpad: 8-bit long division 186 against 14 neurons,
-8-bit long-hand square root 46 against 20 neurons, 6-bit binary multiplication 14 against 7 heads. Each pair compares the named
-hand-built designs, not independent training seeds; neuron and head counts are different units.*
-
-These and other results that went against expectation are collected, each marked verified or preliminary, in
-[SURPRISES.md](SURPRISES.md).
+That multiplication result uses held-out, whole-output exact match 1.0 on 1639 pairs per seed. Each next token is scored with the
+correct previous tokens supplied, called teacher forcing ([glossary](GLOSSARY.md#task-formats)); it is not a test of autonomous rollout.
 
 ## How to read the atlas
+
+A circuit is the set of network parts and connections that carry out a computation ([glossary](GLOSSARY.md#first-words)). In the
+opening picture, hand-built weights supply the letter count; only the answer stage learns to group counts by remainder. In
+[count modulo five](entries/count-mod-5.md), 30/30 seeds reached held-out accuracy ≥ .99. The split held out count/length combinations,
+not whole count values. Unseen count values were not tested, and a working formula does not replace the missing test of circuitry
+outside it.
+
+For readers, each entry starts with a concrete task and a short evidence summary. For reusers, [five entries have CPU training code](code/README.md);
+others offer archived artifacts with entry-specific gaps. [Reuse and reproducibility](#reuse-and-reproducibility) explains the difference
+between rerunning training, rescoring a model and checking a file.
 
 Most transformer tasks compare three rungs; entries state missing rungs and exceptions. HAND is the formula-set reference network:
 read its entry for the exactness argument, exhaustive or sampled checks and any numerical/design failure. PART trains one stage on
@@ -162,6 +154,65 @@ splits. Read each entry's archive subsection before reuse.
 - [algzoo-2nd-argmax](entries/algzoo-2nd-argmax.md): short-list comparison and angle forms; many longer networks remain unexplained; optimal-only certificates stay flagged
 - [algzoo-median](entries/algzoo-median.md): sampled formulas explain median estimates; empty complements and near-network-sized forms remain flagged
 
+## Main findings
+
+These detailed results support the [opening stories](#findings-worth-a-look). The catalogue separates what works from what remains
+unexplained; every entry states the task, proposed circuit and limits.
+
+The transformer studies compare hand-built weights, one stage trained on frozen hand-built parts, and training from scratch. A closed form is an equation-based replacement for a trained computation. It counts as verified only when both substitution and resampling everything outside the claimed circuit retain at least .90 of the network's accuracy under the entry's stated criterion. Several updated entries now pass those tests at a stated scope; others remain partial or sufficient readouts. The external zoos have their own sampled-certificate accounting, with limitations near the top of each page; “proven” there does not mean an all-input theorem or perfect task performance.
+
+Swapping parts one at a time does not verify a circuit. Earlier single-component substitutions kept accuracy while joint scrubs,
+which replace components with states from other inputs matching the proposed variables, failed in five tasks. Those tests remain
+failed even where a separately tested successor form now passes. A working replacement alone supports a readout; verification also
+requires the complement test and the entry's stated controls.
+
+| Earlier tested hypothesis | Recorded whole-output exact-match score and scope |
+|---|---|
+| [Group automata](entries/dfa-group-automata.md#53-earlier-circuit-probes) | 71.42% in seed 4 and 1.69% in seed 0; means of 3 donor draws, with native and joint substitution each 100%. |
+| [Base conversion](entries/base-conversion.md#5-mechanism-and-verification) | .556 / .923 in seeds 1 / 4 under the selected-nibble-only joint scrub. |
+| [Long division](entries/long-division-square-root.md#5-mechanism-and-verification) | 2.9% and 1.8% in answer-only TRAIN seeds 0 and 3 under the whole-role scrub. |
+| [Subtraction](entries/subtraction.md#5-mechanism-and-verification) | .938 / .933 in binary borrow-token TRAIN seeds 0 / 3, below the .99 control bar; means of three donor draws on 416 evaluation pairs, also used to select the keep-sets. |
+| [Decimal addition](entries/decimal-hex-addition.md#53-why-the-train-algorithm-remains-unresolved) | .74–.80 in seed 1 and .81–.82 in seed 2. The earlier overview's .74–.82 combined display is historical, not a newly pooled range. |
+
+These are selected-seed audits, not failed-seed frequencies. Subtraction used 416 non-training fit pairs and 416 disjoint evaluation
+pairs, with the evaluation pairs also used adaptively for keep-set selection; this was not an untouched validation set. Example counts
+for the other scrub rows are unavailable in this overview and must not be borrowed from a neighbouring substitution batch.
+
+Trained networks can use the hand-built variables with different wiring. In [binary addition](entries/binary-addition.md) and
+[decimal and hexadecimal addition](entries/decimal-hex-addition.md), the earlier overview summarised edge overlap with HAND
+(Jaccard) as at most .15 for training from scratch and .78–1.0 for training on frozen parts
+([historical summary](SURPRISES.md#same-variables-different-wiring)). These are attribution screens, not causal circuit matches;
+heads were not aligned in TRAIN. Each entry's Appendix B gives the cell-specific trusted-network counts and the attribution
+exactness criterion, spearman_exact ≥ .8. No common pooled seed denominator is established by these summary ranges.
+
+Some failed networks still use the tested hand-built variables. Swapping a hand-built variable between two inputs flips the
+answer in the examined failed networks about as often as in solved ones, in [binary addition](entries/binary-addition.md),
+[decimal and hexadecimal addition](entries/decimal-hex-addition.md) and
+[long division and square root](entries/long-division-square-root.md).
+
+These and other results that went against expectation are collected, each marked verified or preliminary, in
+[SURPRISES.md](SURPRISES.md).
+
+## Introduction
+
+Hand-built transformers are already used as ground truth in interpretability. Tracr compiles programs into transformer weights
+([Lindner et al., 2023](REFERENCES.md#lindner2023), preprint), and InterpBench trains models to implement known circuits so that circuit-discovery
+methods can be scored ([Gupta et al., 2024](REFERENCES.md#gupta2024), preprint). Both use a known circuit to test interpretability tools. Small
+algorithmic tasks are also where trained networks have been reverse-engineered in detail, most clearly the Fourier circuit that
+appears when a network groks modular addition ([Power et al., 2022](REFERENCES.md#power2022), preprint;
+[Nanda et al., 2023](REFERENCES.md#nanda2023), conference paper).
+
+The atlas turns the question around. For each transformer task it specifies a hand-built reference, with the exactness scope stated in the entry, and asks what gradient descent finds in
+its place: whether it reads the hand-built parts when they are frozen and available, whether it rediscovers the same algorithm from
+scratch, and how often each solution appears over seeds. Because every hand-built variable is known exactly, a trained network can be
+probed, patched and ablated against a reference instead of against a guess.
+
+What is new is the protocol rather than any single task. The same three rungs, usually ten seeds per final cell, circuit types counted per
+seed and one acceptance rule are applied across the transformer tasks, and negative results are kept. The acceptance rule follows causal scrubbing
+([Chan et al., 2022](REFERENCES.md#chan2022), technical forum post): a formula that reproduces the network when substituted is only a sufficient readout
+until the rest of the network has also been shown to be unnecessary ([METHODS §9](METHODS.md#9-verification-and-the-acceptance-rule);
+[related work](METHODS.md#related-work)).
+
 ## Reuse and reproducibility
 
 The atlas adapts [NeurIPS reporting guidance](https://neurips.cc/public/guides/PaperChecklist) (conference checklist),
@@ -200,7 +251,7 @@ The earlier UX snapshot covered 31 transformer tasks, with three called solved, 
 
 ## Cite and license
 
-Cite the atlas via [CITATION.cff](CITATION.cff) (GitHub: "Cite this repository"), and name the task entry and exact revisions used.
+The full collection name is Mechanistic Interpretability Circuit Atlas. Cite the atlas via [CITATION.cff](CITATION.cff) (GitHub: "Cite this repository"), and name the task entry and exact revisions used.
 Do not invent a paper citation or DOI. The citation file's release metadata is not a last-run date for every entry; publication
 changes are tracked in [CHANGELOG](CHANGELOG).
 
