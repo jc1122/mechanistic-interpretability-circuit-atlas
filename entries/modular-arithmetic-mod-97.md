@@ -2,7 +2,7 @@
 
 Writing numbers differently changed how these transformers learned the same arithmetic: addition, multiplication and squaring,
 keeping the remainder after division by 97. With one token per number and 90% of pairs in training, all 10 multiplication seeds
-placed nonzero numbers on circular codes ordered by their exponents as powers of 5, yet only 6/10 reached held-out accuracy ≥ .99.
+placed nonzero numbers on circular codes ordered by their exponents as powers of 5, yet only 6/10 reached accuracy ≥ .99 on 941 held-out inputs per seed.
 The measured binary, decimal and hexadecimal networks carried no circular code; digit multiplication remained limited by
 memorisation in the studied cells. A fitted output rule supplied the true exponent of each input, so its success did not recover
 that computation inside the trained network. The task is partly solved; the closed form is partial and output-level only, supported
@@ -18,6 +18,8 @@ by substitution on all 9216 nonzero pairs for 8 eligible seeds with native held-
 | Status | Partly solved (token multiplication 6/10 ≥ .99 at fraction .9, 0/10 at .3; token addition 10/10 ≥ .99; digit multiplication memorises); last run 2026-11-08 |
 | Weights | [Hugging Face: modular-arithmetic-formats](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/modular-arithmetic-formats) (earlier round: [modular-arithmetic-mod-97](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/modular-arithmetic-mod-97)) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
+
+Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [mod-59 addition](modular-addition-mlp.md) for a simpler Fourier clock, or [multiplication across bases](multiplication-base-order.md) for digit-order comparisons.
 
 ## 1. Task and data
 
@@ -98,19 +100,27 @@ the remainder r. Squaring compares and subtracts on x and then looks up the squa
 
 ```mermaid
 flowchart TD
+    accTitle: Hand-built modular arithmetic by number format
+    accDescr: Token multiplication adds discrete logarithms; token addition reads summed circle vectors; digit formats fetch place values before arithmetic. These reference networks have no trained part.
     subgraph MU["Token multiplication"]
+        direction TB
         M1["embedding: log_5 v and v = 0 flag"] --> M2["averaging head: la + lb"]
         M2 --> M3["MLP lookup: 5^(la + lb mod 96)"]
         M3 --> M4["r = a b mod 97"]
     end
     subgraph AD["Token addition"]
+        direction TB
         A1["embedding: angles at frequencies 17, 25, 32, 43"] --> A2["pizza: read r from the sum of the angle vectors"]
     end
     subgraph DG["Digit formats"]
+        direction TB
         D1["index heads fetch digits"] --> D2["place-value sums"]
         D2 --> D3["compare-subtract P >= 97 j, or lookup on A+B"]
         D3 --> D4["quotient q and remainder r"]
     end
+    %% Invisible edges stack independent format panels, not computational paths.
+    MU ~~~ AD
+    AD ~~~ DG
 ```
 
 *Figure 1. The hand-built networks. In token multiplication the embedding writes the discrete log, one head adds the logs and the MLP
@@ -123,19 +133,19 @@ Table 2 summarises the final cells. Exact match is on held-out inputs; "≥ .99"
 
 *Table 2. Results of the final run (10 seeds per cell; seeds named s0..s9).*
 
-| cell (final, 10 seeds) | exact / ≥ .99 | test range | circuit types (seeds) |
-|---|---|---|---|
-| mul tok x3 | 4 / 6 | .425-1 | K-high log clock 8 (s0,2-8), K-low ramp-clock 2 (s1,s9) |
-| add tok x3 | 6 / 10 | .998-1 | Fourier clock on Z_97 10 |
-| add b16 | 0 / 9 | .990-.999 | r read at L4 (DAS .47-.72): r-only 9, S+r 1 |
-| add s10 | 7 / 9 | .988-1 | q-transfer route (3/3 measured) |
-| mul b2l, sq b16 | 0 / 0 | .013-.077 | memorised (failed); 3-seed rounds: mul b10/b16 memorise at every data/wd |
+| cell (final, 10 seeds) | Seeds at exact 1.0 | Seeds at ≥ .99 | test range | circuit types (seeds) |
+|---|---|---|---|---|
+| mul tok x3 | 4/10 | 6/10 | .425-1 | K-high log clock 8 (s0,2-8), K-low ramp-clock 2 (s1,s9) |
+| add tok x3 | 6/10 | 10/10 | .998-1 | Fourier clock on Z_97 10 |
+| add b16 | 0/10 | 9/10 | .990-.999 | r read at L4 (DAS .47-.72): r-only 9, S+r 1 |
+| add s10 | 7/10 | 9/10 | .988-1 | q-transfer route (3/3 measured) |
+| mul b2l, sq b16 (each) | 0/10 | 0/10 | .013-.077 | memorised (failed); 3-seed rounds: mul b10/b16 memorise at every data/wd |
 
 The rounded .990 lower bound for hexadecimal addition and .988 for the decimal scratchpad hide threshold failures: the source
 records .9898 for seed 1 and .9875 for seed 7, respectively. Both are below .99, which is why each row has 9/10 at that threshold.
 These more precise extrema and the legacy rounded ranges are retained separately.
 
-Key: exact / ≥ .99 = numbers of seeds (so 4 / 6 in the first row is 4 seeds exact and 6 seeds with test ≥ .99, as in the 6/10 above); K-high and K-low = the two clock types as labelled in the run records, a multi-frequency clock and a ramp-like clock; DAS = [distributed alignment
+Key: both success columns count seeds out of the same ten, at exact match 1.0 and at exact match ≥ .99 respectively (the first row has 4 exact seeds and 6 seeds at ≥ .99, as in the 6/10 above). The number-format labels and x3 data label are defined in Section 1. K-high and K-low = the two clock types as labelled in the run records, a multi-frequency clock and a ramp-like clock; DAS = [distributed alignment
 search](../GLOSSARY.md#analysis-measures), testing variable swaps in learned rotated directions; r-only, S+r = which of the HAND variables the network reads at layer 4; q-transfer = a route
 through the quotient q; data/wd = training fraction and weight decay.
 
@@ -175,17 +185,28 @@ path must remain distinct (Figure 2).
 
 ```mermaid
 flowchart TD
-    T["tokens a and b"] --> E["Learned embeddings: circles in discrete-log order"]
-    E --> N["Trained transformer: no complete internal closed form"]
-    N --> L["Native output scores"]
-    T --> Q["Externally supplied TRUE discrete logs, not recovered from activations"]
-    Q --> D["d = log a + log b - log c mod 96"]
-    D --> O["Fitted cosine and sine output readout"]
-    L -.->|"fit and compare"| O
-    O --> R["Surrogate answer c; zero-input rule handled separately"]
+    accTitle: Native network and external-log output surrogate
+    accDescr: The marked embeddings, transformer and native output scores are trained. A separate surrogate receives true discrete logarithms externally and fits output scores. This is a partial output readout, with the internal circuit and complement unverified.
+    subgraph NATIVE["Native trained network"]
+        direction TB
+        T["tokens a and b"] --> E["Learned embeddings:<br/>circles in discrete-log order"]
+        E --> N["Trained transformer:<br/>no complete internal<br/>closed form"]
+        N --> L["Native output scores"]
+    end
+    subgraph SURROGATE["Separate output surrogate"]
+        direction TB
+        Q["Externally supplied TRUE<br/>discrete logs of a, b and c,<br/>not recovered from activations"]
+        Q --> D["d = log a + log b<br/>- log c mod 96"]
+        D --> O["Fitted cosine and sine<br/>output readout"]
+        O --> R["Surrogate answer c;<br/>zero-input rule<br/>handled separately"]
+    end
+    %% Invisible link stacks independent panels; it is not a computational path.
+    NATIVE ~~~ SURROGATE
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class E,N,L trained
 ```
+
+The surrogate receives externally supplied logarithms of the same inputs; its scores are fitted and compared with the native output scores. The stacked panels are separate evaluations, not successive network stages.
 
 *Figure 2. The trained network and its separate output surrogate. Shading marks the trained embeddings, transformer and native
 readout; the unshaded true-log step is supplied externally. Status: partial, output readout only, with no recovered internal circuit
@@ -261,5 +282,5 @@ attention divergence from the closest HAND head; r1/x3 = run 1 and the three-tim
 - Nanda, N., Chan, L., Lieberum, T., Smith, J., & Steinhardt, J. (2023). Progress measures for grokking via mechanistic
   interpretability. *ICLR 2023 (arXiv preprint)*. https://doi.org/10.48550/arxiv.2301.05217 (the modular-addition clock)
 - Zhong, Z., Liu, Z., Tegmark, M., & Andreas, J. (2023). The clock and the pizza: Two stories in mechanistic explanation of neural
-  networks. *Advances in Neural Information Processing Systems 36 (NeurIPS 2023)*. https://doi.org/10.52202/075280-1186, arXiv
+  networks. *Advances in Neural Information Processing Systems 36 (NeurIPS 2023)* (conference paper). https://doi.org/10.52202/075280-1186, arXiv
   https://doi.org/10.48550/arxiv.2306.17844 (clock and pizza algorithms)

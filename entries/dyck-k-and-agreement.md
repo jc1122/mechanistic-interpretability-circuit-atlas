@@ -75,13 +75,17 @@ OUTY = ReLU(DEP_0 - 4 NV + G EQ - G)
 
 `DEAD` marks an invalid prefix; `GC/GE` are the opener-type and empty-stack state readouts. `EQ` indicates the answer query `=`. In agreement, L1H0 reads the latest preposition (`p`) to form a PP flag; L2H0 is the state head and penalises PP nouns by `-2 BETA`. Constants are BETA `1e4`, EPS `20`, G `2000`, K `4` and U `20`.
 
+In Figure 1, count and depth codes feed matching-opener and checking heads, then violation flags, an any-violation sum and the stack-state readout. Dyck PART trains only the match/check attention stage. The separate agreement task instead trains its later state head; all other weights stay frozen.
+
 ```mermaid
 flowchart TD
+    accTitle: Hand-built typed-bracket depth and violation route
+    accDescr: A count and depth code feeds matching-opener and checking heads, then violation flags, an any-violation sum and the state readout. Only the match and check attention stage is trained in Dyck PART; the agreement task instead trains its separate later state head.
   A["L0H0 count and MLP0 depth DEP, opener depth ODEP"] --> B["L1H0 latest matching opener; L1H1 check MT"]
   B --> C["MLP1 closer-type violation V"]
   C --> D["L2H0 any-violation sum NV"]
   D --> E["MLP2 stack state, DEAD and answer"]
-  classDef trained fill:lightyellow,stroke:darkorange
+  classDef trained fill:gold,stroke:darkgoldenrod,color:black
   class B trained
 ```
 *Figure 1. The hand-built Dyck network. Layer-1 match/check attention is trained in Dyck PART. Agreement uses a PP-exclusion head and instead trains layer-2 state-head attention; the other weights stay fixed.*
@@ -136,13 +140,17 @@ With the partner head resampled, the compact final complement results were .17 /
 
 Thus B-pop remains partial: substitution supports one head, but the joint claim fails complement resampling. B-dense and A-count have no accepted closed form. [Sharma et al. (2026)](#references), cited previously as “Sharma & Raval”, provide the comparison with routing to the stack top and with the distinction between decodability and causal use; this pointer reads the state before the opener instead.
 
+In Figure 2, the proposed pointer copies the state before a valid closer's matching opener. A needed partner head also feeds MLP2, but its computation is unidentified. Both heads and the MLP were trained. Status remains partial: pointer substitution supports only the named seeds, partner resampling fails, and native address computation is not proved.
+
 ```mermaid
 flowchart TD
+    accTitle: Partial pre-opener-state pointer with unidentified partner
+    accDescr: At a valid closer, the proposed pointer copies the state written before its matching opener. A needed partner head also feeds the final state MLP, but its computation is unidentified. All marked heads and MLP are trained. Status is partial: pointer substitution passes only the named seeds and partner resampling fails; native address computation is not proved.
   A["Alive closer t and matched opener j"] --> B["Pointer head reads state S before opener j"]
   B --> D["MLP2 state and answer"]
   C["Partner L2 head: needed, computation unidentified"] --> D
   D --> E["Scratchpad top or membership answer"]
-  classDef trained fill:lightyellow,stroke:darkorange
+  classDef trained fill:gold,stroke:darkgoldenrod,color:black
   class B,C,D trained
 ```
 *Figure 2. The B-pop description in final Dyck-2 TRAIN. The shaded heads and MLP2 are trained. Closed-form status is partial: pointer
@@ -215,6 +223,10 @@ The pop pointer and its partner act through query/key routing rather than a dire
 | Dyck-2/3 A, B PART | 0/6 each format | .47–.73 (A at step 0) | 0 (A), 7 (B) | B top .99 (L2); MT at majority | — | — | 0–10, .04–.11 |
 
 `b` is nesting depth, `top` the current opener/subject type and `dead` the invalid-prefix flag. A high probe does not by itself show use, and a zero-flip-count test is untested. B-pop's partial pointer does not account for the dense circuit's remaining computation.
+
+## What to read next
+
+Read [binding and coreference](binding-coreference.md) for a separate synthetic referent-selection task. [Counter languages](counter-languages.md) provide the simpler count-and-violation comparison without typed bracket matching.
 
 ## References
 

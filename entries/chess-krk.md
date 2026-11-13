@@ -102,8 +102,12 @@ to = argmax_t ReLU(10000 g_p + 10000 m_pt + 10000 P_to − 64 key_pt − 20000 �
 
 so the smallest key among the active rule's candidates wins. P_to flags the output position at which the destination is written. The network writes 0 wrong tokens on all states.
 
+In Figure 1, piece indicators produce the fence frame, each rule's candidate mask and keys, and flags saying which rules apply. The first applicable rule and its smallest key select the move. PART instead trains a router on those frozen features to write phase, source and destination; it does not train the feature construction.
+
 ```mermaid
 flowchart TD
+    accTitle: Hand-built fence policy and frozen-feature router
+    accDescr: Piece indicators feed a fence frame, per-rule candidate masks and keys, and the first-applicable-rule selector. The smallest key selects the destination. PART replaces priority and selection with the marked trained router, which reads the frozen features.
     P["Piece one-hots on 64 squares"] --> H["1 counting head and 3 gather heads"]
     H --> F["Fence frame from the piece coordinates"]
     F --> M["Per rule p: candidate mask m_pt and keys key_pt"]
@@ -201,8 +205,12 @@ in any of the 7 final seeds. Two controls
 test the source rule: always copying the rook gives .869–.875, and a shuffled phase gives .780–.786. How G decodes the destination
 square stays open, because the additive model fails (Figure 2).
 
+In Figure 2, trained king-coordinate features feed late heads and the destination decoder. A separate source-copy description uses the written phase to choose the white king or rook square. Status remains partial: source substitution passes with complement untested, while an additive destination formula fails. The source rule is not a complete destination mechanism.
+
 ```mermaid
 flowchart TD
+    accTitle: Partial source-copy rule and unresolved destination decoder
+    accDescr: Trained king-coordinate features feed late heads and the destination MLP. Separately, the written phase selects whether the source is the white king or rook. Status is partial: source substitution passes with complement untested, while an additive destination formula fails. Shading marks trained components and the describing source rule.
     B["Board tokens"] --> M0["MLP0: kings as file and rank"]
     M0 --> L5["Layer-5 heads"]
     L5 --> M5["MLP5: decodes to, not additive in HAND variables"]
@@ -292,6 +300,10 @@ Automatic circuit discovery, complement resampling, sparse-dictionary analysis a
 seeds. The jobs reached edge attribution, then stalled, timed out or ran out of memory while discovering circuits in a 2764-edge
 graph. Thus there is no discovered circuit size, measured held-out faithfulness, complement result or error-bucket diagnosis.
 The available dynamics checkpoints were all before the 63.5–75.8k improvement window, so they do not explain that improvement.
+
+## What to read next
+
+Compare [king and two bishops versus king](chess-kbbk-mate.md) for a different label policy and a harder policy-imitation result. [Mate-in-one selection](chess-mate-in-one.md) separates a local move-selection computation from endgame play.
 
 ## References
 

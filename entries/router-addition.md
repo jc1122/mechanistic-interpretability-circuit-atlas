@@ -3,7 +3,7 @@
 Column addition needs the matching digits and incoming carry at each step; a [router scratchpad](../GLOSSARY.md#task-formats)
 gives those digits a shared column label. Four-layer transformers were tested on numbers of up to 16 bits or 6 decimal digits,
 comparing labelled columns, ordinary written steps and direct answers. With hand-built retrieval frozen and position inputs masked
-from the learned stage, each ten-seed masked arm reached whole-output exact match 1.0 at twice the training length, while every
+from the learned stage, the binary and decimal index-scratchpad arms and the decimal direct-answer arms each reached whole-output exact match 1.0 in 10/10 seeds on 1000 doubled-length pairs per seed, while every
 from-scratch format failed at that length. Unmasked router stages on the frozen scaffold transferred imperfectly: source-reported
 mean doubled-length accuracy was .80 in binary and .999 in decimal over ten seeds, so the labels alone did not guarantee exact
 transfer. The task is partly solved, and the frozen-scaffold stage formula is partial: substitution preserved in-range answers, but
@@ -19,6 +19,8 @@ the rest of its circuit was not resampled; a separate subtraction final run has 
 | Status | Partly solved (router TRAIN 10/10 at in-range whole-output exact match 1.0, doubled length 0; separate subtraction final 9/10 at 1.0); last run not dated in the published entry |
 | Weights | [Hugging Face: router-addition](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/router-addition) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
+
+Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [binary addition](binary-addition.md) for the column step, or [subtraction](subtraction.md) for the borrow rule.
 
 ## 1. Task and data
 
@@ -97,12 +99,17 @@ is the unit taken from the next column when the current subtraction would otherw
 
 ```mermaid
 flowchart TD
-    T["Line so far: operand tokens with ids, ADD s_k CARRY c IDX"] --> L0["L0 heads: recency"]
-    L0 --> L1["L1 heads: match operand ids to the line's IDX, fetch a_k and b_k"]
-    L1 --> M["L2 MLP stage, gated by the op token"]
-    M --> S["sum s = (a_k + b_k + c) mod B"]
-    M --> C["carry c' = [a_k + b_k > s_k]"]
-    M --> N["successor IDX_j to IDX_j+1"]
+    accTitle: Shared column labels route the addition step
+    accDescr: Frozen recency and label-matching heads fetch the two operand digits. Only the stage MLP is trained in PART; it writes a sum digit, outgoing carry and successor column label.
+    T["Line so far:<br/>operand tokens with ids,<br/>ADD s_k CARRY c IDX"] --> L0["L0 heads: recency"]
+    L0 --> L1["L1 heads: match operand ids<br/>to the line's IDX,<br/>fetch a_k and b_k"]
+    L1 --> M["L2 MLP stage,<br/>gated by the op token"]
+    M --> S["sum s =<br/>(a_k + b_k + c) mod B"]
+    M --> C["carry c' =<br/>[a_k + b_k > s_k]"]
+    M --> N["successor<br/>IDX_j to IDX_j+1"]
+    %% Invisible links stack outputs; they are not computational paths.
+    S ~~~ C
+    C ~~~ N
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class M trained
 ```
@@ -193,6 +200,8 @@ faithfulness .95-.98 on all 3 (Figure 2).
 
 ```mermaid
 flowchart TD
+    accTitle: Separate trained subtraction-final component path
+    accDescr: Trained MLPs feed trained last-layer heads and a final digit table, with an additional direct head-to-output path. This is the separate subtraction final, not an addition circuit. The formula is partial: two best-snapshot complements pass, while one tested final complement fails, and table keys are supplied externally.
     M0["MLP0"] --> M1["MLP1"]
     M1 --> M2["MLP2"]
     M2 --> H3["L3 heads"]
@@ -276,7 +285,7 @@ final snapshot.*
 ## References
 
 - Abbe, E., Bengio, S., Lotfi, A., Sandon, C., & Saremi, O. (2024). How far can transformers reason? The globality barrier and
-  inductive scratchpad. *Advances in Neural Information Processing Systems 37 (NeurIPS 2024)*. https://doi.org/10.52202/079017-0874
+  inductive scratchpad. *Advances in Neural Information Processing Systems 37 (NeurIPS 2024)* (conference paper). https://doi.org/10.52202/079017-0874
   (inductive scratchpad)
 - Cho, H., Cha, J., Awasthi, P., Bhojanapalli, S., Gupta, A., & Yun, C. (2024). Position coupling: Improving length generalization of
   arithmetic transformers using task structure. *arXiv preprint*. https://doi.org/10.48550/arxiv.2405.20671 (position coupling)

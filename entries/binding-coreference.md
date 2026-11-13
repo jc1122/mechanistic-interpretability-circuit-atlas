@@ -83,15 +83,19 @@ Both variants and formats were exact on 129640 inputs: exhaustive to 4 mentions 
 
 The symbols GS_i/GN gate state-line outputs; AS_i/AP_i gate SELF/PRO answer outputs. EQ identifies the answer delimiter. BETA rewards a match, EPS breaks ties by position, G scales readout gates, K is the feature count and U a fixed scale.
 
+In Figure 1, L0H0 and MLP0 form clause and mention codes. L1H0 selects the first mention in the current clause, while L1H1 selects the latest earlier feature match; frozen MLP1 gates write the referent identifier. Only the two selecting heads are trained in PART. HAND-c changes the pronoun head's clause scoring.
+
 ```mermaid
 flowchart TD
+    accTitle: Hand-built subject and pronoun routes
+    accDescr: Clause and mention codes feed separate heads for the current subject and the latest earlier feature match. The two heads are the trained PART stage; frozen gates write the referent identifier. The alternate HAND changes pronoun clause scoring.
     X["Clause and mention tokens"] --> C["L0H0 count head and MLP0: clause and mention codes"]
     C --> S["L1H0: first mention in current clause"]
     C --> P["L1H1: latest earlier feature match"]
     S --> M["MLP1: state and answer gates"]
     P --> M
     M --> Y["Referent id"]
-    classDef trained fill:lightblue
+    classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class S,P trained
 ```
 
@@ -153,13 +157,17 @@ For T, one L1 head at `=` becomes one-hot on the referent: the subject for SELF,
 
 For S, L1H0 at `=` becomes one-hot on the last state line for SELF and on the referent otherwise. Substitution gives .983; complement of the 20-edge circuit gives .898, just below .90, and fails.
 
+In Figure 2, both early heads form a clause code, a final-layer head retrieves the referent at the equals token, and MLP1 turns the copied identifier into an answer score. All computational stages were trained. Status remains sufficient readout only: substitution passes, but resampling outside the shared circuit fails.
+
 ```mermaid
 flowchart TD
+    accTitle: Single referent-head family in successful answer-only models
+    accDescr: Trained early heads form a clause code, a final-layer head retrieves the referent, and the final MLP writes its identifier. All displayed computational stages are trained. Status is sufficient readout only: substitution passes, but resampling outside the shared circuit fails.
     X["Clause and mention tokens"] --> C["Both layer-0 heads: clause code"]
     C --> H["One layer-1 head at equals: attend to referent"]
     H --> M["MLP1: copied id to answer logit"]
     M --> Y["Referent id"]
-    classDef trained fill:lightblue
+    classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class C,H,M trained
 ```
 
@@ -205,6 +213,10 @@ Grammatical locality describes which earlier mentions can be referred to from a 
 | Attention and referential information | [Voita et al. (2018)](#references), [Clark et al. (2019)](#references), [Jumelet et al. (2019)](#references) and [Sorodoc et al. (2020)](#references) examine antecedent attention, default gender-based retrieval or decodable referential information. |
 | Causal pronoun and reflexive analysis | [Yamakoshi et al. (2023)](#references) study pronoun-resolution interventions, and [Lepori et al. (2023)](#references) study reflexive subroutines and pruning. [Adhikari (2025)](#references) and [Ahmad et al. (2025)](#references) analyse related name-copying or pronoun tasks. |
 | Entity-binding and retrieval mechanisms | [Feng and Steinhardt (2023)](#references), [Gur-Arieh et al. (2025)](#references), [Dai et al. (2026)](#references), [Oh and Demberg (2026)](#references), [Trinley et al. (2026)](#references) and [Bogdan and Lindsey (2026)](#references) compare binding and retrieval mechanisms. [Xu (2026)](#references) distinguishes selective activation patterns from task-causal structure. |
+
+## What to read next
+
+Compare [Dyck brackets and agreement](dyck-k-and-agreement.md) for another pointer-based account with an unidentified partner computation. [Arithmetic registers](compose-arithmetic-registers.md) show how positional conventions can substitute for binding names.
 
 ## References
 

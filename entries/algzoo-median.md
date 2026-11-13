@@ -44,8 +44,12 @@ Our nine hand-built nets, `config.json`, the native loader and a roundtrip repor
 ## 3. Hand-built solution
 The references offer different ways to retain information about the sequence. HAND-a stores sums of the largest k positive-side and negative-side prefix values, padded with zeros; A and B are registers whose sum is S. HAND-b sorts the preceding pair into lower/upper bounds L/U, then clips the new input between them. HAND-c stores a signed running sum as nonnegative P and Q and divides by the length, giving the median only for a pair. With p(u)=max(u,0): a uses signed top-k sums A'_k=S_k, B'_k=p(±x+S_(k−1)−S_k), S=A+B; central differences recover median. b is L+p(x−L)−p(x−U), where L/U sort the preceding pair (T3). c uses P'=p(P−Q+x), Q'=p(−P+Q−x), y=(P−Q)/T (median only T≤2). Real-arithmetic derivations and exhaustive/grid/random CPU checks pass; a's 8/12/24-register layouts at T3/5/10 are not global width lower bounds.
 
+In Figure 1, HAND-a obtains the median from signed top-k sums and central differences; HAND-b sorts the preceding pair and clips. HAND-c instead accumulates a signed sum to compute a mean, which is a median only on the stated short-list domain. There was no PART cell, and register counts are not width lower bounds.
+
 ```mermaid
 flowchart TD
+    accTitle: Hand-built median references
+    accDescr: Scalar inputs and stored state feed signed top-k sums, pair sorting and clipping, or a signed running sum. The first two yield median constructions; the mean is a median only on the stated short-list domain. No component was partly trained, and register counts are not width lower bounds.
     X["Scalar input and previous state"] --> A["HAND-a: signed top-k sums"]
     X --> B["HAND-b: sort preceding pair and clip"]
     X --> C["HAND-c: signed sum P minus Q"]
@@ -68,15 +72,19 @@ Inaccurate, 51: one-sided hinges, five; h2 dead-zone/level-excess/capped means, 
 
 The status is Partial at the population level. All 100 pass their own registered sampled tests, subject to the [coefficient counts and complete flag ledger in Appendix B](#appendix-b-detailed-evidence): 20 complements are empty, several proofs have weaker control types, and none establishes a global native identity for the wide nets. A working formula is not automatically a compact or unique mechanism.
 
+In Figure 2, Gaussian inputs pass through pair-mean banks, comparator insertions or inexact threshold, level and renewal forms to the native scalar output. These are alternative descriptions of ARC-trained families, including inaccurate networks. Status remains partial: empty complements, other flagged proofs and uncompressed forms are retained, and sampled certificates are not global equivalence proofs.
+
 ```mermaid
 flowchart TD
+    accTitle: Interpreted families in frozen median networks
+    accDescr: Gaussian inputs feed pair-mean banks, comparator-insertion forms or inexact threshold, level and renewal forms before the native scalar output. All family nodes describe ARC-trained components. Status is partial: empty complements, other flagged proofs and uncompressed forms remain exceptions; sampled certificates are not global equivalence proofs.
     X["Gaussian inputs"] --> P["21 pair-mean banks"]
     X --> I["28 comparator insertions"]
     X --> R["51 inexact threshold, level and renewal forms"]
     P --> Y["Native output on sampled tests"]
     I --> Y
     R --> Y
-    classDef trained fill:lightblue
+    classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class P,I,R trained
 ```
 
@@ -139,7 +147,16 @@ The related-family code of [Mogar (n.d.)](#references) studies a 2nd-argmax h32,
 
 The [full flag ledger in Appendix B](#appendix-b-detailed-evidence) is part of this verdict, including every size, approximation, proof-type and scope flag. It retains the thin-margin case, failed specificity controls, all 20 empty complements, the two input-direction and two message-level complements, and fit-informed masks tested against finite random controls. None is silently promoted to a stronger proof type.
 
-Primary later-round acceptance: skill R²=1−MSE/Var(median), substitution and complement resampling each≥.90 of native skill; inaccurate-net forms additionally require RMSE(form,net)≤native RMSE/3. Twenty-thousand held-out rows, three donors, independent fit selection and fresh publication replication; original gates are preserved. Early numerical certificates used ε=32·fp32_eps·T·max(1,max|x|). Older neuron specificity used its registered minimum; four non-full T2 nets have random maxima above.90, disclosed rather than waived. Later singleton/message tests use prospectively registered full-distribution mean/median gates and expose every sufficient alternative; no uniqueness claim. The last two freeze fit-only multi-node masks retaining196/244 of320 nodes, with all256 finite random-mask MAX controls below.90 on every donor; greatest random shares−.529303/−.629415, needed maxima−.980823/−1.001702. All endpoints/live/needed/rational/compiled/physical gates pass. Twenty old empty complements remain exceptions, not sparse discoveries; two input-direction and two message-level proofs remain flagged separately. Failed CB36,SP36,D10/SB10 and BF tests stay failed; their successors have separately registered changes and entirely fresh deciding rows. Exact region tables, coordinate charts and approximate residual-bound scaffolds never count alone. BF's wrong same-input projection is mandatorily refuted before its corrected-reference successor counts. Source scopes, scite DOI, 100 unique proof/tensor identities and each own fresh replication are checked. The high-dimensional renewal forms retain extensive coefficients/cross-feedback; tests do not establish minimal circuits, information compression, completeness of an all-real explanation or an unsampled Gaussian tail bound.
+Primary later-round acceptance: skill R²=1−MSE/Var(median), substitution and complement resampling each≥.90 of native skill; inaccurate-net forms additionally require RMSE(form,net)≤native RMSE/3. Twenty-thousand held-out rows, three donors, independent fit selection and fresh publication replication; original gates are preserved. Early numerical certificates used ε=32·fp32_eps·T·max(1,max|x|).
+
+Older neuron specificity used its registered minimum; four non-full T2 nets have random maxima above.90, disclosed rather than waived. Later singleton/message tests use prospectively registered full-distribution mean/median gates and expose every sufficient alternative; no uniqueness claim.
+
+The last two freeze fit-only multi-node masks retaining196/244 of320 nodes, with all256 finite random-mask MAX controls below.90 on every donor; greatest random shares−.529303/−.629415, needed maxima−.980823/−1.001702. All endpoints/live/needed/rational/compiled/physical gates pass. Twenty old empty complements remain exceptions, not sparse discoveries; two input-direction and two message-level proofs remain flagged separately.
+
+Failed CB36,SP36,D10/SB10 and BF tests stay failed; their successors have separately registered changes and entirely fresh deciding rows. Exact region tables, coordinate charts and approximate residual-bound scaffolds never count alone. BF's wrong same-input projection is mandatorily refuted before its corrected-reference successor counts. Source scopes, scite DOI, 100 unique proof/tensor identities and each own fresh replication are checked.
+
+The high-dimensional renewal forms retain extensive coefficients/cross-feedback; tests do not establish minimal circuits, information compression, completeness of an all-real explanation or an unsampled Gaussian tail bound.
+
 Exact rational cone/invariant checks and checked whole-box identities are regional/internal claims, not global native-form equality. The h32 current-pair raw drive sums have mixed signs; observed zero common release is not a universal exclusivity proof. No length-generalising median circuit is certified: h8,T3 in-range RMSE2.493e−6–6.185e−5 becomes .503–2.317 at length6; h32,T10 .0003355–.01653 becomes .04283–.54283 at length20. Unsupported effective-rank/path/edge tests are not claimed measured.
 ## 7. Prediction record
 
@@ -236,6 +253,10 @@ Diagnostics below are descriptive, not causal algorithm assignments. Candidate N
 
 
 The diagnostics in Table 3 are descriptive. Their HAND-variable R² values measure linear decodability, not causal use ([analysis measures](../GLOSSARY.md#analysis-measures)). The fixed form labels (Z1, V9, L9, BR10, W5, B5, C10, D5, S10, W10, G10, O10, TC, AC, LC, RC, SR, CH, DS, NS, WN, WP, CQ136 and CQ1056) name the registered equations described in Section 5; they do not denote a universal median algorithm. The coefficient-count table in this appendix is Table 2.
+
+## What to read next
+
+Compare [AlgZoo second-argmax](algzoo-2nd-argmax.md) for position outputs and a different interpretation census. Read [the verification guide](../GLOSSARY.md#verifying-a-circuit) for why sampled substitution and an empty complement have different evidential roles.
 
 ## References
 

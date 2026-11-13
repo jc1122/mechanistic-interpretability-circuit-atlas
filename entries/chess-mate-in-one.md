@@ -83,8 +83,12 @@ The network was verified on 339 stratified sequences per format, with K 1–16 a
 is 30.0 for A and 29.9 for T. Mate is exact only for a bare black king: with a black piece the count is of escapes only, because a
 capture of the checker can be legal at 0 escapes.
 
+In Figure 1, each supplied candidate creates a virtual board. Ray and leaper checks supply the escape count; a zero-count gate identifies mate, and the selector writes the first winning slot. MLP7 writes the output index, also reading escape counts in the scratchpad format. Only MLP7 is trained in PART.
+
 ```mermaid
 flowchart TD
+    accTitle: Hand-built escape count and first-mate selection
+    accDescr: A virtual board for each supplied candidate feeds ray and leaper checks, an escape counter and a zero-count mate gate. The selector finds the first mate. Only the final output MLP is trained in PART; upstream counting and selection are frozen.
     C["Candidate move and board"] --> V["Virtual board: delete the old square, insert the destination"]
     V --> RY["Nearest-live rays and leaper ORs on each king-neighbour square"]
     RY --> M5["MLP5: sum escapes into ESC, 0-8"]
@@ -155,8 +159,12 @@ selector head to WIN (Figure 2). The largest patching drop is at layer 7 head 0 
 by layer 2 head 3 (.66). JS 0 and the layer-6 count probe come from the frozen parts by construction, not from learned agreement.
 Edge-attribution checks fail (Spearman .35–.68 < .8), so edge wiring is not claimed.
 
+In Figure 2, the frozen escape count passes through the mate gate and winner selector to MLP7, with an additional direct count route in scratchpad T. The trained MLP uses tent features to write the index or count tokens. Status remains partial: substitution supports answer only and a local scratchpad decoder, with complement untested.
+
 ```mermaid
 flowchart TD
+    accTitle: PART decoder reading escape counts and the winner slot
+    accDescr: The frozen escape count reaches the trained final MLP through the mate gate and selector, with an additional direct count route in the scratchpad format. Status is partial: the tent-feature replacement holds for answer only and locally for scratchpads; complement was not tested.
     M5["MLP5: ESC"] --> M6["MLP6: MATE gate"]
     M6 --> SEL["Layer 7 head 0: selector writes WIN"]
     SEL --> M7["MLP7: tent features on WIN and ESC, phase-gated"]
@@ -184,8 +192,12 @@ At count positions, the last-MLP lookup is μ[ESC]; at the index it is μ[WIN], 
 
 An additive fit on the eight individual escape bits gives .22/.31/.37 in T and is rejected. This lookup is per count value, not a linear sum circuit. The first complement claim, used components plus L3 heads, passed only seed 0; seeds 1/2 gave .651/.524 until the full L2 head family and MLP1 were retained. The final claim passed with full_eq_base true, empty_eq_source 1.0, circuit_resampled 0 and random_same_size .00–.38. A's failed complement claim was not replaced by a verified wider claim.
 
+In Figure 3, board-token embeddings feed parallel head-family routes into the final joint count-and-winner write. All displayed components were trained. The reference-keyed local lookup is verified only in the screened cohort with the wider retained head and earlier-MLP claim; it does not establish extraction of the supplied keys. Additive escape-bit fits fail, and longer-list transfer is unreported.
+
 ```mermaid
 flowchart TD
+    accTitle: Local reference-keyed lookup in widened scratchpad TRAIN
+    accDescr: Trained board-token and head-family paths feed the final joint count and winner write. All displayed components are trained. The reference-keyed local lookup is verified in the screened cohort only when the wider retained head and earlier-MLP claim is included. Additive escape-bit fits fail and longer-list transfer is unreported.
   A["Board-token embedding"] --> B["L3 head family"]
   A --> C["L2 heads and MLP2"]
   B --> D["MLP3: joint count and winner lookup writes"]
@@ -240,6 +252,10 @@ neighbouring index is a hypothesis for the late-index stress errors, not yet tes
 Key: used H+MLP = heads + whole MLPs whose mean ablation drops exact match by > .05; R² = best linear
 [probe](../GLOSSARY.md#analysis-measures) (layer); inter = linear interchange flip; r90/r99 = output-residual components for 90% / 99%
 variance; JS = attention divergence to HAND.
+
+## What to read next
+
+Read [chess attack maps](chess-attack-maps.md) for the square-threat computation behind escape counting. [KRK mate](chess-krk.md) shows why matching a local mating decision and learning an endgame policy are different tasks.
 
 ## References
 

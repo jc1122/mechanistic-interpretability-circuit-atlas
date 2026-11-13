@@ -1,6 +1,6 @@
 # Integer matrix-vector product
 
-Matrix-vector multiplication forms each answer by adding the products in one matrix row. A five-layer transformer that wrote partial row sums on a scratchpad reached final whole-output exact match 1.0 in 8/10 seeds on 2,000 held-out inputs per seed; answer-only training reached 1/3 after the budget grew from 30k to 120k steps across three rounds. The scratchpad models used current-bit and carry information at the final layer, yet substituting the tested arithmetic formula on linearly decoded values failed in every seed. The task is partly solved, with a partial formula for the frozen-scaffold model (substitution 3/3, complement evidence on two tested seeds only) and no accepted from-scratch form. Every final scratchpad model scored exact match 0 at matrix sizes m=2 and m=4 on 256 inputs per size.
+Matrix-vector multiplication forms each answer by adding the products in one matrix row. A five-layer transformer that wrote partial row sums on a [scratchpad](../GLOSSARY.md#task-formats), a record of intermediate working, reached final whole-output exact match 1.0 in 8/10 seeds on 2,000 held-out inputs per seed; answer-only training reached 1/3 after the budget grew from 30k to 120k steps across three rounds. The scratchpad models used current-bit and carry information at the final layer, yet substituting the tested arithmetic formula on linearly decoded values failed in every seed. The task is partly solved, with a partial formula for the frozen-scaffold model (substitution 3/3, complement evidence on two tested seeds only) and no accepted from-scratch form. Every final scratchpad model scored exact match 0 at matrix sizes m=2 and m=4 on 256 inputs per size.
 
 ## At a glance
 
@@ -16,6 +16,8 @@ Matrix-vector multiplication forms each answer by adding the products in one mat
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
 HAND sets every weight by formula, PART trains one stage on frozen HAND parts, and TRAIN learns all weights ([rungs](../GLOSSARY.md#the-three-rungs)). A scratchpad writes intermediate results before the answer; scores here are teacher-forced, with correct previous tokens supplied ([task formats](../GLOSSARY.md#task-formats)). Exact match requires the whole output to be correct, not just its final answer.
+
+Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [binary multiplication](multiplication.md) for the local carry step, or [finite-field linear systems](linear-systems-finite-fields.md) for row-update traces.
 
 ## 1. Task and data
 
@@ -75,11 +77,13 @@ For the scratchpad, x and x' denote the previous accumulator's current and previ
 
 ```mermaid
 flowchart TD
+    accTitle: Hand-built accumulator route
+    accDescr: Operand and accumulator-bit heads feed selectors and the carry and next-bit table. Only the final MLP is trained in PART.
     X["Matrix and vector bits"] --> F["L3H0 operands; L3H1 and L3H2 accumulator bits"]
     F --> S["MLP3: selectors a, a-prime and b"]
     S --> M["MLP4: SUM3 carry and next-bit table"]
     M --> Y["Accumulator bit"]
-    classDef trained fill:lightblue
+    classDef trained fill:lightblue,stroke:navy,color:black
     class M trained
 ```
 
@@ -130,10 +134,12 @@ The published shorthand compares the failed T2 formula (exact 0-.006) with net 1
 
 ```mermaid
 flowchart TD
+    accTitle: Trained matrix-vector scratchpad family
+    accDescr: Distributed routing feeds a last-layer accumulator, carry and next-bit code. The marked routing and readout are trained. The from-scratch formula fails substitution; PART has partial evidence on two complement-tested seeds only.
     X["Input and previous trace"] --> R["L3 and L4: distributed operand routing"]
     R --> M["MLP4 and residual L5: accumulator, carry and next bit"]
     M --> Y["Trace bit"]
-    classDef trained fill:lightblue
+    classDef trained fill:lightblue,stroke:navy,color:black
     class R,M trained
 ```
 

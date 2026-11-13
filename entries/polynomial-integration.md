@@ -5,7 +5,7 @@ simplified. These four-layer transformers either wrote the reduced answer direct
 for the greatest common divisor. With earlier arithmetic stages frozen, the three-seed scratchpad cell stopped at 5,500 steps,
 against 26,000 for answer only, and was the only tested cell to score 1.0 on withheld fractions. Training the scratchpad model from
 scratch was slower and finished exact in 9/10 final seeds on 256 held-out polynomials per seed, with the remaining seed failing at
-signed-numerator emission. The task is partly solved: prefix pooling has substitution support in 20/20 snapshots across 10 seeds,
+signed-numerator emission. The task is partly solved: prefix pooling, an average of earlier token values weighted by their identities and counts rather than their order, has substitution support in 20/20 snapshots across 10 seeds,
 but the explanation is partial, with no recovered gcd/division circuit and no complement test.
 
 | Fact | Value |
@@ -18,6 +18,8 @@ but the explanation is partial, with no recovered gcd/division circuit and no co
 | Status | Partly solved (from-scratch scratchpad final, 9/10 exact whole outputs on 256 held-out polynomials per seed; seed 4 .875); last run 2026-11-08 |
 | Weights | [Hugging Face: polynomial-integration](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/polynomial-integration) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
+
+Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [Euclid's algorithm](gcd-euclid.md) for fraction reduction, or [polynomial differentiation](polynomial-differentiation.md) for the reverse coefficient operation.
 
 ## 1. Task and data
 
@@ -91,25 +93,35 @@ heads + 769 neurons (665 of them framing). Both are exact on 2,804 polynomials p
 
 ```mermaid
 flowchart TD
-    P["Prompt: M:m C:c0 ... ="] --> F["coefficient and register fetch heads"]
+    accTitle: Hand-built fraction-reduction alternatives
+    accDescr: Coefficient and register fetches feed either a finite reduction table or Euclid updates and quotient staircases, ending in the next-token response. The last MLP is the only marked trained PART block; other brick layers are unspecified in this diagram.
+    subgraph INPUT["Common input to each format"]
+        direction TB
+        P["Prompt: M:m C:c0 ... ="] --> F["coefficient and register<br/>fetch heads"]
+    end
     subgraph TA["Format A: answer only"]
-        RT["reduction table: ReLU hinges on the (c, j) code"]
+        RT["reduction table:<br/>ReLU hinges on the (c, j) code"]
     end
     subgraph TT["Format T: scratchpad"]
-        E["Euclid step: ABS = ReLU(a-b) + ReLU(b-a), MIN = a - ReLU(a-b)"]
-        Q["signed quotient staircases: N = c/g, D = j/g"]
+        direction TB
+        E["Euclid step:<br/>ABS = ReLU(a-b) + ReLU(b-a),<br/>MIN = a - ReLU(a-b)"]
+        Q["signed quotient staircases:<br/>N = c/g, D = j/g"]
         E --> Q
     end
-    F --> RT
-    F --> E
-    RT --> L3["L3 MLP: response, emits the next token"]
-    Q --> L3
-    L3 --> Y["J:j N D"]
+    subgraph OUTPUT["Common response after either route"]
+        direction TB
+        L3["L3 MLP: response,<br/>emits the next token"] --> Y["J:j N D"]
+    end
+    %% Alternatives share the input and response panels. Invisible links
+    %% stack panels; they are not computational paths between formats.
+    INPUT ~~~ TA
+    TA ~~~ TT
+    TT ~~~ OUTPUT
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class L3 trained
 ```
 
-*Figure 1. The hand-built networks. Format `A` looks the reduced fraction up from the (c, j) code; format `T` runs subtractive Euclid
+*Figure 1. The hand-built networks. Each format uses the common input and response panels; the format panels are not successive stages. Format `A` looks the reduced fraction up from the (c, j) code; format `T` runs subtractive Euclid
 rows and divides by the gcd with quotient staircases. The shaded L3 MLP is the part PART re-initialises and trains; the layers of the
 other HAND bricks are not recorded, so they are drawn without layer labels.*
 
@@ -181,6 +193,8 @@ A compact mean-code substitute for answer-only TRAIN failed; no closed form was 
 
 ```mermaid
 flowchart TD
+    accTitle: Partial attention formulas inside the trained integration family
+    accDescr: Trained layer-zero attention pools token identities and counts, while a seed-specific layer-two reader supplies coefficient and term-index contributions. Trained MLPs remain essential. These partial substitutions do not recover gcd or division, and the complement is untested.
     P["prompt and scratchpad tokens"] --> L0["L0 attention: prefix pooling, sum(N_u exp(S) v) / sum(N_u exp(S))"]
     L0 --> M["MLP0 and MLP1: distributed computation"]
     M --> R["L2 G-query reader b_h + u_h[c] + v_h[j], seed 0"]
@@ -262,6 +276,8 @@ committed as 0e88b126 in the project repository.
 26000, 5500, 14500 and 27000; these are neither averages nor each seed's first-exact time, and they are separate from the final
 ten-seed result. Only the frozen-scaffold scratchpad cell was exact on withheld fractions (1.0). The learned mechanism remains
 partial: no gcd/division closed form or complement certificate.*
+
+[Open Figure 3 at full size](../figures/qa1-integration-stops.svg).
 
 ## References
 

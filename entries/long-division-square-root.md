@@ -3,7 +3,7 @@
 Long division and long-hand square root both build an answer by comparing a running remainder with a trial value, then subtracting
 when the comparison succeeds. Three-layer transformers were tested on binary versions of these tasks, with either a direct answer or
 a written record of each step. With hand-built retrieval frozen, division scratchpad training reached held-out whole-output exact
-match 1.0 in 10/10 seeds at both ranges. From-scratch answer-only division reached exact match ≥ .99 in 10/10 wider-range seeds despite
+match 1.0 in 10/10 seeds at both ranges. From-scratch answer-only division reached exact match ≥ .99 in 10/10 wider-range seeds on 30,720 held-out pairs per seed despite
 failing at the smaller range; the wider runs also used 16× as many training examples, so they do not isolate data size as the cause.
 The combined task is partly solved, with no fully trained network exact over its whole input domain, and the scratchpad formula has
 partial status: substituting hand-built compare-and-subtract can repair native errors, but no test resampled everything outside the
@@ -19,6 +19,8 @@ claimed circuit ([verification glossary](../GLOSSARY.md#verifying-a-circuit)).
 | Status | Partly solved (scratchpad PART division 10/10 at 1.0 per range; wider answer-only TRAIN division 10/10 ≥ .99; no fully trained TRAIN network exact over its whole domain); last run 2026-11-05 |
 | Weights | [Hugging Face: long-division-square-root](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/long-division-square-root) (202 networks) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
+
+Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [output-order base conversion](output-order-base-conversion.md) for digit-order effects, or [quadratic roots](quadratic-roots.md) for a supplied-program executor.
 
 ## 1. Task and data
 
@@ -107,17 +109,12 @@ step [N − SQ − T ≥ 0] for all outputs (4 + 3).
 
 ```mermaid
 flowchart TD
-    P["Prompt and scratchpad so far"] --> H["layer-1 heads"]
-    H --> X["X = 2 rem + next bit; sqrt: 4 rem + 2 bits"]
-    H --> TT["TT = D; sqrt: 4p + 1"]
-    H --> B["B = own bit"]
-    H --> W["W = remainder bits already written"]
-    X --> M["compare MLP, shared by all steps"]
-    TT --> M
-    B --> M
-    W --> M
-    M --> BIT["bit = X >= TT"]
-    M --> REM["remainder bits: steps of X - B TT - W"]
+    accTitle: Hand-built compare-and-subtract scratchpad
+    accDescr: Frozen heads provide the working remainder, trial threshold, current bit and written remainder prefix. The marked compare MLP is the only trained stage in PART.
+    P["Prompt and scratchpad<br/>so far"] --> H["layer-1 heads"]
+    H --> REG["Registers read together:<br/>X = 2 rem + next bit;<br/>sqrt: 4 rem + 2 bits<br/>TT = D; sqrt: 4p + 1<br/>B = own bit<br/>W = remainder bits<br/>already written"]
+    REG --> M["compare MLP,<br/>shared by all steps"]
+    M --> OUT["Outputs:<br/>bit = X >= TT<br/>remainder bits:<br/>steps of X - B TT - W"]
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class M trained
 ```
@@ -237,11 +234,15 @@ snapping the normals to (1, −1, −1) gives .404 / .813.
 
 ```mermaid
 flowchart TD
-    R["frozen heads: X, T, b, W"] --> U["1024 native units: ReLU of a linear form in X, T, b, W, plus token and query offsets"]
-    U --> XW["48-unit X - W bank: remainder thresholds"]
-    U --> TB["90- and 223-unit banks reading the trial T"]
-    XW --> O["bit b = X >= T; remainder bit k = X - bT - W >= 2^k"]
+    accTitle: Learned compare-and-subtract neuron banks
+    accDescr: Trained native units retain token and step offsets and feed working-value and threshold banks. Hand-built substitution can repair errors; the formula is partial and the complement was not tested.
+    R["frozen heads: X, T, b, W"] --> U["1024 native units:<br/>ReLU of a linear form<br/>in X, T, b, W,<br/>plus token and query offsets"]
+    U --> XW["48-unit X - W bank:<br/>remainder thresholds"]
+    U --> TB["90- and 223-unit banks<br/>reading the trial T"]
+    XW --> O["bit b = X >= T;<br/>remainder bit k =<br/>X - bT - W >= 2^k"]
     TB --> O
+    %% Invisible link stacks parallel banks; it is not a computational path.
+    XW ~~~ TB
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class U,XW,TB trained
 ```

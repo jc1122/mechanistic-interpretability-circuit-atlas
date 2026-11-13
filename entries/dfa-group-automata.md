@@ -106,8 +106,12 @@ the two blocks into the block states ST1..ST4. This is 5 heads and 180 neurons, 
 
 All 6 HAND cells are exact on 2000 words with n = 1..16.
 
+In Figure 1, a frozen position stage feeds separate routes. Scratchpad B fetches the previous state and applies a transition table; answer-only parity and Z3 sum symbols and read a residue; answer-only S3 composes blocks by prefix doubling. PART trains only each route's marked MLP, leaving the other stages frozen.
+
 ```mermaid
 flowchart TD
+    accTitle: Hand-built state-table, residue and prefix-doubling routes
+    accDescr: A frozen position stage feeds three routes: scratchpads fetch the previous state and apply a transition table; abelian answer-only cells sum symbols and read a residue; permutation answer-only cells compose blocks by prefix doubling. The marked MLPs are the stages trained in the corresponding PART cells.
     P["Word s_1 .. s_t"] --> L0["L0: position stage, P = 1/(j+1), R = j/256"]
     subgraph FB["Format B: scratchpad"]
         B1["L1 recency head: copy q_t-1 into QP"] --> B2["L1 MLP: G squared neurons relu(QP_a + TOK_b - 1)"]
@@ -212,8 +216,12 @@ The final round uses one HAND design. Previous-state use is not established by i
 MLP0 to MLP1 .44, MLP1 to MLP2 .44 and fetch head L2H0 .41. Low single-head mean-ablation effect does not establish that a head
 carries no signal, a concern discussed by [Parodi et al. (2026)](#references).
 
+In Figure 2, trained early MLPs and seed-dependent fetch heads feed the late transition-table writes. The final MLP is needed only in one subtype. All computational nodes were trained. Status remains partial: late-table substitution passes, complement certificates cover only measured discovered circuits, and upstream fetching is unverified. Earlier failed joint scrubs remain failed.
+
 ```mermaid
 flowchart TD
+    accTitle: Final trained permutation scratchpad chain
+    accDescr: Trained early MLPs and seed-dependent fetch heads feed late transition-table writes. The last MLP is needed only in one subtype. All computational nodes are trained. Status is partial: late-table substitution passes, complement certificates cover only the measured discovered circuits, and upstream fetching remains unverified. Earlier failed joint scrubs remain failed.
     W["Word and written states so far"] --> M0["MLP0, MLP1, MLP2: serial state code"]
     W --> H["seed-dependent fetch heads"]
     M0 --> H
@@ -297,8 +305,12 @@ Sizes are sufficient upper bounds, not minima. S3 B TRAIN seed 4 keeps 7H + 2202
 HAND B has 2H + 292N (256 position hinges + 36 pair gates), not re-minimised. In the learned PART stage, 34/512 (B) and 22/512 (A)
 neurons suffice, 256/256.
 
+In Figure 3, trained prefix-histogram heads feed a redundant later fetch, then late state-table MLPs. These components are sufficient readouts separately, but their joint scrub fails. This earlier hypothesis has no full-bar certificate and is not retroactively verified by the later final run.
+
 ```mermaid
 flowchart TD
+    accTitle: Earlier permutation scratchpad hypothesis
+    accDescr: Trained prefix-histogram heads feed a redundant later fetch and late state-table MLPs. Every displayed component is trained. Components are sufficient readouts, but scrubbing their joint hypothesis fails. This earlier hypothesis has no full-bar certificate and is not retroactively verified by the later final run.
     W["Word and written states so far"] --> H0["L0 heads: weighted prefix histograms"]
     H0 --> F["later heads: previous-state fetch, redundant, distributed pair and position thresholds"]
     F --> M["late MLPs: delta table on fetched state and symbol"]
@@ -435,6 +447,10 @@ Key: r1–r3 = runs 1–3; probe accuracy and R² are different measures; r90, C
 [glossary](../GLOSSARY.md#analysis-measures). Attention JS is approximately 0 in the compact summary because unused HAND heads are
 uniform, not because every trained head has HAND's role. The masked Z3 .07 is explicitly an R² value. The earlier q values in
 Table B1 are one-hot accuracies, while the .63 and .94 figures here are R², not contradictory accuracies.
+
+## What to read next
+
+Compare [counter languages](counter-languages.md) for count-and-violation checks, or [Dyck brackets and agreement](dyck-k-and-agreement.md) for a written-state pointer whose partner computation remains unidentified.
 
 ## References
 

@@ -95,15 +95,19 @@ y = step(16(AW + M*CW - M)) + step(16(AB + M*CB - M))
 
 `AW/AB` are White/Black attack signals; `CW/CB` select the requested colour; `M` is the gate scale. A ray is a straight line of board squares; its blocker is the first occupied square. The colour gate selects pieces of the requested colour before the walk begins. In H, `cur` is the current square, `g` the direction, `occ_t` target occupancy, `nx` the next square and `y` the map bit. L1 reads piece, direction and target occupancy. L2 one-step heads move along the ray (`nx = cur + g` unless `cur` is occupied). The map head checks whether square `s` appears in the scratchpad.
 
+In Figure 1, the board and requested colour enter the coordinate stage. Piece, direction and occupancy reads then drive a ray step; the scratchpad lists attacked squares, and the map head checks whether each square appears. Only the middle read and step stages are trained in hint-format PART; the rest stays frozen.
+
 ```mermaid
 flowchart TD
+    accTitle: Hand-built ray-step attack-map network
+    accDescr: Board and colour coordinates feed piece, direction and occupancy reads, then a ray-step update. The scratchpad lists attacked squares and the map head checks their occurrence. The middle read and step stages are trained in hint-format PART; the rest stays frozen.
   A["Board and requested colour"] --> B["L0 square and colour coordinates"]
   B --> C["L1 piece, direction and occupancy reads"]
   C --> D["L2 one-step ray heads: cur, g, nx"]
   D --> E["Scratchpad attacked squares"]
   E --> F["Map head: square s appears in scratchpad"]
   F --> G["64-bit attack map"]
-  classDef trained fill:lightyellow,stroke:darkorange
+  classDef trained fill:gold,stroke:darkgoldenrod,color:black
   class C,D trained
 ```
 *Figure 1. The hand-built H network reads and advances one ray step before forming the map. L1–L2 are the trained stages in H PART; the other stages stay fixed.*
@@ -155,14 +159,18 @@ kept L0, L3 and the MLPs but resampled L1–L2 heads; C3 seeds 12 and 15 and C2 
 
 At the four sites with an exact or near-exact sparse-dictionary splice, replacing the residual by reconstructed sparse features, no feature tracked a HAND variable above the relevant basis baseline: colour correlation ≤ .22 and map-bit correlation ≤ .35. The compact account calls these four splices exact; the source includes a .97 splice. No feature-level closed form was available to substitute. This is the distinction between reconstruction and feature recovery discussed by [Korznikov et al. (2026)](#references).
 
+In Figure 2, weighted token counts feed the needed middle contextual heads, then late piece and board-square pointers. The output MLP writes ray steps and map bits. All shown heads and MLPs were trained. The proposed form remains rejected: uniform-head and dominant-key substitutions or complement tests fail, so this family sketch is not a faithful recovered formula.
+
 ```mermaid
 flowchart TD
+    accTitle: Trained count, pointer and ray-step family
+    accDescr: A trained token-count block feeds needed middle heads, late contextual pointers and the output MLP for ray steps and map bits. All shown heads and MLPs are trained. Status is rejected: uniform-head and dominant-key substitutions or complement tests fail, so this is not a faithful recovered formula.
   A["Board tokens"] --> B["L0 weighted token counts and MLP0"]
   B --> C["L1-L2 needed contextual heads and MLP1-2"]
   C --> D["L3 piece and board-square pointers"]
   D --> E["MLP3 and output: ray step and map bit"]
   E --> F["Scratchpad and map"]
-  classDef trained fill:lightyellow,stroke:darkorange
+  classDef trained fill:gold,stroke:darkgoldenrod,color:black
   class B,C,D,E trained
 ```
 *Figure 2. T1 in the fully trained H networks. All shown heads and MLPs are trained. Closed-form status: rejected; near-uniform and dominant-key descriptions fail substitution or complement resampling and do not identify a faithful circuit.*
@@ -234,6 +242,10 @@ For trained networks the excerpt computes, from fused QKV slices, each L0 head's
 | A TRAIN C3 width retry w2 (3) | 7–21 + NA [4] | sq, c ~1; occ ≤ .31; blocker ≤ .38; y ≤ .65 | — | ≥ .30 | .88–.93 | .04–.08 |
 
 `sq` is square identity, `occ` occupancy and `blocker` nearest-blocker distance; other variables are defined in Section 3. The compact y-flip row does not override the small-n or zero-n cautions for other variables.
+
+## What to read next
+
+Read [mate-in-one selection](chess-mate-in-one.md) for how attacked squares and escape counts enter a local mating decision. [KRK mate](chess-krk.md) instead studies imitation of a complete endgame policy.
 
 ## References
 

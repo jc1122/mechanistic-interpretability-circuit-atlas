@@ -10,7 +10,7 @@ Binary addition tests whether a network can pass a carry across columns instead 
 | Rungs and seeds | Formula-set reference (HAND); one stage on frozen routing (PART), 10 seeds per format plus position-masked carry-token and column-sum runs; from scratch (TRAIN), 10 seeds per format, with retries retained |
 | Closed form status | Partial (PART sum-bit lookup: 1.00 in 10/10 answer-only and column-sum seeds, 3/10 carry-token seeds; complement not tested. TRAIN replacement is seed-specific, with failed pruned-circuit scrubbing) |
 | Status | Partly solved (in-range TRAIN outcomes reported as 10/10 per format after retries; selected snapshots have qualifications below. Every TRAIN net fails at n = 12); last run 2026-11-05 |
-| Weights | [Hugging Face: binary-addition](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/binary-addition) (62 networks) |
+| Weights | [Hugging Face: binary-addition](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/binary-addition) (recorded publication inventory: 62 networks; earlier task archive record: 59, unresolved; [archive scope](#25-archive)) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
 ## 1. Task and data
@@ -80,6 +80,9 @@ The Hugging Face folder holds `hand_{A,B,C}`, `part_<F>_s<seed>` and `partmask_<
 seeds), `train_<F>_s<seed>` (full networks, 3 seeds per format: A 0/2/7, B 2/5/8, C 1/2/9), `config.json` and `manifest.json`
 (sha256). Each network was reloaded in fp32 and checked against its recorded test accuracy.
 
+The earlier task archive record lists 59 networks, whereas the publication inventory above lists 62. The available task record does
+not reconcile these counts. The reload statement describes the recorded archive check, not a fresh inventory or completeness audit.
+
 ## 3. Hand-built solution
 
 The hand-built networks first compute positions. A uniform head gives 1/(r+1) at position r, a hinge MLP turns it into r, an anchor head
@@ -100,8 +103,12 @@ parity(d_i + c) in phase 2.
 The networks use 3 + 8 / 3 + 6 / 4 + 10 heads + neurons (A / B / C). They are exact on all pairs for n = 1..6 and on 2000 pairs per n =
 7..12, with minimum logit margin 30.
 
+In Figure 1, frozen position and index heads fetch the operand bits. Answer-only A uses carry lookahead before MLP3 writes parity; carry-token B uses MLP2 to write parity and carry, then copies the carry token; column-sum C combines lookahead with MLP2's two phases. Only the named MLP is trained in each PART cell. Learned sum-table status remains partial, with complement untested.
+
 ```mermaid
 flowchart TD
+    accTitle: Hand-built binary addition in three output formats
+    accDescr: Position and index heads fetch operand bits. Answer-only and column-sum routes use carry lookahead; the carry-token route writes digit parity and carry before copying the carry output. Only the marked stage MLP is trained in each PART cell. Learned sum-table status is partial, with complement untested.
     P["Prompt a+b= and output so far"] --> POS["positions: r, r_plus, r squared, thermometers T and VT"]
     POS --> IDX["index heads copy a_i, b_i"]
     subgraph FA["Format A"]
@@ -241,8 +248,12 @@ semantic scrub, which swaps activations between inputs that agree on the arithme
 ([glossary](../GLOSSARY.md#verifying-a-circuit)). Its retained accuracies are .980 / .985 / .983, although the joint formulas restore
 4096/4096: pruning and explanation do not compose.
 
+In Figure 3, earlier token and position summaries feed the operand-copy heads L3H0 and L3H3 and the current-token-switched L3H1. Their outputs enter MLP3's prototypes, which write bit or carry slots. These heads and the MLP were wholly trained. This seed-specific replacement remains partial: the stronger semantic scrub fails, and no seed-universal native algorithm is verified.
+
 ```mermaid
 flowchart TD
+    accTitle: Seed-specific carry-token TRAIN replacement
+    accDescr: Earlier token and position summaries feed operand-copy heads and a current-token-switched head; MLP prototypes write bit or carry slots. Heads and MLP were wholly trained. Status is partial: the replacement is seed-specific and the pruned circuit fails the stronger semantic scrub; no seed-universal mechanism is verified.
     T["layers 0-2: token and position means T[j, t_j]"] --> H0["L3H0: copy current a_i"]
     T --> H3["L3H3: copy current b_i"]
     T --> H1["L3H1: attention switched by the current token"]
@@ -338,6 +349,10 @@ Jaccard/hand_recall against HAND, over trusted networks (spearman_exact ≥ .8).
 | C | 4+1; .62/.61/.60/.52, d .83, PH 1; 4.6; 0; 1 ‖ MLP2; X2 0/1, X3 0/1, CY, c, s, d 1/1 | 4+1; .62-.67/.64-.68/.60-.61/.53-.57; 4.1-4.3; 0; 1 (1) ‖ MLP2 10/10; X2 .23/1, X3 0/1, CY .64/1, c 1/1, s .66/1, d .86/1; edges 1/1 (9) | 4+1; .64-.69/.66-.71/.60-.61/.53-.56; 4.1; 0; 1 (1) ‖ MLP2 10/10; X2 0/1, X3 0/1, CY .75/1, c 1/1, s .82/1, d .83/1; edges 1/1 (10) | r1: 0-16+0-4; .25-.41/.25-.49/.39-.59/.16-.42; 1.9-3.6; 0-.16; (.01-.62) ‖ no solved net | r2: 3-13+4; .38-.96/.38-.95/.46-.64/.47-.57, PH .97-1; 2.9-4.2; .19-.35; .91-1 ‖ r2 MLP3 6, MLP0 4; r3 MLP0 6, MLP3 4; X2 .01-.05/1, X3 0/1, CY .12/1, c, s, d .99-1/1; edges 0/0 (9, 9) |
 
 *Key: r1–r4 = TRAIN runs 1–4 (Table 2); PAR = parity, MJP = the diagnostics label read here as the MAJ (carry-out) variable, k = carry token.*
+
+## What to read next
+
+Read [decimal and hexadecimal addition](decimal-hex-addition.md) for the corresponding digit-table and carry questions in larger bases, or [base conversion](base-conversion.md) for another distinction between a useful readout and a complete routing mechanism.
 
 ## References
 

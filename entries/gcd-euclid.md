@@ -111,8 +111,12 @@ fraction A 1 + 2557. Exactness was checked on all inputs of small domains (gcd A
 reported 1.000 on each run's 256 test tuples in all five published cells. The later compact reference gives the weaker bound margin
 ≥ 9; both reports are retained. There is one design, HAND-a; no HAND-b or HAND-c was designed.
 
+In Figure 1, frozen clocks address the preceding operand pair. MLP2 computes the absolute difference, minimum and stop flag; MLP3 then chooses which token role to write. Only that final router MLP is trained in PART, so successful routing does not show that the arithmetic was learned.
+
 ```mermaid
 flowchart TD
+    accTitle: Hand-built subtractive-Euclid step and output router
+    accDescr: Frozen position clocks address the preceding operand pair. The arithmetic MLP computes absolute difference, minimum and the stop flag; the final router chooses the next token role. Only the router MLP is trained in PART.
     P["Prompt and rows so far"] --> F["L0H0 and MLP0/1: clocks with periods 16, 19, 23"]
     F --> H["L2H0 and L2H1: fetch previous OLD_a and OLD_b"]
     H --> S["MLP2: five ReLU neurons compute ABS, MIN and ZERO"]
@@ -214,7 +218,7 @@ native set, but falls to 93.1% on fresh 7-bit tuples. It is neither a minimum no
 
 The three rules read only frozen OLD, ABS, MIN, ZERO and role channels. After a B token, emit `A:ABS` if ZERO = 0, else `R:OLD_a`;
 after A, emit `B:MIN`; after R, emit EOS. In all 10 final seeds, replacing MLP3 gives 100% on all 4096 6-bit inputs (native
-.9988–.9998) and on 256 sampled 8-bit inputs with maximum operand ≥ 128 (native 0%). The six-bit grid includes training inputs. The eight-bit intervention set differs from the trainer's eight-bit set (.05–.17); both sets contain 256 sampled tuples.
+.9988–.9998) and on 256 sampled 8-bit inputs with maximum operand ≥ 128 (native 0%). The six-bit grid includes training inputs. The eight-bit intervention set differs from the trainer's eight-bit set (.05–.17); the 256-tuple count here belongs to the substitution test.
 
 Resampling everything outside the claimed 8 edges keeps .974–1.0 exact match against base 1.0 on 128 diagnostic tuples in each of the seven exact seeds; resampling
 the circuit or random 8 edges gives ≤ .021. Path drops are .70–.88 for the L2-heads-to-MLP2-to-MLP3 route and .16–.31 for the direct
@@ -250,8 +254,12 @@ A categorical-table MLP3 for TRAIN T run 2 (≈ 29.6k fitted scalars) was reject
 and 500 / 512 on seed 2, below the .99 bar. Jointly substituting all candidate TRAIN T components gives 1.2% native. The later
 11 heads and MLP1–3 of that pruned network remain unexplained.
 
+In Figure 2, token-table attention heads and MLP0 specify the measured front end of the historical pruned TRAIN network. Later heads and MLPs still lack a complete closed form. All marked components were trained. This finite token-table description is not a complete Euclid mechanism or paired-complement certificate; the entry's partial status belongs to PART.
+
 ```mermaid
 flowchart TD
+    accTitle: Historical pruned TRAIN front end
+    accDescr: Token-table attention heads and an MLP compile the measured front-end computation, followed by unexplained later heads and MLPs. All marked components were trained. This is a historical finite token-table description, not a complete Euclid formula or paired-complement certificate; the page's partial status belongs to PART.
     T["Prompt and row tokens"] --> H0["Run 2 seed 2: four layer-0 heads use per-token Q, K, O tables"]
     H0 --> M0["MLP0: ReLU of token bias plus weighted head sum"]
     M0 --> U["Later 11 heads and MLP1-3: no complete closed form"]
@@ -364,6 +372,10 @@ participation ratio was 1.09–3.91 for HAND and 13.3–13.9 for failed inverse 
 | 9 | .938 | Yes |
 
 The compact .83–.94 range is retained as the older published summary; these per-seed values are copied separately from the final diagnostic record.
+
+## What to read next
+
+Compare [rounded Euler decay](euler-decay-ode.md) for a recurrence where learning the local numerical update remains a failure. [Arithmetic registers](compose-arithmetic-registers.md) separate arithmetic from selecting the right stored operands.
 
 ## References
 

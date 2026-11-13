@@ -2,7 +2,7 @@
 
 Given a shuffled list of a's and b's, the model must name the more frequent letter or report a tie. A fixed hand-built transformer
 supplied several encodings of the count and list length to one trained feed-forward block. All 30 networks (ten seeds at each of
-three training fractions) learned an approximate comparison, scoring .91–.96 on held-out count/length combinations, yet every network
+three training fractions) learned an approximate comparison; at training fraction .8, held-out accuracy was .917–.963. Every network
 got every held-out tie wrong. A random frozen base and a scalar-only input both gave better test accuracy than the richer hand-built
 feature menu. The task is partly solved, with equality unsolved; the fitted two-way comparator is only a partial description, because
 it never returns a tie and the rest of its circuit was not resampled.
@@ -13,8 +13,8 @@ it never returns a tie and the rest of its circuit was not resampled.
 | Input → output example | A line of 20 letters with 12 a's and 8 b's → `a` |
 | Model | Frozen hand-built 6-layer transformer and a frozen menu of encodings; trained: one MLP layer, 256 ReLU units, 3 outputs |
 | Rungs and seeds | Hand-built network, exact on all cells; MLP trained on frozen hand-built parts, 10 seeds × train fractions .4/.6/.8 (30 networks), 200,000 steps each; 18 control runs |
-| Closed form status | Partial (approximate two-way comparator: substituted accuracy .93–.96, agreement .92–.94 over all 1080 cells, not an independent formula-fit split; never outputs a tie; complement not tested) |
-| Status | Partly solved (greater/less learned, test .91–.96; `=` 0 correct test cells in 30/30); last run 2026-11-04 |
+| Closed form status | Partial (approximate two-way comparator: substituted accuracy .928–.958, agreement .916–.935 over all 1080 cells, not an independent formula-fit split; never outputs a tie; complement not tested) |
+| Status | Partly solved (greater/less learned; at fraction .8, test .917–.963; `=` 0 correct test cells in 30/30); last run 2026-11-04 |
 | Weights | [Hugging Face: compare-counts](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/compare-counts) (hand-built base in `_shared/m2`) |
 | Reproduce | [Commands](#24-reproduction), run from `code/` |
 
@@ -115,8 +115,12 @@ g = 200·[task flag] + 200·[space token]. The `=` unit fires at g ≥ 300 and w
 therefore the default output, what remains when neither difference unit fires, and it is exact on unseen cells. Weights are in
 Appendix A.
 
+In Figure 1, the frozen count head supplies X and the position scalar supplies length L. Count decoders form the one-hot and thermometer codes; these, scalar inputs, length codes and distractors enter the trained menu-reading MLP. A separate frozen comparator supplies the hand-built reference answer. Only the menu-reading MLP is trained.
+
 ```mermaid
 flowchart TD
+    accTitle: Frozen count menu and learned comparison stage
+    accDescr: The frozen count head and position scalar supply count and length encodings to a trained MLP. A separate fixed comparator supplies the hand-built reference answer. Only the menu-reading MLP is trained; scalar, one-hot, thermometer and distractor inputs are distinct routes.
     P["Prompt: shuffled line of a's and b's"] --> H["m2 layer 4 head 1: uniform attention over the c matches and the newline"]
     H --> X["X = 1/(c+1)"]
     P --> R["m2 position scalar R, gives L"]
@@ -143,17 +147,17 @@ shaded MLP is the only trained part.*
 
 ## 4. What training finds
 
-Test accuracy reached its plateau at the first evaluation (step 500) and never improved: .91–.94 at fraction .4 to .92–.96 at
-fraction .8 (Table 2). There was no [grokking](../GLOSSARY.md#counting-results), a delayed rise of test accuracy after training
+Test accuracy reached its plateau at the first evaluation (step 500) and never improved. The held-out ranges were .910–.941 at
+fraction .4, .921–.947 at fraction .6 and .917–.963 at fraction .8 (Table 2). There was no [grokking](../GLOSSARY.md#counting-results), a delayed rise of test accuracy after training
 accuracy: accuracy was already at its plateau, and the weight norm stayed flat.
 
-*Table 2. Results per cell. Test accuracy is the range over seeds.*
+*Table 2. Results per cell. Test accuracy is the source-reported range over seeds.*
 
 | Cell | Seeds | Plateau step | Final test | Correct `=` test cells |
 |---|---|---|---|---|
-| MLP on the frozen hand-built menu, fraction .4 | 10 | 500 | .91–.94 | 0 in every network |
-| MLP on the frozen hand-built menu, fraction .6 | 10 | 500 | .921–.947 (source precision) | 0 in every network |
-| MLP on the frozen hand-built menu, fraction .8 | 10 | 500 | .92–.96 | 0 in every network |
+| MLP on the frozen hand-built menu, fraction .4 | 10 | 500 | .910–.941 | 0 in every network |
+| MLP on the frozen hand-built menu, fraction .6 | 10 | 500 | .921–.947 | 0 in every network |
+| MLP on the frozen hand-built menu, fraction .8 | 10 | 500 | .917–.963 | 0 in every network |
 | Control: random frozen base | 3 per fraction | | .99–1.000 | |
 | Control: scalar-only menu | 3 per fraction | | .97–.99 | .17–.44 |
 
@@ -170,8 +174,8 @@ Each network was fitted with the closed form
 
 answer = a if αc + βL + γ > 0 else b (never `=`),
 
-with α, β and γ fitted per network. Substituted for the network, it reaches accuracy .93–.96 (the networks score .95–.96) and agrees
-with the network on .92–.94 of cells. The fit and substitution screen covered all 1080 count/length cells, not an independently
+with α, β and γ fitted per network. Substituted for the network, it reaches accuracy .928–.958 (the corresponding networks score
+.946–.963) and agrees with the network on .916–.935 of cells. The fit and substitution screen covered all 1080 count/length cells, not an independently
 held-out formula-fit split. A form built on the exact variable 2c − L scores lower (.90–.94), so that variable alone does not
 reproduce the measured decisions as well; this does not prove it is absent internally. The closed form is supported by substitution; no [resample ablation of the
 complement](../GLOSSARY.md#verifying-a-circuit) was reported, so the status is partial.
@@ -181,8 +185,12 @@ The weights show the tilt (Figure 2; numbers in Appendix A). The a − b differe
 those assigned to the training split and very negative on the held-out ones (margin over the best other class +13.7 on training cells and −15.5 on test cells for seed 0): it
 is a per-cell lookup on the one-hot codes, not a function of 2c − L.
 
+In Figure 2, thermometer count and length features feed the trained letter-score difference, approximated by a tilted linear rule. One-hot codes feed a separate trained tie score that is memorised on training cells and fails on unseen ties. Status remains partial: substitution supports the approximation, with complement untested; it is not an exact equality-aware comparator.
+
 ```mermaid
 flowchart TD
+    accTitle: Approximate comparison with a memorised tie score
+    accDescr: Thermometer count and length features feed a tilted linear approximation to the letter-score difference. One-hot codes feed a separate tie score that does not generalise to test ties. Both score computations are trained. Status is partial, supported by substitution with complement untested; it is not an exact equality-aware comparator.
     TU["thermometer of c (tu), main input"] --> D["a - b logit difference: alpha c + beta L + gamma, beta/alpha -.56 to -.64"]
     LB["L blocks (ov, tv, sv)"] --> D
     D --> AB["answer a or b; boundary tilted away from 2c = L"]
@@ -269,10 +277,18 @@ Reading. β/α ≈ −.6 instead of −.5 tilts the boundary, so the errors sit 
 | .6 | .921–.947 | .941–.967 | 0 in every seed |
 | .8 | .917–.963 | .943–.977 | 0 in every seed |
 
-Key: these are the source's more precise ranges, retained alongside the earlier rounded .91–.94 / .92–.96 display in Table 2.
+Key: these are the source's per-fraction ranges, also used in Table 2. The earlier lede and Status both displayed .91–.96; the
+earlier Table 2 and Section 4 used .91–.94 at fraction .4 and .92–.96 at fraction .8. These historical rounded displays are retained
+here rather than silently selected over the source precision.
+
 The substituted two-way rule scores .928–.958 and agrees with the network on .916–.935 of all 1080 cells; the corresponding network
-scores .946–.963. Section 5 retains the earlier .93–.96 accuracy, .92–.94 agreement and .95–.96 network display at its original
-precision. None of these scores counts a held-out equality success.
+scores .946–.963. The earlier Section 5 and fact table displayed .93–.96 substitution accuracy and .92–.94 agreement; the earlier
+Section 5 network display was .95–.96. These are retained reporting precisions, not additional experiments. None of these scores
+counts a held-out equality success.
+
+## What to read next
+
+Compare [count mod 5](count-mod-5.md), which uses the same frozen count encodings for a different readout. Read [the verification guide](../GLOSSARY.md#verifying-a-circuit) for the distinction between formula task accuracy and agreement with the trained network.
 
 ## References
 

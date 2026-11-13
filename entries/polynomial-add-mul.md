@@ -2,10 +2,10 @@
 
 Adding polynomials combines coefficients of the same power; multiplying them requires products of coefficients followed by collecting
 terms of the same power. Small transformers were trained on degree-3 polynomials, writing either the result directly or a trace of
-intermediate calculations. Addition reached held-out whole-output exact match 1.0 in all 40/40 final-run seeds across the two formats
+intermediate calculations. Addition reached held-out whole-output exact match 1.0 on 1000 pairs per seed in all 40/40 final-run seeds across the two formats
 and both training settings (fixed hand-built parts or from scratch), while no learned multiplication cell reached 1.0. A separate
 multiplication arm froze hand-built product gates and learned only the output sum, reaching .998–.999 in 3/3 screening seeds. The task is partly solved, and the frozen-scaffold addition
-formula is partial: substitution preserved in-range answers, but the rest of the circuit was not resampled and the formula did not
+formula is partial: substitution preserved in-range answers in the partly trained networks only, but the rest of the circuit was not resampled and the formula did not
 reproduce the networks' out-of-range errors.
 
 | Fact | Value |
@@ -18,6 +18,8 @@ reproduce the networks' out-of-range errors.
 | Status | Partly solved (addition 40/40 seeds at held-out whole-output exact match 1.0; multiplication split-sum 3/3 at .998–.999, none at 1.0; no multiplication final run); last run 2026-11-08 |
 | Weights | [Hugging Face: polynomial-add-mul](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/polynomial-add-mul) (4 HAND + 55 nets) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
+
+Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [polynomial differentiation](polynomial-differentiation.md) for coefficient arithmetic, or [symbol-level algebra](symbolic-algebra-atoms.md) for collecting and expanding terms.
 
 ## 1. Task and data
 
@@ -104,23 +106,32 @@ the 19^8 degree-3 input combinations.
 
 ```mermaid
 flowchart TD
-    P["Prompt: a_0..a_3, + or *, b_0..b_3, ="] --> F["reciprocal-position frame"]
-    F --> H["quadratic index heads fetch a_k and b_k, or shifted a, b_j and the previous coefficient"]
+    accTitle: Hand-built coefficient sum and signed-product routes
+    accDescr: Positional fetches supply coefficients to a sum of signed ReLU ramps or signed-bit product gates. The marked stage MLPs are trained in ordinary PART. The separate frozen-product split-sum arm trains output weights only and is not this full-stage comparison.
+    subgraph INPUT["Common input to each operation"]
+        direction TB
+        P["Prompt: a_0..a_3, + or *,<br/>b_0..b_3, ="] --> F["reciprocal-position frame"]
+        F --> H["quadratic index heads fetch<br/>a_k and b_k, or shifted a,<br/>b_j and the previous coefficient"]
+    end
     subgraph ADD["Addition"]
-        SA["stage MLP: S = relu(a + b) - relu(-a - b)"]
+        SA["stage MLP:<br/>S = relu(a + b) - relu(-a - b)"]
     end
     subgraph MUL["Multiplication"]
-        SM["stage MLP: signed bit gates relu(a + 32 bit - 32) - relu(-a + 32 bit - 32), weights 1, 2, 4, 8, -16"]
+        SM["stage MLP: signed bit gates<br/>relu(a + 32 bit - 32)<br/>- relu(-a + 32 bit - 32),<br/>weights 1, 2, 4, 8, -16"]
     end
-    H --> SA
-    H --> SM
-    SA --> R["read-out: logit(v) = 2vS - v^2 ONE, answer S/ONE"]
-    SM --> R
+    subgraph OUTPUT["Common read-out after either operation"]
+        R["read-out:<br/>logit(v) = 2vS - v^2 ONE,<br/>answer S/ONE"]
+    end
+    %% Alternatives share the input and read-out panels. Invisible links
+    %% stack panels; they are not computational paths between operations.
+    INPUT ~~~ ADD
+    ADD ~~~ MUL
+    MUL ~~~ OUTPUT
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class SA,SM trained
 ```
 
-*Figure 1. The hand-built networks for addition and multiplication. Index heads on a reciprocal-position frame fetch the operands; the
+*Figure 1. The hand-built networks for addition and multiplication. Each operation uses the common input and read-out panels; addition and multiplication are alternatives, not successive stages. Index heads on a reciprocal-position frame fetch the operands; the
 stage MLP adds them with two ReLU ramps or multiplies them with signed bit gates on b_j; the read-out picks the integer closest to
 S/ONE. The shaded stage MLPs are the parts that PART replaces with a trained stage (layer 2 in format `A`, layer 3 in format `T`).*
 
@@ -193,9 +204,13 @@ For TRAIN, a fitted MLP2 decoder in format `A` scores .993–1.0 against the net
 
 ```mermaid
 flowchart TD
+    accTitle: From-scratch addition reads the written trace
+    accDescr: The trained retrieval and readout use written operand coefficients for the sum row rather than prompt operands under the tested patches. This TRAIN trace formula was rejected; partial status applies only to the separate PART sum, with complement untested.
     P["prompt operands a_k, b_k"] -.->|"patching 0"| M
-    W["written trace tokens a_k, b_k"] --> M["TRAIN T: trained attention and MLPs read the trace for the sum row"]
+    W["written trace tokens a_k, b_k"] --> M["TRAIN T: trained attention<br/>and MLPs read the trace<br/>for the sum row"]
     M --> C["written c_k"]
+    %% Invisible link stacks inputs; it is not a computational path.
+    P ~~~ W
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class M trained
 ```
@@ -218,6 +233,8 @@ that the failed cells here are impossible to learn.
 *Figure 3. The separate answer-only split-sum multiplication arm, with product gates frozen and output weights trained. Its 3/3
 screening seeds reached .998–.999 whole-output exact match on 1000 held-out pairs per seed, none 1.0. No verified learned
 multiplication mechanism is claimed; the entry's partial closed form covers addition only, without a complement test.*
+
+[Open Figure 3 at full size](../figures/polynomial-split-sum.svg).
 
 ## 6. Limitations and open questions
 

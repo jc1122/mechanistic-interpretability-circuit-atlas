@@ -113,8 +113,12 @@ The menu decodes X with pairs of GELU steps, `step(z; c, s) = (gelu(s(z − c) +
 [c ≥ k] = step(−X; −m_k, 32/g_k), where m_k = (1/k + 1/(k+1))/2 is the midpoint and g_k = 1/k − 1/(k+1) the gap between neighbouring
 values of X. The one-hot unit is the difference of neighbouring thermometer units. The decoder is exact on all cells.
 
+In Figure 1, the frozen matching head writes reciprocal count X, and a position scalar supplies length L. Step decoders form count indicators; these, the scalar count, length codes and distractors enter the sole trained MLP to score remainders. The diagram separates the frozen encodings from the learned readout.
+
 ```mermaid
 flowchart TD
+    accTitle: Hand-built counting and frozen count encodings
+    accDescr: A frozen matching head writes the reciprocal count and a position scalar supplies length. Step decoders construct one-hot and thermometer features; these and distractors enter the sole trained MLP, which scores the remainders.
     P["Prompt: COUNT a: line of a's and b's"] --> H["m2 layer 4 head 1: uniform attention over the c matches and the newline"]
     H --> X["X = 1/(c+1)"]
     P --> R["m2 position scalar R, gives L"]
@@ -190,8 +194,12 @@ The weights show how the lookup is wired (Figure 2; numbers in Appendix A). The 
 same value for c and c + 5 (14.25 and 13.40 for c = 0 and 5 in Table A1). The L blocks receive small weights whose effect the network
 averages out, since setting L to its mean keeps .995–1.000.
 
+In Figure 2, count indicators feed the trained input weights and a hidden remainder pattern before the output scores. Length inputs have small effects that can be replaced by their mean. The equal-amplitude cosine profile describes an ideal lookup, not identical native scores or a trigonometric mechanism. Status remains partial, with complement untested.
+
 ```mermaid
 flowchart TD
+    accTitle: Learned count-to-remainder lookup
+    accDescr: Count indicators feed trained input weights and a hidden remainder pattern before the output logits. Length inputs have small effects that can be replaced by their mean. The equal-amplitude cosine profile is an ideal lookup description, not identical native logits or proof of trigonometric computation. Status is partial, with complement untested.
     OU["one-hot of c (ou), largest W1 column norm"] --> W["W1 columns: c and c + 5 map to nearly the same hidden pattern"]
     TU["thermometer of c (tu), redundant copy"] --> W
     W --> H["hidden pattern of residue class r = c mod 5"]
@@ -271,6 +279,10 @@ the earlier summary; these source ranges separate the training fractions.*
 | .4 | .24–.26 |
 | .6 | .31–.34 |
 | .8 | .32–.40 |
+
+## What to read next
+
+Compare [two-count comparison](compare-counts.md): the same frozen encodings support a different readout, with held-out ties remaining a failure. Read [the verification guide](../GLOSSARY.md#verifying-a-circuit) for what substitution alone establishes.
 
 ## References
 

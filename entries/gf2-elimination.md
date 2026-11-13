@@ -58,14 +58,18 @@ The row update is new_r = old_r xor ((old_r[k−1] AND [r ≠ p_k]) old_p_k). Fo
 
 L0–L1 compute the block, row and column frames (BLK, ROW, J) and their next-token versions. A uniform head and 256 position neurons, five anchor heads and paired ReLU steps `relu(4z+3) − relu(4z+2)` provide the frame. L2 uses five 3-D match heads, which fetch values by address, to retrieve OLD, OLDF, K, PB, USED and PX; its MLP computes slot flags and EQ ([glossary](../GLOSSARY.md#hand-built-machinery)). OLDF is the previous row's pivot-used flag, USED marks an already chosen pivot row, and PX is the row address for reading the solution. L3 H0 chooses the pivot with score −B·dist² + G·bit − G·USED − A·ROW; H1 reads the answer bit. Here dist is address distance, ROW is the candidate row index, and B, G and A are fixed score gains. The last MLP has one neuron per 1-cell of the row-update truth table, which lists the output for every Boolean input combination.
 
+In Figure 1, a frozen row and column frame supplies fetched operand bits and the equality flag. Pivot and answer reads run alongside MLP3's XOR-AND row update before the matrix and solution are written. Only MLP3 is trained in PART; the separate attention-only PARTp cell trains different components.
+
 ```mermaid
 flowchart TD
+    accTitle: Hand-built binary row update and parallel pivot reads
+    accDescr: A frozen row and column frame feeds operand-bit fetches and the equality flag. Pivot and answer reads run alongside the XOR-AND row-update MLP before writing the matrix and solution. Only the update MLP is trained in PART; the separate attention-only PART cell has different trainable components.
   A["L0-L1: block, row and column frame"] --> B["L2: fetch OLD, K and PB; compute EQ"]
   B --> C["L3 H0-H1: pivot and answer reads"]
   B --> D["MLP3: OLD xor (K and PB and not EQ)"]
   C --> E["Updated matrix block, then solution bits"]
   D --> E
-  classDef trained fill:lightyellow,stroke:darkgoldenrod
+  classDef trained fill:gold,stroke:darkgoldenrod,color:black
   class D trained
 ```
 
@@ -95,8 +99,12 @@ PART has one type in 10/10 seeds: frozen HAND fetches plus a learned cell-detect
 
 The final answer-only networks form three types: L3-head readout in 6/10 seeds (4–10 L3 heads, answer R² at L3 ≤ .26), diffuse L3 readout in 2/10 (no individual L3 head crosses the ablation threshold, but the whole layer is needed; R² at L3 .54), and L2-complete in 2/10 (L3 attention idle; R² at L3 .89).
 
+In Figure 2, earlier trained layers feed alternative last-layer roles: head-based readout, diffuse group readout, or an already-complete representation with replaceable attention. The final MLP and output readout write solution bits. All computational nodes were trained. Partial status covers only constant-attention substitution in the already-complete family, with complement untested; this is a family schematic, not a whole-network formula or minimum circuit.
+
 ```mermaid
 flowchart TD
+    accTitle: Final binary-elimination readout families
+    accDescr: Earlier trained layers feed head-based, diffuse or already-complete last-layer attention roles before the final MLP and solution output. All computational nodes are trained. Status is partial only for constant-attention substitution in the already-complete family; complement is untested and no whole-network formula is established. This is a family-role schematic, not a minimum circuit.
   A["Earlier trained layers"] --> B["L3 attention: 6 head-readout seeds"]
   A --> C["L3 attention as a group: 2 diffuse seeds"]
   A --> D["L3 attention replaceable: 2 L2-complete seeds"]
@@ -104,7 +112,7 @@ flowchart TD
   C --> E
   D --> E
   E --> F["Solution bits"]
-  classDef trained fill:lightyellow,stroke:darkgoldenrod
+  classDef trained fill:gold,stroke:darkgoldenrod,color:black
   class A,B,C,D,E trained
 ```
 
@@ -158,6 +166,10 @@ In 9/10 seeds, the top neuron's signs select a truth-table cell and its output v
 | A TRAIN m4 final (10 B + 10 F) | 6–19 + 4 (final) | Answer .80–.94 (L4); flip .996–1 (L4) | 20–51 | — (no HAND) | 1 / 1 |
 
 B and F mean best and final snapshots. From scratch the circuit uses 6–19 heads and all MLPs; the local PART circuit reads HAND's bits. This does not establish a minimal circuit or a common weight basis across whole-network seeds.
+
+## What to read next
+
+Read [binary matrix product](gf2-matrix-product.md) for another local XOR-and-AND lookup. [Linear systems over finite fields](linear-systems-finite-fields.md) broaden the comparison beyond binary coefficients.
 
 ## References
 

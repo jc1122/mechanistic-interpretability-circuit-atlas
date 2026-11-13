@@ -87,8 +87,12 @@ reference token with step thresholds (Appendix A). `A` uses 16 heads + 1,963 neu
 allocation and not a measured minimum. The networks are exact on 1,497/1,497 expressions (all 160 of depth ≤ 1, stratified above,
 powers 1–8, padding 0–7) and 2,265/2,265 on the widened retry domain, with minimum logit margins 30 (`A`) and 27.5 (`T`).
 
+In Figure 1, the shared parser supplies subtree spans and children. Scratchpad T fetches a node and its children's results, emits a local rewrite, and converts addresses into reference tokens. Answer-only A descends the expansion template and copies source spans. PART trains only the rewrite emitter in T or descent emitter in A; parsing remains frozen.
+
 ```mermaid
 flowchart TD
+    accTitle: Hand-built differentiation parser and emitters
+    accDescr: A uniform-prefix and depth-routed parser supplies subtree spans and children. One route emits local register rewrites; the other descends an expansion template and copies source spans. The marked emitter MLPs are the only stages trained in the respective PART formats.
     P["Prompt: pad dots, prefix source symbols, ="] --> U["uniform prefix head: bracket balance, completion counts, position frame"]
     U --> D["depth- and recency-routed heads, child reads: subtree start, end, children"]
     subgraph FT["Format T: 5 layers"]
@@ -185,8 +189,12 @@ cohorts in 6/6 nets, but only when y is supplied by the hand-built parse. A line
 derivative addresses off by ±1, so the token decision has no compact form. Whole-program fits on pruned TRAIN `T` circuits fail (14
 joint fits: 11.3%; refit 56.6%).
 
+In Figure 2, trained content-weighted prefix heads feed the MLP stack, while final-layer heads also enter MLP4's rewrite readout. All displayed computational stages were trained. The partial status covers first-layer substitution with complement untested; the later rewrite readout still has no compact closed form.
+
 ```mermaid
 flowchart TD
+    accTitle: Weighted-prefix front end and trained rewrite stack
+    accDescr: Trained content-weighted prefix heads feed the early MLPs and the late rewrite readout, which also receives final-layer head outputs. All displayed computational nodes are trained. Status is partial: first-layer substitution is supported with complement untested, while the rewrite has no compact closed form.
     P["prompt and rows so far"] --> L0["layer-0 heads: content-weighted prefix count, rank-4 token-pair table"]
     L0 --> M["MLP0 to MLP2"]
     M --> M3["MLP3"]
@@ -281,6 +289,10 @@ Flip = maximum-over-layers interchange flip toward the source answer; DAS = dist
 ([glossary](../GLOSSARY.md#analysis-measures)). r99 = final-residual rank at 99% variance. JS = mean over the network's heads of the
 attention divergence to the best-matched HAND head (the per-head maximum reaches .44–.60 in TRAIN `T`). Best and final held-out exact
 are in Table 2. Low flips on HAND, whose codes are scalar, make the flip a weak test of absence here.
+
+## What to read next
+
+Read [polynomial differentiation](polynomial-differentiation.md) for a related symbolic task without the same nested-expression rewrite. [Arithmetic registers](compose-arithmetic-registers.md) provide a comparison for intermediate results stored in named slots.
 
 ## References
 

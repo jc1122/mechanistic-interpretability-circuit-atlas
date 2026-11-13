@@ -92,8 +92,12 @@ MLP3 holds 262 parity-staircase neurons, grouped by divisor D and answer bit j, 
 S(D, j) = {i: bit j of x^i mod D is 1}; here S is the set of input-bit positions contributing to that remainder bit. Input weights
 are 1 and gates 32. Both formats are exact on 9,568 sequences per format (n ≤ 6 exhaustive, n 7–12 stratified over all D), with margin 30.
 
+In Figure 1, frozen scratchpad heads fetch the shift, input, divisor and quotient bits before the stage MLP shifts and XORs the conditional divisor. The separate answer-only route uses frozen heads and parity staircases. PART trains only the marked stage MLP in each format; its heads stay frozen.
+
 ```mermaid
 flowchart TD
+    accTitle: Hand-built scratchpad and answer-only remainder routes
+    accDescr: Scratchpad heads fetch shift, input, divisor and quotient bits before the stage shifts and XORs the conditional divisor. The answer-only route instead uses parity staircases. Only the marked stage MLP is trained in each PART format; heads remain frozen.
     P["BOS N / D = and scratchpad so far"] --> HT["T heads: fetch shift bit X, input bit A, divisor bit DB, quotient bit QB"]
     HT --> ST["T layer-2 MLP: shift r, append a, XOR q times D"]
     ST --> YT["quotient bit and 4 remainder bits per step"]
@@ -198,8 +202,12 @@ final as .969; the acceptance record gives .9694 and locates its loss at n 10 (.
 coarse table has 11 keys and the fine table 35, with none unseen in the evaluation; the fine best-snapshot exception cannot be folded
 into the coarse 19/20 exact count.
 
+In Figure 2, trained scratchpad codes pass through fetch heads to the final bit write. The answer-only candidate instead uses a dense last-layer readout. All marked components were trained. Overall status remains partial: scoped scratchpad tests pass, but earlier layers lack a formula and the coarse key includes the emitted bit. The tested answer-only form is rejected.
+
 ```mermaid
 flowchart TD
+    accTitle: Trained scratchpad readout and dense answer-only candidate
+    accDescr: A trained scratchpad code passes through fetch heads to the final bit write; the answer-only route uses a dense last-layer readout. All marked components are trained. Overall status is partial: the scratchpad readout and discovered circuit pass their scoped tests, but earlier layers have no formula and the coarse key includes the emitted bit. The tested answer-only form is rejected.
     I["TRAIN T: input, divisor and previous state"] --> M1["trained MLP1 code"]
     M1 --> H["trained layer-2 fetch heads"]
     H --> M2["trained MLP2: bit readout W phase, column, next"]
@@ -317,6 +325,10 @@ edge reading is not trusted.
 
 Q = quotient; n90 = neurons carrying 90% of the reported ablation effect. Probe layers count residual readout sites; MLP indices
 are zero-based. The final-run attention and size ranges do not replace the earlier screening measurements in Table B1.
+
+## What to read next
+
+Compare [binary matrix product](gf2-matrix-product.md) for another XOR-and-AND update, or [binary elimination](gf2-elimination.md) for a row-update rule inside a larger frozen computation.
 
 ## References
 

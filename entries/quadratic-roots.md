@@ -13,6 +13,8 @@ The quadratic formula combines squaring, subtraction, a square root and division
 | Weights | [Hugging Face: quadratic-roots](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/quadratic-roots) (weights, splits and recorded test archive; published revision `e417b9b92a75`). |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
+Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [composed arithmetic registers](compose-arithmetic-registers.md) for another supplied program, or [long division and square root](long-division-square-root.md) for arithmetic substeps.
+
 ## 1. Task and data
 
 The coefficients are integers with |b|, |c| ≤ R, written in binary sign/magnitude: n = 5 bits gives R 15 (961 pairs) or R 31 (3,969),
@@ -108,6 +110,8 @@ exact at n 3–5; the source also reports A/S exact on all pairs through n 6. T 
 
 ```mermaid
 flowchart TD
+    accTitle: Supplied-program register fetch and NAND update
+    accDescr: Frozen heads find the two supplied addresses and fetch their register bits. Only the final local MLP is trained in PART; an AND neuron and fixed complementary readout implement NAND inside a supplied program.
     P["packet: shuffled register bank, source addresses A and B"] --> L0["layer-0 heads: find the A and B pointer tokens"]
     L0 --> L1["layer-1 heads: fetch registers a and b by binary address match"]
     L1 --> M["layer-1 MLP: one neuron AND = ReLU(a + b - 1), writes Y"]
@@ -183,6 +187,8 @@ The later 512-packet substitution plus n 6/7/8 rollout check also has native_min
 
 ```mermaid
 flowchart TD
+    accTitle: Collective NAND decision in the trained executor bank
+    accDescr: Frozen addressed registers feed a trained bank of additive hinges and a frozen readout. The bank-level NAND decision is verified on the measured substitution and complement checks. This local rule does not verify learned routing or an end-to-end quadratic solver.
     L1["frozen layer-1 heads: fetched a and b"] --> B["trained bank: 28-37 of 128 hinges with additive operand responses"]
     B --> S["bank-level sum: Y and O"]
     S --> R["frozen readout: logits -10 O, 10 Y, 5 O"]
@@ -191,7 +197,7 @@ flowchart TD
     class B trained
 ```
 
-*Figure 2. The executor stage is Verified on the measured checks in 10/10 seeds: one-neuron substitution preserves 1,792/1,792 packets per seed and the 9-edge complement keeps 1.0. Only the shaded bank is trained. The native decision is collective; the individual hinges can respond to either single operand, unlike HAND's replacement AND neuron.*
+*Figure 2. The executor stage is Verified on the measured checks in 10/10 seeds: one-neuron substitution preserves 1,792/1,792 packets per seed and the 9-edge complement keeps 1.0. Only the shaded bank is trained. The native decision is collective; the individual hinges can respond to either single operand, unlike HAND's replacement AND neuron. This verifies a local rule with the program and routing supplied, not an end-to-end quadratic solver.*
 
 ### 5.2 Parent cells
 

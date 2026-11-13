@@ -1,6 +1,6 @@
 # Modular addition mod 59
 
-Adding modulo 59 means wrapping back to zero after 58. A frozen transformer read the operands into several number encodings, and a feed-forward network ([MLP](../GLOSSARY.md#standard-machine-learning-terms)) learned the arithmetic. All 10 independent training runs (seeds, [glossary](../GLOSSARY.md#counting-results)) built a Fourier clock, a rule that combines periodic responses to the operands, yet their final held-out accuracy stayed at .91–.97 after 300,000 steps. Replacing the learned layer with its fitted cosine formula gave .996–1.000 accuracy on all 3481 operand pairs, compared with the networks' .94–.98 on that same all-pairs bank. The task is partly solved, with no seed reaching 99% held-out accuracy; its proposed formula, or closed form, has partial status because replacement passed but resampling everything outside the claimed circuit (the complement, [glossary](../GLOSSARY.md#verifying-a-circuit)) was not tested.
+Adding modulo 59 means wrapping back to zero after 58. A frozen transformer read the operands into several number encodings, and a feed-forward network ([MLP](../GLOSSARY.md#standard-machine-learning-terms)) learned the arithmetic. All 10 independent training runs (seeds, [glossary](../GLOSSARY.md#counting-results)) built a Fourier clock, a rule that combines periodic responses to the operands, yet their final held-out accuracy stayed at .91–.97 after 300,000 steps. Replacing the learned layer with its fitted cosine formula gave .996–1.000 accuracy on all 3481 operand pairs, compared with the networks' .94–.98 on that same all-pairs bank. The task remains unsolved at the 99% held-out criterion, which no seed reached; its proposed formula, or closed form, has partial status because replacement passed but resampling everything outside the claimed circuit (the complement, [glossary](../GLOSSARY.md#verifying-a-circuit)) was not tested.
 
 | Fact | Value |
 |---|---|
@@ -9,9 +9,11 @@ Adding modulo 59 means wrapping back to zero after 58. A frozen transformer read
 | Model | Frozen hand-built 6-layer transformer and a frozen 310-wide menu of encodings; trained: one MLP layer, 256 ReLU neurons, 59 outputs |
 | Rungs and seeds | Hand-built network reads the numbers only (no hand-built adder); MLP trained on frozen hand-built parts, 10 seeds at train fraction .4, 300,000 steps each; 6 control runs |
 | Closed form status | Partial: per-neuron Fourier clock, substitution .996–1.000 on all pairs, agreement .94–.98 (supported by substitution; complement not tested) |
-| Status | Partly solved (clock circuit 10/10; test .91–.97, below 99%); last run 2026-11-04 |
+| Status | Unsolved (0/10 with held-out accuracy ≥ 99%; clock circuit 10/10; test .91–.97); last run 2026-11-04 |
 | Weights | [Hugging Face: modular-addition-mlp](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/modular-addition-mlp) (hand-built base in `_shared/m2`) |
 | Reproduce | [Commands](#24-reproduction), run from `code/` |
+
+Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [open-bracket count](open-bracket-count.md) for another approximate periodic readout, or [mod-97 arithmetic](modular-arithmetic-mod-97.md) for different number formats.
 
 ## 1. Task and data
 
@@ -101,16 +103,12 @@ itself is left entirely to the trained stage.
 
 ```mermaid
 flowchart TD
+    accTitle: Frozen number readers with a trained arithmetic layer
+    accDescr: Frozen readers and the menu supply scalar, one-hot, thermometer and distractor features to the only trained MLP. There is no hand-built adder. The fitted clock formula is partial, with complement untested.
     P["Prompt: SUM: x y"] --> NR["m2 number readers"]
     NR --> NA["NA = x/100, NB = y/100"]
-    NA --> D["Menu decode: GELU step pairs at k - 1/2"]
-    D --> OH["one-hot of x and y (ox, oy)"]
-    D --> TH["thermometer of x and y (tx, ty)"]
-    NA --> SC["scalars (sx, sy)"]
-    OH --> M["TRAINED: MLP, 256 ReLU neurons"]
-    TH --> M
-    SC --> M
-    DS["distractors: count, brackets, copy pointer, position"] --> M
+    NA --> MENU["Frozen menu inputs:<br/>decode by GELU step pairs<br/>at k - 1/2 gives<br/>one-hot of x and y (ox, oy),<br/>thermometer of x and y (tx, ty)<br/>Direct scalars (sx, sy)<br/>Distractors: count, brackets,<br/>copy pointer, position"]
+    MENU --> M["TRAINED: MLP,<br/>256 ReLU neurons"]
     M --> Y["59 logits: (x + y) mod 59"]
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class M trained
@@ -141,6 +139,8 @@ during memorisation and then decayed to 85.
 *Figure 2. Held-out accuracy at eight recorded checkpoints in each of 10 seeds, using each seed's fixed split of the 3481 pairs
 (train fraction .4). Lines join recorded observations, not a reconstructed continuous learning curve. Training accuracy reached 99%
 by step 500; none of the final held-out scores reached 99%. Appendix B gives the plotted values.*
+
+[Open Figure 2 at full size](../figures/modular-addition-recorded-checkpoints.svg).
 
 All 10 networks fall into one [circuit type](../GLOSSARY.md#counting-results), the [Fourier "clock"](../GLOSSARY.md#analysis-measures)
 (10/10; no pizza, no lookup table). Here the pizza alternative would make the correct-answer score depend strongly on x − y; the
@@ -189,12 +189,17 @@ reported, so under the atlas acceptance rule the status is partial.
 
 ```mermaid
 flowchart TD
-    OH["one-hot of x and y, read"] --> N["neuron n at frequency k_n: c_n + a_n cos(w x + phi_n) + b_n cos(w y + psi_n)"]
-    TH["thermometer, low frequencies k = 1 to 2"] --> N
-    N --> R["ReLU cross term: cos(w(x + y) + phi_n + psi_n)"]
-    R --> O["output column A_n cos(w c + theta_n), theta_n = phi_n + psi_n"]
-    O --> S["sum over 22 to 27 frequencies: peak at c = x + y mod 59"]
+    accTitle: Fitted periodic readout for modular addition
+    accDescr: One-hot and thermometer features feed periodic hidden responses and output votes. Marked hidden and output components are trained. Substitution is supported on all pairs; the formula is partial and does not reproduce every native answer, with complement untested.
+    OH["one-hot of x and y, read"] --> N["neuron n at frequency k_n:<br/>c_n + a_n cos(w x + phi_n)<br/>+ b_n cos(w y + psi_n)"]
+    TH["thermometer, low<br/>frequencies k = 1 to 2"] --> N
+    N --> R["ReLU cross term:<br/>cos(w(x + y) + phi_n + psi_n)"]
+    R --> O["output column<br/>A_n cos(w c + theta_n),<br/>theta_n = phi_n + psi_n"]
+    O --> S["sum over 22 to 27 frequencies:<br/>peak at c = x + y mod 59"]
     SC["scalars, unused"] -.-> N
+    %% Invisible links stack input labels; they are not computational paths.
+    OH ~~~ TH
+    TH ~~~ SC
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class N,O trained
 ```
@@ -212,7 +217,7 @@ helper and ignores the scalar.
 
 ## 6. Limitations and open questions
 
-One modulus, one width and one hyperparameter set were run. The 300k steps did not reach 99% test accuracy, and longer training was not
+One modulus, one width and one hyperparameter set were run. At 300k steps, 0/10 seeds reached 99% test accuracy, and longer training was not
 run. The source proposed that longer training could remove the residual memorisation, but that prediction was not tested.
 In the controls, a random frozen base (same shape, random weights) memorises, its test accuracy
 stays near the earlier display .25 (the result overview gives .25–.26) and it shows no phase rule. A scalar-only menu cannot fit the
@@ -316,5 +321,5 @@ rounding was performed here. The random-base final scores in the detailed summar
   interpretability. *International Conference on Learning Representations (ICLR 2023)* (conference paper).
   https://arxiv.org/abs/2301.05217; https://doi.org/10.48550/arxiv.2301.05217 (original modular-addition Fourier circuit)
 - Zhong, Z., Liu, Z., Tegmark, M., & Andreas, J. (2023). The clock and the pizza: Two stories in mechanistic explanation of neural
-  networks. *Advances in Neural Information Processing Systems 36 (NeurIPS 2023)*. https://doi.org/10.52202/075280-1186 (clock and
+  networks. *Advances in Neural Information Processing Systems 36 (NeurIPS 2023)* (conference paper). https://doi.org/10.52202/075280-1186 (clock and
   pizza algorithms)

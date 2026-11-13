@@ -1,6 +1,6 @@
 # Polynomial differentiation
 
-Differentiating a polynomial means multiplying each coefficient by its power and reducing that power by one. A 3-layer transformer was trained on degree-3 polynomials, either answering directly or first writing intermediate coefficients in a [scratchpad](../GLOSSARY.md#task-formats). With coefficient-fetching machinery frozen, the arithmetic stage reached exact whole-output accuracy in all 10 independent training runs (seeds, [glossary](../GLOSSARY.md#counting-results)) per format within 2–3k steps. From scratch, only 6/10 seeds in the final scratchpad cell were exact; the other final seeds made errors only when copying coefficients, despite correct product and exponent tokens under teacher forcing (the preceding correct trace tokens were supplied). The task is partly solved; the frozen-stage formula is partial, with replacement accuracy 1.000 on 40/40 snapshots but no test resampling everything outside the claimed circuit (the complement, [glossary](../GLOSSARY.md#verifying-a-circuit)), while the from-scratch substitute is only a numerical compression, a smaller fitted model checked in 4 of the 6 solved final seeds.
+Differentiating a polynomial means multiplying each coefficient by its power and reducing that power by one. A 3-layer transformer was trained on degree-3 polynomials, either answering directly or first writing intermediate coefficients in a [scratchpad](../GLOSSARY.md#task-formats). With coefficient-fetching machinery frozen, the arithmetic stage reached exact whole-output accuracy in all 10 independent training runs (seeds, [glossary](../GLOSSARY.md#counting-results)) per format within 2–3k steps, on 1024 held-out draws per evaluation. From scratch, only 6/10 seeds in the final scratchpad cell were exact; the other final seeds made errors only when copying coefficients, despite correct product and exponent tokens under teacher forcing (the preceding correct trace tokens were supplied). The task is partly solved; the frozen-stage formula is partial, with replacement accuracy 1.000 on 40/40 snapshots but no test resampling everything outside the claimed circuit (the complement, [glossary](../GLOSSARY.md#verifying-a-circuit)), while the from-scratch substitute is only a numerical compression, a smaller fitted model checked in 4 of the 6 solved final seeds.
 
 | Fact | Value |
 |---|---|
@@ -12,6 +12,8 @@ Differentiating a polynomial means multiplying each coefficient by its power and
 | Status | Partly solved (PART 10/10 per format exact; TRAIN scratchpad width 2 final 6/10 exact); last run 2026-11-08 |
 | Weights | [Hugging Face: polynomial-differentiation](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/polynomial-differentiation) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
+
+Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [polynomial integration](polynomial-integration.md) for reduced-fraction outputs, or [polynomial addition and multiplication](polynomial-add-mul.md) for coefficient operations.
 
 ## 1. Task and data
 
@@ -31,7 +33,7 @@ For the example `BOS 5 4 1 1 =`, format `A` writes `4 0 2 1 3 2` and format `T` 
 The hand-built network was checked on degree 1–6 and coefficients −15..15. Training used degree 3 and coefficients −9..9; the pairs
 (k, a) = (2, ±3) and (3, ±2) were withheld as inputs, although their product labels still occur elsewhere. Training data were fresh
 hash-disjoint draws with replacement from 104329 primary polynomials, split into 103251 for training and 1078 for testing. An output
-counts as correct only on exact match of the whole teacher-forced output ([glossary](../GLOSSARY.md#task-formats)).
+counts as correct only on exact match of the whole teacher-forced output ([glossary](../GLOSSARY.md#task-formats)). Each evaluation samples 1024 held-out draws with replacement, rather than exhaustively scoring the 1078 distinct test polynomials.
 
 ## 2. Model
 
@@ -90,6 +92,8 @@ set, sum a·2^j into S = k·a_k, and an integer read-out with logits 30(2vS − 
 
 ```mermaid
 flowchart TD
+    accTitle: Hand-built coefficient fetch and power-rule gates
+    accDescr: A frozen position frame and coefficient head supply the masked final MLP, the only trained PART block. Signed gates multiply by the observed bits of the power. The formula is partial, with complement untested and no coverage of the unseen higher multiplier bit.
     P["Prompt: BOS a0 ... a_d ="] --> U["uniform BOS attention: P = 1/(r+1)"]
     U --> HG["reciprocal hinges: r/64, r^2/4096"]
     HG --> AN["anchor on = and step thresholds: term, phase, multiplier bits, index"]
@@ -182,13 +186,18 @@ recovered power-rule algebra.
 
 ```mermaid
 flowchart TD
-    P["Prompt: BOS a0 ... a_d ="] --> H1["H1: copies a_k in some seeds"]
-    P --> H2["H2: copies a_k in some seeds"]
+    accTitle: Seed-dependent coefficient-copy routes
+    accDescr: Trained heads in layers one and two copy coefficients into the trace, and trained MLPs use a categorical product code to write the derivative. The measured route covers only part of the solved-seed cohort under correct-prefix conditioning. TRAIN has numerical compression only, not recovered power-rule algebra.
+    P["Prompt: BOS a0 ... a_d ="] --> H1["H1: copies a_k<br/>in some seeds"]
+    P --> H2["H2: copies a_k<br/>in some seeds"]
     H1 --> C["trace slot: copied a_k"]
     H2 --> C
-    C --> M["MLPs: categorical, higher-rank product code"]
-    K["k and exponent, linear at L1"] --> M
+    C --> M["MLPs: categorical,<br/>higher-rank product code"]
+    K["k and exponent,<br/>linear at L1"] --> M
     M --> Y["written k a_k and k-1"]
+    %% Invisible links stack separate inputs; they are not computational paths.
+    H1 ~~~ H2
+    C ~~~ K
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class H1,H2,M trained
 ```

@@ -15,7 +15,7 @@ context interventions rule out a complete digit-only routing mechanism; no test 
 | Input → output example | Decimal to binary, answer only: `^255=` → `11111111` (eight 1 bits) |
 | Model | GPT-NeoX, 2 layers × 4 heads, d_model 256, MLP 256 ReLU, no LayerNorm, no positional encoding; PART trains only the layer-1 MLP |
 | Rungs and seeds | HAND (formula-set weights) exact in 6/6 cells; PART (one learned stage) and TRAIN (all weights learned) 10 seeds per cell; TRAIN also at .8, 10 seeds ([rungs](../GLOSSARY.md#the-three-rungs)) |
-| Closed form status | Partial (hex digit-code substitution 1.00 on all 256 inputs in 36/40 TRAIN nets, fit includes test; decimal-to-binary PART threshold rule; no complement test; joint digit-only scrub .556 / .923 fails) |
+| Closed form status | Partial (hex digit-code substitution 1.00 on all 256 inputs in 36/40 TRAIN nets, fit includes test; decimal-to-binary PART threshold rule; no complement test; joint digit-only scrub fails in probe seeds 1 and 4: [cohort and retained displays](#52-circuit-probes)) |
 | Status | Partly solved (hex-to-binary TRAIN 16/40 and decimal-to-binary answer-only PART 6/10 reach best test ≥ .99; three carry-type cells PART 0/30, TRAIN 0/60); last run 2026-11-05; circuit probes 2026-11-06 |
 | Weights | [Hugging Face: base-conversion](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/base-conversion) (6 HAND, 77 PART/TRAIN) |
 | Reproduce | [Commands](#24-reproduction), run from `code/` |
@@ -133,8 +133,12 @@ All six networks are exact on 256/256 inputs (token accuracy 1.0000), with a min
 9.0 / 9.9 (binary to decimal) and 8.8 / 5.0 (decimal to binary), checked with `python run.py convert check`. Answer only is smaller
 than the scratchpad here, because with a fixed length one mixture head reads both the input and the answer digits already written.
 
+In Figure 1, the frozen position frame addresses the table heads. Depending on the conversion, these deliver the source hexadecimal digit code X, remainder F, or current digit C and X. The final MLP turns those variables into an output digit or bit. Only that final stage is trained in PART.
+
 ```mermaid
 flowchart TD
+    accTitle: Hand-built base-conversion routes
+    accDescr: A frozen position frame addresses table heads. They supply a hexadecimal digit code, a remainder, or the scratchpad digit variables to the output MLP. Only the final stage MLP is trained in PART; the other routes remain fixed.
     T["Prompt tokens"] --> F0["Layer 0 head 0: P = 64/(64 + r) from the start token"]
     F0 --> F1["Layer 0 MLP: hinge neurons give the position one-hot POS"]
     F1 --> TH["Layer 1 table heads: weighted mixtures of key tokens"]
@@ -263,8 +267,9 @@ and original-digit transplants through H3 flip .095 / .152 (echoes 0). The bits 
 unlike HAND (Figure 2).
 
 The probes also set limits. A joint scrub of the selected-nibble-only story fails (.556 / .923 in seeds 1 / 4; .379 / .686 after
-pruning), and installing every accepted head form at once gives .992 / .996 full exact, not identity. Coordinated head and frame
-context remains unexplained.
+pruning), and installing every accepted head form at once gives .992 / .996 full exact, not identity. The scrub values retain the
+circuit-probe report's rounded display on the full teacher-forced input grid; this is a semantic-hypothesis test, not complement
+resampling. Coordinated head and frame context remains unexplained.
 
 Size, from greedy deletion at ≥ .99 × native (not minima): hex B TRAIN seed 1 needs 8 heads + 347 neurons and seed 4 8 + 258 (full /
 held-out .992 / 1 and .992 / .981); under the same pruning HAND needs 2 + 20 and 1 + 4.
@@ -279,8 +284,12 @@ probes show that the prefix content matters (equalising affinities drops exact t
 [.94, 1.06] in Section 5.1 is the earlier best-agreement threshold summary on the discrete F grid (Appendix A). At the low bits F's
 grid is coarse, so θ values between the same adjacent grid points give the same decisions; the parameter fits need not coincide. The 12 / 16-neuron PART decoders are refitted replacements, not the 7–38 / 51–72 used-neuron counts from ablation.
 
+In Figure 2, the content-weighted prefix summary passes through MLP0 to the echo-reading L1H1 and restricted-softmax L1H3 routes; MLP1 decodes the bits. All these computational blocks were trained. Status remains partial: local substitutions pass, the joint digit-only scrub fails, and complement resampling was not reported.
+
 ```mermaid
 flowchart TD
+    accTitle: Probed hexadecimal-to-binary trained circuit
+    accDescr: A content-weighted prefix summary and MLP feed echo-reading and restricted-softmax heads, then the bit decoder. The displayed computational blocks are trained. Status is partial: local substitutions pass, a joint digit-only scrub fails, and complement resampling was not reported.
     T["prompt and written tokens"] --> L0["L0 attention: content-weighted prefix summary"]
     L0 --> M0["MLP0"]
     M0 --> H1["L1H1: two-key mixture, reads the written echo"]
@@ -399,6 +408,10 @@ the component with the largest patching drop (number of nets); var inter/DAS, th
 flip / DAS flip at the best layer (nf = number of flips tested); edges, the EAP-IG jaccard/hand_recall against HAND over trusted nets
 (spearman_exact ≥ .8, the exactness check of the edge attribution), with their number in brackets;
 and the diagnostic exact match best / final.
+
+## What to read next
+
+Read [output order in base conversion](output-order-base-conversion.md) for a comparison of how answers are written, or [binary addition](binary-addition.md) for another case where fixed routing and learned arithmetic have different length limits.
 
 ## References
 

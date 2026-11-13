@@ -91,8 +91,12 @@ L0/L1 construct positions: a uniform head gives 1/(r+1), a hinge MLP recovers po
 | B | MLP2 writes DIG = s mod b and MAJ = [s ≥ b], where s is the digits plus the written incoming carry. L3H0 copies the previous MAJ to the carry-output slot. |
 | C | A chain head finds the first d_j ≠ b−1 and copies [d_j ≥ b]. MLP2 writes d = a + b in phase 1, then (d + c) mod b in phase 2, with gate M = 4b. |
 
+In Figure 1, frozen index heads fetch digits. Answer only uses carry lookahead before its digit MLP; carry tokens use a digit-and-carry MLP followed by a frozen carry-copy head; column sums use lookahead and a two-phase MLP. Only the marked stage MLPs are trained in PART. Their status remains partial, with complement untested and no whole TRAIN mechanism established.
+
 ```mermaid
 flowchart TD
+    accTitle: Hand-built digit and carry routes in larger bases
+    accDescr: Frozen index heads fetch operand digits. Answer only uses lookahead and a digit MLP; written carries use a digit-and-carry MLP and a frozen carry-copy head; column sums use a two-phase MLP. Only marked stage MLPs are trained in PART. Status is partial, with complement untested and no whole TRAIN mechanism established.
     P["Base-10 or base-16 operands"] --> F["Frozen index heads fetch the current digits"]
     F --> A["Answer only: L2 MLP writes digit equality and carry conditions"]
     A --> L["Frozen L3H0 lookahead finds the incoming carry"]
@@ -195,8 +199,12 @@ MJP is the native carry-output channel, called MAJ in HAND; a, b, c and d in thi
 
 Equal operand contribution is also distinct from identical carry weights. In b16 B PART, setting own-carry weights equal to operand weights reduced exact match to .938 for two top neurons and .303 for all neurons. The stronger equal-weight claim is refuted at the weight level.
 
+In Figure 2, the native subtotal enters the trained carry response, a frozen head relays it, and the downstream trained digit response reads it. The alternative Boolean-carry intervention damages whole-answer accuracy. This component substitution remains partial, with complement untested; it is not length-general or a claim of equal native carry weights.
+
 ```mermaid
 flowchart TD
+    accTitle: Analogue carry component and failed Boolean replacement
+    accDescr: A native subtotal enters the trained carry response, a frozen head relays it, and the trained downstream digit response reads it. Forcing a Boolean carry instead damages whole-answer accuracy. This one-seed component substitute is partial, with complement untested, and is not length-general.
     S["Native predecessor subtotal s"] --> T["MLP2: calibrated carry response in MJP"]
     T --> H["Frozen L3H0 relays the carry response"]
     H --> M["Native downstream MLP2 digit response"]
@@ -295,6 +303,10 @@ This census covered 180 snapshots, 131 at ≥ .90. Signatures required agreement
 | b16 C | 2/0/8 |
 
 A sufficient sum table retains decisions using the column total; a main-effects fit uses separate operand contributions. The HAND chain carry route appeared in 0 A networks. This census applies stricter sufficient-table criteria than the earlier TRAIN f(sum) family labels, so the two counts must not be treated as interchangeable.
+
+## What to read next
+
+Read [binary addition](binary-addition.md) for the corresponding carry and position-shortcut questions in base two. [Base conversion](base-conversion.md) provides another comparison between local digit tables and cross-digit computation.
 
 ## References
 

@@ -13,6 +13,10 @@ Converting a number between decimal and binary preserves its value, but the orde
 | Weights | [Hugging Face: output-order-base-conversion](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/output-order-base-conversion) (weights and held-out evidence archive). |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
+MSB-first means largest place first; LSB-first means units first ([formats](../GLOSSARY.md#task-formats)). HAND sets every weight by formula, PART learns one stage on a frozen scaffold, and TRAIN learns all weights ([rungs](../GLOSSARY.md#the-three-rungs)).
+
+Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [base conversion](base-conversion.md) for the companion task, or [multiplication across bases](multiplication-base-order.md) for digit-order effects in multiplication.
+
 ## 1. Task and data
 
 An integer x = 0…65535 is converted between 5 decimal digits and 16 bits in both directions: decimal to binary (d2b) and binary to
@@ -116,13 +120,14 @@ A LSB 3+99; b2d A MSB 3+83, A LSB 3+215; d2b B 3+382 and b2d B 2+346.
 
 ```mermaid
 flowchart TD
-    P["Prompt: BOS input = and answer so far"] --> L0["L0: positional frame, BOS head and position one-hot"]
-    L0 --> L1["L1 MLP: clean positions to an exact one-hot"]
-    L1 --> L2H["L2 heads: weighted digit mixtures, BOS sink"]
-    L2H --> F["F = x - W and unit T (MSB) or summed residue F (LSB)"]
+    accTitle: Hand-built conversion magnitude and remainder routes
+    accDescr: Frozen positional framing and digit-fetch heads supply a magnitude and place unit for largest-place-first output, or a residue for units-first output. Only the final arithmetic MLP is trained in PART.
+    P["Prompt: BOS input =<br/>and answer so far"] --> L0["L0: positional frame,<br/>BOS head and position one-hot"]
+    L0 --> L1["L1 MLP: clean positions<br/>to an exact one-hot"]
+    L1 --> L2H["L2 heads: weighted<br/>digit mixtures, BOS sink"]
+    L2H --> F["F = x - W and unit T (MSB)<br/>or summed residue F (LSB)"]
     F --> M["L2 MLP: arithmetic stage"]
-    M --> MSB["MSB: comparator ladder, digit a wins when F - aT >= 0"]
-    M --> LSB["LSB: digit = F mod base_out"]
+    M --> OUT["Alternative output orders:<br/>MSB: comparator ladder,<br/>digit a wins when<br/>F - aT >= 0<br/>LSB: digit = F mod base_out"]
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class M trained
 ```
@@ -224,10 +229,14 @@ zeroing the MLP scores 0. The closed forms are therefore supported by substituti
 
 ```mermaid
 flowchart TD
-    F["F from the frozen L2 heads"] --> TH["b2d MSB: 366 thresholds theta(q, t, a) on F"]
-    TH --> Z["thermometer units Z1..Z9 plus Z0"]
-    F --> SP["d2b LSB: clip F to 0..33, grid coefficients c(q, t, k), 1054 per snapshot"]
-    SP --> Y["Y = (10 + m)/20 plus ONE, approximate parity"]
+    accTitle: Partly trained threshold and imperfect parity substitutes
+    accDescr: Frozen heads supply F to learned thresholds for binary-to-decimal largest-place-first output or a piecewise-linear imperfect-parity response for decimal-to-binary units-first output. Marked thresholds and spline are trained. These local partial substitutes preserve native errors; the complement is untested.
+    F["F from the frozen L2 heads"] --> TH["b2d MSB: 366 thresholds<br/>theta(q, t, a) on F"]
+    TH --> Z["thermometer units<br/>Z1..Z9 plus Z0"]
+    F --> SP["d2b LSB: clip F to 0..33,<br/>grid coefficients c(q, t, k),<br/>1054 per snapshot"]
+    SP --> Y["Y = (10 + m)/20 plus ONE,<br/>approximate parity"]
+    %% Invisible link stacks alternatives; it is not a computational path.
+    Z ~~~ SP
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class TH,SP trained
 ```
@@ -311,7 +320,7 @@ The variable-use diagnostics of Section 4.3 used 1000 rows and seeds 0–2. The 
 ## References
 
 - Abbe, E., Bengio, S., Lotfi, A., Sandon, C., & Saremi, O. (2024). How far can transformers reason? The globality barrier and
-  inductive scratchpad. *Advances in Neural Information Processing Systems 37 (NeurIPS 2024)*. https://doi.org/10.52202/079017-0874
+  inductive scratchpad. *Advances in Neural Information Processing Systems 37 (NeurIPS 2024)* (conference paper). https://doi.org/10.52202/079017-0874
   (arXiv: https://arxiv.org/abs/2406.06467) (scratchpad motivation)
 - Lee, N., Sreenivasan, K., Lee, J. D., Lee, K., & Papailiopoulos, D. (2023). Teaching arithmetic to small transformers.
   *arXiv preprint*. https://arxiv.org/abs/2307.03381 (output-order context)

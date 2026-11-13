@@ -97,8 +97,12 @@ L0H0 binds each map cell to its step clock; L0H1 and MLP0 bind the goal to the C
 
 On the six bits, write s = N + E + S + W + self − 5w. The hinge response a = ReLU(s) − ReLU(s − 1) is 1 exactly when a free square is reached, and Y = (1 − a − w, a, w) selects unreached, reached or wall. HAND uses hinge rows (1, 1, 1, 1, 1, −5), biases 0 / −1 and readout margin 30. T+ selects an earlier-reached neighbour to walk back along a shortest path. HAND A instead gathers a vector, makes 35 synchronous updates over 38 layers and computes d = 36 − hits from the goal-hit count.
 
+In Figure 1, frozen map clocks and goal binding feed neighbourhood-fetch heads. The sole trained PART MLP gates the reached-neighbour OR by walls; a separate frozen goal check chooses the next index or END. The local rule remains partial at the full-seed scope because complement and path tests cover only the named subset.
+
 ```mermaid
 flowchart TD
+    accTitle: Hand-built reached-set expansion and stopping route
+    accDescr: Frozen map clocks and goal binding feed neighbourhood fetch heads. The sole trained PART MLP gates the reached-neighbour OR by walls, while a frozen goal check chooses the next index or END. The local rule is partial at the full-seed scope because complement and path tests cover only the named subset.
     P["Grid walls, start, goal and written reached sets"] --> R["L0H0-1 bind map clocks and the goal at CHECK"]
     R --> W["L1H0-4 fetch N, E, S, W and self from the previous map"]
     W --> M["MLP2: OR reached neighbours, then gate out walls"]
@@ -191,8 +195,12 @@ Every candidate failed in all ten seeds; the common 16 cases were d = 0, which r
 
 A proposed TRAIN node set kept all L0/L3 heads and all four MLPs while resampling L1/L2 heads, 343 of 591 edges. It retained exact 0.0 from base 1.0 in seeds 0–2, with valid checks. The varying middle-layer heads were therefore needed for that claim. Its path drops were MLP3-to-output .51–.55, L3-heads-to-MLP3 .28–.38, embeddings-to-L0-heads .20–.45 and MLP2-to-output 0. Separately discovered circuits retained .47–.79 in the all-row complement tests and only .33–.71 held out. No TRAIN closed form was accepted.
 
+In Figure 3, supplied earlier trace tokens feed trained early heads, needed seed-dependent middle heads, and the final head and MLP output code. All marked stages were wholly trained. The tested TRAIN substitute is rejected: oracle state keys and middle-head resampling fail. Overall partial status applies only to the separate PART rule, not this TRAIN mechanism.
+
 ```mermaid
 flowchart TD
+    accTitle: Distributed trained grid-map writer
+    accDescr: Supplied earlier trace tokens feed trained early heads, needed seed-dependent middle heads and the final head and MLP output code. All marked stages are wholly trained. The tested TRAIN substitute is rejected: even oracle state keys fail and middle-head resampling fails. Overall partial status applies only to the separate PART rule, not this TRAIN mechanism.
     E["Grid and supplied earlier trace tokens"] --> H["L0: seven or eight used heads"]
     H --> MID["L1 and L2: seed-dependent needed heads"]
     MID --> L["L3: eight used heads and MLP3 output code"]
@@ -347,6 +355,10 @@ Algorithmic alignment and extrapolation are studied by [Xu et al. (2019)](#refer
 Graph-algorithm benchmarks and learners include [Veličković et al. (2022)](#references), [Ibarz et al. (2022)](#references), [Minder et al. (2023)](#references), [Bevilacqua et al. (2023)](#references), [Bohde et al. (2024)](#references), [Rodionov and Prokhorenkova (2024)](#references), [Li et al. (2024)](#references), [Huang et al. (2026)](#references) and [Yu et al. (2026)](#references). These are distinct architectures and data distributions.
 
 The maze-data library by [Ivanitskiy et al. (2023)](#references) is related software/data work, not the generator used here. [Nolte et al. (2024)](#references) study multi-step maze prediction; ALPINE by [Wang et al. (2024)](#references) and [Zhang et al. (2024)](#references) study other autoregressive graph reasoning. Hierarchical/recursive models and their analyses include [Wang et al. (2025)](#references), [Jolicoeur-Martineau (2025)](#references), [Es'kin and Smorkalov (2026)](#references) and [Kamiya et al. (2026)](#references). [Gatmiry et al. (2026)](#references) study learned abstract intermediate tokens. No curriculum intervention from those works was run as part of the final atlas cell.
+
+## What to read next
+
+Compare [DPLL search](dpll-search.md) for a different search trace with a learned local update inside frozen control. Read [the verification guide](../GLOSSARY.md#verifying-a-circuit) for why successful traces need not identify the trained search algorithm.
 
 ## References
 

@@ -54,15 +54,19 @@ Published revision `6ca84a561e25` includes a HAND network per language and forma
 
 HAND counts symbols, flags invalid prefixes, checks whether any violation has occurred and reads out the answer. Its L0H0 count head gives BOS, the beginning-of-sequence token, score ln 2^23 and each symbol value 2^23. This makes CNT_e approximate the unnormalised count #e rather than a proportion. L0's MLP flags each forbidden token/prefix combination and detects a zero final balance. L1H0 sums violation flags into NV; the last MLP answers Y only for zero balance and no violation.
 
+In Figure 1, L0H0 counts symbols, MLP0 flags invalid prefixes and zero balance, and L1H0 sums violations. MLP1 answers membership from zero balance and no violation; the scratchpad also writes intermediate states. Only MLP0 is trained in PART, while TRAIN learns all components.
+
 ```mermaid
 flowchart TD
+    accTitle: Hand-built count and prefix-violation checker
+    accDescr: A count head feeds the prefix-violation and zero-balance MLP; a second head sums violations and the final MLP answers membership. Only the first MLP is trained in PART. The scratchpad format also writes each intermediate state.
   A["Input word"] --> B["L0H0: symbol counts CNT_e"]
   B --> C["MLP0: prefix violations V and zero balance Z0"]
   C --> D["L1H0: number of violations NV"]
   C --> E["MLP1: Y only if Z0 and no violation"]
   D --> E
   E --> F["Y or N; B also writes each state"]
-  classDef trained fill:lightyellow,stroke:darkgoldenrod
+  classDef trained fill:gold,stroke:darkgoldenrod,color:black
   class C trained
 ```
 
@@ -107,13 +111,17 @@ The final MLP's write at `=` is replaced by a 4-entry mean-response table T[Z0, 
 
 The status is Verified on 9/10 final seeds, and Sufficient readout only on seed 7. Passing reference-keyed substitution alone does not show that the network extracts those keys. Complement resampling tests whether the proposed circuit remains sufficient when everything outside it receives activations from other inputs ([glossary](../GLOSSARY.md#verifying-a-circuit)).
 
+In Figure 2, trained symbol-proportion heads feed prefix flags. Either a single any-violation head or a split-head route carries them to the membership readout. All computational nodes were trained. The reference-keyed table is verified only for the stated passing seeds; the exception remains sufficient readout only because its complement fails. Probe-keyed substitution is separately imperfect.
+
 ```mermaid
 flowchart TD
+    accTitle: Trained proportion and violation readout families
+    accDescr: Trained symbol-proportion heads feed prefix flags, which pass through either a single any-violation head or a split-head route to the final membership readout. All computational nodes are trained. The reference-keyed table is verified only on the stated passing seeds; the exception is sufficient readout only because its complement fails. Probe-keyed substitution is separately imperfect.
   A["L0 heads: symbol proportions"] --> B["MLP0: prefix violation flags"]
   B --> C["L1: one any-head A1 or two split heads A2"]
   C --> D["MLP1: zero-balance and dead-prefix readout"]
   D --> E["Membership answer"]
-  classDef trained fill:lightyellow,stroke:darkgoldenrod
+  classDef trained fill:gold,stroke:darkgoldenrod,color:black
   class A,B,C,D trained
 ```
 
@@ -155,6 +163,10 @@ The old excerpt specified an internal extraction procedure rather than numerical
 | dyck1 / anbncn B TRAIN (failed) | 4 + 2 / 18–48, 9–45 | DD .76–1.0, ref_state .84–1.0, CNT ≤ .7 | - | - | .715–.999 best (0/21 each) |
 
 Here ref_state is the previous written state token. NV is the number of violating positions, DEAD its nonzero flag, OUT_Y the yes-answer score and CNT a symbol count. Final aⁿbⁿcⁿ NV interchange was 1.0 at L2 in 10/10; this does not supply the missing Dyck-1 test. The entry's legacy rounded final substitution summary was probe-keyed .96–1.0, shuffled .69–.82 and complement .88–.995; Section 5 uses the later source precision. Its old length summary, n 80 / 160, was final anbncn A .91–1.0 / .86–.98; run-1 dyck1 A .88–.98 / .75–.83; anbn A .86–.99 / .85–.99; anbn B .44–.56 / .18–.45. These are retained reporting precisions and cell-specific summaries, not a new pooled range.
+
+## What to read next
+
+Compare [group automata](dfa-group-automata.md) for explicit state updates and their length limits. [Dyck brackets and agreement](dyck-k-and-agreement.md) add bracket types and referent selection beyond the single-bracket balance task.
 
 ## References
 

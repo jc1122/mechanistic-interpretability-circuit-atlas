@@ -92,8 +92,12 @@ coordinates for bits zero and one. The original task record checks all 2^8 pairs
 not every m = 3 pair. A later saved reference control checks all 256 m = 2 pairs, 2,048 random m = 3 pairs and 512 random pairs each
 at m = 4 and 5. Earlier public check wording is corrected in Appendix B.
 
+In Figure 1, frozen position and separator frames address two operand-fetch heads. Their bits MA and MB, the preceding parity and separator flags enter MLP3's XOR-of-AND lookup. It writes the next running parity or separator. Only this final stage is trained in PART.
+
 ```mermaid
 flowchart TD
+    accTitle: Hand-built operand fetch and XOR-of-AND update
+    accDescr: Frozen position and separator frames address two operand-fetch heads. Their bits, the preceding parity and separator flags enter the final XOR-of-AND lookup MLP. Only that final stage is trained in PART.
     P["Prompt: B column-major ; A row-major = and trace so far"] --> L0["L0: position R, uniform head and 256 reciprocal neurons"]
     L0 --> L1["L1: 4 first/last heads; MLP gives SEG, G, J and SEGN, GN, JN"]
     L1 --> H0["L2H0: match SEG 1, G = GN, J = JN"]
@@ -101,7 +105,7 @@ flowchart TD
     H0 --> MA["MA = A_ij"]
     H1 --> MB["MB = B_jk"]
     L1 --> F["L2 MLP: separator flags TS, TSEMI, TB"]
-    MA --> M3["L3 MLP: 4 cell neurons, tok1 xor MA and MB"]
+    MA --> M3["L3 MLP: 4 cell neurons, tok1 xor (MA and MB)"]
     MB --> M3
     F --> M3
     M3 --> Y["next running parity s_ij, or separator"]
@@ -154,8 +158,12 @@ For TRAIN there is no shared basis with HAND. The AND and s are linear at L4 (fl
 fit_r2 < 0, the QK/OV comparison has mean_ov ≤ .05 and the edge Jaccard against HAND is .09: TRAIN uses HAND's variables without HAND's
 wiring. The TRAIN candidates of the earlier audit still lack the zero and shuffle controls.
 
+In Figure 2, trained early layers build a frame, later heads fetch operand bits, and the final MLPs update the running parity. All marked stages were trained. No TRAIN matrix-product formula was accepted; the entry's partial status refers only to the separate PART lookup, whose complement was not tested.
+
 ```mermaid
 flowchart TD
+    accTitle: Later operand fetch in trained matrix-product traces
+    accDescr: Trained early layers build a frame; later heads fetch the operand bits and the final MLPs update the running parity. All marked computational stages are trained. No TRAIN matrix-product formula was accepted. The page's partial status refers only to the separate PART lookup, whose complement was not tested.
     P["prompt and trace so far"] --> FR["L0 to L2: position and current-token frame"]
     FR --> H3["2 to 7 L3 heads: fetch A_ij and B_jk"]
     H3 --> X["MLP2 and MLP3: XOR-AND"]
@@ -272,6 +280,10 @@ matrix-product task. This separate matrix-vector evidence does not verify matrix
 
 Key: μ = training conditional-mean contribution at the replaced boundary; hats (M̂, v̂) = live neural decoders; a donor patch copies a
 component's activation from another input.
+
+## What to read next
+
+Compare [binary elimination](gf2-elimination.md) for a related row-update computation. [Integer matrix–vector products](integer-matvec.md) provide a comparison in ordinary integer arithmetic, rather than binary-field arithmetic.
 
 ## References
 

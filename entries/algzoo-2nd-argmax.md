@@ -60,8 +60,12 @@ The archive contains our nine hand-built nets at revision `1a04d29`. ARC's 280 n
 ## 3. Hand-built solution
 HAND-a: positive-input delay and leave-one-out maxima, L_i=(x_i)⁺+2 max(0,x_j:j≠i), exact on positive separated inputs. HAND-b: signed binary comparator and two signed T3 projections. HAND-c: T3 medoid L_i=−Σ_j|x_i−x_j|. None is assumed to be the learned mechanism merely because it computes the task.
 
+In Figure 1, scalar inputs take separate reference routes: HAND-a uses delay and leave-one-out maxima, HAND-b uses signed projections, and HAND-c uses absolute distances. Each produces position scores on its stated domain. No part was trained in a PART cell; HAND-a remains restricted to positive separated inputs.
+
 ```mermaid
 flowchart TD
+    accTitle: Hand-built second-argmax references
+    accDescr: Scalar inputs enter delay-and-maximum, signed-projection or absolute-distance references, which produce position logits on their stated domains. No component was partly trained. The positive-input restriction on HAND-a remains part of the claim.
     X["Scalar inputs"] --> A["HAND-a: delay and leave-one-out maxima"]
     X --> B["HAND-b: signed binary or T3 projections"]
     X --> C["HAND-c: T3 sum of absolute distances"]
@@ -101,13 +105,17 @@ The following is a disjoint partition of all 280 nets; “read” is not certifi
 
 The population status is partial: 117 resample proofs and 15 optimal-only proofs are distinct evidence categories. The forms below reproduce network decisions on registered sampled domains; algebraically invariant final kernels and auxiliary box checks do not independently prove an exact recurrent algorithm.
 
+In Figure 2, short lists use comparison, angle, clamp or fan descriptions; longer lists use window, envelope or threshold-table descriptions. Each family describes externally trained networks and ends at their native scores or decisions. The population status remains partial, with optimal-only and activation-level exceptions; sampled agreement is not a global recurrent identity.
+
 ```mermaid
 flowchart TD
+    accTitle: Families interpreted in frozen second-argmax networks
+    accDescr: Gaussian inputs feed short-list comparison, angle and clamp forms or longer-list window, envelope and threshold forms. The family nodes describe externally trained components. Status is partial: optimal-only and activation-level exceptions remain flagged, and sampled tests do not prove global recurrent identities.
     X["Gaussian inputs"] --> B["T2 comparisons and T3 angle, clamp or fan forms"]
     X --> L["Longer-list window, envelope and threshold-table forms"]
     B --> Y["Native position logits or decision"]
     L --> Y
-    classDef trained fill:lightblue
+    classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class B,L trained
 ```
 
@@ -146,7 +154,15 @@ A clamp limits a value between thresholds. A gauge rescales hidden coordinates w
 
 A signed capped ramp is a difference of ReLU ramps; unlike an unsigned clamp, it can be negative. A population fan combines a common rising response, a common falling response and bounded differences between individual neurons. The full equations retain those differences.
 
- A final neuron compares the last input with a threshold indexed by the earlier top positions. With m1≥m2≥m3, p1,p2 their positions, the top-two table is `relu(s(x_last−m3)+g[p1](m1−m2)+g[{p1,p2}](m2−m3)+a)`. Four-to-six inputs need 6/10/15 table numbers per neuron; optimal-only proofs add one fitted constant. Other accepted forms sort a zero with the prefix (15 numbers at T4), watch one position in three cases (7), or use an additive pair table (14 at T8). These are fitted behavioural tables, not recovered recurrent identities. Separately, width4 T4 seeds1/2/4 have a weight-derived two-stage clamp: order neurons as rising A/B and falling C/D; a_i=M_iA+M_iB,b_i=M_iB except b_A=0,c_i=M_iC+M_iD,d_i=M_iC. For (u,v,w,z), prefix ramps have thresholds ta=−a_Au⁺−c_A(−u)⁺,tb=−a_Bu⁺−c_B(−u)⁺,tc=a_Cu⁺+c_C(−u)⁺,td=a_Du⁺+c_D(−u)⁺. Put A1=(v−ta)⁺,D1=(td−v)⁺,Kr1=(v−tb)⁺−A1,Kf1=(tc−v)⁺−D1,r_i=a_iA1+b_iKr1+c_iD1+d_iKf1. Then A2=(w+r_A)⁺,D2=(r_D−w)⁺,Kr2=(w+r_B)⁺−A2,Kf2=(r_C−w)⁺−D2,F_i=(s_i z+a_iA2+b_iKr2+c_iD2+d_iKf2)⁺,s=(1,1,−1,−1),with the native readout. Both differences are signed capped ramps. This preserves the first prefix and omits only one later rising-contrast coupling;15vs16 scalars,not a full low-dimensional algorithm. Width4 T4 seed0 uses the same paired form in native order with b2=0 instead of bA=0, removing M21=.0102879 into M20. Seed3 uses S_i=Σ_(j∈{0,2,3})M_ij,R_i=M_i1,C0_i=M_i0 except C0_2=0,C3_i=M_i3; at each cut the common fall is neuron2, the rise is1 and the signed falling differences are0−2 and3−2. The only transfer is M20=.268892 into M22, preserving both first-input rays; its full two-stage input formula and 15vs16 scalar reduction pass independently. Width5 T4 seeds1/2/4 use rising/falling populations with reference pairs(3,2),(0,3),(1,3),respectively: population sums a_i,c_i drive two common amplitudes,while three signed bounded differences carry every other prefix ramp. At each of two cuts the drive is a_i A+c_i D+Σ_j d_ij K_j;final F_i=(s_i z+a_i A2+c_i D2+Σ_j d_ij K2_j)⁺. Only the registered transfers M14->M13,M31->M33,M14->M11,respectively,are omitted from the differential paths;24vs25 scalars. The references fix thresholds from u⁺,(−u)⁺,then the first-cut drives fix the second-cut thresholds;both initial rays are preserved exactly. All three full input forms pass their own tests,not an extrapolation to seeds0/3.
+ A final neuron compares the last input with a threshold indexed by the earlier top positions. With m1≥m2≥m3, p1,p2 their positions, the top-two table is `relu(s(x_last−m3)+g[p1](m1−m2)+g[{p1,p2}](m2−m3)+a)`. Four-to-six inputs need 6/10/15 table numbers per neuron; optimal-only proofs add one fitted constant. Other accepted forms sort a zero with the prefix (15 numbers at T4), watch one position in three cases (7), or use an additive pair table (14 at T8). These are fitted behavioural tables, not recovered recurrent identities.
+
+Separately, width4 T4 seeds1/2/4 have a weight-derived two-stage clamp: order neurons as rising A/B and falling C/D; a_i=M_iA+M_iB,b_i=M_iB except b_A=0,c_i=M_iC+M_iD,d_i=M_iC. For (u,v,w,z), prefix ramps have thresholds ta=−a_Au⁺−c_A(−u)⁺,tb=−a_Bu⁺−c_B(−u)⁺,tc=a_Cu⁺+c_C(−u)⁺,td=a_Du⁺+c_D(−u)⁺. Put A1=(v−ta)⁺,D1=(td−v)⁺,Kr1=(v−tb)⁺−A1,Kf1=(tc−v)⁺−D1,r_i=a_iA1+b_iKr1+c_iD1+d_iKf1. Then A2=(w+r_A)⁺,D2=(r_D−w)⁺,Kr2=(w+r_B)⁺−A2,Kf2=(r_C−w)⁺−D2,F_i=(s_i z+a_iA2+b_iKr2+c_iD2+d_iKf2)⁺,s=(1,1,−1,−1),with the native readout. Both differences are signed capped ramps. This preserves the first prefix and omits only one later rising-contrast coupling;15vs16 scalars,not a full low-dimensional algorithm.
+
+Width4 T4 seed0 uses the same paired form in native order with b2=0 instead of bA=0, removing M21=.0102879 into M20.
+
+Seed3 uses S_i=Σ_(j∈{0,2,3})M_ij,R_i=M_i1,C0_i=M_i0 except C0_2=0,C3_i=M_i3; at each cut the common fall is neuron2, the rise is1 and the signed falling differences are0−2 and3−2. The only transfer is M20=.268892 into M22, preserving both first-input rays; its full two-stage input formula and 15vs16 scalar reduction pass independently.
+
+Width5 T4 seeds1/2/4 use rising/falling populations with reference pairs(3,2),(0,3),(1,3),respectively: population sums a_i,c_i drive two common amplitudes,while three signed bounded differences carry every other prefix ramp. At each of two cuts the drive is a_i A+c_i D+Σ_j d_ij K_j;final F_i=(s_i z+a_i A2+c_i D2+Σ_j d_ij K2_j)⁺. Only the registered transfers M14->M13,M31->M33,M14->M11,respectively,are omitted from the differential paths;24vs25 scalars. The references fix thresholds from u⁺,(−u)⁺,then the first-cut drives fix the second-cut thresholds;both initial rays are preserved exactly. All three full input forms pass their own tests,not an extrapolation to seeds0/3.
 ### Maximum and envelope networks
 
 An envelope bounds the alternating partial sums defined below.
@@ -207,6 +223,10 @@ Width 3, T3, seed 1 is a two-interval distance comparison with an inhibitory vet
 Also collected: width 16, T5, seed 2 passes its earlier registered one-position-table optimal-ablation test (agreement .9153/.9195), exactly at the size bar; resampling fails (.634 exact), and the table alone agrees .894 on one set. Width 16, T5, seed 1 becomes read, not proven: its additive table exceeds the size bar.
 
 Earlier Sol proofs: width-3 T4/T5/T6 seed 4, running maximum plus inhibitory envelope, agreement .9946–.9983. Flags: weak nets, activation-residual complement and rank-2 rather than rank-3 random control. Five earlier wide T4 proofs also use activation-level complements. The 15 optimal-only proofs remain separate; none is called a resample proof.
+
+## What to read next
+
+Compare [AlgZoo median](algzoo-median.md), where the output is a value rather than a position and formulas can also explain inaccurate networks. For the difference between explaining a model and solving its task, read [the verification guide](../GLOSSARY.md#verifying-a-circuit).
 
 ## References
 

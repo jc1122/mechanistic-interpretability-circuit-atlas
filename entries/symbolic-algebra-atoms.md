@@ -2,7 +2,7 @@
 
 These networks collect coefficients, expand a product of two linear expressions and solve a linear equation using structured term
 tokens that expose each term's side, power and coefficient. From-scratch models that wrote intermediate results before the answer
-(a scratchpad) reached exact answers on 1000 saved test examples per seed in 10/10 best snapshots for expansion and 10/10 for
+(a [scratchpad](../GLOSSARY.md#task-formats)) reached exact answers on 1000 saved test examples per seed in 10/10 best snapshots for expansion and 10/10 for
 solving. Expansion fell to 9/10 exact in final snapshots, and answer-only expansion and solving never reached exactness. Collecting
 terms on a frozen scaffold supported an explicit addition rule under substitution in 13/13 seeds, but that closed form is partial:
 its complement was not tested, and no from-scratch closed form was accepted. Overall the task is partly solved; the final
@@ -18,6 +18,8 @@ from-scratch scratchpad models did not transfer to the untrained coefficient tok
 | Status | Partly solved (frozen-scaffold collect 10/10 exact; from-scratch scratchpad expand 10/10 best, 9/10 final; solve 10/10 exact on 1000 saved test rows per seed; answer-only expand and solve 0/3); last run 2026-11-08 |
 | Weights | [Hugging Face: symbolic-algebra-atoms](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/symbolic-algebra-atoms) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
+
+Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [polynomial addition and multiplication](polynomial-add-mul.md) for coefficient-list inputs, or [nested expressions](nested-expressions-mod-7.md) for a frozen parser.
 
 ## 1. Task and data
 
@@ -102,6 +104,8 @@ and 1 elsewhere.
 
 ```mermaid
 flowchart TD
+    accTitle: Structured-term fetch and hand-built coefficient operations
+    accDescr: Frozen framing and side-and-power matches fetch coefficient atoms. Only the final arithmetic MLP is trained in PART; it combines coefficients for collection, expansion or rational classification. Inputs already expose term structure and do not require ordinary-notation parsing.
     P["Prompt: left terms ; right terms ="] --> L0["L0: reciprocal-position frame"]
     L0 --> L1["L1: phase anchor at ="]
     L1 --> L2["L2 heads: fetch operands by squared side and power match"]
@@ -198,6 +202,8 @@ shared edges divided by their combined edge set ([glossary](../GLOSSARY.md#analy
 
 ```mermaid
 flowchart TD
+    accTitle: Whole-network trained expansion and solving paths
+    accDescr: Trained fetch heads and MLPs feed final-layer heads and a classifier using categorical products or coefficient differences. All components are needed in single-component resampling, leaving an empty complement. No TRAIN formula is accepted; partial status belongs only to the separate PART collection rule.
     P["Prompt: left terms ; right terms ="] --> F["layer-0 and layer-1 fetch heads"]
     F --> M0["MLP0"]
     M0 --> M1["MLP1"]

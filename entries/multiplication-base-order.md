@@ -1,6 +1,6 @@
 # Multiplication across bases and digit orders
 
-Writing a product's units digit first lets a model build the answer in the same direction as the carries in long multiplication. These small transformers multiplied numbers below 256: on 2000 held-out pairs per seed, decimal units-first output reached best whole-output exact match ≥ .99 in 20/20 seeds, while largest-place-first output met that bar in only 1/60 seeds across the three tested bases at the original width. Writing running sums before the final product succeeded in all 18/18 screened seeds at that width. The task is partly solved, with no reliable transfer to longer numbers and no hand-built network for comparison. The formula is Partial and covers only outgoing scratchpad digit votes, with decimal passing in 6/6 best and final seeds and hexadecimal in 3/6 best versus 4/6 final seeds; complement resampling was not tested.
+Writing a product's units digit first lets a model build the answer in the same direction as the carries in long multiplication. These small transformers multiplied numbers below 256: on 2000 held-out pairs per seed, decimal units-first output reached best whole-output exact match ≥ .99 in 20/20 seeds, while largest-place-first output met that bar in only 1/60 seeds across the three tested bases at the original width. Writing running sums before the final product succeeded in all 18/18 screened seeds at that width. The task is partly solved, with no reliable transfer to longer numbers and no hand-built network for comparison. The formula is Partial and covers only outgoing scratchpad digit votes, with decimal passing in the same 6/6 seeds at both best and final snapshots and hexadecimal in 3/6 at best versus 4/6 at final snapshots of the same seed cohort; complement resampling was not tested.
 
 | Fact | Value |
 |---|---|
@@ -12,6 +12,8 @@ Writing a product's units digit first lets a model build the answer in the same 
 | Status | Partly solved (original-width largest-place-first answer only 1/60; scratchpad 18/18 at best exact ≥ .99 on 2000 pairs per seed; binary units-first final 10/10); last run 2026-11-08 |
 | Weights | [Hugging Face: multiplication-base-order](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/multiplication-base-order) (weights and held-out evidence archive). |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
+
+Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [binary multiplication](multiplication.md) for the running-sum step, or [output-order base conversion](output-order-base-conversion.md) for the same ordering question in conversion.
 
 ## 1. Task and data
 
@@ -78,13 +80,23 @@ S_j = S_{j−1} + x y_j B^j.
 
 ```mermaid
 flowchart TD
-    X["operand digits x_i and y_j"] --> C["column sum col_k = sum of x_i y_j over i + j = k"]
-    C --> K["carry carry_k"]
-    C --> P["product digit p_k"]
-    K --> P
-    C --> LH["low_k and high_k: product mod and div B^k"]
-    N["TRAIN network: 4 layers, all weights trained"] -.->|"probed for"| C
-    N -.->|"probed for"| K
+    accTitle: Long-multiplication variables used for probes
+    accDescr: A trained network is probed for column sums, carries, product digits and low and high product parts. No hand-built network or PART cell exists for this study; no node is shaded as a PART stage.
+    subgraph VARIABLES["Reference arithmetic variables"]
+        direction TB
+        X["operand digits x_i and y_j"] --> C["column sum col_k =<br/>sum of x_i y_j<br/>over i + j = k"]
+        C --> K["carry carry_k"]
+        C --> P["product digit p_k"]
+        K --> P
+        C --> LH["low_k and high_k:<br/>product mod and div B^k"]
+        %% Invisible link stacks outputs; it is not a computational path.
+        P ~~~ LH
+    end
+    subgraph PROBE["Separate measurement"]
+        N["TRAIN network: 4 layers,<br/>all weights trained;<br/>probed for col_k and carry_k"]
+    end
+    %% Invisible link stacks panels; it is not a computational path.
+    VARIABLES ~~~ PROBE
 ```
 
 *Figure 1. The reference variables of long multiplication that the trained networks were probed for. No hand-built network or PART cell exists for
@@ -103,12 +115,13 @@ accuracies of unsolved seeds; the SP column gives the first step at which test e
 | base | order | f 0 | .3 | .6 | anneal | R1 2x width | D3 3x data | SP 1x f0 / anneal (first .99) |
 |---|---|---|---|---|---|---|---|---|
 | 2 | LSB | 3/5 | 4/5 | 5/5 | 5/5; final 10/10 | - | - | - |
+| 10 | LSB | 5/5 | 5/5 | 5/5 | 5/5 | not reported | not reported | not reported |
 | 16 | LSB | 1/5 | 1/5 | 2/5 | 0/5 | anneal 5/5 | - | - |
 | 2 | MSB | 0/5 | 0/5 | 0/5 | 0/5 | f0 0/5, a 0/5 (.91-.96) | f0 0/5 (.90-.93) | 3/3 / 3/3 (8.5-10.5k) |
 | 10 | MSB | 0/5 | 0/5 | 0/5 | 1/5 | f0 3/5, f.3 4/5 | f0 1/5, a 2/5 | 3/3 / 3/3 (11.5-16k) |
 | 16 | MSB | 0/5 | 0/5 | 0/5 | 0/5 | f0 5/5, a 1/5 | f0 0/5, a 0/5 (.97-.99) | 3/3 / 3/3 (17.5-21.5k) |
 
-Base 10 LSB (not a row above) solved 5/5 in every mix.
+Base 10 LSB solved 5/5 in every mix, as shown in the decimal units-first row.
 
 In the final cell, test accuracy reached .5 at 6-10k steps and .99 at 16-23.5k (median 18.75k); training stopped at 28.5k, with best =
 final = 1.0 (10/10). Train accuracy was close to test accuracy because pairs are fresh. The answer-only MSB retries grokked at 25-28k
@@ -152,10 +165,14 @@ the complement was not tested, so the closed form status is partial.
 
 ```mermaid
 flowchart TD
-    X["prompt and scratch lines so far"] --> R["TRAIN network: native final-MLP activations, unchanged"]
-    R --> E["MLP3 outgoing digit-vote map E"]
-    F["Weight-derived Fourier modes K_dec or K_hex"] -.->|"SP substitution only"| E
-    E --> D["digit logits, with other native writes retained"]
+    accTitle: Scratchpad outgoing digit-vote substitute
+    accDescr: The trained network keeps its native final-MLP activations and other writes while selected Fourier modes replace outgoing digit votes. This is partial, scratchpad-only substitution support; complement resampling is untested.
+    X["prompt and scratch lines so far"] --> R["TRAIN network:<br/>native final-MLP activations,<br/>unchanged"]
+    R --> E["MLP3 outgoing<br/>digit-vote map E"]
+    F["Weight-derived Fourier modes<br/>K_dec or K_hex"] -.->|"SP substitution only"| E
+    E --> D["digit logits, with other<br/>native writes retained"]
+    %% Invisible link stacks inputs; it is not a computational path.
+    R ~~~ F
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class R,E trained
 ```
@@ -165,6 +182,8 @@ flowchart TD
 ![Multiplication at the original width: units-first successes are 17/20 binary, 20/20 decimal and 4/20 hexadecimal, versus 0/20, 1/20 and 0/20 largest-place-first.](../figures/multiplication-base-order-success.svg)
 
 *Figure 3. Original-width answer-only screens, 20 seeds per base and order across four data mixes. Success means best whole-output exact match ≥ .99 on 2000 held-out pairs. Scratchpad 18/18 covers a separate screened comparison; neither result establishes length generalisation or a compute-matched format effect.*
+
+[Open Figure 3 at full size](../figures/multiplication-base-order-success.svg).
 
 ### 5.2 Answer only
 

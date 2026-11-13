@@ -9,7 +9,7 @@ A register is a named place to store a number; using the right name matters as m
 | Model | 4 layers; register-line format: 16 attention heads, residual width 256, no positional encoding or LayerNorm. Frozen-router format: only the layer-3 feed-forward block (MLP3) is trained |
 | Rungs and seeds | Formula-set reference (HAND), frozen-router stage (PART), from scratch (TRAIN). Final: TRAIN register-line format, full composition arm, 10 seeds. PART: 3 seeds per arm; TRAIN screens: 3 or 10 seeds by format |
 | Closed form status | Partial (STEP-only PART screen: substitution 1.0 in 18/18 tests; complement 1.0 on final snapshots, ADD seeds 0-2 and SHL/REV seed 0 only; none for TRAIN) |
-| Status | Unsolved (TRAIN O c, 0/10); solved PART S a (3/3, screen); last run 2026-11-08 |
+| Status | Unsolved (from-scratch register-line/full-composition cell, TRAIN O c, 0/10); solved frozen-router STEP-only cell (PART S a, 3/3, screen); last run 2026-11-08 |
 | Weights | [Hugging Face: compose-arithmetic-registers](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/compose-arithmetic-registers) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
@@ -92,8 +92,12 @@ long-product sampling in bases 8/10/16 resampled examples to fit that tag table,
 multipliers. These finite tests do not enumerate all register programs. The set of ADD-stage neurons is shared by STEP, SUM and MUL (Jaccard 1.00), so one adder
 serves every task.
 
+In Figure 1, position and recency heads recover register addresses, the gathered operand bit and the previous carry. Tag-match heads fetch the other bit; MLP3 combines the bits and incoming carry to write a column, or copies a shifted or reversed bit. Only MLP3 is trained in PART. Status remains partial because complement coverage is restricted to the named final snapshots.
+
 ```mermaid
 flowchart TD
+    accTitle: Hand-built tag fetch and arithmetic column stage
+    accDescr: Position and recency heads recover register addresses, operand bits and the previous carry. Tag-match heads fetch addends, then the column MLP writes a digit and carry or copies the shifted or reversed operand bit. Only the column MLP is trained in PART. Status is partial because complement coverage is restricted to the named final snapshots.
     P["Prompt header: program counter, register tags; trace so far"] --> H0["L0H0: uniform attention, position code"]
     H0 --> R["11 L1 recency heads: copy latest P/A/S/GA/ST fields"]
     R --> PA["PA, PS: register addresses"]
@@ -184,8 +188,12 @@ In the solved SUM5 sub-cell PA is also low (R² .40 at L2). The fetched operand 
 search (DAS), which tests an interchange in a learned rotated subspace (.92-1.0;
 [glossary](../GLOSSARY.md#analysis-measures)); MLP3 has the largest patching drop.
 
+In Figure 2, trained attention fetches operand bits by their positions in the fixed trace convention, rather than a recovered header-tag route. The operand bits and a causal carry path feed the trained adder MLP3. No TRAIN closed form was recovered; the entry's partial status belongs only to the separate PART screen.
+
 ```mermaid
 flowchart TD
+    accTitle: Positional operand fetching in the failing TRAIN family
+    accDescr: The fixed trace convention supplies operand bits by position, while header-tag fetching was not recovered. A causal carry path enters the trained adder MLP. Marked nodes are wholly trained components. No TRAIN closed form was recovered; the page's partial status applies only to the separate PART screen.
     T["trace so far, fixed register convention"] --> F["attention: operand fetch by position in the trace"]
     H["prompt header tags"] -.->|"tag fetch not recovered"| F
     F --> X["operand bits, XA1"]
@@ -286,6 +294,10 @@ In STEP, the carry interchange flip remained .94-1.0 even on wrong rows, support
 answer. Address and operand swaps had nf 0 in the exact/wrong buckets: no answer-fixing queries were available, so those variables
 are untested there, not unused. Dictionary address features reached correlation ≤ .27; this is weak decoding, not a proof that no
 nonlinear address code exists. These tests sharpen the positional-fetch diagnosis without verifying a native algebraic formula.
+
+## What to read next
+
+Read [binding and coreference](binding-coreference.md) for explicit referent selection, or [multiplication and output order](multiplication-base-order.md) for another comparison of arithmetic with the way its intermediate results are written.
 
 ## References
 

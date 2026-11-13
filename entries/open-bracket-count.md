@@ -18,6 +18,8 @@ cosine rule is a partial output approximation evaluated on all cells, including 
 | Weights | [Hugging Face: open-bracket-count](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/open-bracket-count) (hand-built base in `_shared/m2`) |
 | Reproduce | [Commands](#24-reproduction), run from `code/` |
 
+Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [compare counts](compare-counts.md) for a related counting task, or [mod-59 addition](modular-addition-mlp.md) for another periodic readout.
+
 ## 1. Task and data
 
 Each prompt holds a fixed one-shot example followed by the query line:
@@ -121,19 +123,12 @@ the sum (L + b)/2 with step staircases.
 
 ```mermaid
 flowchart TD
-    P["Prompt: VALID_BRACKETS line"] --> H["m2 layer 5 head 0: uniform attention, value +1 for open and -1 for close"]
-    H --> B["BAL = b/(L+1)"]
-    P --> R["m2 position scalar R, gives L"]
-    B --> D["Menu decode: step stage gated by the one-hot of L"]
-    R --> D
-    D --> OU["one-hot and thermometer of b (ou, tu)"]
-    B --> SU["scalar BAL (su)"]
-    R --> LB["scalar, one-hot and thermometer of L (sv, ov, tv)"]
-    OU --> M["TRAINED: MLP, 256 ReLU units"]
-    SU --> M
-    LB --> M
-    DS["distractors: count, neg, copy pointer, last letter"] --> M
-    M --> Y["46 logits: number of open brackets (L + b)/2"]
+    accTitle: Frozen bracket-depth and length features
+    accDescr: The hand-built base reads opening-minus-closing depth and line length, and the frozen menu re-encodes them. Only the final count MLP is trained; no hand-built count reader is supplied.
+    P["Prompt:<br/>VALID_BRACKETS line"] --> READ["Frozen m2 readers:<br/>layer 5 head 0,<br/>uniform attention, value<br/>+1 for open and -1 for close<br/>BAL = b/(L+1)<br/>Position scalar R gives L"]
+    READ --> MENU["Frozen menu inputs:<br/>step stage gated by one-hot L<br/>gives one-hot and thermometer<br/>of b (ou, tu)<br/>Direct scalar BAL (su)<br/>Scalar, one-hot and<br/>thermometer of L (sv, ov, tv)<br/>Distractors: count, neg,<br/>copy pointer, last letter"]
+    MENU --> M["TRAINED: MLP,<br/>256 ReLU units"]
+    M --> Y["46 logits: number of<br/>open brackets (L + b)/2"]
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class M trained
 ```
@@ -210,12 +205,16 @@ accuracy by .01–.05; the networks get the parity of the answer right on .98–
 
 ```mermaid
 flowchart TD
-    IN["menu codes of b and L, one-hot main input"] --> LK["Mostly low-frequency neurons: broad bumps over b and L"]
-    IN --> PN["7 to 10 parity neurons: Nyquist terms cos and sin of pi b/2 and pi L/2"]
-    LK --> SUM["slowly varying output columns: sum locates (L + b)/2"]
-    PN --> PAR["alternating output column: adds the parity of the answer"]
+    accTitle: Approximate clock and parity count channels
+    accDescr: The trained hidden neurons combine broad low-frequency responses with a smaller odd-even channel before producing count scores. The cosine description is partial and tested on training-inclusive all-cell data, with no complement test.
+    IN["menu codes of b and L,<br/>one-hot main input"] --> LK["Mostly low-frequency neurons:<br/>broad bumps over b and L"]
+    IN --> PN["7 to 10 parity neurons:<br/>Nyquist terms cos and sin<br/>of pi b/2 and pi L/2"]
+    LK --> SUM["slowly varying output columns:<br/>sum locates (L + b)/2"]
+    PN --> PAR["alternating output column:<br/>adds the parity of the answer"]
     SUM --> Y["46 logits"]
     PAR --> Y
+    %% Invisible link stacks independent channels; it is not a computational path.
+    SUM ~~~ PN
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class LK,PN trained
 ```
@@ -276,6 +275,8 @@ parity neurons, whose output column alternates in sign from class to class (neur
 perfect at step 500, while held-out performance improves later and remains below .90 through 200,000 steps. This is one seed, not
 the ten-seed range. Formula scores on all 1080 cells are a separate, training-inclusive test; the partial cosine description has no
 resample-complement certificate.*
+
+[Open Figure 3 at full size](../figures/qa1-open-count-learning.svg).
 
 ## References
 

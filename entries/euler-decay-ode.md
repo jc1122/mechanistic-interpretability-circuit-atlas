@@ -74,8 +74,12 @@ The reference applies one bounded rounded-decay step at a time. L0H0 fetches c, 
 
 The readout scores are `Y<v> = 2v·Y1 − v²·ONE` and `R<v> = 2v·YT + (1 − v²)·ONE`. Y1 carries the first-step value and ONE is the reference constant channel. The network is exact on all 3,072 inputs in both formats; the answer-only network is the scratchpad network with its Y output rows removed.
 
+In Figure 1, frozen rate and duration retrieval supplies active-step flags to MLP1, the only trained PART update. Scratchpad scoring supplies the preceding correct value. Answer only instead passes its current-value channel through the remaining frozen updates to the final readout. Closed-form status remains none: no trained update formula was substituted.
+
 ```mermaid
 flowchart TD
+    accTitle: Hand-built rounded-decay update and remaining frozen steps
+    accDescr: Frozen rate and duration retrieval and active-step flags feed the only trained PART update MLP. Scratchpad scoring supplies preceding correct values; answer only passes its absolute current-value channel through remaining frozen updates. Closed-form status is none because no trained update formula was substituted.
     P["Initial value y, rate code c and requested steps T"] --> F["L0H0 fetches c and T; L0H1 counts written values"]
     F --> G["L0 MLP sets active-step flags ON_l"]
     G --> M["MLP1 computes the first rounded decay step"]
@@ -177,6 +181,10 @@ The final PART n90 range is 130–163, compared with 130–160 at the best snaps
 | 7 | 1.0 | .975 |
 | 8 | 1.0 | .963 |
 | 9 | 1.0 | .975 |
+
+## What to read next
+
+Compare [GCD by repeated subtraction](gcd-euclid.md) for another recurrence whose frozen arithmetic and learned router have different roles. [DPLL search](dpll-search.md) gives a contrasting local-update verification inside frozen machinery.
 
 ## References
 

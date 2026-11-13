@@ -60,8 +60,12 @@ No HAND neural network was built. The reference is an exhaustive retrograde solv
 
 The remaining 2,494,351 states use `DTM_FALLBACK`, a share of 99.6302536%. The earlier public text reports this same fallback share at precisions 99.63% and 99.6%; none is a measured share of DTM-optimal moves for the whole hybrid policy. The geometric branch was not separately measured for optimality. No compact HAND policy was recovered in this study; that is not a proof that none could exist.
 
+In Figure 1, a winning position takes the geometric move only when that policy stays in its certified safe attractor. Otherwise it takes a distance-to-mate table move with geometric tie-breaking. The chosen move becomes a training label. This is label generation, not a hand-built neural circuit; there is no HAND or PART component.
+
 ```mermaid
 flowchart TD
+    accTitle: Hybrid policy used to label the bishops endgame
+    accDescr: A winning board uses a geometric move inside its certified safe attractor and a distance-to-mate table move elsewhere. The resulting policy label trains a board-to-move transformer. This is label generation, not a hand-built neural circuit; no HAND or PART component exists, and no node is marked as such.
     P["Winning position: white king and two bishops against a king"] --> G["Does the geometric policy stay in its certified attractor?"]
     G -->|"yes"| R["Use the geometric rule move"]
     G -->|"no"| D["Use a distance-to-mate optimal move, with geometric tie-breaks"]
@@ -149,6 +153,10 @@ The readout was not sparse. The original summary described scratchpad readout ma
 Used components have single-component mean-ablation drop > .05; neurons were not counted by this diagnostic. H means an attention head and M means a whole MLP. The reference variables name DTM in plies (`dtm_plies`), counts of eligible/optimal moves, king distance and cage boundaries in rotated board coordinates (`cage_u_hi`, `cage_v_hi`). `policy_to` is the chosen destination; `candidate_to` is the candidate-list destination variable. There is no HAND attention pattern to compare, so JS is not applicable.
 
 The ≤ .03 DTM probe bound applies to answer-only run 1, and ≤ .021 to answer-only run 2. Scratchpad run 1 instead has DTM R² .16–.45 at L6. Thus the data do not support the old universal claim of no linearly decodable DTM code in all nine nets. Every answer-only interchange remained untested with nf 0; scratchpad destination interchange had nf 63 and flip 1.0 in 3/3, also on wrong rows.
+
+## What to read next
+
+Compare [KRK mate](chess-krk.md) for a different endgame with a compact reference policy. [Mate-in-one selection](chess-mate-in-one.md) isolates a local decision among supplied moves rather than learning the full policy.
 
 ## References
 

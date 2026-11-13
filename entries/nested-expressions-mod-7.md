@@ -13,6 +13,8 @@ Evaluating a parenthesised expression requires two jobs: track which subexpressi
 | Weights | [Hugging Face: nested-expressions-mod-7](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/nested-expressions-mod-7) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
+Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [symbol-level algebra](symbolic-algebra-atoms.md) for structured inputs, or [finite-field linear systems](linear-systems-finite-fields.md) for written arithmetic microsteps.
+
 ## 1. Task and data
 
 Modulo 7 means taking the remainder after division by 7. Expressions contain literals 0…6 and fully parenthesised addition or multiplication: `E := 0|…|6|(E+E)|(E*E)`. For example, (2 + 6) has residue 1. Each input token couples a symbol with its index, so position is part of the token identity.
@@ -66,12 +68,16 @@ The test harness scored 1845/1845 exact with minimum logit margin 30. Coverage w
 
 ```mermaid
 flowchart TD
-    P["Expression tokens and written stack state"] --> C["Frozen L1H0 reads parser counters"]
-    C --> F["Frozen L2H0-2 fetch the top three stack entries"]
-    F --> M["L2 neurons 0-29: score the arithmetic result modulo 7"]
-    M --> W["Frozen MLP3 writes the next stack state"]
-    I["Frozen L2H3-4 fetch input or a copied stack cell"] --> W
-    W --> Y["Write the complete trace and final residue"]
+    accTitle: Frozen stack parser with a trained arithmetic block
+    accDescr: Frozen counters and stack-entry readers supply the trained arithmetic block, then frozen routing writes the next stack state. Verification covers only the arithmetic block within the frozen parser, with no untouched test and small diagnostic and stress sets.
+    P["Expression tokens<br/>and written stack state"] --> C["Frozen L1H0<br/>reads parser counters"]
+    C --> F["Frozen L2H0-2 fetch<br/>the top three stack entries"]
+    F --> M["L2 neurons 0-29:<br/>score the arithmetic result<br/>modulo 7"]
+    M --> W["Frozen MLP3 writes<br/>the next stack state"]
+    I["Frozen L2H3-4 fetch input<br/>or a copied stack cell"] --> W
+    W --> Y["Write the complete trace<br/>and final residue"]
+    %% Invisible link stacks separate inputs; it is not a computational path.
+    M ~~~ I
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class M trained
 ```
@@ -113,6 +119,8 @@ Path patching, which corrupts only selected connections, broke exact to 0 in eve
 
 ```mermaid
 flowchart TD
+    accTitle: Learned residue decisions inside the frozen parser
+    accDescr: The trained arithmetic block scores result residues, and the frozen writer chooses the largest score. The block is verified within this supplied parser; there is no untouched test, and diagnostic and stress sets are small.
     F["Fetched residues a, b and operator"] --> M["Trained L2 arithmetic block writes seven AR scores"]
     M --> A["Largest score identifies the result residue"]
     A --> W["Frozen MLP3 writes that residue into the stack"]

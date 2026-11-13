@@ -63,8 +63,12 @@ The safetensors archive at revision `30eb66049a35` contains `hand_{A,T}`, screen
 
 The T network retrieves the current clock and previous state, checks clauses, chooses an action and applies one local state update. L0 retrieves clock/header information; L1 retrieves the previous state and clause operands (L1H0 supplies the updated variable's old state/level). L2 copies clauses and selects unknown variables or the deepest decision. L3 selects the first unit clause and determines conflict/action. L4 copies the controller through L4H0 and computes equality flags in MLP4. MLP5 conditionally copies, clears or flips the state and level.
 
+In Figure 1, clock and previous-state retrieval feed clause selection, the conflict controller and a local state update. A separate answer-only route tests fixed witnesses, pools clauses and thresholds survivors. Only the update MLP or answer-only threshold MLP is trained in PART; search control and witness computation remain frozen.
+
 ```mermaid
 flowchart TD
+    accTitle: Hand-built search controller and answer-only witness route
+    accDescr: Clock and previous-state retrieval feed clause selection, a conflict controller and the local state update. A separate answer-only route pools clause tests over fixed witnesses and thresholds survivors. Only the marked update or threshold MLP is trained in the respective PART format; search and witness computation remain frozen.
   A["L0: clock and header"] --> B["L1-L2: previous state and clause operands"]
   B --> C["L3: unit clause, conflict and action"]
   C --> D["L4H0 and MLP4: controller and equality flags"]
@@ -74,7 +78,7 @@ flowchart TD
   G["A: clause falsification for 128 witnesses"] --> H["One head: pool clauses"]
   H --> I["MLP1: count survivors and threshold"]
   I --> J["SAT or UNSAT"]
-  classDef trained fill:lightyellow,stroke:darkgoldenrod
+  classDef trained fill:gold,stroke:darkgoldenrod,color:black
   class E,I trained
 ```
 
@@ -128,13 +132,17 @@ Y's states are (U, D0, D1, F0, F1): unassigned, decided false/true and forced fa
 
 Substitution replaces a trained component by its formula; complement resampling scrambles everything outside the proposed circuit using other inputs ([glossary](../GLOSSARY.md#verifying-a-circuit)). Both checks passed, so this local form is verified on 10/10 seeds. The discovery-mask complement also passed, with seed 7 at .969 and the other seeds at 1.0; this is separate from the canonical-circuit test above.
 
+In Figure 2, frozen old-state retrieval, force-decide-backtrack control and equality or keep flags enter MLP5, the sole trained update stage. It writes the next state and level. Substitution and complement resampling verify this local update on the stated traces, not a wholly learned search algorithm; the frozen upstream search remains part of the claim.
+
 ```mermaid
 flowchart TD
+    accTitle: Verified local decision update inside frozen DPLL search
+    accDescr: Frozen old-state retrieval, force-decide-backtrack control and equality or keep flags feed the sole trained update MLP. It writes the next state and level. Substitution and complement resampling verify this local update on the stated traces, not a wholly learned search algorithm.
   A["L1H0: old state and level"] --> D["MLP5: learned seven-field update"]
   B["L4H0: force, decide and backtrack controller"] --> D
   C["MLP4: target and keep flags"] --> D
   D --> E["Y, YL and YL2: new state and level"]
-  classDef trained fill:lightyellow,stroke:darkgoldenrod
+  classDef trained fill:gold,stroke:darkgoldenrod,color:black
   class D trained
 ```
 
@@ -221,6 +229,10 @@ The failed TRAIN screens had provisional, not verified, groupings: A pooled into
 | TRAIN T | 13–17 + 1–55 | Step .95–.98 (3–4); variable .99 (0); action .87–.91; new state .37–.48; conflict ≤ .51 | 19–25 (HAND 2) | .19–.66 | 0–.8; .87–.90 | .00–.02 |
 
 Used here means a single mean-ablation exact drop > .05, not joint pruning or a minimum. The older 1–55 TRAIN T neuron range and the later 3–55 remain attached to their own summaries. Similarly, PART T's 9–11 heads + 21–23 neurons are single-ablation counts against HAND's structural 14 + 71, not minimal circuits. nf counts eligible swaps, and CKA measures representation similarity ([glossary](../GLOSSARY.md#analysis-measures)).
+
+## What to read next
+
+Compare [grid breadth-first search](grid-bfs.md) for another local update embedded in frozen search machinery. [Rounded Euler decay](euler-decay-ode.md) shows why even a scaffolded local update need not become exact.
 
 ## References
 

@@ -1,6 +1,6 @@
 # Linear systems over F₅ and F₇
 
-These transformers solved small linear systems with arithmetic that wraps modulo 5 or 7. Writing each intermediate multiplication and subtraction made the detailed-trace format learnable: all 10/10 final seeds reached whole-output exact 1.0 on 2000 held-out systems, while answer-only training solved none of its screening cells. Training completed the arithmetic in a late, distributed lookup rather than following the hand-built network's layer-by-layer decomposition. The task is partly solved, and the final lookup is Sufficient readout only: substitution with reference-computed operand keys gives 1.0 in 3/3 tested seeds, but complement resampling on 128 systems per seed fails (.00–.30 for the claimed circuit, .79–.89 for discovered circuits, below .90). A separate replacement for the partly trained update stage is Partial and repairs failed networks; it does not explain their native errors.
+These transformers solved small linear systems with arithmetic that wraps modulo 5 or 7. Writing each intermediate multiplication and subtraction made the detailed-trace final cell, modulo 5 at dimension 2, learnable: all 10/10 final seeds reached whole-output exact 1.0 on 2000 held-out systems per seed, while answer-only training solved none of its screening cells. Training completed the arithmetic in a late, distributed lookup rather than following the hand-built network's layer-by-layer decomposition; the final networks failed transfer to dimension 3. The task is partly solved, and the final lookup is Sufficient readout only: substitution using supplied operand labels from the reference algorithm gives 1.0 in 3/3 tested seeds, but complement resampling on 128 systems per seed fails (.00–.30 for the claimed circuit, .79–.89 for discovered circuits, below .90). A separate replacement for the partly trained update stage is Partial and repairs failed networks; it does not explain their native errors.
 
 | Fact | Value |
 |---|---|
@@ -12,6 +12,10 @@ These transformers solved small linear systems with arithmetic that wraps modulo
 | Status | Partly solved (F₅m2 S TRAIN 10/10, transfer to m = 3 0.0 in 10/10; answer only 0/3 in every screen); last run 2026-11-08 |
 | Weights | [Hugging Face: linear-systems-finite-fields](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/linear-systems-finite-fields) (weights and held-out evidence archive; 158 nets) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
+
+HAND sets every weight by formula; PART learns one stage on a frozen scaffold; TRAIN learns all weights ([rungs](../GLOSSARY.md#the-three-rungs)). The output formats are A (answer only), T (matrix-update trace) and S (detailed arithmetic trace), defined in [Table 1](#1-task-and-data).
+
+Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [GF(2) elimination](gf2-elimination.md) for binary row operations, or [integer matrix-vector products](integer-matvec.md) for another matrix task.
 
 ## 1. Task and data
 
@@ -102,17 +106,15 @@ stratified m = 3 fixtures and in greedy rollouts (m = 3 not exhausted).
 
 ```mermaid
 flowchart TD
-    P["Augmented matrix and trace so far"] --> L0["L0: position R = q/64 from BOS attention, ReLU hinges"]
-    L0 --> L1["L1: block, row, column, grammar gates"]
-    L1 --> L2["L2: operand fetch, score -24 times squared key-query distance"]
-    L2 --> L3A["L3 attention: pivot by coordinate match, first unused nonzero"]
-    L3A --> M3["L3 MLP: modular arithmetic lookup"]
-    M3 --> T3["T: discrete-log lookup onto the circle"]
-    M3 --> S3["S: categorical candidates, product and difference"]
-    T3 --> T4["T, L4: pizza subtraction by paired ReLUs"]
-    S3 --> S4["S, L4: typed router picks candidate or pivot-row copy"]
-    T4 --> Y["next residue token"]
-    S4 --> Y
+    accTitle: Hand-built finite-field elimination routes
+    accDescr: Positions, operands and pivot selection feed the modular arithmetic stage, followed by circle subtraction or a typed router. Only the modular arithmetic MLP is trained in PART.
+    P["Augmented matrix<br/>and trace so far"] --> L0["L0: position R = q/64<br/>from BOS attention,<br/>ReLU hinges"]
+    L0 --> L1["L1: block, row, column,<br/>grammar gates"]
+    L1 --> L2["L2: operand fetch,<br/>score -24 times squared<br/>key-query distance"]
+    L2 --> L3A["L3 attention: pivot by<br/>coordinate match,<br/>first unused nonzero"]
+    L3A --> M3["L3 MLP:<br/>modular arithmetic lookup"]
+    M3 --> ROUTES["Alternative frozen routes:<br/>T: discrete-log lookup<br/>onto the circle, then<br/>T, L4: pizza subtraction<br/>by paired ReLUs<br/>S: categorical candidates,<br/>product and difference, then<br/>S, L4: typed router picks<br/>candidate or pivot-row copy"]
+    ROUTES --> Y["next residue token"]
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class M3 trained
 ```
@@ -201,19 +203,29 @@ formula on the screen nets was rejected (2/18 numerical passes, none on solved s
 
 ```mermaid
 flowchart TD
+    accTitle: Late trained lookup and partly trained bypass
+    accDescr: The from-scratch route finishes arithmetic at the last layer; its reference-keyed output table is a sufficient readout only because complement resampling fails. The separate PART route trains only the bypass MLP and has a partial repair substitute with complement untested.
     subgraph TR["S TRAIN final, 10/10 seeds"]
+        direction TB
         E["embedding"] --> M02["MLP0 to MLP2"]
-        M02 --> H34["11 to 20 needed heads, mostly L3 and L4"]
-        H34 --> M4["MLP4: late write tested by a reference-keyed table"]
-        H34 -.->|"L3 heads to MLP3 nearly unused"| M3T["MLP3"]
-        M4 --> O["residue token, every microstate at the last layer"]
+        M02 --> H34["11 to 20 needed heads,<br/>mostly L3 and L4"]
+        H34 --> M4["MLP4: late write tested by<br/>a reference-keyed table"]
+        H34 -.-> M3T["MLP3:<br/>L3 heads to MLP3<br/>nearly unused"]
+        M4 --> O["residue token, every microstate<br/>at the last layer"]
+        %% Invisible link stacks branches; it is not a computational path.
+        M3T ~~~ M4
     end
     subgraph TP["T PART, 12 seed-runs"]
-        F["frozen HAND fetch and pivot"] --> M3P["trained MLP3 writes answer scores directly"]
+        direction TB
+        F["frozen HAND fetch and pivot"] --> M3P["trained MLP3 writes<br/>answer scores directly"]
         M3P --> OP["residue token"]
-        M3P -.->|"MLP4 subtractor bypassed, ablation costs 0"| M4P["frozen MLP4"]
+        M3P -.-> M4P["frozen MLP4:<br/>MLP4 subtractor bypassed,<br/>ablation costs 0"]
+        %% Invisible link stacks branches; it is not a computational path.
+        OP ~~~ M4P
     end
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
+    %% Invisible edge stacks independent panels; it is not a computational path.
+    TR ~~~ TP
     class E,M02,H34,M4,M3T,M3P trained
 ```
 
@@ -284,12 +296,12 @@ difference .76–.94, k .72–.84 and inverse .69–.97; pivot .61–.91 (L4/L5)
 ## References
 
 - Bayat Makou, A., Niu, J., Dutta, S., & Gurevych, I. (2026). Many circuits, one mechanism: Input variation and evaluation granularity
-  in circuit discovery. *Transactions on Machine Learning Research (2026)*. https://doi.org/10.48550/arxiv.2606.06267 (circuit
+  in circuit discovery. *Transactions on Machine Learning Research (2026)* (journal article). https://doi.org/10.48550/arxiv.2606.06267 (circuit
   equivalence classes); https://arxiv.org/abs/2606.06267
 - Li, M., & Janson, L. (2024). Optimal ablation for interpretability. *arXiv preprint*. https://doi.org/10.48550/arxiv.2409.09951
   (ablation baselines); https://arxiv.org/abs/2409.09951
 - Nye, M., Andreassen, A. J., Gur-Ari, G., et al. (2021). Show your work: Scratchpads for intermediate computation with language
   models. *arXiv preprint*. https://arxiv.org/abs/2112.00114 (scratchpad computation)
 - Zhong, Z., Liu, Z., Tegmark, M., & Andreas, J. (2023). The clock and the pizza: Two stories in mechanistic explanation of neural
-  networks. *Advances in Neural Information Processing Systems 36 (NeurIPS 2023)*. https://arxiv.org/abs/2306.17844 (the "pizza"
+  networks. *Advances in Neural Information Processing Systems 36 (NeurIPS 2023)* (conference paper). https://arxiv.org/abs/2306.17844 (the "pizza"
   modular-arithmetic circuit); https://doi.org/10.52202/075280-1186

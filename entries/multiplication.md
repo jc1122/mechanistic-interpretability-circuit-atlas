@@ -2,7 +2,7 @@
 
 Four-layer transformers were tested on all 4096 pairs of 6-bit operands, either writing the product directly or writing the running
 sums of long multiplication first, a [scratchpad](../GLOSSARY.md#task-formats). With hand-built retrieval frozen, 10/10 scratchpad seeds
-reached held-out whole-output exact match 1.0; the from-scratch retry reached recorded 1.0 in 8/10 seeds and ≥ .99 in 9/10. No
+reached held-out whole-output exact match 1.0 on 1639 pairs per seed; on that test split the from-scratch retry reached recorded 1.0 in 8/10 seeds and ≥ .99 in 9/10. No
 answer-only seed reached ≥ .99 in these runs. In one examined scratchpad network, a table of average internal outputs for each
 position and column sum preserved exact match 1.000, while swapping individual outputs with those same labels kept only .584
 (Section 5.3). The task is partly solved, and the formulas are sufficient readouts only: the 2026-11-07 audit accepted none as a
@@ -18,6 +18,8 @@ verified mechanism.
 | Status | Partly solved (scratchpad PART 10/10 at held-out whole-output exact match 1.0; TRAIN retry 8/10 at recorded 1.0, 9/10 at ≥ .99; no answer-only success at ≥ .99); last run 2026-11-05; audit 2026-11-07 |
 | Weights | [Hugging Face: binary-multiplication](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/binary-multiplication) (41 networks) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
+
+Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [binary addition](binary-addition.md) for the adder step, or [multiplication across bases](multiplication-base-order.md) for a broader digit-order study.
 
 ## 1. Task and data
 
@@ -103,24 +105,33 @@ carry chain: each scratchpad step is one binary-adder column.
 
 ```mermaid
 flowchart TD
-    P["Prompt a*b= and scratchpad so far"] --> POS["L0 and L1: positions, anchor on *"]
+    accTitle: Hand-built direct and running-sum multiplication
+    accDescr: Position heads lead either to pairwise bit products and a parity staircase, or to the scratchpad adder truth table. The marked final MLP is trained in PART in each format.
+    subgraph FRAME["Common input to each format"]
+        direction TB
+        P["Prompt a*b=<br/>and scratchpad so far"] --> POS["L0 and L1: positions,<br/>anchor on *"]
+    end
     subgraph FA["Format A: answer only"]
-        FA1["12 index heads fetch a_i and b_j"] --> FA2["L2 MLP: 36 AND neurons relu(a_i + b_j - 1)"]
-        FA2 --> FA3["LK_k: low partial-product sum"]
-        FA3 --> FA4["L3 MLP: parity staircase, 132 neuron pairs gated by E_k"]
+        direction TB
+        FA1["12 index heads<br/>fetch a_i and b_j"] --> FA2["L2 MLP: 36 AND neurons<br/>relu(a_i + b_j - 1)"]
+        FA2 --> FA3["LK_k:<br/>low partial-product sum"]
+        FA3 --> FA4["L3 MLP: parity staircase,<br/>132 neuron pairs<br/>gated by E_k"]
         FA4 --> FA5["product bit p_k"]
     end
     subgraph FB["Format B: scratchpad"]
-        FB1["heads fetch b_j, x, x', a, a'"] --> FB2["L3 MLP: 32-neuron truth table, s = x xor b_j a xor c"]
+        direction TB
+        FB1["heads fetch<br/>b_j, x, x', a, a'"] --> FB2["L3 MLP:<br/>32-neuron truth table,<br/>s = x xor b_j a xor c"]
         FB2 --> FB3["sum bit s of S_j"]
     end
-    POS --> FA1
-    POS --> FB1
+    %% Both alternatives read the common input above. These invisible links
+    %% stack panels; they are not computational paths between formats.
+    FRAME ~~~ FA
+    FA ~~~ FB
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class FA4,FB2 trained
 ```
 
-*Figure 1. The hand-built networks for both formats. Layers 0 and 1 locate positions; in format A the operand bits are multiplied by
+*Figure 1. The hand-built networks for both formats. Each alternative reads the common input panel; the format panels are not successive stages. Layers 0 and 1 locate positions; in format A the operand bits are multiplied by
 AND neurons and summed into LK_k, whose bits are read by a parity staircase; in format B each step is one adder column. The shaded L3
 MLPs are the parts that PART replaces with a trained stage.*
 
@@ -228,13 +239,17 @@ alternating thresholds; one hypothesis is misplaced or cancelling hinges.
 
 ```mermaid
 flowchart TD
-    T["prompt and scratchpad tokens so far"] --> H6["L3H6: soft previous-sum and context retrieval"]
-    T --> F["task-derived key inputs: x, a, b_j and x', a', s'"]
-    F --> C["carry c = [x' + b_j a' - s' >= 1]"]
+    accTitle: Mean-table multiplication readout
+    accDescr: A trained retrieval head and final MLP contribute to the scratchpad output. The arithmetic key is supplied by the task-based test. A mean replacement is a sufficient readout only, with no verified internal carry circuit.
+    T["prompt and scratchpad<br/>tokens so far"] --> H6["L3H6: soft previous-sum<br/>and context retrieval"]
+    T --> F["task-derived key inputs:<br/>x, a, b_j and x', a', s'"]
+    F --> C["carry c =<br/>[x' + b_j a' - s' >= 1]"]
     F --> U["key u = x + b_j a + c"]
     C --> U
-    H6 --> M["MLP3 readout: mean table mu[q, u]"]
+    H6 --> M["MLP3 readout:<br/>mean table mu[q, u]"]
     U --> M
+    %% Invisible link stacks the separate key path; it is not a network path.
+    H6 ~~~ F
     M --> S["sum bit s = u mod 2"]
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class H6,M trained
@@ -250,6 +265,8 @@ not a verified internal carry circuit.*
 *Figure 3. One examined TRAIN retry seed (seed 0, best snapshot), with 819 fit and 820 disjoint non-training evaluation pairs. A mean
 table gives 1.000 whole-output exact match; individual same-key donors give .5841 (token accuracy .99336). These more precise source
 scores correspond to the published .584 / .993 display in Section 6. This is sufficient readout only, not a verified native mechanism.*
+
+[Open Figure 3 at full size](../figures/multiplication-mean-vs-donor.svg).
 
 ### 5.4 Relation to the hand-built network and to published work
 
