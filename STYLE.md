@@ -17,6 +17,8 @@ register, the citation and figure conventions, and the checks an entry must pass
 - Rung and format letters (HAND, PART, TRAIN; `A`, `B`, `T`) may be used once they are introduced; write "run 1" and "run 2", not
   r1/r2, and "seed 2", not s2, in prose. Tables may keep compact labels if a key under the table expands them.
 - Every number carries its n and its criterion: "8/10 seeds reached exact match ≥ .99 on held-out pairs", not "8/10 solved".
+  Name the counted unit: seeds, snapshots, evaluation examples or circuit types. Best and final snapshots of one seed are not
+  independent seeds. Exact match of 1.0 and a threshold such as ≥ .99 are different criteria; retain any rounded-log discrepancy.
 - Numbers are copied, never rounded, merged into new ranges, averaged or recomputed. A range stays a range.
 - Verdicts are never stronger than the evidence. An audit caveat (for example "sufficient readout, not a verified mechanism") is
   repeated wherever the closed form is named: lede, fact table, Section 5 and the figure caption.
@@ -71,7 +73,9 @@ the appendix. Nothing is dropped in the move: every number of the earlier versio
   `Author, A., & Author, B. (Year). Title. *Venue*. https://doi.org/...` (an arXiv link where there is no DOI) followed by a short parenthesis saying what the work is
   cited for. Take author lists, titles and venues from [REFERENCES.md](REFERENCES.md) at the repository root (it corrects earlier
   author errors); keep every link the entry already had. Long author lists follow REFERENCES.md (they may end in "et al.").
-- Cite only works that were checked. Every work in References is cited at least once in the text.
+- Cite only works that were checked. Every work in References is cited at least once in the text. Give the source type explicitly
+  (conference paper, journal article, preprint, technical article, documentation, software or forum post). Bibliographic metadata
+  checks establish identity, not that a paper's claims were read or independently confirmed. Preserve the earlier reading scope.
 - To add a reference, copy its line from REFERENCES.md into the entry's References at its alphabetical place and cite it in the text. A
   work that is not in REFERENCES.md is not cited; list it with its link in your report.
 
@@ -86,10 +90,76 @@ the appendix. Nothing is dropped in the move: every number of the earlier versio
   marked as trained.
 - Captions are numbered and in italics directly below a figure and above a table: "*Figure 1. The hand-built network ... The shaded
   MLP is the only trained part.*" A caption states what is shown, not what to conclude.
+- Give every informative image meaningful Markdown alt text. A complex plot or circuit also needs an adjacent prose explanation or
+  linked table containing the essential values and relationships; a caption alone must not be the only accessible account. SVG
+  `title` and `desc` are useful additions, not replacements for Markdown alt text. For Mermaid, supply `accTitle` and `accDescr`
+  ([Mermaid accessibility documentation](https://mermaid.js.org/config/accessibility.html), software documentation), explain the path
+  in prose and name trained components in the caption, since rendered diagram accessibility varies.
+- Use direct labels, shapes or line styles as well as colour. Prefer a colour-blind-safe palette; no red/green-only distinctions.
+  Check text contrast and essential graphical boundaries in light and dark themes, and inspect figures at a narrow viewport and
+  enlarged text. When a Mermaid class sets a light fill, set a contrasting text colour explicitly, for example
+  `classDef trained fill:gold,color:black,stroke:black;`. A parser pass does not catch light text on a light node in a dark theme.
+  In line plots, repeat the line's dash/marker pattern in the legend. Prefer compact or stacked panels and move long explanations
+  into Markdown rather than shrinking labels to fit. Link a full-size figure and retain a text/table equivalent; a full-size link
+  alone does not fix unreadable embedded labels. Do not claim WCAG conformance from these checks alone.
 - Mermaid syntax kept simple so that it parses: `flowchart TD` (top-down reads at every width; `LR` only for three nodes or fewer); every label in double quotes; no double quotes,
   backticks or `#` inside a label; ASCII operators in labels (`-`, `>=`, `xor`); colours as named CSS colours in one `classDef`.
   Every block must pass the Mermaid 11 parser (`await mermaid.parse(block)` from the `mermaid` npm package, or mermaid-cli) before an
-  entry is published.
+  entry is published. Render changed diagrams in light and dark themes as well as parsing them.
+
+A minimal diagram recipe follows the [Mermaid flowchart documentation](https://mermaid.js.org/syntax/flowchart.html) (software
+documentation). Replace these placeholder labels and descriptions with the actual computation; keep an adjacent prose explanation.
+
+```mermaid
+flowchart TD
+  accTitle: Example of a partly trained computation
+  accDescr: Known inputs enter a trained block, which writes an output. Only the middle block is trained.
+  A["Known inputs (frozen)"] --> B["Trained block"]
+  B --> C["Output"]
+  classDef trained fill:gold,color:black,stroke:black;
+  class B trained;
+```
+
+*Figure recipe. Known inputs feed a trained block, which writes the output. The labelled middle block is the trained component;
+colour is an additional cue, not the only one.*
+
+## Publication and reuse
+
+The publication checklist below adapts the [NeurIPS checklist](https://neurips.cc/public/guides/PaperChecklist) (conference guidance),
+[ICML review form](https://icml.cc/Conferences/2025/ReviewerInstructions) (conference guidance) and
+[ML reproducibility programme](https://jmlr.org/papers/v22/20-303.html) (journal article). It is a local reporting standard, not a claim
+of conference acceptance, independent replication or checklist compliance.
+
+- Lead with a concrete task and a checkable example, then the finding and its limit. Use diagrams to explain a computation, not
+  to decorate an outcome. The [Distill guide](https://distill.pub/guide/) (authoring documentation) and
+  [Transformer Circuits framework](https://transformer-circuits.pub/2021/framework/index.html) (technical article) are examples.
+  GitHub Markdown is the baseline: no essential evidence behind hover, JavaScript or animation. Any future interactive view needs
+  labelled keyboard controls and a complete static alternative.
+- In reproduction, distinguish retraining, rescoring an archived network and checking file hashes. State commands, dependency
+  versions, output keys, evaluation cohort and numerical tolerance only where recorded; mark missing items as unavailable. Give
+  hardware class, precision, time and memory if known, never machine names. Do not invent compute totals or uncertainty estimates.
+- Keep all failed seeds, retries, rejected formulas, unfinished runs and missing diagnostics visible. A bounded negative result
+  concerns the tested settings, not an impossibility theorem. Distinguish test-selected best snapshots from an independent test;
+  identify reference-supplied substitution inputs, teacher forcing and empty complements wherever they affect the claim.
+- Archive documentation should cover model details, intended and out-of-scope uses, training and evaluation data, metrics and
+  thresholds, factor-level results, limitations and citation. This follows [Mitchell et al. (2019)](REFERENCES.md#mitchell2019)
+  (conference paper) and [Hugging Face model-card guidance](https://huggingface.co/docs/hub/model-cards) (platform documentation).
+  Describe synthetic-data generation, sampling, labels, split units, duplicates, selection, distribution and maintenance following
+  [Gebru et al. (2021)](REFERENCES.md#gebru2021) (journal article). Unknown is not not-applicable.
+- Record the exact public archive revision and manifest, file hashes and the scope/date of any round-trip check. Folder availability
+  is not archive completeness. An entry must say when only some seeds, snapshots, rungs or diagnostics are public. Never promise
+  a generic Transformers loader for task-specific tensors.
+- Use one H1 and logically nested headings, with descriptive link text. Domain groups in README and INDEX are headings, not bold
+  substitutes. Follow the [W3C headings](https://www.w3.org/WAI/tutorials/page-structure/headings/) and
+  [image tutorials](https://www.w3.org/WAI/tutorials/images/complex/) (accessibility guidance); the
+  [use-of-colour criterion](https://www.w3.org/WAI/WCAG22/Understanding/use-of-color.html) (W3C explanatory guidance) requires
+  information beyond colour alone.
+- Update README and INDEX whenever a claim or its scope changes. Record material corrections in [CHANGELOG](CHANGELOG), including
+  the old interpretation, corrected scope and affected entry. Use an Unreleased section until publication; do not fabricate a
+  release number, DOI or release date. Record scientific run dates separately from editorial dates.
+- Retain credit, original links, source types and third-party licence notices. The atlas's CC BY 4.0 does not relicense linked
+  external models or software. Reuse attribution needs credit, a licence link and an indication of changes
+  ([CC BY 4.0 deed](https://creativecommons.org/licenses/by/4.0/), licence summary). Code in `code/` remains MIT.
 
 ## Checks before publishing
 
@@ -99,7 +169,14 @@ the appendix. Nothing is dropped in the move: every number of the earlier versio
 2. Mermaid: every block parses (see above).
 3. No host names, local paths or accounts (the Hugging Face weights URL is the one allowed account name); every link is a public URL or a path inside this repository, and every relative link and
    `#anchor` resolves to an existing file or heading.
-4. AI tells. Run on prose only (outside fenced blocks and table rows, before References) and expect no output (`E.md` is the entry file):
+4. Accessibility and rendering: heading order, alt text and text equivalents; colour-independent labels; table headers; readable
+   light/dark and narrow layouts, including explicit Mermaid text colour and `accTitle`/`accDescr`. Render diagrams in both themes;
+   parsing alone does not check contrast. Check GFM rendering and keyboard navigation when an interactive view exists. Record what was
+   actually inspected; automated checks do not establish screen-reader usability or WCAG compliance.
+5. Reuse: commands and output keys match published files; missing code and archive coverage are explicit; seed/snapshot denominators,
+   test-selection caveats, provenance, source types, licence scope, citation and changelog agree with the linked entry. A download
+   or a hash check must not be called scientific replication.
+6. AI tells. Run on prose only (outside fenced blocks and table rows, before References) and expect no output (`E.md` is the entry file):
 
 ```
 prose() { awk '/^## References/{exit} /^```/{f=!f;next} !f && !/^\|/' "$1"; }

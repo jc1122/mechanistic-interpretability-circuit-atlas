@@ -1,11 +1,14 @@
 cff-version: 1.2.0
-message: "If you use this atlas, its networks or its code, please cite it as below."
+message: >-
+  Cite this atlas and the relevant task entry. Record the atlas commit, entry date,
+  archive revision and model identifier used; this citation does not identify every network snapshot.
+  Code has a separate MIT licence; the dataset licence below covers original atlas material.
 type: dataset
 title: "Mechanistic Interpretability Circuit Atlas"
 abstract: >-
-  For algorithmic tasks, an exact hand-built transformer is compared with networks trained over many seeds on frozen hand-built
-  parts and from scratch: which circuit each seed converges to, how often, and whether a closed form of it keeps accuracy when
-  substituted back into the network.
+  A living collection of small-network circuit studies for algorithmic tasks, with hand-built references, partly trained and
+  from-scratch transformers, and external recurrent-model zoo snapshots. Entries report task performance separately from
+  substitution and complement-resampling evidence, retaining failures, limited coverage and unresolved mechanisms.
 authors:
   - alias: jc1122
 repository-code: "https://github.com/jc1122/mechanistic-interpretability-circuit-atlas"
@@ -19,3 +22,5 @@ keywords:
   - algorithmic tasks
   - hand-built transformers
   - grokking
+  - recurrent neural networks
+  - reproducibility

@@ -1,85 +1,97 @@
 # Index
 
-One row per entry, grouped as in the [README](README.md#entries). The atlas has 41 entries: the full task, data, criterion and caveats are in each entry's fact table. PART trains one stage on frozen hand-built parts; TRAIN trains the whole network from scratch ([rungs](GLOSSARY.md#the-three-rungs)). In Seeds, k/n means k of n seeds meet the named criterion; *(screen)* marks screening evidence rather than a final cell. A circuit-type count among solved seeds is not a success rate across all seeds.
+One row per entry, grouped as in the [README](README.md#entries). The atlas has 41 entries. Each linked article gives the task,
+evaluation examples, criterion, archive coverage and limitations. PART trains a stage on frozen hand-built parts; TRAIN trains the
+whole network from scratch ([rungs](GLOSSARY.md#the-three-rungs)). A seed is one training run; best/final snapshots are saved states,
+not independent runs. A mechanism-family count is not a solved-seed count. *(Screen)* marks preliminary rather than final evidence.
 
-In Closed form, ✓ means substitution and complement resampling pass under the [acceptance rule](METHODS.md#9-verification-and-the-acceptance-rule), partial means only the stated rung, part or seed subset is covered, readout only means substitution works but the claimed mechanism fails its audit, ✗ means tested and rejected, and — means not tested. A scope or flag after the status is part of the claim. External-zoo “proven” counts are registered sampled-certificate categories, not task-accuracy counts or all-input theorems.
+In Closed form, ✓ means **verified at the named scope**: substitution and complement resampling pass under the
+[acceptance rule](METHODS.md#9-verification-and-the-acceptance-rule). Partial means limited coverage or an untested requirement;
+readout only means a replacement works but its mechanism claim fails the audit; ✗ means the tested form was rejected; — means no
+form was tested or recovered, as stated. A flag or qualification is part of the claim. None of these is an all-input theorem.
 
-In Reproduce, code means a command runs from [code/](code/README.md); weights means the entry links archived networks and recorded checks on [Hugging Face](https://huggingface.co/jc1122/circuit-atlas-nets), with any archive limitations stated there. Other terms are in [GLOSSARY.md](GLOSSARY.md).
+In Reproduce, code means published CPU commands exist in [code/](code/README.md), not that this catalogue update reran them. Weights
+means [archived artifacts](https://huggingface.co/jc1122/circuit-atlas-nets) and recorded checks, with entry-specific gaps; it does not promise every seed, rung or split. Model loading
+is task-specific. See [reuse guidance](README.md#reuse-and-reproducibility), [glossary](GLOSSARY.md) and [corrections](CHANGELOG).
 
-**Counting and modular arithmetic**
+## Counting and modular arithmetic
 
-| Entry | Task | Circuit found | Seeds | Closed form | Reproduce |
+| Entry | Task | Circuit found | Runs and criterion | Closed form | Reproduce |
 |---|---|---|---|---|---|
-| [modular-addition-mlp](entries/modular-addition-mlp.md) | (x + y) mod 59 on a frozen menu | Fourier clock of a wide MLP, 22–27 of 29 frequencies | clock 10/10; test .91–.97, none ≥ .99 | partial .996–1.000; complement not tested | code |
-| [count-mod-5](entries/count-mod-5.md) | letter count mod 5 on a frozen menu | flat residue lookup on the count; line length ignored | 30/30 | partial 1.000; complement not tested | code |
-| [compare-counts](entries/compare-counts.md) | which of two letters is more frequent | linear comparator in c and L; ties only memorised | greater/less learned in 30/30; `=` 0 correct test cells | partial .93–.96; never outputs `=` | code |
-| [open-bracket-count](entries/open-bracket-count.md) | number of `(` in a bracket line | low-frequency cosine sum (k = 1–3) plus a parity channel | clock sum 10/10 at fraction .8, none reaches .9; memorises at .4 and .6 | partial .91–.93 (networks .96–.98) | code |
-| [modular-arithmetic-mod-97](entries/modular-arithmetic-mod-97.md) | addition, multiplication, squaring mod 97; six number formats | token multiplication: discrete-log circles; digit formats form no circles | token multiplication 6/10, token addition 10/10 | partial: output-level clock, 8 seeds ≥ .98 | weights |
+| [modular-addition-mlp](entries/modular-addition-mlp.md) | Add two residues modulo 59 | Fourier clock using one-hot inputs and threshold encodings | clock 10/10 seeds; held-out .91–.97; 0/10 reaches 99% | partial: substitution; complement not tested | code |
+| [count-mod-5](entries/count-mod-5.md) | Letter count modulo five | Count-to-remainder lookup; length ignored | PART 30/30 seeds ≥ .99 held-out | partial: 1.000 on 1080 all cells; no complement | code |
+| [compare-counts](entries/compare-counts.md) | Name the more frequent letter | Tilted comparator; equality memorised rather than transferred | comparator family 30/30; zero correct held-out ties | partial: approximate two-way comparator | code |
+| [open-bracket-count](entries/open-bracket-count.md) | Count opening brackets | Broad cosines plus odd/even features; low frequencies most common | PART 0/10 ≥ .90 held-out at fraction .8 | partial: training-inclusive approximation; no complement | code |
+| [modular-arithmetic-mod-97](entries/modular-arithmetic-mod-97.md) | Arithmetic modulo 97 in different formats | Token discrete-log circles; digit formats form no circles | TRAIN multiplication 6/10 ≥ .99; addition 10/10 ≥ .99; readout: 8 seeds with native ≥ .98 | partial: supplied logs; 9216 training-inclusive pairs | weights |
 
-**Arithmetic**
+## Arithmetic
 
-| Entry | Task | Circuit found | Seeds | Closed form | Reproduce |
+| Entry | Task | Circuit found | Runs and criterion | Closed form | Reproduce |
 |---|---|---|---|---|---|
-| [decimal-hex-addition](entries/decimal-hex-addition.md) | 3-digit addition in base 10 and 16 | column-sum lookup on X1 + X2 + carry; no carry-lookahead head from scratch | PART lookup in all 60 networks; TRAIN 37/40 after one retry | partial: PART stage lookup .95–1.00 | weights |
-| [binary-addition](entries/binary-addition.md) | a + b, 6-bit binary | lookup on a + b + carry; position inputs block longer inputs until masked | TRAIN 10/10 per format after retries; all fail at 12 bits | partial: PART sum-bit lookup 10/10, carry tokens 3/10 | weights |
-| [router-addition](entries/router-addition.md) | addition of 16 bits or 6 decimal digits | one shared column step; twice the length only without position input | PART 10/10; TRAIN router 10/10 in range, 0 at 2N | partial: PART step 1 on 60 snapshots | weights |
-| [subtraction](entries/subtraction.md) | a − b, 3 decimal digits or 6 bits | per-column lookup on a − b − borrow | PART 8/10 to 10/10 per cell; retried TRAIN 10/10 | readout only: equals network accuracy | weights |
-| [multiplication](entries/multiplication.md) | a · b, 6-bit binary | scratchpad step reuses the adder's sum lookup; answer only never trains | PART 10/10, TRAIN 8/10 (scratchpad) | readout only: 1.00 in 10/10 PART | weights |
-| [multiplication-base-order](entries/multiplication-base-order.md) | multiplication below 256 in bases 2, 10, 16 | least significant first learnable, most significant first 1/60; scratchpad solves all | scratchpad 18/18; final cell 10/10 | partial: Fourier readout, decimal 6/6, hex 3/6 | weights |
-| [long-division-square-root](entries/long-division-square-root.md) | binary division and square root, 8-bit and wide | one shared compare-and-subtract step; answer only needs 16–90x more data | division scratchpad PART 10/10; none exact on all inputs | partial: PART scratchpad step, exact | weights |
-| [gcd-euclid](entries/gcd-euclid.md) | GCD by subtractive Euclid | three-rule router on frozen parts; seed-specific distributed circuits from scratch | PART 10/10 ≥ .99 (7/10 exact); TRAIN 5/10 exact | partial: PART complement on seven exact seeds | weights |
-| [quadratic-roots](entries/quadratic-roots.md) | integer discriminant, square root and quadratic roots | executor PART pools hinges into NAND; from-scratch register fetch fails | executor PART 10/10 exact; TRAIN 0/10; parent final 0/10 | ✓: executor PART only | weights |
-| [compose-arithmetic-registers](entries/compose-arithmetic-registers.md) | register machine: STEP composed into SUM, MUL, POW | compositions fetch operands by trace position; bare STEP fails | TRAIN 0/10; PART 3/3 *(screen)* | partial: PART 1.0 in 18/18, complement 1.0 | weights |
-| [integer-matvec](entries/integer-matvec.md) | integer matrix-vector product, 3×3 | dense last-layer carry/next-bit circuit; answer only needs 4x budget | scratchpad TRAIN 8/10 exact; PART 3/3 *(screen)*; answer-only TRAIN 1/3 *(screen)* | partial: PART complement on two tested seeds | weights |
+| [decimal-hex-addition](entries/decimal-hex-addition.md) | Three-digit decimal and hexadecimal addition | Column-total readout; carry computation unresolved from scratch | TRAIN retry 37/40 ≥ .99; readout family 60/60 | partial: local stage; complement not tested | weights |
+| [binary-addition](entries/binary-addition.md) | Add two six-bit numbers | Column-sum stage; positional shortcuts hinder longer inputs | TRAIN reported 10/10 per format after retries; 12-bit fails | partial: local stage; complement not tested | weights |
+| [router-addition](entries/router-addition.md) | Add labelled digit columns | Shared column readout; masking improves longer-input transfer | masked PART 10/10 exact; unmasked native routing remains length-sensitive | partial: addition lacks complement; subtraction final fails | weights |
+| [subtraction](entries/subtraction.md) | Subtract decimal or binary numbers | Signed-difference readouts; complete mechanism fails resampling | PART readout counts 10/10, 9/10 or 8/10 by cell | readout only: whole hypothesis fails | weights |
+| [multiplication](entries/multiplication.md) | Multiply binary integers | Adder-step readout; native context dependence remains unresolved | PART 10/10 exact; TRAIN retry 8/10 recorded 1.0, 9/10 ≥ .99 | readout only: full audit not passed | weights |
+| [multiplication-base-order](entries/multiplication-base-order.md) | Multiply below 256 in three bases | Units-first outputs and running-sum scratchpads learn more readily | scratchpad 18/18 best ≥ .99 on 2000 pairs | partial: outgoing digit votes; no complement | weights |
+| [long-division-square-root](entries/long-division-square-root.md) | Binary division and integer square root | Shared compare/subtract substitute; trained comparator code unresolved | division trace PART 10/10 exact; answer TRAIN 10/10 ≥ .99 | partial: substitute can repair native errors | weights |
+| [gcd-euclid](entries/gcd-euclid.md) | Greatest common divisor by Euclid's algorithm | Three-rule router on frozen parts; distributed from-scratch circuits | PART 10/10 ≥ .99, 7/10 exact; TRAIN 5/10 exact | partial: PART complement on seven exact seeds | weights |
+| [quadratic-roots](entries/quadratic-roots.md) | Integer quadratic outputs | Supplied-program Boolean executor; end-to-end root training fails | executor PART 10/10 exact; TRAIN 0/10; parent final 0/10 | ✓: supplied executor only | weights |
+| [compose-arithmetic-registers](entries/compose-arithmetic-registers.md) | Execute arithmetic on named binary registers | Fixed-layout operand fetch; freely named register access fails | TRAIN 0/10 exact; PART 3/3 exact *(screen)* | partial: final-only complement; limited operation coverage | weights |
+| [integer-matvec](entries/integer-matvec.md) | Integer matrix-vector product | Dense carry/next-bit circuit; neither tested size transfers | scratchpad TRAIN 8/10 final exact on 2000 examples; answer-only 1/3 *(screen)* | partial: PART complement on two seeds; PART weights absent | weights |
 
-**Number formats**
+## Number formats
 
-| Entry | Task | Circuit found | Seeds | Closed form | Reproduce |
+| Entry | Task | Circuit found | Runs and criterion | Closed form | Reproduce |
 |---|---|---|---|---|---|
-| [base-conversion](entries/base-conversion.md) | hex, binary and decimal conversions, x = 0..255 | hex to binary: nibble one-hot lookup; carry-type conversions never learned | hex to binary TRAIN 1/10 to 7/10; carry-type 0 of 80 | partial: 36 of 40; joint scrub fails | code |
-| [output-order-base-conversion](entries/output-order-base-conversion.md) | 16-bit decimal ↔ binary, either digit order | most significant first is a threshold ladder; least significant first mostly fails | TRAIN decimal to binary 10/10; scratchpad PART 10/10 | partial: PART 12/12 snapshots; TRAIN template ✗ | weights |
+| [base-conversion](entries/base-conversion.md) | Convert hexadecimal, binary and decimal | Digit-code readout; echo and context affect native routing | hex-to-binary TRAIN 16/40 ≥ .99; decimal PART 6/10 ≥ .99; carry TRAIN 0/60 | partial: sufficient readout; digit-only routing fails | code |
+| [output-order-base-conversion](entries/output-order-base-conversion.md) | Sixteen-bit decimal and binary conversion | Magnitude comparisons learn more readily than remainders; rounded stops overstate exactness | TRAIN decimal-to-binary 1/7 exact on 6554 integers; protocol 3/7 | partial: stage substitution only; no complement | weights |
 
-**Automata and finite fields**
+## Automata and finite fields
 
-| Entry | Task | Circuit found | Seeds | Closed form | Reproduce |
+| Entry | Task | Circuit found | Runs and criterion | Closed form | Reproduce |
 |---|---|---|---|---|---|
-| [dfa-group-automata](entries/dfa-group-automata.md) | parity, Z3 or S3 automaton state | final S3 scratchpad uses a serial MLP0–5 chain and late transition tables | scratchpad TRAIN 10/10 exact per group; final S3 10/10 | partial: final S3 accepted 8/10 | weights |
-| [gf2-matrix-product](entries/gf2-matrix-product.md) | 3×3 bit matrix product over GF(2) | 3-bit XOR-AND lookup per step; from scratch same variables, different wiring | 10/10 in every cell | partial: PART 1.0 in 20/20 with controls | weights |
-| [gf2-elimination](entries/gf2-elimination.md) | solve A x = b over GF(2) | XOR-AND row update; three circuit types from scratch given enough matrices | PART 10/10; TRAIN answer only 10/10 at m = 4; m = 3 5/10 | partial: PART 20/20 snapshots | weights |
-| [linear-systems-finite-fields](entries/linear-systems-finite-fields.md) | solve A x = b over F₅ and F₇ | microsteps learned as a distributed lookup; fused update bypasses the subtractor | TRAIN microsteps, F₅, m = 2: 10/10; answer only 0/3 | partial: PART surrogate 1024/1024; complement fails | weights |
-| [crc-remainder](entries/crc-remainder.md) | polynomial remainder over GF(2), degree-4 divisor | distributed scratchpad step; readout table and discovered circuit pass separately | PART 10/10; TRAIN final 10/10 exact; screening TRAIN 3/3 | partial: readout and circuit, not upstream formula | weights |
-| [dyck-k-and-agreement](entries/dyck-k-and-agreement.md) | bracket recognition and main-verb number agreement | agreement copies first noun; bracket scratchpad learns a pop-pointer state circuit | answer-only agreement TRAIN 9/9 exact; bracket final TRAIN 10/10 exact, pointer substitution in 8/10 | partial: pop-pointer complement fails | weights |
-| [counter-languages](entries/counter-languages.md) | recognise three counting languages | ratio counts, violation flags, sum head and four-entry answer table | answer-only final TRAIN 10/10 exact; scratchpad one language 1/3 exact | partial: final complement passes 9/10 | weights |
-| [binding-coreference](entries/binding-coreference.md) | resolve reflexive and feature-marked pronoun references | one head attends to the referent; scratchpad SELF copies the state | answer-only TRAIN r1 3/30, r2 4/10 exact; no final *(screen)* | readout only: every type-level complement fails | weights |
+| [dfa-group-automata](entries/dfa-group-automata.md) | Track parity or group-automaton state | Serial state-update chain; answer-only routing differs | final scratchpad TRAIN 10/10 exact; none at 128 symbols; answer-only 2/10 ≥ .99 | partial: final checks cover 8/10 seeds | weights |
+| [gf2-matrix-product](entries/gf2-matrix-product.md) | Multiply binary matrices using XOR | Local Boolean lookup; trained operand retrieval one layer later | PART 10/10 exact; TRAIN 10/10 each format | partial: 20/20 PART snapshots; complement unreported | weights |
+| [gf2-elimination](entries/gf2-elimination.md) | Solve binary linear systems | Row-update table; final whole-network solutions form three families | TRAIN answer only 10/10 exact on 2000 systems | partial: local substitutions; complement untested | weights |
+| [linear-systems-finite-fields](entries/linear-systems-finite-fields.md) | Solve systems modulo five or seven | Reference-keyed late write substitutes; complement tests fail | TRAIN detailed trace 10/10 exact on 2000 systems | readout only: final TRAIN operand table | weights |
+| [crc-remainder](entries/crc-remainder.md) | Compute a binary polynomial remainder | Distributed shift-XOR step; readout and discovered circuit pass separately | TRAIN final 10/10 exact | partial: readout and circuit, not upstream formula | weights |
+| [dyck-k-and-agreement](entries/dyck-k-and-agreement.md) | Recognise nesting; choose verb number | Partial pre-opener-state pointer; first-noun agreement shortcut | bracket trace TRAIN 10/10 exact; agreement 9/9 exact | partial: pointer's partner head unidentified | weights |
+| [counter-languages](entries/counter-languages.md) | Recognise three counting languages | Ratio counts and prefix violations; one final circuit fails complement | TRAIN answer only 10/10 exact on 2048 words; scratchpad 1/3 | partial: 9/10 verified; seed 7 readout only | weights |
+| [binding-coreference](entries/binding-coreference.md) | Resolve reflexive and pronoun references | One head attends to referent; state-copy readout substitutes | TRAIN answer-only run 1 3/30, run 2 4/10 exact; no final *(screen)* | readout only: every type-level complement fails | weights |
 
-**Symbolic mathematics**
+## Symbolic mathematics
 
-| Entry | Task | Circuit found | Seeds | Closed form | Reproduce |
+| Entry | Task | Circuit found | Runs and criterion | Closed form | Reproduce |
 |---|---|---|---|---|---|
-| [polynomial-add-mul](entries/polynomial-add-mul.md) | integer polynomial addition and multiplication, degree 3 | addition learned in every network; multiplication never exact | addition 40/40; multiplication 0/3 *(screen)* | partial: PART addition 40/40 | weights |
-| [polynomial-differentiation](entries/polynomial-differentiation.md) | power-rule derivative, degree 3 | frozen fetch plus learned low-bit multiplier; from scratch the coefficient copy fails | PART 10/10, TRAIN 6/10 | partial: PART MLP2 = k·a, 40/40 snapshots | weights |
-| [polynomial-integration](entries/polynomial-integration.md) | integrate a polynomial, reduced fractions c/j | only the scratchpad transfers to withheld fractions; distributed code from scratch | TRAIN scratchpad 9/10 | partial: layer-0 pooling 20/20; no gcd form | weights |
-| [chain-rule-differentiation](entries/chain-rule-differentiation.md) | symbolic derivative of prefix expressions, depth ≤ 2 | token-pair front end from scratch; frozen-parser stage bypasses the parser | TRAIN 10/10 (scratchpad); PART 0/12 | partial: front end, 16/16 TRAIN nets | weights |
-| [symbolic-algebra-atoms](entries/symbolic-algebra-atoms.md) | collect like terms, expand, solve ax+b=cx+d | collecting learned at every rung; expanding and solving need a scratchpad | scratchpad 10/10 in three cells; answer only 0/3 | partial: PART collect, 13/13 seeds | weights |
-| [nested-expressions-mod-7](entries/nested-expressions-mod-7.md) | evaluate parenthesised expressions modulo 7 | frozen parser plus trained argmax residue table; from-scratch literal generalisation fails | PART final 10/10, 260/260 held-out, 16/16 each OOD set | ✓: PART arithmetic block only | weights |
-| [euler-decay-ode](entries/euler-decay-ode.md) | fixed-point explicit Euler for exponential decay | PART keeps the hand-built five-edge route but misses held-out first steps | PART final 0/10 exact (.963–.988); no solved cell | —: no solved cell | weights |
+| [polynomial-add-mul](entries/polynomial-add-mul.md) | Add and multiply integer polynomials | Sum/readout ratio; multiplication improves with frozen product gates | addition 40/40 exact; split-sum multiplication 3/3 ≥ .99 *(screen)* | partial: 40/40 PART snapshots; no complement | weights |
+| [polynomial-differentiation](entries/polynomial-differentiation.md) | Differentiate an integer polynomial | Local multiplier; final scratchpad failures fetch the wrong coefficient | PART 10/10 per format exact; TRAIN 6/10 final exact | partial: PART substitution; complement not tested | weights |
+| [polynomial-integration](entries/polynomial-integration.md) | Integrate a polynomial to reduced fractions | Distributed integration code; only scaffolded scratchpad transfers exactly to withheld fractions | TRAIN scratchpad 9/10 final exact | partial: pooling 20/20 snapshots; no gcd/division form | weights |
+| [chain-rule-differentiation](entries/chain-rule-differentiation.md) | Symbolic differentiation | Weighted prefix counts; complete derivative rewrite remains without compact form | TRAIN scratchpad 10/10 exact on 256 expressions; PART 0/12 | partial: front end only; no complement | weights |
+| [symbolic-algebra-atoms](entries/symbolic-algebra-atoms.md) | Collect, expand and solve symbolic expressions | Categorical expansion and solving codes need intermediate results | TRAIN expansion 10/10 best, 9/10 final exact; solving 10/10 | partial: PART collection 13/13 substitutions; no complement | weights |
+| [nested-expressions-mod-7](entries/nested-expressions-mod-7.md) | Evaluate parenthesised arithmetic modulo seven | Frozen parser with learned highest-score residue table | PART 10/10 exact; TRAIN 0/3 per format exact | ✓: arithmetic block on frozen parser | weights |
+| [euler-decay-ode](entries/euler-decay-ode.md) | Repeat a rounded integer decay step | Hand-built route retained; held-out update thresholds fail | PART 0/10 final exact on 480 cases; .963–.988 | —: no closed form tested | weights |
 
-**Search and games**
+## Search and games
 
-| Entry | Task | Circuit found | Seeds | Closed form | Reproduce |
+| Entry | Task | Circuit found | Runs and criterion | Closed form | Reproduce |
 |---|---|---|---|---|---|
-| [grid-bfs](entries/grid-bfs.md) | shortest-path distance on 6×6 mazes | distributed reached-set scratchpad; PART keeps HAND; answer only fails beyond distance 3 | scratchpad TRAIN 10/10 exact; PART 10/10 exact; answer only 0/3 ≥ .99 *(screen)* | partial: PART complement on three tested seeds | weights |
-| [dpll-search](entries/dpll-search.md) | DPLL on small 3-SAT | trained last MLP implements HAND's seven-field solver-state update; from scratch fails | scratchpad PART final 10/10 exact; TRAIN 0/3 *(screen)* | ✓: PART update and 36-edge circuit | weights |
-| [chess-krk](entries/chess-krk.md) | king and rook vs king, 8-rule policy | rule router at .993–.999, never exact; trained nets code kings as coordinates | PART 60/60 runs; TRAIN 7/7 at .990–.997, none exact | partial: PART phase 20/20, TRAIN source 7/7 | weights |
-| [chess-mate-in-one](entries/chess-mate-in-one.md) | first mate among up to 16 supplied checks | final MLP decodes the hand-built escape count; TRAIN not finished | 3/3 per format *(screen)* | partial: answer-only decoder, 442 scalars | weights |
-| [chess-attack-maps](entries/chess-attack-maps.md) | predict a colour's attacked-square map | hint scratchpad learns contextual ray pointers; answer-only nearest-piece read fails | recorded-test TRAIN C3 7/10 exact, 10/10 ≥ .998; C2 1/10 exact | ✗: substitution and complement fail | weights |
-| [chess-kbbk-mate](entries/chess-kbbk-mate.md) | king and two bishops versus king policy | distributed lookup and scratchpad candidate copy; no HAND reference | TRAIN 0/9 exact; three seeds per cell (width retry truncated) | —: no solved cell | weights |
+| [grid-bfs](entries/grid-bfs.md) | Shortest-path distance on grid mazes | Reached-set maps learned; from-scratch circuit remains distributed | TRAIN scratchpad reported 10/10 exact, teacher-forced; answer-only trials fail | partial: PART complement checked in three seeds | weights |
+| [dpll-search](entries/dpll-search.md) | Satisfiability of small Boolean formulas | Local state update inside frozen search; whole-network training fails | PART 10/10 exact on 192 traces; TRAIN 0/3 *(screen)* | ✓: local update only | weights |
+| [chess-krk](entries/chess-krk.md) | King-and-rook endgame policy imitation | Coordinate decoder; destination rule remains unexplained | final TRAIN 0/7 exact, 7/7 ≥ .99; three unfinished | partial: source 7/7; no complement | weights |
+| [chess-mate-in-one](entries/chess-mate-in-one.md) | First mate among supplied checks | Late count/winner lookup; answer-only complement fails | TRAIN count-writing 3/3 exact on 128 sequences *(screen)* | ✓: reference-keyed count-writing lookup only | weights |
+| [chess-attack-maps](entries/chess-attack-maps.md) | Mark squares attacked by one colour | Weighted token counts, late pointers and feed-forward ray steps | armies 7/10 recorded 1.0; sliders 1/10 | ✗: tested circuit formulas fail | weights |
+| [chess-kbbk-mate](entries/chess-kbbk-mate.md) | Predict king-and-two-bishops endgame policy moves | Distributed readout; scratchpad candidate generation fails | TRAIN 0/9 ≥ .99; best .627 on 2,048 rows | —: no closed form recovered | weights |
 
-**External model zoos**
+## External model zoos
 
-| Entry | Task | Circuit found | Seeds | Closed form | Reproduce |
+| Entry | Task | Circuit found | Networks and snapshot criterion | Closed form | Reproduce |
 |---|---|---|---|---|---|
-| [algzoo-2nd-argmax](entries/algzoo-2nd-argmax.md) | position of second largest Gaussian input | comparators, angle maps and clamp/fan forms; many longer networks unexplained | 280 frozen nets, five per cell; snapshot 132 proven / 33 read / 115 unexplained | partial: 117 resample, 15 optimal-only | weights |
-| [algzoo-median](entries/algzoo-median.md) | median of Gaussian scalar inputs | pair means, comparator insertion and inexact level/renewal forms; wide forms do not compress | 100 frozen nets, five per cell; snapshot 100 proven / 0 read / 0 unexplained | partial: 20 empty-complement exceptions; other flags | weights |
+| [algzoo-2nd-argmax](entries/algzoo-2nd-argmax.md) | Position of second-largest Gaussian input | Comparators, angle maps and clamp/fan forms; many longer networks unexplained | 280 frozen nets, five per cell; 132 proven / 33 read / 115 unexplained | partial: 117 resample; 15 optimal-only | weights |
+| [algzoo-median](entries/algzoo-median.md) | Median of Gaussian scalars | Pair means, comparator insertion and inexact recurrences; wide forms do not compress | 100 frozen nets, five per cell; 100 proven / 0 read / 0 unexplained | partial: 20 empty complements; other flags | weights |
 
-Both external-zoo rows are the published 2026-11-13 snapshots (second-argmax: Sol iteration 12; median: Sol iteration 22). Median includes 49 accurate nets and 51 inexact approximators, plus 20 empty-complement and 11 other flagged proofs. Its widest forms retain 274/1056 coefficients versus 288/1088 network parameters. No length-generalising median circuit is certified. See each entry's near-top Limitations before interpreting “proven”.
+Both rows retain the published 2026-11-13 snapshots: second-argmax ends at Sol iteration 12; median at iteration 22. “Proven” is a
+registered sampled-certificate category, not task accuracy or all-input equivalence. Median includes 49 accurate networks and
+51 inexact approximators, 20 empty-complement exceptions and 11 other flagged proofs. Its widest forms retain 274/1056 coefficients
+versus 288/1088 network parameters. No length-generalising median circuit is certified. Read each entry's near-top limitations
+before interpreting the registry counts; the source networks are externally hosted, not all re-uploaded in the atlas archive.

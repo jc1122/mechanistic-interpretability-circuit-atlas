@@ -3,8 +3,9 @@
 Plain-language meanings of the terms used in the entries. Technical definitions and the analysis code: [METHODS.md](METHODS.md).
 
 ## The three rungs
-- **HAND**: a hand-built network. Every weight is set by a formula, nothing is trained, and it is checked exact on every input in
-  range. It is a reference algorithm, not a claim about what training finds. ([METHODS §1](METHODS.md#1-three-rungs))
+- **HAND**: a hand-built network. Every weight is set by a formula and nothing is trained. It specifies a reference algorithm,
+  not a claim about what training finds. Each entry distinguishes a mathematical exactness argument, exhaustive finite testing,
+  sampled checks and any design or numerical failures; a sampled check does not establish every input in range. ([METHODS §1](METHODS.md#1-three-rungs))
 - **PART**: "partly trained". Hand-built parts are frozen and one stage (usually an MLP) is trained on top. Shows which hand-built
   parts training chooses to read. **PARTp**: the same, but the trained stage is an attention layer.
 - **TRAIN**: the whole network trained from scratch, with no hand-built help.
@@ -24,9 +25,10 @@ Plain-language meanings of the terms used in the entries. Technical definitions 
   decimal, decimal to binary), as opposed to hex to binary, where each output nibble depends on one input digit only.
 
 ## Counting results
-- **Seed**: one independent training run (its own initialisation, data order and split).
-- **k/n**: k of n seeds meet the criterion named in that cell, usually held-out **exact match** ≥ .99 (exact match: every output
-  token right).
+- **Seed**: the random-number initialisation identifying a training run. Different seeds vary initialisation and other random
+  choices; they do not guarantee different datasets or independent test sets. Read the entry's split and sampling procedure.
+- **k/n**: k of n counted units meet the named criterion. State the unit: seeds, snapshots, examples or circuit families. In a
+  solved-seed result this is usually held-out **exact match** ≥ .99 (exact match: every output token right).
 - **Screen / final**: a screen is a 3-seed (sometimes 5-seed) first pass; the final cell reruns the chosen setting with 10 seeds and
   is the one the entry is judged on.
 - **r1, r2**: the first run and the retry of a cell; every run is kept and reported.
@@ -37,6 +39,12 @@ Plain-language meanings of the terms used in the entries. Technical definitions 
 - **Best / final snapshot**: the saved network with the highest accuracy on the entry's selection set (the test set, or a separate
   monitor set where the entry says so) / the network at the end of training. A snapshot is one saved network of one seed.
 - **First exact step**: the first evaluation at which test exact match reached 1 (entries that use .99 instead say so).
+- **Seed count versus snapshot count**: independent training runs versus saved states of those runs. Best and final states of one
+  seed are two snapshots, not two independent successes. A circuit-family census counts a mechanism label, not necessarily a task solve.
+- **Exact versus threshold success**: an evaluation score of 1.0 differs from reaching a threshold such as ≥ .99. A rounded printed
+  1.0 does not by itself establish zero errors. Both the criterion and the evaluated example count belong beside the result.
+- **Sampled certificate**: a checked statement on the registered samples, distributions and interventions. It does not imply
+  all-input equivalence, exact task answers, compression or length generalisation. External-zoo registry labels use this scope.
 
 ## Verifying a circuit
 - **Closed form**: a short formula for what a trained part computes.
@@ -45,12 +53,25 @@ Plain-language meanings of the terms used in the entries. Technical definitions 
 - **Verified (atlas acceptance rule)**: a closed form is verified when substituting it for the trained part keeps exact match at no
   less than .90 of the network's own, and a resample ablation of everything outside the claimed circuit also keeps it at no less than
   .90 of the network's own. ([METHODS §9](METHODS.md#9-verification-and-the-acceptance-rule))
-- **Sufficient readout**: a substitution keeps accuracy, but the full bar (best and final snapshots, zero and shuffle controls) is
-  not passed. The formula is enough to read out the answer; it is not shown to be the mechanism.
+- **Sufficient readout**: a substitution keeps accuracy, but the audit's full bar, including complement resampling and required
+  snapshot/control coverage, is not passed. The formula is enough to read out the answer; it is not shown to be the mechanism.
+  When a requirement was not tested rather than failed, retain the entry's Partial status instead of inventing a rejection.
 - **Resample ablation of the complement (scrub)**: replace everything *outside* the claimed circuit with its values on other inputs.
   If accuracy survives, the rest of the network was not needed; a working substitution alone does not show that.
-- **Full bar**: the acceptance rule an audit applies to a closed form: it must keep exact match on fresh held-out inputs in both the
-  best and the final snapshot, be checked against matched native, zero and shuffle controls, and use fewer fitted numbers than the
+- **Reference-keyed substitution**: a replacement receives variables computed by a reference algorithm from the input rather
+  than recovered from the trained network's state. Success shows that the supplied-key readout works; it does not show that the
+  network internally computes those keys. A decoder of native state needs its own evidence.
+- **Necessity and specificity controls**: resampling the claimed circuit tests whether it is needed; resampling a random circuit
+  of the same size tests whether the selected circuit is special. Complement resampling tests whether the retained part is sufficient.
+  These are different tests. Zero or mean ablation does not substitute for a donor-resample result.
+- **Activation-level versus edge-level complement**: interventions replace component outputs or individual connections,
+  respectively. Passing at one granularity does not automatically establish the other.
+- **Empty complement**: the proposed circuit retains the entire tested computation, leaving nothing outside to resample.
+  A passing complement test is then uninformative about sparsity or removal of other computation.
+- **Optimal-ablation-only certificate**: a replacement passes an optimised intervention, but donor resampling fails or is not
+  established. Keep that registry flag; it is not a resample-verified circuit.
+- **Full bar**: the acceptance rule an audit applies to a closed form, including the substitution-and-complement rule above: it must
+  keep exact match on fresh held-out inputs in both the best and the final snapshot, be checked against matched native, zero and shuffle controls, and use fewer fitted numbers than the
   part it replaces. A closed form that passes substitution but not the full bar is a sufficient readout.
 - **Native / zero / shuffle controls**: exact match of the unmodified (native) network, set next to the same test with the replaced
   part set to zero and with shuffled values put in its place.
@@ -86,9 +107,9 @@ Plain-language meanings of the terms used in the entries. Technical definitions 
   evidence.
 - **HAND-PC R²** (`hand_pc_r2`): held-out R² with which a linear map from the trained network's residual predicts the top 8 principal
   components of HAND's residual at the same layer on the same inputs. Basis-free, so it is the comparison to read for TRAIN.
-- **Align fit** (`fit_r2`): R² of HAND's residual from the trained network's residual after the best rotation and scaling (orthogonal
-  Procrustes, with heads and neurons matched). Below 0 means no orthogonal map relates the two codes; the alignment is read only when its
-  function error (logit change of the aligned network) is near 0.
+- **Align fit** (`fit_r2`): R² of HAND's residual from the trained network's residual after a fitted rotation and scaling (orthogonal
+  Procrustes, with heads and neurons matched). Below 0 means the tested fit predicts worse than its baseline, not that every possible
+  encoding is absent. The alignment is read only when its function error (logit change of the aligned network) is near 0.
 - **RSA**: representational similarity analysis; the Spearman correlation between the pairwise-distance matrix of number embeddings and
   that of a reference geometry (a line, a circle, a helix, or HAND's embedding rows).
 - **Activation patching, drop and recovery**: a component's activation is swapped between a clean and a corrupted input. Drop =
@@ -119,6 +140,13 @@ Plain-language meanings of the terms used in the entries. Technical definitions 
   multiplication into addition of logs, so a clock over the logs computes products.
 - **DFT**: discrete Fourier transform; a projection of a weight vector onto cosine and sine modes of the digit value.
 - **Nyquist frequency**: the highest frequency a grid of integers can carry, one sign change per step: cos(πn) = (−1)^n.
+- **n90 (weight-norm concentration)**: the number of units needed to contain the stated share of the entry's weight-based
+  importance mass. The GCD diagnostic uses squared input/output-weight-norm products, not activation mass. Read the entry's norm,
+  sorting and threshold definition; this is not an output-energy score or a causal count of used neurons.
+- **SVD (singular value decomposition)**: a matrix factorisation into input directions, non-negative strengths and output
+  directions. A low-rank fit is a numerical description; intervention tests are still needed for a mechanism claim.
+- **Skill and fidelity gates**: task performance and agreement with the unmodified network, respectively. A formula can reproduce
+  an inaccurate network without solving the task. External-zoo entries state their separate gates and sample sizes.
 
 ## Hand-built machinery
 - **m2**: the frozen hand-built 6-layer transformer that reads prompts for the counting and modular-addition entries.
@@ -139,7 +167,24 @@ Plain-language meanings of the terms used in the entries. Technical definitions 
   operand by name.
 - **Chain head (lookahead head)**: an attention head that attends to the first lower column with a flag set (for example "this column decides the
   carry") and copies its value, which gives carry or borrow lookahead in constant depth.
-- **fp32 / TF32**: full / reduced-precision matrix multiplication; hand-built parts are only exact in fp32.
+- **fp32 / TF32**: full / reduced-precision matrix multiplication. The precision and numerical limits of a hand-built exactness
+  check are entry-specific; fp32 is not by itself a proof of exact execution.
+- **Register dereferencing**: fetching a value by its supplied storage name. Fetching a fixed position in a trace is a different,
+  easier rule and does not establish freely named-register access.
+- **Analogue carry calibration**: a readout uses a continuous carry-related value rather than an exact carry bit. Matching the
+  output with a replacement does not prove that its proposed upstream carry calculation occurs in the network.
+- **Shift/reduce parser**: reads the next token (shift) or combines completed subexpressions on a stack (reduce).
+- **Pre-opener pop pointer**: a bracket scratchpad's address of the stack state before the opening bracket matched by a close.
+  Recovering that address does not establish the rest of the stack-update circuit.
+- **Clamp / signed capped ramp**: a linear response between thresholds, constant beyond them; the signed version can have a
+  negative range. Entries give the thresholds and gains of the fitted form.
+- **Positive gauge**: reciprocal positive rescaling of an internal ReLU coordinate and its outgoing weights that preserves
+  the represented function. Different raw weights can therefore describe the same computation.
+- **Population fan**: several recurrent units respond over overlapping input ranges; their combined response implements a
+  piecewise function. A fitted fan does not automatically explain untested inputs.
+- **Renewal / own injection**: a recurrent state refreshes or receives an input-dependent contribution in the median entry's
+  proposed update. The exact recurrence and tested scope remain specific to that entry.
+- **PP attractor**: a noun inside a prepositional phrase that can distract a verb-number predictor from the sentence's subject.
 
 ## Standard machine-learning terms
 - **Logit**: a raw output score, one per possible answer; the answer with the largest logit is the prediction.
@@ -170,12 +215,30 @@ Plain-language meanings of the terms used in the entries. Technical definitions 
 - **Early stop / plateau stop**: ending a run once it reaches the target accuracy (early stop), or once test accuracy has not improved
   for a set number of steps (plateau stop).
 - **Chance level**: the accuracy of guessing, for example .2 with 5 equally likely answers.
-- **safetensors**: a file format for network weights that stores only numbers, so loading it cannot run code.
-- **sha256**: a fingerprint of a file; any change to the file changes it, so it confirms that a download is the archived file.
+- **safetensors**: a tensor-file format that does not require unpickling Python objects. Task-specific model code and its
+  dependencies are separate: the format does not establish that arbitrary loading code is safe, compatible or complete.
+- **sha256**: a cryptographic file fingerprint. Comparing it with a trusted recorded digest checks file integrity, not the
+  model's accuracy, mechanism, licence or the authenticity of an untrusted manifest.
 - **BOS token**: the "beginning of sequence" token placed before the prompt.
 - **One-shot prefix**: a single solved example placed before the question, showing the format of the answer.
-- **Tablebase**: an exhaustive table of optimal play for every position of a chess endgame.
+- **RNN (recurrent neural network)**: a model that updates a stored state for each successive input, reusing the same update weights.
+- **Transcoder**: a separate fitted model that predicts a component's outputs from its inputs. Good prediction is not by itself
+  evidence that the original component uses the same internal features.
+- **NAND**: a Boolean gate that is false only when both inputs are true; a network implementing NAND is not an end-to-end solver.
+- **Dyck language**: strings of correctly nested brackets; Dyck-1 uses one bracket type, while Dyck-2 and Dyck-3 use multiple types.
+  A prefix violation occurs when an initial part closes a bracket that is not open. Balanced totals alone do not rule it out.
+- **Binary polynomial / monic**: a polynomial with coefficients 0 or 1 and arithmetic modulo two / with leading coefficient 1.
+  Adding its coefficients uses XOR. The entry specifies whether bits are written highest or lowest power first.
+- **Coefficient convolution**: multiplying polynomials by summing coefficient products whose power indices add to each output power.
+- **DPLL**: a Boolean satisfiability procedure that combines forced assignments, guesses and backtracking. A learned local DPLL
+  update inside a frozen search controller is not a learned whole search algorithm.
+- **Chess ray / blocker**: a line along which a sliding piece attacks / the first occupied square that stops that line.
+- **Halfmove clock**: the number of plies since the last pawn move or capture; it affects draw rules. A ply is one player's move.
+- **Finite-grid 1-minimal keep-set**: a retained component set from which no single further removal preserves the stated finite-grid
+  test. It is not a proved globally smallest circuit or a guarantee outside that grid.
+- **Tablebase**: an exhaustive table of optimal play for the positions covered by a chess endgame table; the draw rules and clock
+  assumptions must also match the task.
 - **Unit propagation**: the DPLL step that assigns the variable forced by a clause with only one unassigned literal.
 - **DTM**: depth to mate, the number of moves to checkmate under optimal play.
-- **Distractor feature**: an input given to the trained stage that carries no information about the answer, to see whether training
-  ignores it.
+- **Distractor feature**: an additional input intended to test whether training ignores irrelevant information. Check the task:
+  some are inert constants and others correlate with operands. The label alone does not establish irrelevance or independence.

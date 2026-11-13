@@ -21,9 +21,14 @@ copied between sections. Worked examples: [count-mod-5](entries/count-mod-5.md),
 | Weights | [Hugging Face: <folder>](<Hugging Face folder URL>) |
 | Reproduce | <[Commands](#24-reproduction), run from `code/`> or <Not available yet: training code for this task is not yet in `code/`> |
 
+<Optional short reading route: "For a comparison, read <related entry>; to assess this claim, read <evidence subsection>."
+Use descriptive links, explain the connection and add no new result. Keep the infobox's limitations above this route.>
+
 ## 1. Task and data
 Prompt format, label rule, ranges, number of cells or pairs, train/test split and fractions, the correctness criterion (exact
-match of what), length or size tests. Output formats as a table with their letters (answer only, scratchpad variants).
+match of what), length or size tests. Explain the data generator or external source, sampling unit, duplicate handling, split unit,
+preprocessing and known selection/leakage limitations. State when a finite check is sampled rather than exhaustive. Output formats
+as a table with their letters (answer only, scratchpad variants). Mark unrecorded details as unavailable; never infer them.
 
 ## 2. Model
 ### 2.1 Architecture (or Frozen hand-built network)
@@ -32,16 +37,22 @@ Layers, d_model, heads (d_head), MLP width, activation, normalisation, positions
 What is frozen, what is trained (with shapes, e.g. W_in [256, 326]), and which inputs the trained part reads (index ranges as a table).
 ### 2.3 Training
 Optimiser, learning rate, weight decay, schedule, steps, batch, evaluation interval, precision, seeds, controls, hardware class (no
-host names). Several runs: a table with one row per run.
+host names). Several runs: a table with one row per run, including failed/unfinished runs and retries. Give recorded time and memory,
+selection rule for best snapshots, and any test-set reuse. Distinguish source-reported variability from missing uncertainty estimates;
+do not calculate new statistics for the article.
 ### 2.4 Reproduction
 Commands runnable from `code/` and the output keys that carry the headline numbers, or exactly: "Reproduce: not available yet:
 training code for this task is not yet in `code/`; the weights, held-out splits and recorded accuracies are on Hugging Face at <link>."
 ### 2.5 Archive
-The archived files (safetensors, config JSON, manifest with seed, rung, accuracy, sha256) and the round-trip check.
+The archived files (safetensors, config JSON, manifest with seed, rung, accuracy, sha256), exact public revision, and the date/scope
+of the recorded round-trip check. State missing seeds, rungs, snapshots, splits and diagnostics explicitly. Explain the task-specific
+loading layout; do not equate a safetensors file with a ready-to-load Transformers model or a resumable training state.
 
 ## 3. Hand-built solution
 The algorithm in words, then the weights as formulas per layer, head or neuron block, and the exactness check. Figure 1 (Mermaid
-flowchart of the hand-built circuit, trained part marked) with a numbered caption.
+flowchart of the hand-built circuit, trained part labelled as well as marked) with a numbered caption. Include `accTitle` and
+`accDescr`; any light node fill needs an explicit contrasting text colour. Keep the computation explained in prose and render in
+light and dark themes, following the recipe in STYLE.md.
 
 ## 4. What training finds
 Table of results per cell (seeds, solved k/n, best and final test accuracy, steps to criterion, length tests), then prose: learning
@@ -54,7 +65,9 @@ resample ablation of the complement and controls (or a statement that none was r
 training finds a different circuit, and the relation to the hand-built design and to published work (author-year citations).
 
 ## 6. Limitations and open questions
-What was not run, what the evidence cannot show, open questions.
+What was not run, what the evidence cannot show, open questions. State intended research uses and out-of-scope uses, important
+failure conditions and the limits of any transfer or human-language claim. Retain all failed tests and flags, including selection
+bias, reference-supplied inputs, teacher forcing, empty complements and missing controls when applicable.
 
 ## 7. Prediction record
 What the hand-built design and earlier entries predicted before training, and whether it held. If nothing was recorded in advance,
@@ -108,6 +121,9 @@ INDEX row:
 ```
 | [<entry>](entries/<entry>.md) | <task, at most 8 words> | <circuit found, at most 15 words> | <[RUNG ]k/n[ criterion][ (note)][; RUNG k/n][ *(screen)*]> | <✓|partial|readout only|✗|—>[: <at most 6 words>] | <code|weights> |
 ```
-Every number in both lines occurs in the entry; the closed-form word follows the entry's own audit caveat. Format letters stay out
+Every number in both lines occurs in the entry; the closed-form word follows the entry's own audit caveat. Name the criterion and
+counted unit where ambiguity is possible: a circuit-family census is not a solved-seed count, and snapshots are not independent runs.
+Keep failed tests, untested complements and limited seed/rung coverage in the summary. When adding or changing a result, also update
+[CHANGELOG](CHANGELOG); publication dates and DOIs require a reviewed release, not an editorial guess. Format letters stay out
 of both lines. Closed-form column symbols: verified = ✓, partial = partial, sufficient readout only = readout only, rejected = ✗,
 none = —. Reproduce column: code when the Reproduce row links a command, else weights (symbols are defined in the INDEX.md header).

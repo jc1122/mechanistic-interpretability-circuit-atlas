@@ -1,10 +1,16 @@
 # Mechanistic Interpretability Circuit Atlas
 
-This atlas asks what small neural networks compute, how we can check their circuits, and how those circuits compare with algorithms written by hand. Its 41 entries cover counting, arithmetic, number formats, automata, finite fields, symbolic mathematics, language, search, chess and external recurrent-model zoos. Each entry explains the task first, then gives the model, results, proposed circuit and tests that support or limit the explanation. Start with [count-mod-5](entries/count-mod-5.md), browse the [domain index](INDEX.md), or use the [glossary](GLOSSARY.md) when a term is unfamiliar.
+This atlas examines what small neural networks learn when they count brackets, multiply numbers or search a maze. It compares
+learned computations with algorithms written by hand. Its 41 entries explain the task, show the proposed circuit and separate what works
+from what remains unexplained. Start with [count-to-remainder lookup](entries/count-mod-5.md), browse the [domain index](INDEX.md),
+or read the [rounded-decay failure](entries/euler-decay-ode.md). The [glossary](GLOSSARY.md) explains the terminology.
 
 The transformer studies compare hand-built weights, one stage trained on frozen hand-built parts, and training from scratch. A closed form is an equation-based replacement for a trained computation. It counts as verified only when both substitution and resampling everything outside the claimed circuit retain at least .90 of the network's accuracy under the entry's stated criterion. Several updated entries now pass those tests at a stated scope; others remain partial or sufficient readouts. The external zoos have their own sampled-certificate accounting, with limitations near the top of each page; “proven” there does not mean an all-input theorem or perfect task performance.
 
-In the arithmetic comparisons, trained networks often compute the hand-built variables with different wiring: from-scratch networks share at most .15 of their top circuit edges with HAND (Jaccard), against .78–1.0 for networks trained on frozen parts. Some failed networks still carry the variables but fail to generalise. A scratchpad, which writes intermediate results before the answer, can shrink the hand-built circuit by about an order of magnitude (long division: 186 neurons without one, 14 with one). These are findings at the scopes linked below, not universal claims about every entry.
+For readers, each entry starts with a concrete task and a short evidence summary. For reusers, [five entries have CPU training code](code/README.md);
+others offer archived artifacts with entry-specific gaps. [Reuse and reproducibility](#reuse-and-reproducibility) explains the difference
+between rerunning training, rescoring a model and checking a file. This is a living research collection, not a peer-reviewed benchmark
+or a set of deployment-ready solvers.
 
 ## Introduction
 
@@ -15,7 +21,7 @@ algorithmic tasks are also where trained networks have been reverse-engineered i
 appears when a network groks modular addition ([Power et al., 2022](REFERENCES.md#power2022);
 [Nanda et al., 2023](REFERENCES.md#nanda2023)).
 
-The atlas turns the question around. For each task it writes the exact circuit by hand and then asks what gradient descent finds in
+The atlas turns the question around. For each transformer task it specifies a hand-built reference, with the exactness scope stated in the entry, and asks what gradient descent finds in
 its place: whether it reads the hand-built parts when they are frozen and available, whether it rediscovers the same algorithm from
 scratch, and how often each solution appears over seeds. Because every hand-built variable is known exactly, a trained network can be
 probed, patched and ablated against a reference instead of against a guess.
@@ -28,37 +34,54 @@ until the rest of the network has also been shown to be unnecessary ([METHODS §
 
 ## Main findings
 
-Swapping parts one at a time does not verify a circuit. Earlier single-component substitutions kept accuracy while joint scrubs failed in five tasks; those failed tests remain failed even where a separately tested successor form now passes: [group automata](entries/dfa-group-automata.md) (71.42% and 1.69% on two seeds),
-[base conversion](entries/base-conversion.md) (.556 / .923), [long division](entries/long-division-square-root.md) (2.9% and 1.8%),
-[subtraction](entries/subtraction.md) (.938 / .933) and [decimal and hexadecimal addition](entries/decimal-hex-addition.md)
-(.74–.82). A working replacement is therefore reported as a sufficient readout and not as a verified mechanism.
+Swapping parts one at a time does not verify a circuit. Earlier single-component substitutions kept accuracy while joint scrubs,
+which replace components with states from other inputs matching the proposed variables, failed in five tasks. Those tests remain
+failed even where a separately tested successor form now passes. A working replacement alone supports a readout; verification also
+requires the complement test and the entry's stated controls.
 
-Trained networks compute the hand-built variables with different wiring. In [binary addition](entries/binary-addition.md) and
-[decimal and hexadecimal addition](entries/decimal-hex-addition.md), networks trained from scratch share at most .15 of their top circuit
-edges with the hand-built network (Jaccard), while networks trained on frozen hand-built parts share .78–1.0
-([SURPRISES](SURPRISES.md#same-variables-different-wiring)).
+| Earlier tested hypothesis | Recorded whole-output exact-match score and scope |
+|---|---|
+| [Group automata](entries/dfa-group-automata.md#53-earlier-circuit-probes) | 71.42% in seed 4 and 1.69% in seed 0; means of 3 donor draws, with native and joint substitution each 100%. |
+| [Base conversion](entries/base-conversion.md#5-mechanism-and-verification) | .556 / .923 in seeds 1 / 4 under the selected-nibble-only joint scrub. |
+| [Long division](entries/long-division-square-root.md#5-mechanism-and-verification) | 2.9% and 1.8% in answer-only TRAIN seeds 0 and 3 under the whole-role scrub. |
+| [Subtraction](entries/subtraction.md#5-mechanism-and-verification) | .938 / .933 in binary borrow-token TRAIN seeds 0 / 3, below the .99 control bar. |
+| [Decimal addition](entries/decimal-hex-addition.md#53-why-the-train-algorithm-remains-unresolved) | .74–.80 in seed 1 and .81–.82 in seed 2. The earlier overview's .74–.82 combined display is historical, not a newly pooled range. |
 
-Failed networks still use the right variables; they fail to generalise. Swapping a hand-built variable between two inputs flips the
-answer in failed networks about as often as in solved ones, in [binary addition](entries/binary-addition.md),
+These are selected-seed audits, not failed-seed frequencies. The cited scrub paragraphs do not give their example counts; those
+counts are unavailable for this overview and must not be borrowed from a neighbouring substitution batch.
+
+Trained networks can use the hand-built variables with different wiring. In [binary addition](entries/binary-addition.md) and
+[decimal and hexadecimal addition](entries/decimal-hex-addition.md), the earlier overview summarised edge overlap with HAND
+(Jaccard) as at most .15 for training from scratch and .78–1.0 for training on frozen parts
+([historical summary](SURPRISES.md#same-variables-different-wiring)). These are attribution screens, not causal circuit matches;
+heads were not aligned in TRAIN. Each entry's Appendix B gives the cell-specific trusted-network counts and the attribution
+exactness criterion, spearman_exact ≥ .8. No common pooled seed denominator is established by these summary ranges.
+
+Some failed networks still use the tested hand-built variables. Swapping a hand-built variable between two inputs flips the
+answer in the examined failed networks about as often as in solved ones, in [binary addition](entries/binary-addition.md),
 [decimal and hexadecimal addition](entries/decimal-hex-addition.md) and
 [long division and square root](entries/long-division-square-root.md).
 
-A scratchpad shrinks the hand-built circuit by about an order of magnitude (Figure 1). Long division needs 186 neurons when the network
-writes the answer only and 14 when it writes the steps, and long-hand square root 46 against 20. With a scratchpad of running sums, the
+A scratchpad can shrink a hand-built circuit (Figure 1). In the 8-bit designs, long division needs 186 neurons when the network
+writes the answer only and 14 when it writes the steps, and long-hand square root 46 against 20. These are counts for named
+hand-built designs, not seed averages or a common order-of-magnitude reduction. With a scratchpad of running sums, the
 stage trained on frozen parts in [binary multiplication](entries/multiplication.md) reuses the adder's column-sum lookup in 10/10 seeds
-(a sufficient readout, substitution 1.00), while answer-only multiplication never trains.
+(a sufficient readout, substitution 1.00), while answer-only multiplication failed in the tested runs. This does not rule out other
+training settings, and the running-sum readout is not a verified whole-network mechanism.
 
 ![Hand-built circuit size, answer only vs with a scratchpad: long division 186 vs 14 neurons, square root 46 vs 20 neurons, 6-bit multiplication 14 vs 7 heads](figures/scratchpad_size.svg)
 
-*Figure 1. Size of the hand-built circuits with the answer only and with a scratchpad: long division 186 against 14 neurons, long-hand
-square root 46 against 20 neurons, 6-bit binary multiplication 14 against 7 heads.*
+*Figure 1. Size of the hand-built circuits with the answer only and with a scratchpad: 8-bit long division 186 against 14 neurons,
+8-bit long-hand square root 46 against 20 neurons, 6-bit binary multiplication 14 against 7 heads. Each pair compares the named
+hand-built designs, not independent training seeds; neuron and head counts are different units.*
 
 These and other results that went against expectation are collected, each marked verified or preliminary, in
 [SURPRISES.md](SURPRISES.md).
 
 ## How to read the atlas
 
-Each task is studied at three rungs. HAND is the hand-built network, exact on every input in range; PART trains one stage on top of
+Most transformer tasks compare three rungs; entries state missing rungs and exceptions. HAND is the formula-set reference network:
+read its entry for the exactness argument, exhaustive or sampled checks and any numerical/design failure. PART trains one stage on
 frozen hand-built parts; TRAIN trains the whole network from scratch. A seed count such as 6/10 means that 6 of 10 seeds meet the
 cell's criterion, usually held-out exact match ≥ .99. Each entry is a short article with a lede, a fact table, numbered sections, a
 figure of the hand-built circuit and an appendix of weights and diagnostics; [METHODS.md](METHODS.md#reading-an-entry) describes the
@@ -66,65 +89,97 @@ layout, [GLOSSARY.md](GLOSSARY.md) defines the terms and [STYLE.md](STYLE.md) se
 read [count-mod-5](entries/count-mod-5.md), a complete and reproducible entry, and then scan [INDEX.md](INDEX.md), which gives one row
 per entry with its circuit, seed counts and closed-form status.
 
+## Reader routes
+
+| To understand | Start here | Keep in view |
+|---|---|---|
+| A small learned computation | [Count modulo five](entries/count-mod-5.md) | A correct replacement is not a complement test. |
+| What a scaffold contributes | [Polynomial integration](entries/polynomial-integration.md) | Frozen routing is different from learning the whole algorithm. |
+| A negative result | [Rounded decay](entries/euler-decay-ode.md) | Test-selected best snapshots need not stay exact. |
+| External recurrent models | [Second-largest position](entries/algzoo-2nd-argmax.md) | Sampled certificates and their flags are not all-input theorems. |
+| Reuse of a model or result | [Reuse guidance](#reuse-and-reproducibility) | Record entry, model and exact archive revision. |
+
 ## Entries
 
-Main result per entry; the full row is in [INDEX.md](INDEX.md). ⟳ marks entries that rerun from [code/](code/README.md); the others
-publish their networks, test sets and recorded accuracies on [Hugging Face](https://huggingface.co/jc1122/circuit-atlas-nets).
+Main result per entry; the criterion, counted unit and mechanism status are in [INDEX.md](INDEX.md). ⟳ means CPU code is available
+in [code/](code/README.md), not that this editorial revision independently reran it. Other entries link
+[archived networks](https://huggingface.co/jc1122/circuit-atlas-nets) and recorded checks, sometimes with missing rungs, seeds or
+splits. Read each entry's archive subsection before reuse.
 
-**Counting and modular arithmetic**
-- [modular-addition-mlp](entries/modular-addition-mlp.md) ⟳: Fourier clock circuit in 10/10 seeds; test accuracy stays below .99
-- [count-mod-5](entries/count-mod-5.md) ⟳: flat lookup from the count to its residue in 30/30
-- [compare-counts](entries/compare-counts.md) ⟳: linear comparator with a tilted slope; ties are memorised, never generalised
-- [open-bracket-count](entries/open-bracket-count.md) ⟳: low-frequency cosine sum plus a parity channel; memorises below 80% data
-- [modular-arithmetic-mod-97](entries/modular-arithmetic-mod-97.md): token multiplication uses discrete-log circles; digit formats form no circles
+### Counting and modular arithmetic
+- [modular-addition-mlp](entries/modular-addition-mlp.md) ⟳: Fourier clock learned; 0/10 seeds reach 99% held-out accuracy; formula remains partial
+- [count-mod-5](entries/count-mod-5.md) ⟳: count-to-remainder lookup; 30/30 seeds reached held-out accuracy ≥ .99
+- [compare-counts](entries/compare-counts.md) ⟳: approximate comparison; every tested network fails on unseen ties
+- [open-bracket-count](entries/open-bracket-count.md) ⟳: broad cosines plus odd/even features; 0/10 seeds reached .90 held-out accuracy
+- [modular-arithmetic-mod-97](entries/modular-arithmetic-mod-97.md): discrete-log circles; output surrogate uses externally supplied logs, leaving the internal mechanism unresolved
 
-**Arithmetic**
-- [decimal-hex-addition](entries/decimal-hex-addition.md): column-sum lookup; trained networks never form the carry-lookahead head
-- [binary-addition](entries/binary-addition.md): lookup on a + b + carry; position inputs prevent length generalisation until masked
-- [router-addition](entries/router-addition.md): one shared column step; longer inputs work only without position input
-- [subtraction](entries/subtraction.md): per-column lookup on a − b − borrow; no length generalisation from scratch
-- [multiplication](entries/multiplication.md): the scratchpad step reuses the adder's lookup; answer only never trains
-- [multiplication-base-order](entries/multiplication-base-order.md): least significant digit first is learnable, most significant first rarely; a scratchpad solves both
-- [long-division-square-root](entries/long-division-square-root.md): one shared compare-and-subtract step; answer only needs 16–90x more data
-- [gcd-euclid](entries/gcd-euclid.md): three-rule router on frozen Euclid parts; from scratch, seed-specific distributed circuits
-- [quadratic-roots](entries/quadratic-roots.md): executor PART reduces to one verified AND neuron; from-scratch and parent formats fail
-- [compose-arithmetic-registers](entries/compose-arithmetic-registers.md): compositions learned without register lookup; the bare step fails
-- [integer-matvec](entries/integer-matvec.md): dense last-layer carry circuit reaches 8/10 exact with scratchpad; answer only needs longer training
+### Arithmetic
+- [decimal-hex-addition](entries/decimal-hex-addition.md): column-total readouts learned; from-scratch carry mechanism remains unresolved
+- [binary-addition](entries/binary-addition.md): column-sum stage transfers when position is masked; from-scratch networks fail longer inputs
+- [router-addition](entries/router-addition.md): shared column readout; masking improves length transfer, while native routing remains length-sensitive
+- [subtraction](entries/subtraction.md): difference tables reproduce local answers; the proposed whole mechanism fails resampling
+- [multiplication](entries/multiplication.md): running-sum readout resembles an adder; full mechanism remains unverified
+- [multiplication-base-order](entries/multiplication-base-order.md): units-first products train more readily; running-sum scratchpads solve the screened fixed range
+- [long-division-square-root](entries/long-division-square-root.md): shared compare-and-subtract readout; larger-data answer-only runs generalise
+- [gcd-euclid](entries/gcd-euclid.md): three-rule router on frozen parts; from-scratch circuits remain distributed and without accepted formulas
+- [quadratic-roots](entries/quadratic-roots.md): verified Boolean executor uses supplied register fetches; end-to-end root learning fails
+- [compose-arithmetic-registers](entries/compose-arithmetic-registers.md): fixed-layout arithmetic learned; fetching freely named registers remains unsolved
+- [integer-matvec](entries/integer-matvec.md): dense scratchpad circuit; 8/10 final seeds exact; answer-only evidence remains screening
 
-**Number formats**
-- [base-conversion](entries/base-conversion.md) ⟳: hex to binary groks as a nibble lookup; carry-type conversions are never learned
-- [output-order-base-conversion](entries/output-order-base-conversion.md): most significant first is a threshold ladder; least significant first mostly fails
+### Number formats
+- [base-conversion](entries/base-conversion.md) ⟳: digit-code readout; conversions combining digits failed from scratch in these runs
+- [output-order-base-conversion](entries/output-order-base-conversion.md): magnitude comparisons train more readily than remainders; rounded stop labels overstate exact success
 
-**Automata and finite fields**
-- [dfa-group-automata](entries/dfa-group-automata.md): serial scratchpad MLP chain; answer-only S3 uses prefix doubling on frozen parts
-- [gf2-matrix-product](entries/gf2-matrix-product.md): XOR-AND lookup per step; from scratch, the same variables with different wiring
-- [gf2-elimination](entries/gf2-elimination.md): XOR-AND row update; from scratch, three circuit types given enough matrices
-- [linear-systems-finite-fields](entries/linear-systems-finite-fields.md): microstep scratchpad learned from scratch; fused updates bypass the hand-built subtractor
-- [crc-remainder](entries/crc-remainder.md): distributed shift-XOR step; readout and circuit checks pass, without an upstream formula
-- [dyck-k-and-agreement](entries/dyck-k-and-agreement.md): agreement copies the first noun; bracket scratchpads learn a pop-pointer circuit with failed complement checks
-- [counter-languages](entries/counter-languages.md): ratio counts and summed violations solve answer-only tasks; scratchpads solve only one language
-- [binding-coreference](entries/binding-coreference.md): one head attends to the referent; substitution works but every type-level complement fails
+### Automata and finite fields
+- [dfa-group-automata](entries/dfa-group-automata.md): serial state-update chain; final substitution and complement checks cover eight seeds, leaving two untested
+- [gf2-matrix-product](entries/gf2-matrix-product.md): running-parity lookup; training moves operand retrieval one layer later; complement remains unreported
+- [gf2-elimination](entries/gf2-elimination.md): binary row updates are relearned; diverse matrices yield three fixed-size circuit families
+- [linear-systems-finite-fields](entries/linear-systems-finite-fields.md): microstep traces train; reference-keyed readout substitutes, while whole-circuit verification fails
+- [crc-remainder](entries/crc-remainder.md): local bit-update readout and circuit pass checks; upstream formula and longer-input success remain absent
+- [dyck-k-and-agreement](entries/dyck-k-and-agreement.md): bracket-state pointer needs an unidentified partner; agreement exploits first-noun placement
+- [counter-languages](entries/counter-languages.md): ratio counts and prefix violations solve membership; one final circuit fails verification
+- [binding-coreference](entries/binding-coreference.md): one head attends to the referent; every tested type-level circuit fails complement resampling
 
-**Symbolic mathematics**
-- [polynomial-add-mul](entries/polynomial-add-mul.md): addition learned in 40/40 networks; multiplication never reaches exact match
-- [polynomial-differentiation](entries/polynomial-differentiation.md): low-bit multiplier learned; the unseen multiplier bit never is
-- [polynomial-integration](entries/polynomial-integration.md): only the scratchpad transfers to withheld fractions
-- [chain-rule-differentiation](entries/chain-rule-differentiation.md): solved from scratch with a token-pair front end; frozen-parser setup bypasses the parser
-- [symbolic-algebra-atoms](entries/symbolic-algebra-atoms.md): collecting terms learned at every rung; expanding and solving need a scratchpad
-- [nested-expressions-mod-7](entries/nested-expressions-mod-7.md): verified residue table on a frozen parser; from-scratch nets fail held-out literals
-- [euler-decay-ode](entries/euler-decay-ode.md): frozen-route update misses held-out first steps; from-scratch nets memorise states, with no solved cell
+### Symbolic mathematics
+- [polynomial-add-mul](entries/polynomial-add-mul.md): coefficient sums learned; multiplication improves with frozen product gates, without exact success
+- [polynomial-differentiation](entries/polynomial-differentiation.md): local multiplier learned; final scratchpad failures copy the wrong coefficient
+- [polynomial-integration](entries/polynomial-integration.md): distributed integration code; only frozen-scaffold scratchpad is exact on withheld fractions
+- [chain-rule-differentiation](entries/chain-rule-differentiation.md): weighted token counts replace the front end; the complete rewrite remains unexplained
+- [symbolic-algebra-atoms](entries/symbolic-algebra-atoms.md): categorical expansion and solving codes need intermediate results; expansion loses one exact final seed
+- [nested-expressions-mod-7](entries/nested-expressions-mod-7.md): frozen-parser arithmetic verified on sampled checks; from-scratch networks usually fail held-out singletons
+- [euler-decay-ode](entries/euler-decay-ode.md): rounded decay unsolved; test-selected exact snapshots do not stay exact
 
-**Search and games**
-- [grid-bfs](entries/grid-bfs.md): distributed reached-set scratchpad solves 10/10; answer only fails beyond distance 3
-- [dpll-search](entries/dpll-search.md): verified local update completes the frozen solver in 10/10; from-scratch state updates fail
-- [chess-krk](entries/chess-krk.md): rule router at .993–.999, never exact; trained networks code kings as coordinates
-- [chess-mate-in-one](entries/chess-mate-in-one.md): the trained final MLP decodes the hand-built escape count
-- [chess-attack-maps](entries/chess-attack-maps.md): hint scratchpad learns ray pointers, reaching 7/10 recorded-test exact; tested answer-only networks fail
-- [chess-kbbk-mate](entries/chess-kbbk-mate.md): distributed lookup and candidate copying; 0/9 seeds solve held-out moves
+### Search and games
+- [grid-bfs](entries/grid-bfs.md): reached-set maps learned from scratch; answer-only failures have no verified depth explanation
+- [dpll-search](entries/dpll-search.md): a verified local update completes frozen search; whole-network training fails
+- [chess-krk](entries/chess-krk.md): coordinate decoder; 7/7 completed seeds pass .99, none exact; three launches remain unfinished
+- [chess-mate-in-one](entries/chess-mate-in-one.md): a late count lookup passes screening checks; long-list transfer and final replication remain incomplete
+- [chess-attack-maps](entries/chess-attack-maps.md): writing each ray helps attack-map learning; no tested circuit formula accepted
+- [chess-kbbk-mate](entries/chess-kbbk-mate.md): no solved network; candidate-list scratchpads copy a candidate whose generation remains inaccurate
 
-**External model zoos**
-- [algzoo-2nd-argmax](entries/algzoo-2nd-argmax.md): sampled forms cover 132 networks, including optimal-only flags; many longer networks remain unexplained
-- [algzoo-median](entries/algzoo-median.md): sampled forms cover 100 nets, with empty-complement exceptions, inexact medians and uncompressed forms
+### External model zoos
+- [algzoo-2nd-argmax](entries/algzoo-2nd-argmax.md): short-list comparison and angle forms; many longer networks remain unexplained; optimal-only certificates stay flagged
+- [algzoo-median](entries/algzoo-median.md): sampled formulas explain median estimates; empty complements and near-network-sized forms remain flagged
+
+## Reuse and reproducibility
+
+The atlas adapts [NeurIPS reporting guidance](https://neurips.cc/public/guides/PaperChecklist) (conference checklist),
+[model cards](REFERENCES.md#mitchell2019) (conference paper) and [datasheets](REFERENCES.md#gebru2021) (journal article).
+These are reporting goals, not claims of independent replication or formal compliance.
+
+| Reuse route | What is available | What it does not establish |
+|---|---|---|
+| Retrain | Five entries have CPU commands, dependencies and output descriptions in [code/](code/README.md). | A short smoke run does not reproduce the full seed study or every later diagnostic. |
+| Rescore an archived model | Each entry links its task archive and states the published scope. [Training snapshots](https://huggingface.co/jc1122/circuit-atlas-snapshots) are a separate archive. | A folder's existence does not establish complete seed/split coverage. Task-specific tensors are not generic Transformers checkpoints. |
+| Check integrity | Manifests record identifiers and hashes; entries describe recorded round trips. | Matching hashes do not establish task accuracy, a mechanism or independent replication. |
+| Extend a study | Use the task/data/model description and limitations in the entry, then record any changed conditions. | A sampled check does not prove an all-input algorithm or justify pooling incompatible cohorts. |
+
+Record the atlas commit, entry date, exact archive revision, task/cell, seed and best/final or step identifier. Check the data split,
+evaluation criterion, precision and loading layout before comparing results. Teacher-forced token scores do not establish autonomous
+rollout. Synthetic templates do not establish natural-language competence. Not all training code, controls, seeds or snapshots are
+public; unavailable items must remain explicit rather than being inferred from another task. The [writing standard](STYLE.md#publication-and-reuse)
+sets the reporting checks; material corrections belong in [CHANGELOG](CHANGELOG). Report a broken link or claim with the entry,
+revision and relevant public evidence through the repository's issue tracker; never include private data or credentials.
 
 ## Quick start
 
@@ -144,5 +199,11 @@ The earlier UX snapshot covered 31 transformer tasks, with three called solved, 
 
 ## Cite and license
 
-Cite the atlas via [CITATION.cff](CITATION.cff) (GitHub: "Cite this repository"). Text and networks are released under
-[CC BY 4.0](LICENSE) and the code in `code/` under [MIT](code/LICENSE).
+Cite the atlas via [CITATION.cff](CITATION.cff) (GitHub: "Cite this repository"), and name the task entry and exact revisions used.
+Do not invent a paper citation or DOI. The citation file's release metadata is not a last-run date for every entry; publication
+changes are tracked in [CHANGELOG](CHANGELOG).
+
+Original atlas text, diagrams and first-party networks use [CC BY 4.0](LICENSE); the code in `code/` uses [MIT](code/LICENSE).
+For CC BY reuse, give credit, link the [licence](https://creativecommons.org/licenses/by/4.0/) (licence summary) and indicate changes.
+Third-party models, code and other linked material retain their own licences and attribution requirements; the atlas does not
+relicense them. Keep the original authors, public source links and source types when adapting an entry.

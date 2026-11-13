@@ -1,0 +1,51 @@
+# Changelog
+
+This is a living atlas. This file records reader-visible additions and corrections, not every commit or training run. An editorial
+change does not imply a new experiment. The dated run and audit records in each entry remain authoritative for scientific scope.
+Unreleased changes are not a tagged release or a DOI deposit.
+
+## Unreleased
+
+### Changed
+
+- The shared catalogue covers the current entries and distinguishes seeds, best/final snapshots, screening cells and sampled
+  external-zoo certificates. Task performance and mechanism acceptance are separate claims.
+- Reader routes, reuse instructions, archive-coverage caveats and licence/attribution scope are explicit in README and INDEX.
+- STYLE and TEMPLATE require model/data documentation, bounded negative-result reporting, accessible figure equivalents and
+  a distinction between retraining, archive rescoring and file-integrity checks.
+- Citation metadata describes both transformer studies and external recurrent-model snapshots. Cite the actual entry and revisions
+  used; no new version number, release date or DOI is assigned here.
+- REFERENCES reconciles inherited task citations with source types, identifier anchors and entry links. Metadata checks are
+  distinguished from full-text reading; incomplete historical attributions and limited reading scope remain explicit.
+- Mermaid guidance now requires accessible titles/descriptions, explicit text colour for light-filled nodes and light/dark renders.
+  The template permits a short onward-reading route; small plot labels remain a rendering issue, not solved by alt text alone.
+
+### Corrected
+
+- [Modular addition](entries/modular-addition-mlp.md): the earlier Partly solved task label conflated a clock-family observation with
+  held-out success. The headline cell is Unsolved at its stated criterion; the separate formula status remains Partial.
+- [Open-bracket counting](entries/open-bracket-count.md): the cosine-family census is not a held-out success rate; no seed reaches
+  the stated held-out criterion. Its training-inclusive approximation is not a verified mechanism.
+- [Chess policy](entries/chess-krk.md): reaching a threshold accuracy is distinct from exact policy matching; unfinished seeds remain
+  unfinished. [Move selection](entries/chess-mate-in-one.md) now distinguishes completed screening from missing final replication.
+- [Output-order conversion](entries/output-order-base-conversion.md): rounded protocol stop labels do not establish exact test success.
+- [Finite-field systems](entries/linear-systems-finite-fields.md): reference-keyed readout substitution does not establish the trained
+  network's internal operand computation; whole-circuit complement failures remain.
+- [Polynomial multiplication](entries/polynomial-add-mul.md): frozen-product-gate screening improves accuracy without establishing
+  exact multiplication or a verified whole-network algorithm. Local substitution counts refer to snapshots where stated.
+- README's earlier generic all-input HAND guarantee now defers to each design's exactness scope and failures. Its circuit-size
+  comparison names the designs and units rather than claiming one common order-of-magnitude reduction. Historical scrub scores
+  and edge-overlap ranges remain labelled, with selected-seed, cohort and missing-example-count caveats.
+- [Arithmetic](INDEX.md#arithmetic) summaries retain failed mechanism tests and distinguish limited local forms from whole-network
+  explanations. [External-zoo](INDEX.md#external-model-zoos) summaries retain optimal-only, empty-complement and other flags;
+  sampled certificates are not all-input theorems or task-accuracy guarantees.
+
+## Maintenance policy
+
+On publication, move reviewed changes to a dated release section and link the exact atlas and archive revisions. Record substantive
+changes to findings as corrections, with the earlier claim, the reason and the affected entry. Do not erase superseded failures or
+rewrite them as passes. Use a new archived version when released files change; a metadata-only correction is different.
+
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) (community guidance). Archival versioning follows
+[Zenodo's version guidance](https://help.zenodo.org/docs/deposit/manage-versions/) (repository documentation). This policy is not a
+claim that a Zenodo record or tagged release already exists.
