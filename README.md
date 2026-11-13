@@ -74,6 +74,9 @@ Full table with seed counts and closed-form results: [INDEX.md](INDEX.md). Readi
 - [chess-attack-maps](entries/chess-attack-maps.md): a hint scratchpad makes attack maps learnable (C3 7/10 exact); answer only never
 - [chess-kbbk-mate](entries/chess-kbbk-mate.md): unsolved (0/9); trained nets learn a distributed lookup with no distance-to-mate code
 
+**External model zoos**
+- [algzoo-2nd-argmax](entries/algzoo-2nd-argmax.md): 132 of 280 ARC AlgZoo RNNs proven in closed form (2026-11-13 snapshot)
+
 ## Quick start
 
 ```
