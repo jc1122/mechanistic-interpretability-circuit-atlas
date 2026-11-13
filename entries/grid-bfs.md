@@ -1,122 +1,58 @@
-# Grid BFS: a scratchpad of reached-set maps is learned from scratch (3/3 with 3× data); answer-only fails with error growing with distance; the frozen-parts update MLP is a three-input hinge
-
-**Task.** Four-neighbour 6×6 mazes, ≤ 14 walls, connected free start and target, shortest-path distance 0–10. Answer-only A: one
-distance token. Scratchpad T: after each BFS step the reached-set map (every square: unreached / reached / wall), a CHECK of the target,
-then the next step index or END. Square tokens encode coordinates. Split by wall-mask hash 80/10/10; fresh mazes every batch. Test: 16
-mazes per distance (176 per seed); exact = whole teacher-forced output correct (T includes END).
-**Status.** 2026-11-07. HAND T (3 layers) and A (38 layers); PART T 3 seeds; TRAIN A/T 3 seeds each at r1 (30k) and r2 (90k, 3× fresh
-data). Open: **the ten-seed final cell (T PART + T TRAIN) has not run**; the TRAIN A rung is unsolved (0/3 after the data retry; the
-depth-8 / distance-curriculum retry is proposed, not run); TRAIN A r2 diagnostics and 7 of the 12 r2 diagnostics have not landed; greedy
-rollout and OOD (distance 11–20, 8×8) are unmeasured for TRAIN; no substitution test on the solved r2 TRAIN nets; public code pending.
-
+# Grid BFS: a scratchpad of reached-set maps is learned from scratch (10/10) by a distributed circuit; frozen-parts PART recovers the hand-built circuit (10/10) with a 9-number update
+**Task.** Four-neighbour 6x6 mazes, <= 14 walls, connected free endpoints, shortest-path distance 0-10. A (answer-only): one distance token. T (scratchpad): after each BFS step the reached-set map (each square unreached / reached / wall), a CHECK of the target, then the next step index or END. Split by wall-mask hash 80/10/10; fresh mazes every batch; test 16 mazes per distance (176 per seed); exact = whole teacher-forced output.
+**Status.** 2026-11-12. Final round: T PART and T TRAIN, 10 seeds each, wd .1, 90k budget. Screening: r1 (30k) and r2 (90k, 3x data), 3 seeds. A TRAIN unsolved after r1-r3 and a depth trial (0/10 at 8 and 4 layers).
 ## Summary
-With 3× fresh data the 4-layer net learns the T scratchpad from scratch on 3/3 seeds (grok 63.5–72k steps); the answer-only format
-fails at matched size and data (0/3, test .93–.95): exact for distance ≤ 3, worse with every further step (distance 10: .50–.88), the
-signature of a fixed-depth net that cannot unroll 10 serial BFS steps (the hand-built A needs 38 layers). Frozen hand-built addressing
-plus one trained MLP (PART T) solves 3/3 within 500 steps, and its whole output is replaced by a three-input hinge, Y = (1, a, w)·B,
-with 176/176 kept on all seeds. Solved TRAIN T nets use the hand-built update variables (`or`, `next`) in their last layers but in a
-high-rank code unrelated to the hand-built basis.
-
+T TRAIN (4L/d256) solves 10/10 seeds (grok 60.5-72.5k) with one circuit type, T-dist: all layer-0 and layer-3 heads, all four MLPs and 1-7 seed-dependent middle heads; it matches no hand-built circuit and no closed form passes substitution. T PART (hand-built routing frozen, update MLP trained) solves 10/10 at 500 steps with the hand-built circuit; its update is the closed form Y = (1, a, w)·B, a = wall-gated OR, which keeps 176/176 in every seed and passes resample ablation of the complement. A fails by distance (exact to d = 3).
 ## Setup
-[METHODS.md](../METHODS.md) for shared conventions. AdamW lr 1e-3, wd .1, warmup 1,000, cosine, clip 1, batch 8 fresh mazes per step
-(memory bound on long maps); checkpoints every 2,500; eval every 500. PART fp32, 10k budget (stopped solved at 500). TRAIN TF32 updates,
-fp32 evals; r1 30k; r2 (retry rule: data) 90k with 3× fresh data, T stopped solved at 79k, A ran to budget. Success = best test exact
-≥ .99. GPU accelerators for training, CPU fp32 for re-scoring. Test mazes are regenerated from their seed (see `config.json`). Public
-reproduction code for this entry is pending; the archived networks re-score to the recorded accuracies.
-
+[METHODS.md](../METHODS.md) for shared conventions. AdamW lr 1e-3, wd .1, warmup 1,000, cosine, clip 1, batch 8 fresh mazes per step, eval every 500, checkpoints every 2,500, plateau stop 5,000 after 75% of budget. PART fp32 (stop solved 500); TRAIN TF32 updates, fp32 evals (stop solved 84.5k). GPU accelerators for training, CPU fp32 for diagnostics and substitution. Success = test exact >= .99. Public reproduction code for this entry is pending; the archived networks re-score to the recorded accuracies.
 ## Architecture as used
-GPT-NeoX, ReLU, no LayerNorm, no positional encoding, untied embeddings, vocabulary 565, context 8192. HAND T: 3 layers, d_model 80,
-5 heads, MLP 24 (7 heads + 10 neurons used). HAND A: 38 layers, d_model 384, 3 heads, MLP 144 (2 heads + 5,258 neurons used). PART T:
-HAND T with layer-2 MLP retrained (W_in [24, 80], b_in [24], W_out [80, 24], b_out [80]), masked to six input bits (N, E, S, W, self,
-wall) and three state outputs (unreached, reached, wall). TRAIN A/T: 4 layers, d_model 256, 8 heads, MLP 512, all weights trained.
-Networks: [huggingface.co/jc1122/circuit-atlas-nets/tree/main/grid-bfs](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/grid-bfs):
-`hand_{T,A}`, `part_T_{best,final}_s0…2` (the 4 MLP tensors; insert into `hand_T`), `train_{T,A}_{best,final}_s0…2` (r2 full state
-dicts), `config.json`, `manifest.json` (seed, steps, recorded and fp32 re-scored exact, sha256). The failed r1 TRAIN nets are not
-archived (superseded by r2).
-
+GPT-NeoX, ReLU, no LayerNorm, no positional encoding, untied embeddings, vocabulary 565. HAND T: 3 layers, d_model 80, 5 heads (d_head 16), MLP 24; 7 heads + 10 neurons used. HAND A: 38 layers, d_model 384. PART T: HAND T with the layer-2 MLP retrained (W_in [24, 80], W_out [80, 24], biases), masked to six input bits (N, E, S, W, self, wall) and three state outputs. TRAIN T/A: 4 layers, d_model 256, 8 heads (d_head 32), MLP 512, all trained. Networks: [huggingface.co/jc1122/circuit-atlas-nets/tree/main/grid-bfs](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/grid-bfs) (`hand_T`, `part_T_final10_{best,final}_s0-9`, `train_T_final10_{best,final}_s0-2`, screening nets, `config.json`, `manifest.json` with seed, rung, circuit type, accuracy, sha256).
 ## Prediction before training
-Recorded before the runs: PART 3/3 within 2.5k — **confirmed** (500 steps). TRAIN T ≥ 2/3 within 5–25k — **refuted** at r1 (0/3 at
-30k); r2 reached 3/3 only at 63.5–72k with 3× data. TRAIN A ≤ 1/3 — **confirmed** (0/3 at r1 and r2).
-
+Recorded before the runs: PART all seeds within 2.5k steps: **confirmed** (10/10 at 500). TRAIN T >= 8/10 in the final: **confirmed** (10/10); within 5-25k steps: **refuted** (60.5-72.5k; r1 0/3 at 30k). TRAIN T uses more neurons than HAND: confirmed for heads (19-28 vs 7). TRAIN T d 11-16 >= .9 in half the seeds: narrowly refuted (4/10); d 17-20 < .5: refuted (2/10 below .5); 8x8 < .5: confirmed (0-.09). TRAIN A <= 1/3: confirmed (0/3).
 ## Hand-built reference
-T: layer 0 binds each map cell to its step clock; jump heads fetch the N/E/S/W/self cells of the previous map (BOS sink at borders);
-three neurons compute `wall ? wall : OR(self, N, E, S, W)` (hinge rows (1, 1, 1, 1, 1, −5), biases 0 / −1, reached outputs +1 / −1, a wall
-copy and an unreached bias 1); CHECK reads the target cell; a router emits the next step index or END. A: 35 synchronous updates over
-38 layers, then d = 36 − hits. Verified: T 184/184 cases, A 41/41, minimum logit margin 30; stratified full-network tests plus
-exhaustive local and tiny-grid checks, not an enumeration of all mazes.
-
+T: layer 0 binds each map cell to its step clock (L0H0) and the target to the CHECK query (L0H1, MLP0); five layer-1 jump heads fetch the N/E/S/W/self cells of the previous map by score 20000 - 40(squared coordinate + clock mismatch), BOS sink at borders; MLP1 sets STOP = CHECK·target reached; MLP2 computes `wall ? wall : OR(self, N, E, S, W)` with hinge rows (1, 1, 1, 1, 1, -5), biases 0 / -1. A: 35 synchronous updates over 38 layers, d = 36 - hits. Verified: T 184/184 cases, A 41/41, minimum logit margin 30.
 ## What training finds
-| Cell | Solved | Best → final test (s0 / s1 / s2) | ≥ .99 step |
-|---|---|---|---|
-| PART T r1 | 3/3 | 1 / 1 / 1 → 1 / 1 / 1 | 500 |
-| TRAIN T r1, 30k | 0/3 | .716 / .381 / .761 → same | none |
-| TRAIN A r1, 30k | 0/3 | .898 / .807 / .898 → .898 / .807 / .892 | none |
-| TRAIN T r2, 90k, 3× data | 3/3 | 1 / 1 / 1 → 1 / 1 / 1 (stop 79k) | 72.0k / 63.5k / 67.5k |
-| TRAIN A r2, 90k, 3× data | 0/3 | .943 / .926 / .955 → .932 / .915 / .943 | none; d ≤ 3 exact, d 10 .62 / .50 / .88 |
-| T final, 10 seeds | **not run** | | |
-Scratchpad vs answer-only at r2: 3/3 vs 0/3 at the same size. Fresh data every batch: no memorisation step. Circuit types: PART — one
-type (frozen fetch + learned local update), 3/3 seeds; TRAIN T r2 — one type by diagnostics (update variables decoded and causally
-used in layers 3–4, last MLP needed), 3/3; TRAIN A — unsolved, distance-limited.
-
-**Diagnostics** (used = mean-ablation drop > .05 of 32 heads + 4 MLPs; R² = best linear probe (layer); PR = residual participation
-ratio; JS = attention divergence to the closest hand-built head; patch = shuffle-batch activation patching, component with the
-largest drop; diagnostic batch n = 32 at one distance):
-| Cell | Used | Best probe R² (layer) | PR; hand-built CKA | JS | Patch rank 1 | Best / final |
-|---|---|---|---|---|---|---|
-| PART T s0–2 r1 | 7/7 heads (= HAND) | clock .91 (1), square .92 (0) | 1–1.13; HAND-PC R² 1 | 0 | MLP2 .95 | 1 / 1 |
-| TRAIN T s0–2 r1 | 24 / 15 / 25 of 32 heads | relative step .89–.94 (3), `or` .72–.80 (4), `next` .66–.77 (4) | 16–32; < .04 | .44–.65 | MLP3 .93–.96 | .38–.76 |
-| TRAIN A s0 r1 | 9/32 | wall .85 (1), target .84 (3) | 1–3.5; .15–.57 | .08–.42 | MLP0 | .90 / .90 |
-| TRAIN T r2 (s0 b/f, s1 b, s2 b/f) | 17–20 of 27–30 | `or` .78–.84 (4), `next` .74–.84 (4), self .66–.71 (4) | 18–32; ≤ .02 | .64–.67 | MLP3 .90–.98 | 1 / 1 (diag batch s1/s2 .94–.97) |
-| TRAIN A r2 | not landed | | | | | .94 / .93 |
-Failures explained: TRAIN T r1 errors are CHECK → step-index/END decisions; every map cell is correct, and in s0 interchange on `or` /
-`next` at layer 4 flips 1 / .88 (nf 72 / 77), so the update variables are used — the failure is the stop/route decision. TRAIN A fails
-by distance (exact to d = 3, falling to d = 10). TRAIN T r2 s1/s2 score 1.0 on the 176 test mazes but .94–.97 on the 32-maze diagnostic
-batch: "solved" is at the ≥ .99 bar on the test set, not exactness on all mazes.
-
+| Cell (final) | Solved | Best / final test | Grok (first >= .99) | d11-16 / d17-20 / 8x8 (final) |
+|---|---|---|---|---|
+| PART T | 10/10 | 1.0 / 1.0 | 500 all | 1.0 / 1.0 / 1.0 |
+| TRAIN T | 10/10 | 1.0 / 1.0 | 60.5-72.5k (median 68k) | .66-1.0 / .41-.78 / 0-.09 |
+| TRAIN A (r2, r3, depth trial) | 0/3, 0/6, 0/10+0/10 | .89-.95 | none | d11+ 0 |
+Circuit types: PART **HAND-a** 10/10 (discovered circuit = the hand-built 13 edges, Jaccard 1.0); TRAIN **T-dist** 10/10 (no HAND match; discovered circuits 130-233 of 591 edges keep only .33-.71 held-out). No memorisation phase (fresh data); greedy d=2 rollouts correct in 20/20.
+**Diagnostics** (final snapshots, n = 32 mazes at d = 5; used = mean-ablation drop > .05; R² = best linear probe (layer); rank = residual participation ratio; CKA vs HAND; JS = attention divergence to the closest HAND head):
+| Cell | Used | Best probe R² (layer) | Rank; HAND CKA | JS | Best / final |
+|---|---|---|---|---|---|
+| PART T s0-9 | 7 heads (= HAND) + MLP0, MLP2 | clock .91 (1), square .92 (0) | PR 1.0-1.15; 1.0 | 0 | 1 / 1 |
+| TRAIN T s0-9 | 19-28 heads (L0 7-8, L1 1-5, L2 1-7, L3 8) + 4 MLPs | or .77-.84 (4), next .72-.81 (4), stop .67-.92 (4), W .64-.71 (4), N/E/S .51-.63 (4), wall .37-.67 (4) | PR 9.7-34.9; <= .03 | .52-.65 | 1 / 1 (s3 diag batch .97) |
+| TRAIN A r2 s0-2 | 6-9 heads + 2-3 MLPs | wall count .61-.91 (1), target .48-.92 (1) | -; - | - | .93-.96 / .92-.94 |
+TRAIN A failure: exact for d <= 3, falling to .50-.88 at d = 10; no distance code is readable and the corruption never changes the answer, so no causal variable can be localised.
 ## Closed form
-**PART T (accepted at the substitution bar):** round/clamp the six fetched inputs to bits r, compute s = Σr − 5w and a = ReLU(s) −
-ReLU(s − 1), and replace the whole MLP2 output by Y = (1, a, w)·B in the three state channels (zero elsewhere); B (9 scalars) is fitted
-to the MLP's outputs on all 64 local interfaces, never to maze answers. All three seeds, best and final: 176/176 → 176/176, agreement
-176/176 (bar ≥ .99 × native). This is output equivalence on valid inputs: the learned local argmax matches the hand-built rule on 48/48
-valid tuples (53 / 59 / 53 of all 64). Matched zero/shuffle controls are open. **TRAIN:** two candidates fitted on the r1 nets are
-rejected: T as an OR of decoded bits with affine encoding (fresh 104 → 2, 70 → 0, 135 → 1 of 176) and A as a decoded-distance tent
-(156 → 37, 149 → 56, 156 → 32). The solved r2 TRAIN nets have no substitution test yet.
-
+**HAND-a (PART), accepted:** round the six fetched inputs to bits, a = (1 - w)·OR(N, E, S, W, self), and replace the whole MLP2 output by Y = (1, a, w)·B in the three state channels (9 numbers per seed, fitted on the 64 local inputs, no maze labels). With every other component also replaced by its formula, 176/176 -> 176/176 in 10/10 seeds; resample ablation of everything outside the claimed circuit keeps exact 1.0 = base (random same-size circuit 0; circuit resampled 0). **T-dist (TRAIN), rejected:** MLP3 at map cells as a square table plus the decoded state code drops 176 -> 16 in 10/10 seeds, even with the true state labels (the code explains R² .51-.57 of MLP3); resampling the middle-layer heads keeps 0 of 1.0.
 ## Weights excerpt and reading
-Hand-built update rows (N, E, S, W, self, wall) = (1, 1, 1, 1, 1, −5), biases 0 / −1. Fitted PART B rows (unreached, reached, wall),
-rounded to 4 decimals (least-squares fit, best = final within each seed):
-| Seed | b (constant) | a (reached hinge) | w (wall) |
+Fitted B (rows constant, a, w; columns unreached, reached, wall; least squares on the 64 MLP2 responses of the archived final nets; s0-s2 equal the screening seeds):
+| Seed | constant | a (reached) | w (wall) |
 |---:|---|---|---|
-| 0 | .2154, .0521, .0225 | −.4179, .3165, .0402 | −.4173, .1637, .2909 |
-| 1 | .2118, .0417, −.0276 | −.3765, .2925, .1149 | −.5479, .2123, .3715 |
-| 2 | .2034, .0461, .0129 | −.3393, .2704, .0555 | −.4075, .1781, .2830 |
-Trained PART seed 0, layer-2 MLP (`part_T_best_s0.safetensors`; W_in[j, 34:40] over (N, E, S, W, self, wall), b_in[j], W_out[40:43, j]):
-| Neuron | Input row | Bias | Output (unreached, reached, wall) |
-|---:|---|---:|---|
-| 2 | .0473, .0498, .0494, .0501, −.0517, .1399 | −.0002 | −.1453, −.0856, .1214 |
-| 4 | .1252, .1286, .1081, .1362, .0936, .1428 | .0001 | −.1406, .0551, .1290 |
-| 19 | .0762, .1075, .0851, .0831, .0490, .1213 | .1068 | .0878, .0926, .1203 |
-Reading: the learned rows mix neighbour, self and wall evidence across neurons rather than reproducing the two hand-built hinges
-(neuron 2 opposes self to the neighbours and favours the wall output; neuron 4 suppresses unreached; neuron 19 is a shared offset).
-Only their sum is the rule: in B, a raises reached and lowers unreached by .27–.42, w raises wall, so argmax gives `wall ? wall :
-OR(neighbours, self)` on every valid tuple.
-
+| 0 | .215, .052, .023 | -.418, .316, .040 | -.417, .164, .291 |
+| 1 | .212, .042, -.028 | -.377, .293, .115 | -.548, .212, .371 |
+| 2 | .203, .046, .013 | -.339, .270, .056 | -.407, .178, .283 |
+Reading: a lowers unreached and raises reached by .27-.42, w raises wall most, so the argmax is the hand-built rule on all 48 valid inputs although the learned neurons mix inputs differently from the two hand-built hinges (fit R² .35-.47 of the raw outputs: output-equivalent, not neuron-equivalent).
 ## Comparison
-PART keeps the hand-built algorithm in the hand-built basis (JS 0, PR ≈ 1) and learns the update as a different but equivalent hinge
-sum. TRAIN T learns the same per-step update variables (decoded at layer 4, used by interchange) in a distributed code (hand-built CKA
-≤ .02). The scratchpad supplies the serial BFS steps a fixed-depth answer-only net lacks, consistent with depth-bounded results for
-graph connectivity (arXiv 2510.19753, 2025, preprint) and fixed-depth limits of log-precision transformers (Merrill & Sabharwal, 2023);
-scratchpads as intermediate computation follow Nye et al. (2021, preprint).
-
+PART keeps the hand-built algorithm in its basis and transfers to d 11-20 and 8x8 grids exactly. TRAIN T learns the same per-step variables (or/next/stop decodable at the last layer) but in a distributed, high-rank code across all layers; it extends partly to more BFS steps and not to larger grids. The scratchpad supplies serial steps missing from our answer-only format; earlier search-trace supervision appears in Lehnert et al. (2024), and intermediate BFS supervision in GNNs in Veličković et al. (2019). Related connectivity studies recover parallel reachability expansion (Saparov et al., 2024), capacity-dependent algorithm learning (Ye et al., 2025), and depth-scaling bounds (Sanford et al., 2024); Merrill & Sabharwal (2023) give conditional complexity limits, not an impossibility proof for these finite grids. Earlier maze-transformer analyses find structured maps (Ivanitskiy et al., 2023, Structured World Representations) and causal edge features (Spies et al., 2024); MINAR recovers sparse BFS/shortest-path GNN circuits (He et al., 2026), whereas our TRAIN circuit remains distributed. Gao et al. (2025) study weight-sparse circuits more generally. Recurrent maze solvers can extrapolate with more iterations (Schwarzschild et al., 2021), but learned maze dynamics need not implement generic search (Knutson et al., 2026).
 ## Controls and limits
-T scores are teacher-forced; greedy rollout and OOD (distance 11–20, 8×8 grids) are unmeasured for TRAIN. No hand-built T+ or A PART
-cell. The ten-seed final is not run, so seed counts are screening counts (3). The A retry proposal (depth 8 or distance curriculum)
-is not run. Size counts are small-batch mean-ablation counts, not minimal circuits.
-
+T scores are teacher-forced (greedy only at d = 2). One HAND (no alternative designs). TRAIN neuron counts are not measured (whole MLPs ablated). Complement/paths were run on 3 seeds per cell; substitution on all 10. A TRAIN has no causal diagnosis (fixed-distance bank).
 ## References
-- Merrill, W., & Sabharwal, A. (2023). The Parallelism Tradeoff: Limitations of Log-Precision Transformers. *Transactions of the
-  Association for Computational Linguistics*, 11. https://doi.org/10.1162/tacl_a_00562 (journal article)
-- Nye, M. et al. (2021). Show Your Work: Scratchpads for Intermediate Computation with Language Models. arXiv preprint.
-  https://doi.org/10.48550/arXiv.2112.00114 (research preprint)
-- (2025). Transformers Provably Learn Algorithmic Solutions for Graph Connectivity, But Only with the Right Data.
-  arXiv preprint. https://doi.org/10.48550/arXiv.2510.19753 (research preprint)
+- Merrill & Sabharwal 2023, The Parallelism Tradeoff: Limitations of Log-Precision Transformers: <https://doi.org/10.1162/tacl_a_00562> (journal article); Ye, Fu, Jia & Sharan 2025, Transformers Provably Learn Algorithmic Solutions for Graph Connectivity, But Only with the Right Data: <https://arxiv.org/abs/2510.19753> (arXiv preprint); Gao et al. 2025, Weight-sparse transformers have interpretable circuits: <https://arxiv.org/abs/2511.13653> (arXiv preprint).
+- Nye et al. 2021, Show Your Work: Scratchpads for Intermediate Computation with Language Models: <https://arxiv.org/abs/2112.00114> (arXiv preprint); Dracopoulos 1998, Neural robot path planning: The maze problem: <https://doi.org/10.1007/bf01414163> (journal article); Ilin, Kozma & Werbos 2007, Efficient Learning in Cellular Simultaneous Recurrent Neural Networks: <https://doi.org/10.1109/adprl.2007.368206> (conference paper).
+- Tamar et al. 2016, Value Iteration Networks: <https://arxiv.org/abs/1602.02867> (arXiv preprint); Niu et al. 2018, Generalized Value Iteration Networks: Life Beyond Lattices: <https://doi.org/10.1609/aaai.v32i1.12081> (conference paper); Veličković et al. 2019, Neural Execution of Graph Algorithms: <https://arxiv.org/abs/1910.10593> (arXiv preprint).
+- Xu et al. 2019, What Can Neural Networks Reason About?: <https://arxiv.org/abs/1905.13211> (arXiv preprint); Shen et al. 2020, Transfer Value Iteration Networks: <https://doi.org/10.1609/aaai.v34i04.6022> (conference paper); Yonetani et al. 2020, Path Planning using Neural A* Search: <https://arxiv.org/abs/2009.07476> (arXiv preprint).
+- Xu et al. 2020, How Neural Networks Extrapolate: From Feedforward to Graph Neural Networks: <https://arxiv.org/abs/2009.11848> (arXiv preprint); Schwarzschild et al. 2021, Can You Learn an Algorithm? Generalizing from Easy to Hard Problems with Recurrent Networks: <https://arxiv.org/abs/2106.04537> (arXiv preprint); Bansal et al. 2022, End-to-end Algorithm Synthesis with Recurrent Networks: <https://arxiv.org/abs/2202.05826> (arXiv preprint).
+- Anil et al. 2022, Path Independent Equilibrium Models Can Better Exploit Test-Time Computation: <https://arxiv.org/abs/2211.09961> (arXiv preprint); Veličković et al. 2022, The CLRS Algorithmic Reasoning Benchmark: <https://arxiv.org/abs/2205.15659> (arXiv preprint); Ibarz et al. 2022, A Generalist Neural Algorithmic Learner: <https://arxiv.org/abs/2209.11142> (arXiv preprint).
+- Cai et al. 2023, Value Iteration Networks With Gated Summarization Module: <https://doi.org/10.1109/access.2023.3286729> (journal article); Ivanitskiy et al. 2023, A Configurable Library for Generating and Manipulating Maze Datasets: <https://arxiv.org/abs/2309.10498> (arXiv preprint); Ivanitskiy et al. 2023, Structured World Representations in Maze-Solving Transformers: <https://arxiv.org/abs/2312.02566> (arXiv preprint).
+- Minder et al. 2023, SALSA-CLRS: A Sparse and Scalable Benchmark for Algorithmic Reasoning: <https://arxiv.org/abs/2309.12253> (arXiv preprint); Bevilacqua et al. 2023, Neural Algorithmic Reasoning with Causal Regularisation: <https://arxiv.org/abs/2302.10258> (arXiv preprint); Bohde et al. 2024, On the Markov Property of Neural Algorithmic Reasoning: <https://arxiv.org/abs/2403.04929> (arXiv preprint).
+- Rodionov & Prokhorenkova 2024, Discrete Neural Algorithmic Reasoning: <https://arxiv.org/abs/2402.11628> (arXiv preprint); Lehnert et al. 2024, Beyond A*: Better Planning with Transformers via Search Dynamics Bootstrapping: <https://arxiv.org/abs/2402.14083> (arXiv preprint); Sanford et al. 2024, Understanding Transformer Reasoning Capabilities via Graph Algorithms: <https://arxiv.org/abs/2405.18512> (arXiv preprint).
+- Nolte et al. 2024, Transformers Can Navigate Mazes With Multi-Step Prediction: <https://arxiv.org/abs/2412.05117> (arXiv preprint); Saparov et al. 2024, Transformers Struggle to Learn to Search: <https://arxiv.org/abs/2412.04703> (arXiv preprint); Spies et al. 2024, Transformers Use Causal World Models in Maze-Solving Tasks: <https://arxiv.org/abs/2412.11867> (arXiv preprint).
+- Wang, S. et al. 2024, ALPINE: Unveiling the Planning Capability of Autoregressive Learning in Language Models: <https://arxiv.org/abs/2405.09220> (arXiv preprint); Wang, Y. et al. 2024, Highway Value Iteration Networks: <https://arxiv.org/abs/2406.03485> (arXiv preprint); Wang, Y. et al. 2024, Scaling Value Iteration Networks to 5000 Layers for Extreme Long-Term Planning: <https://arxiv.org/abs/2406.08404> (arXiv preprint).
+- Chen, H.-Y. et al. 2024, Deep Q-learning with hybrid quantum neural network on solving maze problems: <https://doi.org/10.1007/s42484-023-00137-w> (journal article); Li et al. 2024, Open-Book Neural Algorithmic Reasoning: <https://doi.org/10.52202/079017-0314> (conference paper); Nerem et al. 2025, Graph neural networks extrapolate out-of-distribution for shortest paths: <https://arxiv.org/abs/2503.19173> (arXiv preprint).
+- Wang, G. et al. 2025, Hierarchical Reasoning Model: <https://arxiv.org/abs/2506.21734> (arXiv preprint); Jolicoeur-Martineau 2025, Less is More: Recursive Reasoning with Tiny Networks: <https://arxiv.org/abs/2510.04871> (arXiv preprint); Knutson et al. 2026, On Logical Extrapolation for Mazes with Recurrent and Implicit Networks: <https://doi.org/10.1609/aaai.v40i27.39424> (conference paper).
+- He et al. 2026, MINAR: Mechanistic Interpretability for Neural Algorithmic Reasoning: <https://arxiv.org/abs/2602.21442> (arXiv preprint); Chen, X. 2026, The Application of Graph Neural Networks in Maze Problem: <https://doi.org/10.54097/gq83vf96> (journal article); Gatmiry et al. 2026, Learn Your Own Thoughts: Abstract Token Curriculum: <https://arxiv.org/abs/2609.19717> (arXiv preprint).
+- Kamiya et al. 2026, Steering Recurrent Reasoners at Inference Time with Readout Feedback: <https://arxiv.org/abs/2608.24136> (arXiv preprint); Es'kin & Smorkalov 2026, Dynamical Systems Theory Behind a Hierarchical Reasoning Model: <https://arxiv.org/abs/2603.22871> (arXiv preprint); Huang et al. 2026, Richer Representations for Neural Algorithmic Reasoning via Auxiliary Reconstruction: <https://arxiv.org/abs/2606.00559> (arXiv preprint).
+- Yu, Zeng & Ye 2026, FloydNet: A Learning Paradigm for Global Relational Reasoning: <https://arxiv.org/abs/2601.19094> (arXiv preprint); Bhatt et al. 2022, Reproducibility Report: Path Planning using Neural A* Search: <https://arxiv.org/abs/2208.04153> (arXiv preprint); Zhang et al. 2024, Can LLM Graph Reasoning Generalize beyond Pattern Memorization?: <https://arxiv.org/abs/2406.15992> (arXiv preprint).
