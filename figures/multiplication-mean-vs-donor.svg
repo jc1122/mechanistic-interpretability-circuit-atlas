@@ -1,26 +1,45 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="540" height="739.5" viewBox="0 0 360 493" role="img" aria-labelledby="title desc">
-<title id="title">Binary multiplication: a mean readout is not an activation identity</title>
-<desc id="desc">One examined from-scratch retry seed, best snapshot. A mean table fitted on 819 non-training pairs gives whole-output exact match 1.000 on 820 disjoint evaluation pairs. Replacing activations by individual donors with the same output-query and arithmetic key gives .5841 whole-output exact match, despite .99336 token accuracy. This is a sufficient readout only, not a verified native mechanism.</desc>
-<metadata>CC BY 4.0. Compact redraw; recorded values unchanged. Original figure metadata retained.</metadata>
-<style>text{font-family:system-ui,sans-serif}.fg{fill:#172b3a}.bg{fill:#ffffff}.panel{fill:#f0f4f8;stroke:#63758b;stroke-width:1.5}.trained{fill:#fff0ba;stroke:#63758b;stroke-width:1.5}.ink{fill:#172b3a}.grid{stroke:#7d8c98}.track{fill:#e1e6eb}.blue{fill:#176b9b}.amber{fill:#a05a00}.grey{fill:#697681}.light{fill:#e1e6eb;stroke:#63758b}.blue-line{stroke:#176b9b}.amber-line{stroke:#a05a00}.grey-line{stroke:#697681}
-@media(prefers-color-scheme:dark){.fg{fill:#f0f6fc}.bg{fill:#161b22}.panel{fill:#263746;stroke:#9bacc0}.trained{stroke:#e3b341}.grid{stroke:#8b949e}.track{fill:#303c49}.blue{fill:#58a6ff}.amber{fill:#e3b341}.grey{fill:#a0adba}.light{fill:#303c49;stroke:#9bacc0}.blue-line{stroke:#58a6ff}.amber-line{stroke:#e3b341}.grey-line{stroke:#a0adba}}</style>
-<rect width="360" height="493" rx="8" class="bg"/>
-<text x="20" y="24" font-size="18" class="fg" font-weight="600" text-anchor="start">Multiplication: mean versus</text>
-<text x="20" y="50" font-size="18" class="fg" font-weight="600" text-anchor="start">donor</text>
-<text x="20" y="85" font-size="16" class="fg" font-weight="400" text-anchor="start">TRAIN retry, seed 0 best snapshot;</text>
-<text x="20" y="108" font-size="16" class="fg" font-weight="400" text-anchor="start">819 non-training fit pairs; 820</text>
-<text x="20" y="131" font-size="16" class="fg" font-weight="400" text-anchor="start">disjoint evaluation pairs.</text>
-<text x="20" y="163" font-size="16" class="fg" font-weight="400" text-anchor="start">Same output-query index and</text>
-<text x="20" y="186" font-size="16" class="fg" font-weight="400" text-anchor="start">arithmetic key in both tests.</text>
-<text x="20" y="218" font-size="16" class="fg" font-weight="400" text-anchor="start">Mean output table: 1.000</text>
-<rect x="20" y="245" width="320" height="12" rx="3" class="track"/>
-<rect x="20" y="245" width="320.0" height="12" rx="3" class="blue"/>
-<text x="20" y="281" font-size="16" class="fg" font-weight="400" text-anchor="start">Individual same-key donor: .5841</text>
-<rect x="20" y="308" width="320" height="12" rx="3" class="track"/>
-<rect x="20" y="308" width="186.91199999999998" height="12" rx="3" class="amber"/>
-<text x="20" y="344" font-size="16" class="fg" font-weight="400" text-anchor="start">Common 0–1.0 scale; teacher-forced</text>
-<text x="20" y="367" font-size="16" class="fg" font-weight="400" text-anchor="start">whole-output exact match. Donor</text>
-<text x="20" y="390" font-size="16" class="fg" font-weight="400" text-anchor="start">token accuracy: .99336.</text>
-<text x="20" y="422" font-size="16" class="fg" font-weight="400" text-anchor="start">One seed; sufficient readout only,</text>
-<text x="20" y="445" font-size="16" class="fg" font-weight="400" text-anchor="start">not a verified native mechanism.</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="693.3333333333334" viewBox="0 0 360 390" role="img" aria-labelledby="title desc">
+<title id="title">A mean readout hides differences within the same key</title>
+<desc id="desc">A mean readout hides differences within the same key. An average hides differences between matching states. One examined from-scratch retry seed, best snapshot. A mean table fitted on 819 non-training pairs gives whole-output exact match 1.000 on 820 disjoint evaluation pairs. Replacing activations by individual donors with the same output-query and arithmetic key gives .5841 whole-output exact match, despite .99336 token accuracy. This is a sufficient readout only, not a verified native mechanism.</desc>
+<ns0:metadata xmlns:ns0="http://www.w3.org/2000/svg">CC BY 4.0. Compact redraw; recorded values unchanged. Original figure metadata retained.</ns0:metadata>
+
+<ns0:metadata xmlns:ns0="http://www.w3.org/2000/svg">CC BY 4.0. Message-led redraw; recorded values unchanged. Original metadata retained.</ns0:metadata>
+
+<metadata>CC BY 4.0. Compact redraw; evidence unchanged. Original descriptions and metadata retained.</metadata>
+<style>text{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#182b3a}.bg{fill:#fff}.panel{fill:#f3f6f9;stroke:#697b8c}.rule{stroke:#697b8c;fill:none}.blue{fill:#086a9e}.orange{fill:#a65308}.muted{fill:#485d70}.track{fill:#dde5ec}.blue-line{stroke:#086a9e;fill:none}.orange-line{stroke:#a65308;fill:none}.quiet-line{stroke:#697b8c;fill:none}.trained{fill:#fff0ba;stroke:#876518}.dark-ink{fill:#182b3a}.blue-tint{fill:#e9f4fc;stroke:#086a9e}.open{fill:#fff;stroke:#697b8c;stroke-width:1.5}.white{fill:#fff}
+@media(prefers-color-scheme:dark){text{fill:#edf3fa}.bg{fill:#101820}.panel{fill:#1c2a37;stroke:#6f8295}.rule{stroke:#a6b5c5}.blue{fill:#66c5ff}.orange{fill:#ffbe79}.muted{fill:#bfccda}.track{fill:#344555}.blue-line{stroke:#66c5ff}.orange-line{stroke:#ffbe79}.quiet-line{stroke:#a6b5c5}.blue-tint{fill:#172f41;stroke:#66c5ff}.open{fill:#101820;stroke:#a6b5c5}.dark-ink{fill:#182b3a}.white{fill:#101820}.trained{stroke:#e5b74e}}</style>
+<rect width="360" height="390" rx="8" class="bg"/>
+<text x="18" y="29" font-size="21" font-weight="650" class="" text-anchor="start">A mean readout hides</text>
+<text x="18" y="59" font-size="21" font-weight="650" class="" text-anchor="start">differences within the same key</text>
+<rect x="18" y="81" width="324" height="46" rx="7" class="panel"/>
+<text x="180.0" y="101" font-size="14" font-weight="650" class="" text-anchor="middle">Final MLP output (trained)</text>
+<text x="180.0" y="121" font-size="14" font-weight="400" class="" text-anchor="middle">MLP3: the replaced write</text>
+<path d="M180,127 L180,141" class="rule" stroke-width="1.5"/>
+<path d="M91,141 L269,141" class="rule" stroke-width="1.5"/>
+<path d="M91,141 L91,190" class="rule" stroke-width="1.5"/>
+<path d="M87,184 L91,190" class="rule" stroke-width="1.5"/>
+<path d="M95,184 L91,190" class="rule" stroke-width="1.5"/>
+<path d="M269,141 L269,190" class="rule" stroke-width="1.5"/>
+<path d="M265,184 L269,190" class="rule" stroke-width="1.5"/>
+<path d="M273,184 L269,190" class="rule" stroke-width="1.5"/>
+<text x="180" y="173" font-size="14" font-weight="400" class="muted" text-anchor="middle">External slot + sum key; 819 fit pairs</text>
+<rect x="18" y="190" width="146" height="64" rx="7" class="panel"/>
+<text x="91.0" y="210" font-size="14" font-weight="650" class="" text-anchor="middle">Mean of fit rows</text>
+<text x="91.0" y="230" font-size="14" font-weight="400" class="" text-anchor="middle">same slot + sum</text>
+<rect x="196" y="190" width="146" height="64" rx="7" class="panel"/>
+<text x="269.0" y="210" font-size="14" font-weight="650" class="" text-anchor="middle">One donor row</text>
+<text x="269.0" y="230" font-size="14" font-weight="400" class="" text-anchor="middle">same slot + sum</text>
+<path d="M91,254 L91,302" class="rule" stroke-width="1.5"/>
+<path d="M87,296 L91,302" class="rule" stroke-width="1.5"/>
+<path d="M95,296 L91,302" class="rule" stroke-width="1.5"/>
+<path d="M269,254 L269,302" class="rule" stroke-width="1.5"/>
+<path d="M265,296 L269,302" class="rule" stroke-width="1.5"/>
+<path d="M273,296 L269,302" class="rule" stroke-width="1.5"/>
+<text x="91" y="285" font-size="15" font-weight="650" class="blue" text-anchor="middle">1.000 exact</text>
+<text x="269" y="285" font-size="15" font-weight="650" class="orange" text-anchor="middle">.5841 exact</text>
+<rect x="18" y="302" width="324" height="46" rx="7" class="panel"/>
+<text x="180.0" y="322" font-size="14" font-weight="650" class="" text-anchor="middle">Native output reader</text>
+<text x="180.0" y="342" font-size="14" font-weight="400" class="" text-anchor="middle">Earlier residual writes retained</text>
+<text x="180" y="366" font-size="14" font-weight="400" class="muted" text-anchor="middle">820 evaluation pairs; donor tokens .99336</text>
+<text x="180" y="386" font-size="14" font-weight="400" class="muted" text-anchor="middle">Sufficient readout; mechanism not verified.</text>
 </svg>

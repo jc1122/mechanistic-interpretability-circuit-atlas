@@ -1,6 +1,10 @@
 # Modular addition mod 59
 
-Adding modulo 59 means wrapping back to zero after 58. A frozen transformer read the operands into several number encodings, and a feed-forward network ([MLP](../GLOSSARY.md#standard-machine-learning-terms)) learned the arithmetic. All 10 independent training runs (seeds, [glossary](../GLOSSARY.md#counting-results)) built a Fourier clock, a rule that combines periodic responses to the operands, yet their final held-out accuracy stayed at .91–.97 after 300,000 steps. Replacing the learned layer with its fitted cosine formula gave .996–1.000 accuracy on all 3481 operand pairs, compared with the networks' .94–.98 on that same all-pairs bank. The task remains unsolved at the 99% held-out criterion, which no seed reached; its proposed formula, or closed form, has partial status because replacement passed but resampling everything outside the claimed circuit (the complement, [glossary](../GLOSSARY.md#verifying-a-circuit)) was not tested.
+On a clock, adding can take you past the last number and back to the start. This task did the same with 59 possible answers: 58 plus 2 gives 1. A hand-built reader supplied several encodings of the inputs. A small feed-forward network, an [MLP](../GLOSSARY.md#standard-machine-learning-terms), learned to combine them into a Fourier clock: repeating wave-like responses to each number.
+
+All 10 training runs developed that pattern, yet none reached the 99% held-out criterion after 300,000 steps. The task remains unsolved. Replacing the learned layer with a fitted cosine rule improved accuracy to .996–1.000 on all 3481 pairs, against the networks' .94–.98 on that same set, which included training examples.
+
+The [formula is partial](../GLOSSARY.md#verifying-a-circuit): a successful replacement can fix answers without explaining the original mistakes. Swapping the other parts' signals between examples was not tested.
 
 | Fact | Value |
 |---|---|
@@ -14,6 +18,14 @@ Adding modulo 59 means wrapping back to zero after 58. A frozen transformer read
 | Reproduce | [Commands](#24-reproduction), run from `code/` |
 
 Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [open-bracket count](open-bracket-count.md) for another approximate periodic readout, or [mod-97 arithmetic](modular-arithmetic-mod-97.md) for different number formats.
+
+## The circuit at a glance
+
+Figure S1 shows how the frozen number labels and passed-threshold flags converge on the trained answer vote; the example wraps 58 + 2 to remainder 1 after division by 59.
+
+<a href="../figures/circuits/modular-addition-mlp.svg"><img src="../figures/circuits/modular-addition-mlp.svg" width="640" alt="A frozen number reader writes nominal codes .58 and .02 into its residual stream. Parallel number-label and passed-threshold features feed the external trained feed-forward block's fitted wave-like responses and answer votes, dashed as not verified. SUM: 58 2 targets remainder 1 after division by 59; this is a task example, not a measured prediction."></a>
+
+*Figure S1 shows fixed number codes feeding a wave-like answer vote in all ten menu-fed feed-forward networks, with no hand-built adder for comparison; the fitted clock is Partial, does not reproduce every native answer, leaves the task unsolved and has no circuit-complement test ([evidence](#5-mechanism-and-verification)).*
 
 ## 1. Task and data
 
@@ -95,27 +107,29 @@ fraction .4) are published on Hugging Face at
 
 ## 3. Hand-built solution
 
-The hand-built network reads the two numbers and re-encodes them; it contains no adder (Figure 1). m2's number readers write the
+The hand-built network reads the two numbers and re-encodes them; it contains no adder (Table F1). m2's number readers write the
 scalars NA = x/100 and NB = y/100 at the answer position, exact to 2e-4. The menu decodes each scalar with pairs of GELU steps
 (`step`, defined in [count mod 5](count-mod-5.md#3-hand-built-solution)): the thermometer unit k is `step(100 NA; k − ½)` for k = 1..58,
 and the one-hot unit is the difference of two neighbouring steps, `step(100 NA; k − ½) − step(100 NA; k + ½)`. The modular sum
 itself is left entirely to the trained stage.
 
-```mermaid
-flowchart TD
-    accTitle: Frozen number readers with a trained arithmetic layer
-    accDescr: Frozen readers and the menu supply scalar, one-hot, thermometer and distractor features to the only trained MLP. There is no hand-built adder. The fitted clock formula is partial, with complement untested.
-    P["Prompt: SUM: x y"] --> NR["m2 number readers"]
-    NR --> NA["NA = x/100, NB = y/100"]
-    NA --> MENU["Frozen menu inputs:<br/>decode by GELU step pairs<br/>at k - 1/2 gives<br/>one-hot of x and y (ox, oy),<br/>thermometer of x and y (tx, ty)<br/>Direct scalars (sx, sy)<br/>Distractors: count, brackets,<br/>copy pointer, position"]
-    MENU --> M["TRAINED: MLP,<br/>256 ReLU neurons"]
-    M --> Y["59 logits: (x + y) mod 59"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class M trained
-```
+Table F1 records what the fixed reader supplies and what is left to learn. The menu re-encodes the operands; it does not compute their modular sum.
 
-*Figure 1. The frozen readers and menu; there is no hand-built adder. The gold 256-neuron MLP is the only trained part (PART). The
-Fourier clock formula has partial status: substitution is supported, but the proposed circuit's complement was not tested.*
+<details>
+<summary>Technical frozen number codes and trained answer stage (Table F1)</summary>
+
+*Table F1. The frozen readers and menu; there is no hand-built adder. The 256-neuron feed-forward block (MLP) is the only trained part (PART). The Fourier clock formula has partial status: substitution is supported, but the proposed circuit's complement was not tested.*
+
+| Part and training status | Supplied code or role |
+|---|---|
+| Prompt and m2 number readers; frozen | Read `SUM: x y` and write NA = x/100 and NB = y/100. |
+| Category code; frozen | GELU step pairs at k − 1/2 decode the one-hot indicators ox and oy, one active coordinate for each operand value. |
+| Passed-threshold code; frozen | Thermometers tx and ty indicate which thresholds each operand exceeds. |
+| Other menu inputs; frozen | Direct scalars sx and sy; distractors for count, brackets, copy pointer and position. |
+| Answer MLP; trained | Uses 256 ReLU neurons to write 59 answer scores (logits), targeting the remainder (x + y) mod 59. |
+| Scientific scope | No hand-built adder is supplied. The fitted periodic replacement is Partial, with the complement untested; it is not an exact native identity. |
+
+</details>
 
 ## 4. What training finds
 
@@ -134,11 +148,13 @@ during memorisation and then decayed to 85.
 | Control: random frozen base | 3 | 500 | never | never | .25–.26 (overview; earlier prose .25) | memorises, no phase rule |
 | Control: scalar-only menu | 3 | never | never | never | .16–.19 | cannot fit (train .47–.50) |
 
-![Recorded held-out accuracies of ten seeds at eight checkpoints; values are tabulated in Appendix B](../figures/modular-addition-recorded-checkpoints.svg)
+Figure 2 follows the trained remainder MLP supplied with fixed number codes. It shows every seed's held-out observations; dashed seed 5 and dotted seed 8 are labelled for orientation, with the others in grey.
+
+<img src="../figures/modular-addition-recorded-checkpoints.svg" width="640" alt="Fixed number codes feed the trained remainder MLP for addition modulo 59. Across 10 seeds at training fraction .4, training reaches 99% by step 500 but held-out accuracy stays below 99% through 300,000 updates. Every seed's eight checkpoints is shown; seeds 5 and 8 end at displayed .91 and .97. Appendix B retains every value and the rounded-display versus final-log precision distinction.">
 
 *Figure 2. Held-out accuracy at eight recorded checkpoints in each of 10 seeds, using each seed's fixed split of the 3481 pairs
 (train fraction .4). Lines join recorded observations, not a reconstructed continuous learning curve. Training accuracy reached 99%
-by step 500; none of the final held-out scores reached 99%. Appendix B gives the plotted values.*
+by step 500; none of the final held-out scores reached 99%. Appendix B gives the plotted values. MLP means the trained feed-forward block; its number-code inputs are frozen.*
 
 [Open Figure 2 at full size](../figures/modular-addition-recorded-checkpoints.svg).
 
@@ -187,26 +203,23 @@ high-accuracy replacement rather than an exact identity for the learned layer.
 The closed form is supported by substitution. No [resample ablation of the complement](../GLOSSARY.md#verifying-a-circuit) was
 reported, so under the atlas acceptance rule the status is partial.
 
-```mermaid
-flowchart TD
-    accTitle: Fitted periodic readout for modular addition
-    accDescr: One-hot and thermometer features feed periodic hidden responses and output votes. Marked hidden and output components are trained. Substitution is supported on all pairs; the formula is partial and does not reproduce every native answer, with complement untested.
-    OH["one-hot of x and y, read"] --> N["neuron n at frequency k_n:<br/>c_n + a_n cos(w x + phi_n)<br/>+ b_n cos(w y + psi_n)"]
-    TH["thermometer, low<br/>frequencies k = 1 to 2"] --> N
-    N --> R["ReLU cross term:<br/>cos(w(x + y) + phi_n + psi_n)"]
-    R --> O["output column<br/>A_n cos(w c + theta_n),<br/>theta_n = phi_n + psi_n"]
-    O --> S["sum over 22 to 27 frequencies:<br/>peak at c = x + y mod 59"]
-    SC["scalars, unused"] -.-> N
-    %% Invisible links stack input labels; they are not computational paths.
-    OH ~~~ TH
-    TH ~~~ SC
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class N,O trained
-```
+Table F3 retains the fitted repeating responses and their output-vote rule. The high-accuracy substitute does not reproduce every native answer.
 
-*Figure 3. The fitted periodic readout. Gold nodes are the trained hidden responses and output weights. Closed-form status is
-partial: substitution gives .996–1.000 on all 3481 pairs in 10 seeds, but the proposed circuit's complement was not tested. The
-formula does not reproduce every native answer.*
+<details>
+<summary>Technical fitted wave responses and output votes (Table F3)</summary>
+
+*Table F3. The fitted periodic readout describes trained hidden responses and output weights. Closed-form status is partial: substitution gives .996–1.000 on all 3481 pairs in 10 seeds, but the proposed circuit's complement was not tested. The formula does not reproduce every native answer.*
+
+| Input or response | Role in the fitted account |
+|---|---|
+| One-hot operand categories; frozen input | Supply most of the answer information to the trained neurons. |
+| Thermometer codes; frozen input | Help with low frequencies k = 1 to 2. Direct scalars were labelled unused in the role map; the ablations above quantify their small contribution. |
+| Hidden neuron n; trained | Fits ReLU(c_n + a_n cos(ω_n x + φ_n) + b_n cos(ω_n y + ψ_n)), with frequency k_n and ω_n = 2πk_n/59. |
+| ReLU mixing; fitted interpretation | The cross term cos(ω_n(x + y) + φ_n + ψ_n) contributes a repeating response to the sum. This account is approximate, not a native activation identity. |
+| Output column; trained | Fits A_n cos(ω_n c + θ_n), with θ_n = φ_n + ψ_n, for candidate answer c. |
+| Sum of votes | Responses span 22 to 27 frequencies and peak at c = (x + y) mod 59. The substitution result is Partial, not complement-verified. |
+
+</details>
 
 Relation to the hand-built design and to published work. No hand-built adder was given, so the circuit is entirely the trained stage's.
 It matches the analytic solution of a wide MLP by [Gromov (2023)](#references) and the clock algorithm of [Zhong et al. (2023)](#references).

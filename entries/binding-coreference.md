@@ -1,8 +1,8 @@
 # Binding and coreference
 
-This task asks a small two-layer transformer which earlier name a pronoun-like token refers to in a synthetic sentence. A reflexive token selects the current clause's subject; a feature-marked pronoun selects the latest matching name in an earlier clause. All 7 exact answer-only models trained from scratch used one final-layer attention head to retrieve the referent, instead of the formula-set design's separate subject and pronoun heads; those successes came from 3/30 screening runs and 4/10 retry runs, with exactness defined on 2048 held-out sentences.
+`SELF` means “self” in this invented language; with `e0` in an earlier clause, a sentence unit with its own subject, and `e1` as the current subject, it selects `e1`. `PRO_0` instead selects `e0`, the latest name marked 0 in an earlier clause. A small two-layer transformer learned both choices using one final-layer attention head, a component that reads earlier text, where the hand-built design used separate heads. That finding covers all 7 exact answer-only models trained from scratch: 3/30 screening runs and 4/10 retry runs, each exact on 2048 held-out sentences.
 
-Writing the local subject on a scratchpad did not solve the remaining choice among several pronoun matches. The task is partly solved and the attention rule is a sufficient readout only: substitution scored .965-1.0, but every shared circuit template failed complement resampling, including the scratchpad template at .898 against the .90 acceptance share.
+Writing the current subject as intermediate working, a [scratchpad](../GLOSSARY.md#task-formats), did not solve the remaining choice among several pronoun matches. The task is partly solved and the rule is a [sufficient readout only](../GLOSSARY.md#verifying-a-circuit): replacing attention by the proposed rule scored .965-1.0, but changing activity outside every shared circuit template broke the acceptance test, including the scratchpad template at .898 against the required .90 share of native accuracy.
 
 ## At a glance
 
@@ -18,6 +18,14 @@ Writing the local subject on a scratchpad did not solve the remaining choice amo
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
 HAND sets every weight by formula; PART retrains one stage on frozen hand-built parts; TRAIN learns all weights ([rungs](../GLOSSARY.md#the-three-rungs)). A scratchpad writes the local subject after each input token ([task formats](../GLOSSARY.md#task-formats)). A complement test resamples everything outside a proposed circuit; passing substitution alone does not verify its mechanism ([verification](../GLOSSARY.md#verifying-a-circuit)).
+
+## The circuit at a glance
+
+Figure S1 shows clause information and the query merging at one shared name-reading head, followed by a separate identifier write.
+
+<img src="../figures/circuits/binding-coreference.svg" width="640" alt="C starts a clause; PRO_0 requests the latest earlier-clause name marked 0, while SELF requests the current subject. Clause cues identify earlier e0 and current e1, while the illustrated query supplies PRO_0. Both reach one layer-1 referent head: it selects e0 for PRO_0, or the current subject for SELF. Layer-1 neurons write that identifier. Learned roles are dashed because the shared circuit fails complement resampling; this is a sufficient readout, not an accepted neural mechanism.">
+
+*Figure S1 shows one final-layer head retrieving either kind of referent, unlike the hand-built separate subject and pronoun heads (type T, all seven solved answer-only networks trained from scratch; C starts a clause, PRO_0 requests the latest earlier-clause name marked 0, SELF requests the current subject); status is Sufficient readout only because substitution passes but the shared circuit fails complement resampling, and values are a task example, not a measurement.*
 
 ## 1. Task and data
 
@@ -83,23 +91,21 @@ Both variants and formats were exact on 129640 inputs: exhaustive to 4 mentions 
 
 The symbols GS_i/GN gate state-line outputs; AS_i/AP_i gate SELF/PRO answer outputs. EQ identifies the answer delimiter. BETA rewards a match, EPS breaks ties by position, G scales readout gates, K is the feature count and U a fixed scale.
 
-In Figure 1, L0H0 and MLP0 form clause and mention codes. L1H0 selects the first mention in the current clause, while L1H1 selects the latest earlier feature match; frozen MLP1 gates write the referent identifier. Only the two selecting heads are trained in PART. HAND-c changes the pronoun head's clause scoring.
+Table F1 records the fixed two-reader alternative to the worked circuit above. L0H0 and MLP0 form clause and mention codes. L1H0 selects the first mention in the current clause, while L1H1 selects the latest earlier feature match; frozen MLP1 gates write the referent identifier. Only the two selecting heads are trained in PART. HAND-c changes the pronoun head's clause scoring.
 
-```mermaid
-flowchart TD
-    accTitle: Hand-built subject and pronoun routes
-    accDescr: Clause and mention codes feed separate heads for the current subject and the latest earlier feature match. The two heads are the trained PART stage; frozen gates write the referent identifier. The alternate HAND changes pronoun clause scoring.
-    X["Clause and mention<br/>tokens"] --> C["L0H0 count head<br/>and MLP0: clause<br/>and mention codes"]
-    C --> S["L1H0: first<br/>mention in current<br/>clause"]
-    C --> P["L1H1: latest<br/>earlier feature<br/>match"]
-    S --> M["MLP1: state and<br/>answer gates"]
-    P --> M
-    M --> Y["Referent id"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class S,P trained
-```
+<details>
+<summary>Technical two-reader subject/pronoun design (Table F1)</summary>
 
-*Figure 1. HAND-a's two referent heads. L1H0 and L1H1 are the only trained stage in PART; HAND-c changes the pronoun head's clause scoring.*
+*Table F1. Two readers find the referent in HAND-a. The reads are parallel. L1H0 and L1H1 are the only trained stage in PART; HAND-c changes the pronoun head's clause scoring.*
+
+| Component | Input and recorded role |
+|---|---|
+| Fixed layer 0, head 0 (L0H0) and MLP0 | Read clause and mention tokens; the count head and MLP mark clauses and mentions with codes. |
+| Layer 1, head 0 (L1H0), trained in PART | Read those codes to select the current subject, the first mention in this clause. |
+| Layer 1, head 1 (L1H1), trained in PART | Read those codes to select the pronoun referent, the latest earlier feature match. |
+| Fixed MLP1 | Read both selecting heads. State and answer gates select the output and write the referent identifier (id). |
+
+</details>
 
 ## 4. What training finds
 
@@ -157,21 +163,20 @@ For T, one L1 head at `=` becomes one-hot on the referent: the subject for SELF,
 
 For S, L1H0 at `=` becomes one-hot on the last state line for SELF and on the referent otherwise. Substitution gives .983; complement of the 20-edge circuit gives .898, just below .90, and fails.
 
-In Figure 2, both early heads form a clause code, a final-layer head retrieves the referent at the equals token, and MLP1 turns the copied identifier into an answer score. All computational stages were trained. Status remains sufficient readout only: substitution passes, but resampling outside the shared circuit fails.
+Table F2 records the learned single-reader family and the failed complement test. Both early heads form a clause code, a final-layer head retrieves the referent at the equals token, and MLP1 turns the copied identifier into an answer score. All computational stages were trained. Status remains sufficient readout only: substitution passes, but resampling outside the shared circuit fails.
 
-```mermaid
-flowchart TD
-    accTitle: Single referent-head family in successful answer-only models
-    accDescr: Trained early heads form a clause code, a final-layer head retrieves the referent, and the final MLP writes its identifier. All displayed computational stages are trained. Status is sufficient readout only: substitution passes, but resampling outside the shared circuit fails.
-    X["Clause and mention tokens"] --> C["Both layer-0 heads: clause code"]
-    C --> H["One layer-1 head at equals: attend to referent"]
-    H --> M["MLP1: copied id to answer logit"]
-    M --> Y["Referent id"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class C,H,M trained
-```
+<details>
+<summary>Technical single-reader family and failed complement (Table F2)</summary>
 
-*Figure 2. Type T in the seven solved answer-only TRAIN seeds; both head stages and MLP1 are trained. Status: sufficient readout only. Substitution is .965-1.0, but complement resampling of the shared 15-edge circuit gives .31-.63 and fails; no closed form is accepted.*
+*Table F2. One learned head retrieves either kind of referent in type T, the seven solved answer-only TRAIN seeds; both head stages and MLP1 are trained. Status: sufficient readout only. Substitution is .965-1.0, but complement resampling of the shared 15-edge circuit gives .31-.63 and fails; no closed form is accepted.*
+
+| Trained component | Input and recorded role |
+|---|---|
+| Both layer-0 heads | Read clause and mention tokens; encode the current clause. |
+| One layer-1 head | At the equals token, use the clause code to attend to the referent mention. |
+| MLP1 | Map the copied identifier to an answer score (logit), producing the referent identifier (id). This sufficient readout does not pass complement resampling. |
+
+</details>
 
 ### Relation to HAND and published work
 

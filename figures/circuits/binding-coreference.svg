@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="704" viewBox="0 0 640 704" role="img" aria-labelledby="title desc">
+<title id="title">One head selects the referent for either query type</title>
+<desc id="desc">C starts a clause; PRO_0 requests the latest earlier-clause name marked 0, while SELF requests the current subject. Clause cues identify earlier e0 and current e1, while the illustrated query supplies PRO_0. Both reach one layer-1 referent head: it selects e0 for PRO_0, or the current subject for SELF. Layer-1 neurons write that identifier. Learned roles are dashed because the shared circuit fails complement resampling; this is a sufficient readout, not an accepted neural mechanism.</desc>
+<style>
+:root { color-scheme: light dark;
+  --bg:#ffffff; --fg:#172330; --muted:#46586a; --line:#526678;
+  --panel:#f4f7fa; --blue:#00679e; --blue-bg:#eaf5fc;
+  --amber:#885000; --amber-bg:#fff4dc;
+  --purple:#70509c; --purple-bg:#f3edfa; --idle:#eef0f2;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg:#101820; --fg:#f2f5f8; --muted:#c2ced9; --line:#b0bfcd;
+    --panel:#1c2a36; --blue:#79c8f5; --blue-bg:#132f43;
+    --amber:#f2c566; --amber-bg:#352b18;
+    --purple:#cbb1ee; --purple-bg:#30263e; --idle:#26313b; }
+}
+text { font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  fill:var(--fg); font-variant-numeric:tabular-nums; }
+.canvas { fill:var(--bg); }
+.node { fill:var(--panel); stroke:var(--line); stroke-width:2; }
+.input .node { fill:var(--blue-bg); stroke:var(--blue); }
+.output .node { fill:var(--purple-bg); stroke:var(--purple); }
+.trained .node { fill:var(--amber-bg); stroke:var(--amber); }
+.register .node { fill:var(--blue-bg); stroke:var(--blue); }
+.register-line { stroke:var(--blue); stroke-width:3; }
+.unused .node { fill:var(--idle); }
+.uncertain .node, .uncertain.arrow { stroke-dasharray:8 6; }
+.node-title { font-size:28px; font-weight:650; }
+.detail { font-size:24px; }
+.tag { font-size:22px; font-weight:600; fill:var(--muted); }
+.heading { font-size:30px; font-weight:700; }
+.note { font-size:24px; fill:var(--muted); }
+.arrow { fill:none; stroke:var(--line); stroke-width:2.5; }
+.arrowhead { fill:var(--line); }
+.arrow-label { font-size:24px; fill:var(--muted); paint-order:stroke;
+  stroke:var(--bg); stroke-width:8; stroke-linejoin:round; }
+.example-bg { fill:var(--panel); stroke:var(--line); stroke-width:1.5; }
+.bus-band { fill:none; stroke:var(--line); stroke-width:10; opacity:.14; }
+.bus-line { fill:none; stroke:var(--line); stroke-width:2.5; }
+.junction { fill:var(--line); }
+.lane { fill:none; stroke:var(--line); stroke-width:1.5; stroke-dasharray:3 7; }
+.value-label { font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
+  font-size:24px; fill:var(--fg); paint-order:stroke; stroke:var(--bg);
+  stroke-width:8; stroke-linejoin:round; }
+.legend-text { font-size:22px; fill:var(--muted); }
+.legend-frozen { fill:var(--panel); stroke:var(--line); stroke-width:2; }
+.legend-trained { fill:var(--amber-bg); stroke:var(--amber); stroke-width:2; }
+.legend-unverified { fill:none; stroke:var(--line); stroke-width:2; stroke-dasharray:5 4; }
+.tag,.legend-text {font-size:24px;} text {line-height:1.1;}
+</style>
+<defs><marker id="tip" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrowhead" d="M 0 0 L 10 5 L 0 10 Z"/></marker></defs>
+<rect class="canvas" width="640" height="704"/>
+<text x="24" y="36" class="heading" text-anchor="start">One head selects the referent</text>
+<text x="24" y="80" class="heading" text-anchor="start">for either query type</text>
+<rect class="legend-trained" x="24" y="98" width="24" height="20" rx="3"/>
+<text x="58" y="116" class="legend-text" text-anchor="start">trained</text>
+<rect class="legend-unverified" x="214" y="98" width="24" height="20" rx="3"/>
+<text x="248" y="116" class="legend-text" text-anchor="start">not verified</text>
+<path class="bus-line" d="M 320 640 V 184" marker-end="url(#tip)"/>
+<text x="24" y="632" class="note" text-anchor="start">Residual stream</text>
+<path class="arrow uncertain" d="M 320 618 L 242 618 L 242 600" marker-end="url(#tip)"/>
+<path class="arrow uncertain" d="M 242 524 L 242 504 L 320 504" marker-end="url(#tip)"/>
+<circle class="junction" cx="320" cy="618" r="4"/>
+<circle class="junction" cx="320" cy="504" r="4"/>
+<g class="trained uncertain">
+<rect class="node" x="24" y="524" width="248" height="76" rx="10"/>
+<text x="42" y="558" class="node-title" text-anchor="start">Clause cues</text>
+<text x="42" y="592" class="detail" text-anchor="start">early layer</text>
+</g>
+<text x="32" y="494" class="value-label" text-anchor="start">ids = e0,e1</text>
+<path class="arrow" d="M 320 618 L 398 618 L 398 600" marker-end="url(#tip)"/>
+<path class="arrow" d="M 398 524 L 398 504 L 320 504" marker-end="url(#tip)"/>
+<circle class="junction" cx="320" cy="618" r="4"/>
+<circle class="junction" cx="320" cy="504" r="4"/>
+<g class="input">
+<rect class="node" x="368" y="524" width="248" height="76" rx="10"/>
+<text x="386" y="558" class="node-title" text-anchor="start">Query token</text>
+<text x="386" y="592" class="detail" text-anchor="start">PRO_0 (or SELF)</text>
+</g>
+<text x="376" y="494" class="value-label" text-anchor="start">query = PRO_0</text>
+<path class="arrow uncertain" d="M 320 478 L 242 478 L 242 460" marker-end="url(#tip)"/>
+<path class="arrow uncertain" d="M 242 384 L 242 364 L 320 364" marker-end="url(#tip)"/>
+<circle class="junction" cx="320" cy="478" r="4"/>
+<circle class="junction" cx="320" cy="364" r="4"/>
+<g class="trained uncertain">
+<rect class="node" x="24" y="384" width="248" height="76" rx="10"/>
+<text x="42" y="418" class="node-title" text-anchor="start">Find referent</text>
+<text x="42" y="452" class="detail" text-anchor="start">one layer-1 head</text>
+</g>
+<text x="32" y="354" class="value-label" text-anchor="start">id = e0</text>
+<path class="arrow uncertain" d="M 320 338 L 398 338 L 398 320" marker-end="url(#tip)"/>
+<path class="arrow uncertain" d="M 398 244 L 398 224 L 320 224" marker-end="url(#tip)"/>
+<circle class="junction" cx="320" cy="338" r="4"/>
+<circle class="junction" cx="320" cy="224" r="4"/>
+<g class="trained uncertain">
+<rect class="node" x="368" y="244" width="248" height="76" rx="10"/>
+<text x="386" y="278" class="node-title" text-anchor="start">Write the id</text>
+<text x="386" y="312" class="detail" text-anchor="start">layer 1 neurons</text>
+</g>
+<text x="376" y="214" class="value-label" text-anchor="start">answer = e0</text>
+<g class="output">
+<rect class="node" x="24" y="128" width="592" height="56" rx="10"/>
+<text x="42" y="166" class="node-title" text-anchor="start">Output: identifier e0</text>
+</g>
+<g class="input">
+<rect class="node" x="24" y="640" width="592" height="48" rx="10"/>
+<text x="42" y="674" class="node-title" text-anchor="start">Clauses and query: C e0 C e1 PRO_0 =</text>
+</g>
+</svg>

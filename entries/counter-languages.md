@@ -1,6 +1,8 @@
 # Recognising counter languages
 
-Balanced brackets and equally sized runs of letters require a model to check both counts and the order in which symbols arrive. These tiny transformers answered whether a word obeyed those rules, either directly or after writing a state after each symbol. Answer-only training solved the final equal-three-runs task in 10/10 seeds, with exact answers on 2048 held-out words per seed; writing the state sequence was harder and solved only one screened cell in 1/3 seeds. The answer-only networks used symbol proportions and accumulated prefix violations, with the final violation check carried by one attention head or split across two. The task is solved in the headline answer-only cell, while its formula is verified in 9/10 final seeds; the remaining seed passes substitution but fails complement resampling.
+The string `aabbcc` has equally long blocks of a's, b's and c's; `aabcbc` has the same counts but returns to b after c, breaking the required block order. Tiny transformers learned to check such rules, and balanced brackets, either by answering directly or by writing intermediate states. The final answer-only experiment on three equal blocks reached exact answers in 10/10 runs on 2048 held-out words per run, with correct earlier output tokens supplied; it used each symbol's share of the word and accumulated warnings whenever a beginning broke the language's rules, with the final warning check handled by one attention head, a component that reads earlier positions, or shared across two.
+
+Writing the intermediate state after each symbol, a [scratchpad](../GLOSSARY.md#task-formats), was harder and solved only one screened setting in 1/3 runs. The headline answer-only task is solved, but the formula is [verified](../GLOSSARY.md#verifying-a-circuit) in 9/10 final runs: the remaining run accepts replacement by the formula but fails when activity outside the proposed circuit is changed.
 
 | Fact | Value |
 |---|---|
@@ -12,6 +14,14 @@ Balanced brackets and equally sized runs of letters require a model to check bot
 | Status | Solved (answer-only aⁿbⁿcⁿ final, 10/10 at exact 1.0 on 2048 words per seed); last run 2026-11-10; interpretation 2026-11-11. Scratchpad cells remain mostly unsolved. |
 | Weights | [Hugging Face: counter-languages](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/counter-languages) (weights and test evidence archive; published revision `6ca84a561e25`). |
 | Reproduce | Not available yet: training code for this task is not yet in `code/`. |
+
+## The circuit at a glance
+
+<img src="../figures/circuits/counter-languages.svg" width="640" alt="Legal words have all a symbols, then all b symbols, then all c symbols, with equal totals. Three branches share one residual stream: symbol proportions preserve balance, prefix flags and later heads collect a warning, and the final block combines both checks. Word aabcbc is balanced but breaks the order, so the target is N. Tests use reference keys; seed 7 fails complement resampling.">
+
+*Figure S1. Final answer-only networks trained from scratch (7 single-head and 3 split-head seeds) check equal totals in the order all a’s, then all b’s, then all c’s using proportions and prefix warnings rather than the hand-built raw-count code; their reference-keyed readout is verified in 9/10, while seed 7 is sufficient readout only because complement resampling fails, and probe-keyed replacement is imperfect.*
+
+Figure S1 shows balanced totals bypassing the prefix-warning route before both reach the final membership check; the readout substitution uses reference keys.
 
 ## 1. Task and data
 
@@ -54,23 +64,21 @@ Published revision `6ca84a561e25` includes a HAND network per language and forma
 
 HAND counts symbols, flags invalid prefixes, checks whether any violation has occurred and reads out the answer. Its L0H0 count head gives BOS, the beginning-of-sequence token, score ln 2^23 and each symbol value 2^23. This makes CNT_e approximate the unnormalised count #e rather than a proportion. L0's MLP flags each forbidden token/prefix combination and detects a zero final balance. L1H0 sums violation flags into NV; the last MLP answers Y only for zero balance and no violation.
 
-In Figure 1, L0H0 counts symbols, MLP0 flags invalid prefixes and zero balance, and L1H0 sums violations. MLP1 answers membership from zero balance and no violation; the scratchpad also writes intermediate states. Only MLP0 is trained in PART, while TRAIN learns all components.
+Table F1 records the fixed balance and violation routes. L0H0 counts symbols, MLP0 flags invalid prefixes and zero balance, and L1H0 sums violations. MLP1 answers membership from zero balance and no violation; the scratchpad also writes intermediate states. Only MLP0 is trained in PART, while TRAIN learns all components.
 
-```mermaid
-flowchart TD
-    accTitle: Hand-built count and prefix-violation checker
-    accDescr: A count head feeds the prefix-violation and zero-balance MLP; a second head sums violations and the final MLP answers membership. Only the first MLP is trained in PART. The scratchpad format also writes each intermediate state.
-  A["Input word"] --> B["L0H0: symbol counts CNT_e"]
-  B --> C["MLP0: prefix violations V and zero balance Z0"]
-  C --> D["L1H0: number of violations NV"]
-  C --> E["MLP1: Y only if Z0 and no violation"]
-  D --> E
-  E --> F["Y or N; B also writes each state"]
-  classDef trained fill:gold,stroke:darkgoldenrod,color:black
-  class C trained
-```
+<details>
+<summary>Technical balance and prefix-violation interfaces (Table F1)</summary>
 
-*Figure 1. HAND's count/violation/readout construction. MLP0 is the only trained stage in PART; all remaining nodes are frozen. TRAIN learns all components instead.*
+*Table F1. HAND's count/violation/readout construction. MLP0 is the only trained stage in PART; all remaining components are frozen. TRAIN learns all components instead.*
+
+| Component | Input, operation and output |
+|---|---|
+| Fixed layer 0, head 0 (L0H0) | Read the input word and write symbol counts CNT_e. |
+| MLP0, trained in PART | Read counts; mark prefix violations V and zero balance Z0. |
+| Fixed layer 1, head 0 (L1H0) | Read prefix violations and write their number NV. |
+| Fixed MLP1 | Read Z0 directly from MLP0 and NV from the violation-count head. Answer Y only if balance is zero and no violation exists; otherwise N. Format B also writes each intermediate state. |
+
+</details>
 
 HAND uses L0 2F + 3 neurons, with F = 1, 2, 6 violation flags by language, and L1 5 neurons. It was exact on every word of length 1–16 for k = 2 and 1–10 for k = 3, and all ≤ 3-run words through 40 and at 80 and 160: 183k–399k inputs per language, both formats, 0 mismatches. Only this HAND, called HAND-a, was built.
 
@@ -111,21 +119,21 @@ The final MLP's write at `=` is replaced by a 4-entry mean-response table T[Z0, 
 
 The status is Verified on 9/10 final seeds, and Sufficient readout only on seed 7. Passing reference-keyed substitution alone does not show that the network extracts those keys. Complement resampling tests whether the proposed circuit remains sufficient when everything outside it receives activations from other inputs ([glossary](../GLOSSARY.md#verifying-a-circuit)).
 
-In Figure 2, trained symbol-proportion heads feed prefix flags. Either a single any-violation head or a split-head route carries them to the membership readout. All computational nodes were trained. The reference-keyed table is verified only for the stated passing seeds; the exception remains sufficient readout only because its complement fails. Probe-keyed substitution is separately imperfect.
+Table F2 records the learned alternatives and reference-keyed test boundary. Trained symbol-proportion heads feed prefix flags. Either a single any-violation head or a split-head route carries them to the membership readout. All computational nodes were trained. The reference-keyed table is verified only for the stated passing seeds; the exception remains sufficient readout only because its complement fails. Probe-keyed substitution is separately imperfect.
 
-```mermaid
-flowchart TD
-    accTitle: Trained proportion and violation readout families
-    accDescr: Trained symbol-proportion heads feed prefix flags, which pass through either a single any-violation head or a split-head route to the final membership readout. All computational nodes are trained. The reference-keyed table is verified only on the stated passing seeds; the exception is sufficient readout only because its complement fails. Probe-keyed substitution is separately imperfect.
-  A["L0 heads: symbol proportions"] --> B["MLP0: prefix violation flags"]
-  B --> C["L1: one any-head A1 or two split heads A2"]
-  C --> D["MLP1: zero-balance and dead-prefix readout"]
-  D --> E["Membership answer"]
-  classDef trained fill:gold,stroke:darkgoldenrod,color:black
-  class A,B,C,D trained
-```
+<details>
+<summary>Technical learned alternatives and reference-key limits (Table F2)</summary>
 
-*Figure 2. Answer-only TRAIN, with all computational nodes trained. The reference-keyed table is Verified with the discovered circuit on 9/10 final seeds; seed 7 is Sufficient readout only because complement .880 fails .90. Probe-keyed substitution is .964–1.0, so reference keys are not silently treated as the network's own decoded state.*
+*Table F2. Answer-only TRAIN, with all listed network components trained. The reference-keyed table is Verified with the discovered circuit on 9/10 final seeds; seed 7 is Sufficient readout only because complement .880 fails .90. Probe-keyed substitution is .964–1.0, so reference keys are not silently treated as the network's own decoded state.*
+
+| Trained component or test boundary | Recorded role |
+|---|---|
+| Layer-0 heads and MLP0 | Symbol proportions feed prefix-violation flags. |
+| Alternative layer-1 routes | A1 uses one any-violation head; A2 uses two split heads. These are alternatives, not successive stages. |
+| MLP1 | Uses zero balance and dead-prefix information to write the membership answer. The main circuit above shows the separate balance and warning inputs. |
+| Reference-keyed substitution | Uses supplied task-state keys. The separately imperfect probe-keyed test does not establish that the reference keys are the network's own decoded state. |
+
+</details>
 
 In run 1, substitution 1.0 and discovered-circuit complement .91–1.0 passed in 24/24 seeds. The narrower HAND-shaped edge claim passed only 2/24; the discovered sets also retained direct answer and cross-layer paths. For Bs, the proposed MLP1 table T[S_t−1, s_t] scores .38–.74 and is rejected. A previous-state recurrence can be causally present without being localised wholly in MLP1; the B closed form remains open.
 

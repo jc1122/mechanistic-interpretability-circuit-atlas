@@ -1,6 +1,8 @@
 # Shortest paths on a grid
 
-Breadth-first search finds a shortest path by expanding the squares reached from a start, one step at a time. Four-layer transformers learned to write these reached-set maps on 6×6 mazes: all 10 final independent from-scratch runs (seeds, [glossary](../GLOSSARY.md#counting-results)) were reported exact on 176 held-out traces per seed with the correct earlier tokens supplied. A separate fresh bank scored the unmodified networks at 174–176/176, and no tested replacement formula reproduced their distributed computation. With hand-built routing frozen, all 10 networks also scored 176/176; their nine-number local update has partial verification coverage because replacing the learned block with its formula passed in all ten seeds, but tests resampling everything outside the claimed circuit (the complement, [glossary](../GLOSSARY.md#verifying-a-circuit)) covered only three. The final scratchpad cell is solved under its teacher-forced criterion, while answer-only runs remained unsolved and the from-scratch map writers transferred poorly to 8×8 grids.
+A shortest route through a maze can be found by marking the start, then its free neighbours, then theirs, until the goal is reached; this is breadth-first search. Four-layer transformers learned to write the growing maps on 6×6 mazes, with all 10 final independent from-scratch runs reported exact on 176 held-out traces per run when correct earlier output tokens were supplied. A separate fresh bank scored those unmodified networks at 174–176/176, and no tested formula reproduced the computation spread across their components.
+
+With hand-built input routing fixed, all 10 networks also scored 176/176; their nine-number update formula is [partial](../GLOSSARY.md#verifying-a-circuit) because replacement passed in all ten runs but tests changing activity outside the proposed circuit covered only three. The map-writing experiment is solved under its correct-history scoring rule, while answer-only runs stayed unsolved and the from-scratch map writers transferred poorly to 8×8 grids.
 
 | Fact | Value |
 |---|---|
@@ -12,6 +14,14 @@ Breadth-first search finds a shortest path by expanding the squares reached from
 | Status | Solved (final scratchpad TRAIN 10/10 at test exact match 1.0 on 176 traces per seed, teacher-forced); last run 2026-11-12 |
 | Weights | [Hugging Face: grid-bfs](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/grid-bfs) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
+
+## The circuit at a glance
+
+<img src="../figures/circuits/grid-bfs.svg" width="640" alt="Parallel frozen neighbour retrieval and goal-state retrieval share one residual stream with separate map-growth and goal-stop writes. A free cell with north reached and all other inputs zero targets reached 1; goal zero targets continuing. Correct earlier maps are supplied and complement coverage is partial.">
+
+*Figure S1. Final reached-map networks with only the local update learned (seeds 0–9) match the hand-built local expansion and frozen stop logic; status is partial because complement tests cover only seeds 0–2, correct history is supplied and no formula was accepted for the separate wholly trained circuit.*
+
+Figure S1 shows separate reached-map and goal-stop paths; the local update does not itself compute a distance or supply the wholly trained network’s formula.
 
 ## 1. Task and data
 
@@ -97,27 +107,21 @@ L0H0 binds each map cell to its step clock; L0H1 and MLP0 bind the goal to the C
 
 On the six bits, write s = N + E + S + W + self − 5w. The hinge response a = ReLU(s) − ReLU(s − 1) is 1 exactly when a free square is reached, and Y = (1 − a − w, a, w) selects unreached, reached or wall. HAND uses hinge rows (1, 1, 1, 1, 1, −5), biases 0 / −1 and readout margin 30. T+ selects an earlier-reached neighbour to walk back along a shortest path. HAND A instead gathers a vector, makes 35 synchronous updates over 38 layers and computes d = 36 − hits from the goal-hit count.
 
-In Figure 1, frozen map clocks and goal binding feed neighbourhood-fetch heads. The sole trained PART MLP gates the reached-neighbour OR by walls; a separate frozen goal check chooses the next index or END. The local rule remains partial at the full-seed scope because complement and path tests cover only the named subset.
+Table F1 records the separate fixed expansion and goal/stop routes. Frozen map clocks and goal binding feed neighbourhood-fetch heads. The sole trained PART MLP gates the reached-neighbour OR by walls; a separate frozen goal check chooses the next index or END. The local rule remains partial at the full-seed scope because complement and path tests cover only the named subset.
 
-```mermaid
-flowchart TD
-    accTitle: Hand-built reached-set expansion and stopping route
-    accDescr: Frozen map clocks and goal binding feed neighbourhood fetch heads. The sole trained PART MLP gates the reached-neighbour OR by walls, while a frozen goal check chooses the next index or END. The local rule is partial at the full-seed scope because complement and path tests cover only the named subset.
-    P["Grid walls, start,<br/>goal and written<br/>reached sets"] --> R["L0H0-1 bind map<br/>clocks and the<br/>goal at CHECK"]
-    R --> W["L1H0-4 fetch N, E,<br/>S, W and self from<br/>the previous map"]
-    W --> M["MLP2: OR reached<br/>neighbours, then<br/>gate out walls"]
-    W --> D["Frozen MLP1 sets<br/>STOP when CHECK<br/>reads the reached<br/>goal"]
-    M --> N["Write the next<br/>reached set"]
-    D --> O["Write the next<br/>step index or END"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class M trained
-    %% Invisible links constrain vertical layout only, not computation.
-    M ~~~ D
-    D ~~~ N
-    N ~~~ O
-```
+<details>
+<summary>Technical reached-set expansion and independent goal check (Table F1)</summary>
 
-*Figure 1. The hand-built breadth-first search update. Gold MLP2 is the only trained PART block. The learned nine-number update has partial status at the ten-seed scope: substitution passed in all ten, but complement and path tests covered only seeds 0–2. This is not a diagram of the wholly trained search mechanism.*
+*Table F1. The hand-built breadth-first search update. MLP2 is the only trained PART block. The learned nine-number update has partial status at the ten-seed scope: substitution passed in all ten, but complement and path tests covered only seeds 0–2. This is not an account of the wholly trained search mechanism.*
+
+| Component or output route | Input and operation |
+|---|---|
+| Fixed layer 0, heads 0–1 (L0H0–1) | Read grid walls, start, goal and written reached sets; bind map clocks and the goal at CHECK. |
+| Fixed neighbourhood reads | Layer 1, heads 0–4 (L1H0–4) fetch north N, east E, south S, west W and self from the previous map. |
+| Trained MLP2 expansion | OR the reached-neighbour inputs, then gate out walls. Write the next reached set. |
+| Separate fixed goal/stop route | When CHECK reads the reached goal, fixed MLP1 sets STOP. Write the next step index or END. This goal-bound read is distinct from the neighbourhood expansion. |
+
+</details>
 
 HAND T passed 184/184 stratified cases and HAND A 41/41, with minimum logit margin 30. The T harness exhausts the 64 six-bit update interfaces and tiny-grid cases, then stratifies random 6×6/8×8 mazes. It is not an enumeration of every larger maze. Induction over valid maps establishes the Boolean rule separately from the empirical margin; that measured margin is not a worst-case numerical certificate for every maze.
 
@@ -142,9 +146,15 @@ All ten PART networks matched the only tested HAND circuit, called HAND-a. HAND-
 
 PART preserved the local update when moved to longer traces or larger grids. TRAIN transferred partly to more steps on the same 6×6 grid, but larger grids introduced square tokens never trained. That token shift is a confound, not evidence that the learned local rule alone fails because the board is larger.
 
-![Source-reported length-transfer ranges for final PART and TRAIN scratchpad models](../figures/grid-bfs-transfer.svg)
+Table F2 compares larger-grid transfer with and without frozen routing.
 
-*Figure 2. Final teacher-forced transfer, 10 seeds per cell and 16 mazes per sampled distance. The d11–16 and d17–20 values are the source's reported ranges of distance-averaged exact match, not a new aggregate; the 8×8 values are copied from its grid-size summary. Closed-form status remains partial for PART because complement tests covered three seeds; no TRAIN form was accepted. This is a data figure, so no node is marked as trained.*
+*Table F2. Learned search falters on larger grids. Final teacher-forced transfer, 10 seeds per cell and 16 mazes per sampled distance. The d11–16 and d17–20 values are source-reported ranges of distance-averaged whole-output exact match, not a new aggregate; the 8×8 values are copied from its grid-size summary. New square tokens on 8×8 grids were untrained. Greedy checks covered distance 2 only. Closed-form status remains partial for PART because complement tests covered three seeds; no TRAIN form was accepted.*
+
+| Grid and distance | Frozen routing, trained stage (PART) | All weights trained (TRAIN) |
+|---|---|---|
+| 6×6; distance 11–16 | 1.0 | .66–1.0 |
+| 6×6; distance 17–20 | 1.0 | .41–.78 |
+| 8×8; distance 0–10 | 1.0 | 0–.09 |
 
 *Table 6. Original endpoint and summary displays, final snapshots, 16 mazes per sampled distance.*
 
@@ -199,21 +209,20 @@ Every candidate failed in all ten seeds; the common 16 cases were d = 0, which r
 
 A proposed TRAIN node set kept all L0/L3 heads and all four MLPs while resampling L1/L2 heads, 343 of 591 edges. It retained exact 0.0 from base 1.0 in seeds 0–2, with valid checks. The varying middle-layer heads were therefore needed for that claim. Its path drops were MLP3-to-output .51–.55, L3-heads-to-MLP3 .28–.38, embeddings-to-L0-heads .20–.45 and MLP2-to-output 0. Separately discovered circuits retained .47–.79 in the all-row complement tests and only .33–.71 held out. No TRAIN closed form was accepted.
 
-In Figure 3, supplied earlier trace tokens feed trained early heads, needed seed-dependent middle heads, and the final head and MLP output code. All marked stages were wholly trained. The tested TRAIN substitute is rejected: oracle state keys and middle-head resampling fail. Overall partial status applies only to the separate PART rule, not this TRAIN mechanism.
+Table F3 records the whole-network role inventory and rejected tests. Supplied earlier trace tokens feed trained early heads, needed seed-dependent middle heads, and the final head and MLP output code. All marked stages were wholly trained. The tested TRAIN substitute is rejected: oracle state keys and middle-head resampling fail. Overall partial status applies only to the separate PART rule, not this TRAIN mechanism.
 
-```mermaid
-flowchart TD
-    accTitle: Distributed trained grid-map writer
-    accDescr: Supplied earlier trace tokens feed trained early heads, needed seed-dependent middle heads and the final head and MLP output code. All marked stages are wholly trained. The tested TRAIN substitute is rejected: even oracle state keys fail and middle-head resampling fails. Overall partial status applies only to the separate PART rule, not this TRAIN mechanism.
-    E["Grid and supplied earlier trace tokens"] --> H["L0: seven or eight used heads"]
-    H --> MID["L1 and L2: seed-dependent needed heads"]
-    MID --> L["L3: eight used heads and MLP3 output code"]
-    L --> O["Reached maps and stop decisions"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class H,MID,L trained
-```
+<details>
+<summary>Technical whole-network roles and failed substitution/complement (Table F3)</summary>
 
-*Figure 3. The diagnostic T-dist family in all ten final TRAIN seeds. Gold marks wholly trained layers, not a single PART block; all four MLPs were used. Closed-form status is rejected for the tested TRAIN substitute: oracle state labels did not preserve whole traces, and middle-head resampling failed in the three tested seeds. The page's overall partial status refers only to PART verification coverage; this is not a recovered TRAIN formula.*
+*Table F3. The diagnostic T-dist family in all ten final TRAIN seeds. These are wholly trained layers, not a single PART block; all four MLPs were used. Closed-form status is rejected for the tested TRAIN substitute: oracle state labels did not preserve whole traces, and middle-head resampling failed in the three tested seeds. The page's overall partial status refers only to PART verification coverage; this is not a recovered TRAIN formula.*
+
+| Trained components | Supplied input and observed role |
+|---|---|
+| Layer 0 (L0) | Seven or eight used heads read the grid and supplied earlier trace tokens. |
+| Layers 1 and 2 (L1 and L2) | Seed-dependent needed middle heads contribute context; resampling them fails the tested claim. |
+| Layer 3 (L3) and MLP3 | Eight used heads and the output code write reached maps and stop decisions. The role inventory does not recover the trained search algorithm. |
+
+</details>
 
 ### 5.3 Relation to other studies
 

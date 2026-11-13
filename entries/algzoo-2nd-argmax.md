@@ -1,6 +1,8 @@
 # Second-argmax in ARC's AlgZoo
 
-The task is to find the position of the second-largest number in a list: with two numbers this means choosing the smaller, and with three it means finding the middle one. This study inspected 280 frozen recurrent networks, which update a small memory after each number, from ARC's AlgZoo; no networks were trained here. In the dated 2026-11-13 iteration-12 snapshot, 117 networks had passed registered substitution and resampling tests, while 15 more had optimal-ablation-only certificates that failed resampling, 33 had readings without a certificate and 115 remained unexplained. Interpretation is partly solved and the closed-form status is partial: these sampled tests describe particular fixed-length networks, including their mistakes, rather than proving exact task algorithms or longer-length generalisation.
+In the list `1, 3, 2`, the second-largest value is at position 2 (positions start at 0); a network reading one number at a time must remember enough to make that choice later. This study examined 280 already-trained recurrent networks, which update a small memory after each number, from the Alignment Research Center's (ARC) AlgZoo; no new networks were trained. Short-list networks often compare inputs, while some longer-list explanations use a recent window of inputs, the largest value so far or stored cutoff values, sometimes reproducing the network's mistakes.
+
+In the dated 2026-11-13 iteration-12 snapshot, 117 networks passed registered tests that replaced a computation with a formula and changed the activity outside the proposed circuit; 15 more passed only a weaker replacement test using chosen constants and failed when activity outside the circuit came from other inputs, 33 had interpretations without a certificate and 115 remained unexplained. Interpretation is partly solved and the formula status is [partial](../GLOSSARY.md#verifying-a-circuit): the tests cover sampled inputs at fixed list lengths, not exact algorithms for every input or longer lists.
 
 ## At a glance
 
@@ -25,6 +27,14 @@ HAND denotes formula-set weights and TRAIN denotes training from scratch ([rungs
 - Failed tests remain failed: five empty-unit failures, the width-2 T5 seed-0 specificity failure, old floating-projector and quotient failures, the auxiliary expression-size failure, the separate width-4 seed-4 omission, and both shared-veto attempts. Later accepted successors have separately registered tests and fresh rows; they do not repair those failures retrospectively.
 - The literal h3 T3 seed-0 final-cut circuit is only a rank2/rank1 reduction. The width-3 T4/T5/T6 seed-4 envelopes explain weak nets with activation-residual complements and rank-2 rather than rank-3 random controls. Modest recurrent-scalar savings are not full low-dimensional algorithms.
 - No fixed-length position readout defines longer-length generalisation. This is a dated snapshot: 33 read and 115 unexplained remain. Fresh replication is finite-sample evidence, not ARC's sampling-efficiency or surprise-accounting standard. [Section 6](#6-controls-limitations-and-open-questions) retains the deciding margins and failed-test details.
+
+## The circuit at a glance
+
+Figure S1 shows how parallel signed memories of the first value meet the next input at the final comparison neurons; this sketch covers only two-input networks.
+
+<img src="../figures/circuits/algzoo-2nd-argmax.svg" width="640" alt="The two-input recurrent family stores positive and negative parts of the first scalar in parallel. For input 1 their coefficients are 1 and 0, not measured neuron amplitudes. Final comparison neurons approximately compare that memory with the separate next input 3 and choose position 0, the smaller value 1. The comparison is dashed: sampled family evidence is not all-input identity.">
+
+*Figure S1 shows the two-sided binary family storing the first value and approximately comparing the next with final comparison neurons (35/40 two-input recurrent networks, matching the hand-built comparator role); status is Partial, with sampled, individually flagged certificates rather than all-input equivalence or longer-list generalisation, and the values are a task example, not a measurement.*
 
 ## 1. Task and data
 
@@ -60,24 +70,20 @@ The archive contains our nine hand-built nets at revision `1a04d29`. ARC's 280 n
 ## 3. Hand-built solution
 HAND-a: positive-input delay and leave-one-out maxima, L_i=(x_i)⁺+2 max(0,x_j:j≠i), exact on positive separated inputs. HAND-b: signed binary comparator and two signed T3 projections. HAND-c: T3 medoid L_i=−Σ_j|x_i−x_j|. None is assumed to be the learned mechanism merely because it computes the task.
 
-In Figure 1, scalar inputs take separate reference routes: HAND-a uses delay and leave-one-out maxima, HAND-b uses signed projections, and HAND-c uses absolute distances. Each produces position scores on its stated domain. No part was trained in a PART cell; HAND-a remains restricted to positive separated inputs.
+Table F1 records the fixed reference alternatives alongside the worked circuit above. Scalar inputs take separate reference routes: HAND-a uses delay and leave-one-out maxima, HAND-b uses signed projections, and HAND-c uses absolute distances. Each produces position scores on its stated domain. No part was trained in a PART cell; HAND-a remains restricted to positive separated inputs.
 
-```mermaid
-flowchart TD
-    accTitle: Hand-built second-argmax references
-    accDescr: Scalar inputs enter delay-and-maximum, signed-projection or absolute-distance references, which produce position logits on their stated domains. No component was partly trained. The positive-input restriction on HAND-a remains part of the claim.
-    X["Scalar<br/>inputs"] --> A["HAND-a:<br/>delay and<br/>leave-one-out<br/>maxima"]
-    X --> B["HAND-b:<br/>signed<br/>binary or T3<br/>projections"]
-    X --> C["HAND-c: T3<br/>sum of<br/>absolute<br/>distances"]
-    A --> Y["Position<br/>logits on<br/>the<br/>certified<br/>domain"]
-    B --> Y
-    C --> Y
-    %% Invisible links constrain vertical layout only, not computation.
-    A ~~~ B
-    B ~~~ C
-```
+<details>
+<summary>Technical reference alternatives and their domains (Table F1)</summary>
 
-*Figure 1. The three hand-built references. No node is marked as trained: there was no PART cell. HAND-a's exactness is restricted to positive separated inputs; a matching task output does not assign a learned mechanism.*
+*Table F1. Three fixed routes produce position scores (logits) on their stated domains. The rows are alternatives, not sequential stages. There was no PART cell. HAND-a's exactness is restricted to positive separated inputs; a matching task output does not assign a learned mechanism.*
+
+| Fixed reference | Input, stored information and decision |
+|---|---|
+| HAND-a | Numbers in a list. Delay each input and compare with maxima of the other inputs. Produces position scores on positive separated inputs only. |
+| HAND-b | Binary or T3 inputs. Compare signed values using projections to produce position scores on the stated domain. |
+| HAND-c | T3, a list of three numbers. Sum absolute distances; the smallest sum picks the position. Produces position scores on the stated domain. |
+
+</details>
 
 ## 4. What training finds
 
@@ -108,27 +114,33 @@ The following is a disjoint partition of all 280 nets; “read” is not certifi
 
 The population status is partial: 117 resample proofs and 15 optimal-only proofs are distinct evidence categories. The forms below reproduce network decisions on registered sampled domains; algebraically invariant final kernels and auxiliary box checks do not independently prove an exact recurrent algorithm.
 
-In Figure 2, short lists use comparison, angle, clamp or fan descriptions; longer lists use window, envelope or threshold-table descriptions. Each family describes externally trained networks and ends at their native scores or decisions. The population status remains partial, with optimal-only and activation-level exceptions; sampled agreement is not a global recurrent identity.
+Table F2 records the learned families and their limits. Short lists use comparison, angle, clamp or fan descriptions; longer lists use window, envelope or threshold-table descriptions. Each family describes externally trained networks and ends at their native scores or decisions. The population status remains partial, with optimal-only and activation-level exceptions; sampled agreement is not a global recurrent identity.
 
-```mermaid
-flowchart TD
-    accTitle: Families interpreted in frozen second-argmax networks
-    accDescr: Gaussian inputs feed short-list comparison, angle and clamp forms or longer-list window, envelope and threshold forms. The family nodes describe externally trained components. Status is partial: optimal-only and activation-level exceptions remain flagged, and sampled tests do not prove global recurrent identities.
-    X["Gaussian inputs"] --> B["T2 comparisons and<br/>T3 angle, clamp or<br/>fan forms"]
-    X --> L["Longer-list<br/>window, envelope<br/>and<br/>threshold-table<br/>forms"]
-    B --> Y["Native position<br/>logits or decision"]
-    L --> Y
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class B,L trained
-    %% Invisible links constrain vertical layout only, not computation.
-    B ~~~ L
-```
+<details>
+<summary>Technical learned-family key and failed-test limits (Table F2)</summary>
 
-*Figure 2. Families identified in ARC-trained networks; both family nodes are marked as trained. Status: partial, with 15 optimal-only and eight activation-level proofs flagged; sampled agreement and exact final-kernel algebra are not global recurrent identities.*
+*Table F2. Learned rules can reproduce the networks' errors. These are alternative families identified in externally ARC-trained networks, not newly trained here. Status: partial, with 15 optimal-only and eight activation-level proofs flagged; sampled agreement and exact final-kernel algebra are not global recurrent identities.*
 
-![Interpretation coverage by input length and recurrent width; labels are network counts.](../figures/qa1-argmax-coverage.svg)
+| Input family | Learned description and output |
+|---|---|
+| Short Gaussian lists | T2 compares two inputs. T3 uses angle, clamp or fan forms, which are geometric decision rules. Each describes the native position scores or decision. |
+| Longer Gaussian lists | Window forms keep recent inputs; envelope forms keep bounds; other forms use a table of thresholds. Each describes the native position scores or decision. |
+| Limits of these descriptions | Sampled tests only. Some tests use fixed constants or replace hidden activity. Optimal-only and activation-level exceptions remain flagged; no all-input recurrent identity is established. |
 
-*Figure 3. The iteration-12 partition of 280 fixed-length networks. Each bar spans its own group, not a common number of models. Status: partial; the 15 optimal-only certificates fail resampling, and resample-tested forms retain their activation-level and control flags. Counts describe sampled, domain-qualified evidence, not exact task algorithms or longer-length generalisation.*
+</details>
+
+Table F3 gives the dated coverage census without suggesting that a certificate is a perfect task algorithm.
+
+*Table F3. Longer lists leave more networks unexplained. Iteration-12 snapshot, 2026-11-13: 280 fixed-length ARC networks. Counts are networks, not task accuracy. Status: partial; the 15 optimal-only certificates fail resampling, and resample-tested forms retain their activation-level and control flags. Binary models include weak and constant predictors. Counts describe sampled, domain-qualified evidence, not exact task algorithms or longer-length generalisation.*
+
+| Input-length and width group | Evidence counts |
+|---|---|
+| Two inputs; all widths (n = 40) | 40 resample-tested; 0 optimal-only; 0 reading only; 0 unexplained |
+| Three inputs; all widths (n = 40) | 38 resample-tested; 0 optimal-only; 2 reading only; 0 unexplained |
+| Longer lists; width 2 (n = 25) | 16 resample-tested; 0 optimal-only; 9 reading only; 0 unexplained |
+| Longer lists; width 3 (n = 25) | 7 resample-tested; 0 optimal-only; 10 reading only; 8 unexplained |
+| Longer lists; width ≥ 4 (n = 150) | 16 resample-tested; 15 optimal-only; 12 reading only; 107 unexplained |
+| Recorded totals | 117 resample-tested; 15 optimal-only; 33 reading only; 115 unexplained |
 
 ### Binary decisions (T2)
 

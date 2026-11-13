@@ -1,12 +1,10 @@
 # Polynomial integration with reduced fractions
 
-Integrating an integer polynomial can produce fractions: each coefficient is divided by its new power, then the fraction must be
-simplified. These four-layer transformers either wrote the reduced answer directly or first wrote the steps of Euclid's algorithm
-for the greatest common divisor. With earlier arithmetic stages frozen, the three-seed scratchpad cell stopped at 5,500 steps,
-against 26,000 for answer only, and was the only tested cell to score 1.0 on withheld fractions. Training the scratchpad model from
-scratch was slower and finished exact in 9/10 final seeds on 256 held-out polynomials per seed, with the remaining seed failing at
-signed-numerator emission. The task is partly solved: prefix pooling, an average of earlier token values weighted by their identities and counts rather than their order, has substitution support in 20/20 snapshots across 10 seeds,
-but the explanation is partial, with no recovered gcd/division circuit and no complement test.
+Integrating 4+6x gives 4x+3x². Its second coefficient, the number in front of x², starts as 6/2 and simplifies to 3/1. Four-layer networks had to write reduced fractions, answering directly or using a [scratchpad](../GLOSSARY.md#task-formats), a record of working.
+
+Writing steps sped up learning when earlier arithmetic stages were supplied. That was the only tested setting exact on withheld fractions. Training the scratchpad network from scratch was slower: 9/10 final runs got whole outputs right on 256 held-out polynomials per run, with correct earlier tokens supplied. The remaining run failed on the signed numerator, the fraction's top number.
+
+The task is partly solved. Its [partial explanation](../GLOSSARY.md#verifying-a-circuit) covers an early layer that pools earlier symbols by identity and count, ignoring order. Replacing that pooling preserved predictions. No formula recovered the largest-common-factor or division calculation, and swapping the other parts' signals between examples was not tested.
 
 | Fact | Value |
 |---|---|
@@ -20,6 +18,14 @@ but the explanation is partial, with no recovered gcd/division circuit and no co
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
 Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [Euclid's algorithm](gcd-euclid.md) for fraction reduction, or [polynomial differentiation](polynomial-differentiation.md) for the reverse coefficient operation.
+
+## The circuit at a glance
+
+Figure 4 separates the token-count pool from the supplied common-factor input; the dashed neuron group has no recovered reduction rule ([mechanism and verification](#5-mechanism-and-verification)).
+
+<img src="../figures/circuits/polynomial-integration.svg" width="640" alt="All prefix tokens feed trained layer-0 attention, whose partial substitute weights token identities by their counts; the shown coefficient token C:6 occurs once. A distinct supplied-history input gives G:2, common factor 2. Essential feed-forward blocks have no recovered reduction rule. The target for coefficient 6 at term power 2 is N:3 D:1, numerator 3 and denominator 1. One upward residual stream shows availability, not verified scratchpad wiring. Dashed parts are not verified; no native numerical mixture or gcd/division algorithm is claimed.">
+
+*Figure 4. All ten final from-scratch scratchpad seeds, including failed seed 4, have a substitution-supported prefix pool unlike the hand-built design: the C:6 coefficient token occurs once, while G:2 supplies common factor 2 from correct history; this partial component/input map does not recover common-factor reduction or division, verified scratchpad wiring or a complement test.*
 
 ## 1. Task and data
 
@@ -86,44 +92,27 @@ re-score, sha256).
 
 ## 3. Hand-built solution
 
-The two hand-built networks reduce the fraction in different ways (Figure 1). Format `A` uses a reduction table: ReLU hinges on the
+The two hand-built networks reduce the fraction in different ways (Table F1). Format `A` uses a reduction table: ReLU hinges on the
 (c, j) code select the reduced fraction directly, with 4 heads + 428 neurons. Format `T` fetches the coefficient and the registers,
 runs the Euclid step with ABS = ReLU(a−b) + ReLU(b−a) and MIN = a − ReLU(a−b), and divides with signed quotient staircases, with 6
 heads + 769 neurons (665 of them framing). Both are exact on 2,804 polynomials per format, with margin ≥ 10.
 
-```mermaid
-flowchart TD
-    accTitle: Hand-built fraction-reduction alternatives
-    accDescr: Coefficient and register fetches feed either a finite reduction table or Euclid updates and quotient staircases, ending in the next-token response. The last MLP is the only marked trained PART block; other brick layers are unspecified in this diagram.
-    subgraph INPUT["Common input to each format"]
-        direction TB
-        P["Prompt: M:m C:c0 ... ="] --> F["coefficient and register<br/>fetch heads"]
-    end
-    subgraph TA["Format A: answer only"]
-        RT["reduction table:<br/>ReLU hinges on the (c, j) code"]
-    end
-    subgraph TT["Format T: scratchpad"]
-        direction TB
-        E["Euclid step:<br/>ABS = ReLU(a-b) + ReLU(b-a),<br/>MIN = a - ReLU(a-b)"]
-        Q["signed quotient staircases:<br/>N = c/g, D = j/g"]
-        E --> Q
-    end
-    subgraph OUTPUT["Common response after either route"]
-        direction TB
-        L3["L3 MLP: response,<br/>emits the next token"] --> Y["J:j N D"]
-    end
-    %% Alternatives share the input and response panels. Invisible links
-    %% stack panels; they are not computational paths between formats.
-    INPUT ~~~ TA
-    TA ~~~ TT
-    TT ~~~ OUTPUT
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class L3 trained
-```
+Table F1 records the alternative reference routes for reducing a coefficient fraction. One looks up the fraction; the other writes Euclid steps before dividing by the common factor.
 
-*Figure 1. The hand-built networks. Each format uses the common input and response panels; the format panels are not successive stages. Format `A` looks the reduced fraction up from the (c, j) code; format `T` runs subtractive Euclid
-rows and divides by the gcd with quotient staircases. The shaded L3 MLP is the part PART re-initialises and trains; the layers of the
-other HAND bricks are not recorded, so they are drawn without layer labels.*
+<details>
+<summary>Technical fraction lookup versus Euclid/division reference (Table F1)</summary>
+
+*Table F1. The hand-built networks. Both formats share the prompt and readers but write different responses; the routes are alternatives, not successive stages. Format A looks the reduced fraction up from the (c, j) code; format T runs subtractive Euclid rows and divides by the greatest common divisor (gcd) with quotient staircases. The layer-3 feed-forward block (L3 MLP) is the part PART re-initialises and trains; the layers of the other HAND bricks are not recorded and remain unspecified.*
+
+| Part or alternative route | Input, formula and destination |
+|---|---|
+| Common prompt and readers; frozen | `M:m C:c0 ... =` feeds coefficient and register fetch heads. |
+| A: answer-only reduction table; frozen | ReLU hinges on the coefficient/index code (c, j) select the reduced fraction directly. |
+| T: Euclid updates; frozen | Subtractive steps use ABS = ReLU(a−b) + ReLU(b−a) and MIN = a − ReLU(a−b) to find common factor g. |
+| T: quotient staircases; frozen | Signed quotient thresholds produce numerator N = c/g and denominator D = j/g. This follows Euclid only in the T route. |
+| Response block; trained in PART | L3 MLP emits the next token in the selected format. Answer-only A writes `J:j N D`: term index, numerator and denominator. Scratchpad T writes Euclid rows `A:a B:b`, then `G:g N D`: common factor, numerator and denominator. Other brick layers are unrecorded, not inferred. |
+
+</details>
 
 ## 4. What training finds
 
@@ -191,23 +180,23 @@ partial. The complement would replace circuitry outside a claimed mechanism with
 trained final-stage response has rank-16/24 whole-path substitution support, but is a finite (c, j, g) lookup, not inferred division.
 A compact mean-code substitute for answer-only TRAIN failed; no closed form was accepted for that cell.
 
-```mermaid
-flowchart TD
-    accTitle: Partial attention formulas inside the trained integration family
-    accDescr: Trained layer-zero attention pools token identities and counts, while a seed-specific layer-two reader supplies coefficient and term-index contributions. Trained MLPs remain essential. These partial substitutions do not recover gcd or division, and the complement is untested.
-    P["prompt and scratchpad tokens"] --> L0["L0 attention: prefix pooling, sum(N_u exp(S) v) / sum(N_u exp(S))"]
-    L0 --> M["MLP0 and MLP1: distributed computation"]
-    M --> R["L2 G-query reader b_h + u_h[c] + v_h[j], seed 0"]
-    R --> C["MLP2 and MLP3: no gcd/division closed form"]
-    C --> Y["written N:c/g D:j/g"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class L0,M,R,C,Y trained
-```
+Table F2 records the supported attention subpieces among essential, unresolved feed-forward blocks. These local formulas do not recover fraction reduction or a complete causal path.
 
-*Figure 2. Selected attention formulas among the MLPs of the from-scratch scratchpad family (10/10 seeds, including failed seed 4).
-Shading marks trained attention, MLPs and output. This is not a complete causal path; every MLP lesion gives exact 0. Status:
-partial. Prefix pooling keeps predictions in 20/20 snapshots across 10 seeds under substitution; the layer-2 reader passes only
-tested subpieces and fails in seed 2. The complement was not tested, and no gcd/division form was found.*
+<details>
+<summary>Technical prefix pool, limited readers and unknown fraction reduction (Table F2)</summary>
+
+*Table F2. Selected attention formulas among the feed-forward blocks (MLPs) of the from-scratch scratchpad family (10/10 seeds, including failed seed 4). Attention, MLPs and output are trained. This is not a complete causal path; every MLP lesion gives exact 0. Status: partial. Prefix pooling keeps predictions in 20/20 snapshots across 10 seeds under substitution; the layer-2 reader passes only tested subpieces and fails in seed 2. The complement was not tested, and no gcd/division form was found.*
+
+| Part or local substitute | Response, evidence and boundary |
+|---|---|
+| Prompt and scratchpad tokens | Supply the prefix for this teacher-forced family. |
+| Layer-0 attention; trained | Content-weighted prefix pooling is Σ_u N_u exp(S) v / Σ_u N_u exp(S), using token counts N_u, token-pair scores S and values v. This preserves predictions in 20/20 snapshots across 10 seeds, not 20 independent seeds. |
+| MLP0 and MLP1; trained | Essential distributed computation between the local attention pieces. They are not explained by the prefix-pooling formula. |
+| Layer-2 G-query reader; trained | At a common-factor query, seed 0 admits b_h + u_h[c] + v_h[j]: a bias, coefficient contribution and term-index contribution. Other seed/head coverage is limited as detailed above; seed 2 fails. |
+| MLP2 and MLP3; trained | Remain essential, with no recovered greatest-common-divisor or division law. |
+| Output | Writes `N:c/g D:j/g`, numerator and denominator after reduction by g. This describes the target, not a recovered native reduction algorithm or complement-verified path. |
+
+</details>
 
 ### 5.2 Relation to the hand-built network and to published work
 
@@ -270,14 +259,14 @@ numerator is used and coded non-linearly.
 The screening runs used seeds 0–2 in each cell; the final from-scratch scratchpad run added seeds 3–9. The prediction file was
 committed as 0e88b126 in the project repository.
 
-![Recorded stopping steps for the four three-seed polynomial-integration screening packs](../figures/qa1-integration-stops.svg)
+Table F3 separates screening-pack stopping times from the final run.
 
-*Figure 3. Recorded pack stopping steps for three screening seeds per cell, after all reached exact saved-test output. Values are
-26000, 5500, 14500 and 27000; these are neither averages nor each seed's first-exact time, and they are separate from the final
-ten-seed result. Only the frozen-scaffold scratchpad cell was exact on withheld fractions (1.0). The learned mechanism remains
-partial: no gcd/division closed form or complement certificate.*
+*Table F3. A scratchpad speeds one setting and slows another. Recorded pack stopping steps for three screening seeds per cell, after all reached exact saved-test output. Values are 26000, 5500, 14500 and 27000; these are neither averages nor each seed's first-exact time, and they are separate from the final ten-seed result. Only the frozen-scaffold scratchpad cell was exact on withheld fractions (1.0). The learned mechanism remains partial: no greatest-common-divisor (gcd)/division closed form or complement certificate.*
 
-[Open Figure 3 at full size](../figures/qa1-integration-stops.svg).
+| What is trained | Answer only: steps | Scratchpad: steps |
+|---|---|---|
+| One stage in a frozen scaffold (PART) | 26000 | 5500 |
+| All weights (TRAIN) | 14500 | 27000 |
 
 ## References
 

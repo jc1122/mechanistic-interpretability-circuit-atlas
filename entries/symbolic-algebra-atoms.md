@@ -1,12 +1,10 @@
 # Symbol-level algebra: collection, expansion and linear equations
 
-These networks collect coefficients, expand a product of two linear expressions and solve a linear equation using structured term
-tokens that expose each term's side, power and coefficient. From-scratch models that wrote intermediate results before the answer
-(a [scratchpad](../GLOSSARY.md#task-formats)) reached exact answers on 1000 saved test examples per seed in 10/10 best snapshots for expansion and 10/10 for
-solving. Expansion fell to 9/10 exact in final snapshots, and answer-only expansion and solving never reached exactness. Collecting
-terms on a frozen scaffold supported an explicit addition rule under substitution in 13/13 seeds, but that closed form is partial:
-its complement was not tested, and no from-scratch closed form was accepted. Overall the task is partly solved; the final
-from-scratch scratchpad models did not transfer to the untrained coefficient tokens ±8 (exact 0–.008 on 256 out-of-range examples).
+Expanding (2x+1)(3x+4) gives 6x²+11x+4. These networks received each term's side, power and coefficient (the number in front): the left 2x was supplied as left, power 1, coefficient 2. They did not parse ordinary notation.
+
+Training from scratch with a [scratchpad](../GLOSSARY.md#task-formats), a record of working, produced exact best saved networks in 10/10 runs each for expansion and equation solving, on 1000 saved test examples per run. Correct preceding tokens were supplied. Expansion dropped to 9/10 exact at the final state; answer-only expansion and solving never became exact.
+
+The task is partly solved. Term collection with hand-built retrieval has a [partial addition formula](../GLOSSARY.md#verifying-a-circuit); replacement passed, but swapping the other parts' signals between examples was not tested. No from-scratch formula was accepted. Claimed expansion and solving circuits retain the whole network, leaving nothing outside to test. Their final scratchpad models also failed on untrained coefficient tokens ±8, scoring 0–.008 on 256 out-of-range examples per run.
 
 | Fact | Value |
 |---|---|
@@ -20,6 +18,14 @@ from-scratch scratchpad models did not transfer to the untrained coefficient tok
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
 Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [polynomial addition and multiplication](polynomial-add-mul.md) for coefficient-list inputs, or [nested expressions](nested-expressions-mod-7.md) for a frozen parser.
+
+## The circuit at a glance
+
+Figure 3 separates each layer’s context-reading heads from its neuron block; the branches identify retained components rather than an expansion formula ([mechanism and verification](#5-mechanism-and-verification)).
+
+<img src="../figures/circuits/symbolic-algebra-atoms.svg" width="640" alt="Three layers branch from one upward residual stream. In each row, trained heads read context and return it to the stream before that layer’s feed-forward neuron block reads and updates it. Layer-0 and layer-1 heads are fetch heads; layer-2 heads feed the final neuron block and answer scores. All heads and blocks are retained, not just one strongest head. Input term atoms mean (2x+1)(3x+4); one product query has coefficients 2 and 3, target atom 6. Correct earlier tokens are supplied separately during scoring; arrows do not establish autonomous rollout. Dashed borders mean no verified product formula, not that component necessity is untested.">
+
+*Figure 3. The ten final from-scratch scratchpad expansion seeds retain every layer’s heads and feed-forward block (MLP), differing from the hand-built design: coefficients 2 and 3 have product target 6 within (2x+1)(3x+4) = 6x²+11x+4, with correct earlier tokens supplied, no accepted product formula or notation parser; the whole-network complement is empty rather than a compact certificate, and seed 3’s final snapshot is inexact.*
 
 ## 1. Task and data
 
@@ -85,7 +91,7 @@ The archive holds `hand_<op>_<fmt>.safetensors`, `part_*/train_*_s<seed>.safeten
 ## 3. Hand-built solution
 
 The hand-built networks fetch each operand atom by matching side and power and then combine the coefficients with signed ReLU pairs
-(Figure 1). Layer 0 (L0) builds a reciprocal-position frame, L1 places a phase anchor at `=`, and L2 fetches the operands by a squared
+(Table F1). Layer 0 (L0) builds a reciprocal-position frame, L1 places a phase anchor at `=`, and L2 fetches the operands by a squared
 side and power match, with score `−24(side−s)²−24(power−p)²+256·is_term`. Signed ReLU pairs add or subtract; multiplication uses
 bit-gated signed pairs with weights 1, 2, 4, 8, −16 (a signed bit code). In format `T`, expand reuses the written products. Solve
 classifies bounded rationals with the ratio score `2r·DN − r²D²`, where r is a candidate rational answer. ALL and NONE cover equations
@@ -102,21 +108,25 @@ satisfied by every value or by no value, respectively.
 HAND is exact in all 6 cells: 34,454 checks pass (exhaustive primitives and all 3,721 solve states), with minimum margin .0011 in solve
 and 1 elsewhere.
 
-```mermaid
-flowchart TD
-    accTitle: Structured-term fetch and hand-built coefficient operations
-    accDescr: Frozen framing and side-and-power matches fetch coefficient atoms. Only the final arithmetic MLP is trained in PART; it combines coefficients for collection, expansion or rational classification. Inputs already expose term structure and do not require ordinary-notation parsing.
-    P["Prompt: left terms ; right terms ="] --> L0["L0: reciprocal-position frame"]
-    L0 --> L1["L1: phase anchor at ="]
-    L1 --> L2["L2 heads: fetch operands by squared side and power match"]
-    L2 --> M["L2 MLP: signed ReLU pairs add or subtract; bit-gated signed pairs multiply; ratio score 2r DN - r^2 D^2 for solve"]
-    M --> Y["result atom"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class M trained
-```
+Table F1 records the structured-term reader and alternative coefficient operations. The input already identifies terms, sides and powers; this is not ordinary-notation parsing.
 
-*Figure 1. The hand-built network. L0 and L1 build the frame and the phase, L2 heads fetch each operand by side and power,
-and the last MLP combines the coefficients. The shaded MLP is the only part PART trains (`layers.2.mlp`; `layers.1` in solve `A`).*
+<details>
+<summary>Technical structured-atom readers and coefficient operations (Table F1)</summary>
+
+*Table F1. The hand-built network. L0 and L1 build the frame and the phase, L2 heads fetch each operand by side and power, and the last feed-forward block (MLP) combines the coefficients. Only that MLP is trained in PART (`layers.2.mlp`; `layers.1` in solve A).*
+
+| Part or alternative operation | Input, computation and destination |
+|---|---|
+| Structured prompt | Supplies `left terms ; right terms =`, with term structure already exposed. |
+| Layer 0 (L0); frozen | Builds the reciprocal-position frame. |
+| Layer 1 (L1); frozen | Anchors the current phase at `=`. |
+| Layer-2 heads (L2); frozen | Fetch operands by squared side-and-power match. |
+| Collection arithmetic; trained in PART | Signed ReLU pairs add or subtract coefficients. |
+| Expansion arithmetic; alternative | Bit-gated signed pairs multiply coefficients. |
+| Solve arithmetic; alternative | Scores candidate rational r by 2r·DN − r²D² before writing the result atom. These are alternative operation rules, not successive stages. |
+| Training boundary | The final arithmetic block alone is trained in PART: layer 2 normally, layer 1 for answer-only solve A. No notation parser is learned here. |
+
+</details>
 
 ## 4. What training finds
 
@@ -184,7 +194,7 @@ half-unit read-out margin. The closed form is supported by substitution; no
 No TRAIN closed form was accepted. In collect `A`, a joint analytic substitute for seed 1 scored 0/1000; the expand and solve `T`
 circuits are stated at component level only. TRAIN expand `T` and solve `T` each form one circuit type in 10/10 seeds: an MLP chain
 (MLP0, MLP1, L2 heads, MLP2) on top of layer-0 and layer-1 fetch heads, with a categorical product code (expand) or a difference code
-(solve) instead of HAND's bit-gated scalars (Figure 2). Every head and MLP is needed under resample ablation, which replaces that
+(solve) instead of HAND's bit-gated scalars (Table F2). Every head and MLP is needed under resample ablation, which replaces that
 component's activity with activity from another test input. The claimed circuit therefore contains the whole network: its empty
 complement cannot establish a smaller mechanism.
 
@@ -200,24 +210,24 @@ Edges pass their check (spearman_exact .87–.96) on all 20 TRAIN finals, with J
 (Jaccard 1). Here spearman_exact is rank agreement between estimated edge importance and direct edge interventions; Jaccard is
 shared edges divided by their combined edge set ([glossary](../GLOSSARY.md#analysis-measures)).
 
-```mermaid
-flowchart TD
-    accTitle: Whole-network trained expansion and solving paths
-    accDescr: Trained fetch heads and MLPs feed final-layer heads and a classifier using categorical products or coefficient differences. All components are needed in single-component resampling, leaving an empty complement. No TRAIN formula is accepted; partial status belongs only to the separate PART collection rule.
-    P["Prompt: left terms ; right terms ="] --> F["layer-0 and layer-1 fetch heads"]
-    F --> M0["MLP0"]
-    M0 --> M1["MLP1"]
-    M1 --> H2["L2 heads, strongest edge head varies by seed, H0 to H3"]
-    H2 --> M2["MLP2"]
-    M2 --> Y["answer atom; expand uses a categorical product code, solve a difference code and a final classifier"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class F,M0,M1,H2,M2,Y trained
-```
+Table F2 records a whole-network component inventory, not a recovered product or equation-solving algorithm. Retaining every component leaves no outside circuit for the complement test to challenge.
 
-*Figure 2. The component-level type in from-scratch expansion and solving with a scratchpad (10/10 seeds each). Shading marks the
-trained heads, MLPs and readout. All 12 heads and 3 MLPs matter under single-component resampling; the strongest displayed edge is
-not the only needed head. No TRAIN closed form was accepted. The whole-network complement is empty, not a compact circuit
-certificate; the only substitution-supported closed form is the separate partial PART collect rule.*
+<details>
+<summary>Technical whole-network roles and empty-complement limit (Table F2)</summary>
+
+*Table F2. The component-level type in from-scratch expansion and solving with a scratchpad (10/10 seeds each). Heads, feed-forward blocks (MLPs) and readout are trained. All 12 heads and 3 MLPs matter under single-component resampling; the strongest edge is not the only needed head. No TRAIN closed form was accepted. The whole-network complement is empty, not a compact circuit certificate; the only substitution-supported closed form is the separate partial PART collect rule.*
+
+| Part or alternative output | Role and evidence boundary |
+|---|---|
+| Structured prompt and supplied history | `left terms ; right terms =` and correct earlier trace tokens provide the tested inputs; this does not establish notation parsing or autonomous rollout. |
+| Layer-0 and layer-1 fetch heads; trained | Feed the component-level computation. |
+| MLP0 and MLP1; trained | Feed layer-2 heads. This identifies needed parts, not their complete algebra. |
+| Layer-2 heads (L2); trained | Feed MLP2. The strongest edge head varies by seed, H0 to H3 (heads 0 to 3); that head is not the only one needed. |
+| MLP2 and readout; trained | Write the answer atom. Expansion uses a categorical product code; solving instead uses a difference code and final classifier. |
+| Whole-network scope | All 12 heads and 3 MLPs matter under single-component resampling in the two 10/10-seed families. An empty complement cannot certify a compact mechanism; no TRAIN formula was accepted. |
+| Separate PART result | Only the collection rule has a substitution-supported partial closed form. It is not a formula for TRAIN expansion or solving. |
+
+</details>
 
 ### 5.3 Relation to the hand-built network and to published work
 

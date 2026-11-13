@@ -1,6 +1,8 @@
 # Decimal and hexadecimal addition
 
-Decimal and hexadecimal addition use the same column rule: add the two digits and the incoming carry, then keep the remainder in that base. Four-layer transformers were tested with answer-only, written-carry and column-sum outputs, either training one block on frozen arithmetic routing or training the whole network from scratch. A column-total readout appeared in 60/60 selected frozen-routing networks; this counts a family of readouts, not exact task successes. Longer training brought 37/40 independent from-scratch runs with answer-only or column-sum outputs (seeds, [glossary](../GLOSSARY.md#counting-results)) to test exact match ≥ .99, without recovering the hand-built head that fetches the carry from lower columns. The task is partly solved: longer inputs still fail, and the formula's status is partial because replacing individual components does not verify the whole from-scratch mechanism, while tests resampling everything outside the claimed circuit (the complement, [glossary](../GLOSSARY.md#verifying-a-circuit)) were not reported for the learned block on frozen routing.
+Adding a column can send a carry into the next one; decimal and hexadecimal addition share this rule even though their digits use different bases. Four-layer transformers were tested with answers alone, written carries or written column sums, learning either one block on fixed hand-built input routing or the whole network from scratch. All 60/60 networks selected for the fixed-routing mechanism census turned column totals into output digits. This counts a behaviour rather than exact task successes: the [census](#41-one-trained-stage-on-frozen-routing) combines the original decimal settings, original hexadecimal answer-only setting and hexadecimal written-working retries.
+
+Longer training brought 37/40 independent from-scratch answer-only or column-sum runs to whole-output test accuracy ≥ .99, without recovering the hand-built attention head, a component that reads earlier positions, that fetches the carry from lower columns. The task is partly solved because longer inputs still fail, and the formulas are [partial](../GLOSSARY.md#verifying-a-circuit): replacing individual pieces does not verify the whole from-scratch computation, while the learned block on fixed routing lacks a test changing activity outside its proposed circuit.
 
 | Fact | Value |
 |---|---|
@@ -12,6 +14,14 @@ Decimal and hexadecimal addition use the same column rule: add the two digits an
 | Status | Partly solved (TRAIN answer-only/column-sum retry: 37/40 at test exact match ≥ .99); last run 2026-11-05 |
 | Weights | [Hugging Face: decimal-hex-addition](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/decimal-hex-addition) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
+
+## The circuit at a glance
+
+<img src="../figures/circuits/decimal-hex-addition.svg" width="640" alt="Frozen digit heads preserve tens digits 4 and 7 on the residual stream while lower-column flags and a lookahead head provide carry 1. Both reach the learned layer-3 digit writer: total 12 targets digit 2 in 345 plus 678 equals 1023. This is the partial fixed-routing account.">
+
+*Figure S1. Answer-only fixed-routing networks in bases 10 and 16 (10 seeds each) keep the hand-built digit/carry routing and learn a column-total readout; this partial account has no complement test, and the rule example does not mean every learned digit table is exact.*
+
+Figure S1 shows current digits retained while a lower-column carry is fetched, then combined at the only learned block.
 
 ## 1. Task and data
 
@@ -91,28 +101,21 @@ L0/L1 construct positions: a uniform head gives 1/(r+1), a hinge MLP recovers po
 | B | MLP2 writes DIG = s mod b and MAJ = [s ≥ b], where s is the digits plus the written incoming carry. L3H0 copies the previous MAJ to the carry-output slot. |
 | C | A chain head finds the first d_j ≠ b−1 and copies [d_j ≥ b]. MLP2 writes d = a + b in phase 1, then (d + c) mod b in phase 2, with gate M = 4b. |
 
-In Figure 1, frozen index heads fetch digits. Answer only uses carry lookahead before its digit MLP; carry tokens use a digit-and-carry MLP followed by a frozen carry-copy head; column sums use lookahead and a two-phase MLP. Only the marked stage MLPs are trained in PART. Their status remains partial, with complement untested and no whole TRAIN mechanism established.
+Table F1 records the format-specific fixed routes and trained stages. Frozen index heads fetch digits. Answer only uses carry lookahead before its digit MLP; carry tokens use a digit-and-carry MLP followed by a frozen carry-copy head; column sums use lookahead and a two-phase MLP. Only the marked stage MLPs are trained in PART. Their status remains partial, with complement untested and no whole TRAIN mechanism established.
 
-```mermaid
-flowchart TD
-    accTitle: Hand-built digit and carry routes in larger bases
-    accDescr: Frozen index heads fetch operand digits. Answer only uses lookahead and a digit MLP; written carries use a digit-and-carry MLP and a frozen carry-copy head; column sums use a two-phase MLP. Only marked stage MLPs are trained in PART. Status is partial, with complement untested and no whole TRAIN mechanism established.
-    P["Base-10 or base-16<br/>operands"] --> F["Frozen index heads<br/>fetch the current<br/>digits"]
-    F --> A["Answer only: L2<br/>MLP writes digit<br/>equality and carry<br/>conditions"]
-    A --> L["Frozen L3H0<br/>lookahead finds<br/>the incoming carry"]
-    L --> AM["MLP3 writes the<br/>answer digit"]
-    F --> BM["Carry tokens: MLP2<br/>writes digit and<br/>carry"]
-    BM --> R["Frozen L3H0 copies<br/>the previous carry<br/>output"]
-    F --> CL["Column sums:<br/>frozen lookahead<br/>finds the incoming<br/>carry"]
-    CL --> CM["MLP2 writes local<br/>sums, then answer<br/>digits"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class AM,BM,CM trained
-    %% Invisible links constrain vertical layout only, not computation.
-    AM ~~~ BM
-    R ~~~ CL
-```
+<details>
+<summary>Technical format-specific digit and carry routes (Table F1)</summary>
 
-*Figure 1. The hand-built decimal and hexadecimal adders. Gold nodes are the stage blocks trained in PART. The learned column-total readouts have partial status: local substitutions support them, but complement resampling was not reported. This diagram does not establish the whole TRAIN mechanism or equal weights on its native carry input.*
+*Table F1. The hand-built decimal and hexadecimal adders. Only the named output-stage MLPs are trained in PART. The learned column-total readouts have partial status: local substitutions support them, but complement resampling was not reported. This table does not establish the whole TRAIN mechanism or equal weights on its native carry input.*
+
+| Alternative route | Fixed reads and trained output stage |
+|---|---|
+| Shared reader | Fixed index heads fetch the current digits from base-10 or base-16 operands. |
+| Answer only | Fixed layer-2 MLP writes digit-equality and carry conditions. Fixed layer 3, head 0 (L3H0) uses lookahead to find incoming carry. Trained MLP3 writes the answer digit. |
+| Carry tokens | Trained MLP2 writes digit and carry. Fixed L3H0 copies the previous carry output. |
+| Column sums | Fixed lookahead finds incoming carry. Trained MLP2 writes local sums, then answer digits. |
+
+</details>
 
 The HAND tests were exact for n = 1..12, with minimum logit margin 30. Coverage was exhaustive for n = 1..2 and sampled at each n = 3..12, with 4000 random pairs per format and length. “Exact” here does not mean every longer pair was enumerated.
 
@@ -202,25 +205,19 @@ MJP is the native carry-output channel, called MAJ in HAND; a, b, c and d in thi
 
 Equal operand contribution is also distinct from identical carry weights. In b16 B PART, setting own-carry weights equal to operand weights reduced exact match to .938 for two top neurons and .303 for all neurons. The stronger equal-weight claim is refuted at the weight level.
 
-In Figure 2, the native subtotal enters the trained carry response, a frozen head relays it, and the downstream trained digit response reads it. The alternative Boolean-carry intervention damages whole-answer accuracy. This component substitution remains partial, with complement untested; it is not length-general or a claim of equal native carry weights.
+Table F2 records the carry-response intervention and failed Boolean control. The native subtotal enters the trained carry response, a frozen head relays it, and the downstream trained digit response reads it. The alternative Boolean-carry intervention damages whole-answer accuracy. This component substitution remains partial, with complement untested; it is not length-general or a claim of equal native carry weights.
 
-```mermaid
-flowchart TD
-    accTitle: Analogue carry component and failed Boolean replacement
-    accDescr: A native subtotal enters the trained carry response, a frozen head relays it, and the trained downstream digit response reads it. Forcing a Boolean carry instead damages whole-answer accuracy. This one-seed component substitute is partial, with complement untested, and is not length-general.
-    S["Native predecessor<br/>subtotal s"] --> T["MLP2: calibrated<br/>carry response in<br/>MJP"]
-    T --> H["Frozen L3H0 relays<br/>the carry response"]
-    H --> M["Native downstream<br/>MLP2 digit<br/>response"]
-    M --> Y["Digit and written<br/>carry outputs"]
-    S --> B["Alternative<br/>intervention:<br/>force a Boolean<br/>carry"]
-    B --> F["Whole-answer exact<br/>falls to .222"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class T,M trained
-    %% Invisible links constrain vertical layout only, not computation.
-    Y ~~~ B
-```
+<details>
+<summary>Technical calibrated-carry replacement and failed Boolean control (Table F2)</summary>
 
-*Figure 2. A component substitution in b16 B PART retry seed 1. The hinge replacement scored 1.000 on 1,024 fresh pairs; the Boolean replacement scored .222. Gold marks the trained MLP2's carry and digit responses at successive output positions; L3H0 is frozen. Closed-form status is partial; complement resampling was not reported, and the substitute is not length-general.*
+*Table F2. A component substitution in b16 B PART retry seed 1. The hinge replacement scored 1.000 on 1,024 fresh pairs; the Boolean replacement scored .222. MLP2's carry and digit responses at successive output positions are trained; L3H0 is frozen. Closed-form status is partial; complement resampling was not reported, and the substitute is not length-general.*
+
+| Intervention path | Input and recorded result |
+|---|---|
+| Calibrated carry response | Native predecessor subtotal s enters MLP2's calibrated response in MJP, the native carry-output channel (MAJ in HAND). The frozen layer 3, head 0 (L3H0) relays that response to the native downstream MLP2 digit response, producing digit and written-carry outputs. |
+| Boolean control | Replace the calibrated response by a Boolean carry instead. Whole-answer exact accuracy falls to .222. This failed control does not support equal native carry weights. |
+
+</details>
 
 ### 5.3 Why the TRAIN algorithm remains unresolved
 

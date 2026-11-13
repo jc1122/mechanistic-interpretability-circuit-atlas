@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="704" viewBox="0 0 640 704" role="img" aria-labelledby="title desc">
+<title id="title">Frozen readers supply a learned step that is reused for every bit</title>
+<desc id="desc">Single-neuron-block PART scratchpad division and square-root cells at both ranges, excluding two-block 8-bit retries. One residual stream receives parallel frozen-reader role groups, not a claimed universal head partition: working/trial values and written decision/prefix. These are the copied registers X,T,B,W; a shared learned stage reads them and writes the next bit. Native token and query offsets remain. The dashed stage has Partial substitution support, not a complement certificate; ideal compare/subtract can repair errors. Example: final remainder-bit query of 7/2, working 3, trial 2, given decision 1, prefix 000 (value 0), next bit target 1. Matches HAND&#x27;s frozen scaffold, not a native ideal comparator identity; correct earlier tokens are supplied.</desc>
+<style>
+:root { color-scheme: light dark;
+  --bg:#ffffff; --fg:#172330; --muted:#46586a; --line:#526678;
+  --panel:#f4f7fa; --blue:#00679e; --blue-bg:#eaf5fc;
+  --amber:#885000; --amber-bg:#fff4dc;
+  --purple:#70509c; --purple-bg:#f3edfa; --idle:#eef0f2;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg:#101820; --fg:#f2f5f8; --muted:#c2ced9; --line:#b0bfcd;
+    --panel:#1c2a36; --blue:#79c8f5; --blue-bg:#132f43;
+    --amber:#f2c566; --amber-bg:#352b18;
+    --purple:#cbb1ee; --purple-bg:#30263e; --idle:#26313b; }
+}
+text { font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  fill:var(--fg); font-variant-numeric:tabular-nums; }
+.canvas { fill:var(--bg); }
+.node { fill:var(--panel); stroke:var(--line); stroke-width:2; }
+.input .node { fill:var(--blue-bg); stroke:var(--blue); }
+.output .node { fill:var(--purple-bg); stroke:var(--purple); }
+.trained .node { fill:var(--amber-bg); stroke:var(--amber); }
+.register .node { fill:var(--blue-bg); stroke:var(--blue); }
+.register-line { stroke:var(--blue); stroke-width:3; }
+.unused .node { fill:var(--idle); }
+.uncertain .node, .uncertain.arrow { stroke-dasharray:8 6; }
+.node-title { font-size:28px; font-weight:650; }
+.detail { font-size:24px; }
+.tag { font-size:22px; font-weight:600; fill:var(--muted); }
+.heading { font-size:30px; font-weight:700; }
+.note { font-size:24px; fill:var(--muted); }
+.arrow { fill:none; stroke:var(--line); stroke-width:2.5; }
+.arrowhead { fill:var(--line); }
+.arrow-label { font-size:24px; fill:var(--muted); paint-order:stroke;
+  stroke:var(--bg); stroke-width:8; stroke-linejoin:round; }
+.example-bg { fill:var(--panel); stroke:var(--line); stroke-width:1.5; }
+.bus-band { fill:none; stroke:var(--line); stroke-width:10; opacity:.14; }
+.bus-line { fill:none; stroke:var(--line); stroke-width:2.5; }
+.junction { fill:var(--line); }
+.lane { fill:none; stroke:var(--line); stroke-width:1.5; stroke-dasharray:3 7; }
+.value-label { font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
+  font-size:24px; fill:var(--fg); paint-order:stroke; stroke:var(--bg);
+  stroke-width:8; stroke-linejoin:round; }
+.legend-text { font-size:22px; fill:var(--muted); }
+.legend-frozen { fill:var(--panel); stroke:var(--line); stroke-width:2; }
+.legend-trained { fill:var(--amber-bg); stroke:var(--amber); stroke-width:2; }
+.legend-unverified { fill:none; stroke:var(--line); stroke-width:2; stroke-dasharray:5 4; }
+.tag,.legend-text {font-size:24px;} text {line-height:1.1;}
+</style>
+<defs><marker id="tip" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrowhead" d="M 0 0 L 10 5 L 0 10 Z"/></marker></defs>
+<rect class="canvas" width="640" height="704"/>
+<text x="24" y="36" class="heading" text-anchor="start">Frozen readers supply a learned step</text>
+<text x="24" y="80" class="heading" text-anchor="start">that is reused for every bit</text>
+<rect class="legend-frozen" x="24" y="98" width="24" height="20" rx="3"/>
+<text x="58" y="116" class="legend-text" text-anchor="start">frozen</text>
+<rect class="legend-trained" x="214" y="98" width="24" height="20" rx="3"/>
+<text x="248" y="116" class="legend-text" text-anchor="start">trained</text>
+<rect class="legend-unverified" x="404" y="98" width="24" height="20" rx="3"/>
+<text x="438" y="116" class="legend-text" text-anchor="start">not verified</text>
+<text x="24" y="690" class="note" text-anchor="start">Task example, not a measurement.</text>
+<path class="bus-line" d="M 320 588 V 184" marker-end="url(#tip)"/>
+<text x="24" y="580" class="note" text-anchor="start">residual stream</text>
+<g class="output">
+<rect class="node" x="24" y="128" width="592" height="56" rx="10"/>
+<text x="42" y="166" class="node-title" text-anchor="start">Next remainder bit</text>
+</g>
+<path class="arrow uncertain" d="M 320 338 L 258 338 L 258 320" marker-end="url(#tip)"/>
+<path class="arrow uncertain" d="M 258 244 L 258 224 L 320 224" marker-end="url(#tip)"/>
+<circle class="junction" cx="320" cy="338" r="4"/>
+<circle class="junction" cx="320" cy="224" r="4"/>
+<text x="280" y="214" class="value-label" text-anchor="end">bit target = 1</text>
+<g class="trained uncertain">
+<rect class="node" x="24" y="244" width="264" height="76" rx="10"/>
+<text x="42" y="278" class="node-title" text-anchor="start">Write next bit</text>
+<text x="42" y="312" class="detail" text-anchor="start">Native offsets stay</text>
+</g>
+<text x="352" y="266" class="note" text-anchor="start">One learned block</text>
+<text x="352" y="306" class="note" text-anchor="start">shared across steps</text>
+<path class="arrow" d="M 320 550 L 258 550 L 258 530" marker-end="url(#tip)"/>
+<path class="arrow" d="M 258 454 L 258 434 L 320 434" marker-end="url(#tip)"/>
+<circle class="junction" cx="320" cy="550" r="4"/>
+<circle class="junction" cx="320" cy="434" r="4"/>
+<text x="280" y="424" class="value-label" text-anchor="end">work 3; trial 2</text>
+<g class="process">
+<rect class="node" x="24" y="454" width="264" height="76" rx="10"/>
+<text x="42" y="488" class="node-title" text-anchor="start">Work + trial</text>
+<text x="42" y="522" class="detail" text-anchor="start">Frozen reader group</text>
+</g>
+<path class="arrow" d="M 320 550 L 382 550 L 382 530" marker-end="url(#tip)"/>
+<path class="arrow" d="M 382 454 L 382 434 L 320 434" marker-end="url(#tip)"/>
+<circle class="junction" cx="320" cy="550" r="4"/>
+<circle class="junction" cx="320" cy="434" r="4"/>
+<text x="360" y="424" class="value-label" text-anchor="start">bit 1; prefix 0</text>
+<g class="process">
+<rect class="node" x="352" y="454" width="264" height="76" rx="10"/>
+<text x="370" y="488" class="node-title" text-anchor="start">Written bits</text>
+<text x="370" y="522" class="detail" text-anchor="start">Frozen reader group</text>
+</g>
+<g class="input">
+<rect class="node" x="24" y="588" width="592" height="76" rx="10"/>
+<text x="42" y="622" class="node-title" text-anchor="start">Input: 7 / 2, last remainder bit</text>
+<text x="42" y="656" class="detail" text-anchor="start">Given decision 1; remainder prefix 000</text>
+</g>
+</svg>

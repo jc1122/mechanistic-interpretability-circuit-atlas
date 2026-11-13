@@ -1,6 +1,10 @@
 # Integer matrix-vector product
 
-Matrix-vector multiplication forms each answer by adding the products in one matrix row. A five-layer transformer that wrote partial row sums on a [scratchpad](../GLOSSARY.md#task-formats), a record of intermediate working, reached final whole-output exact match 1.0 in 8/10 seeds on 2,000 held-out inputs per seed; answer-only training reached 1/3 after the budget grew from 30k to 120k steps across three rounds. The scratchpad models used current-bit and carry information at the final layer, yet substituting the tested arithmetic formula on linearly decoded values failed in every seed. The task is partly solved, with a partial formula for the frozen-scaffold model (substitution 3/3, complement evidence on two tested seeds only) and no accepted from-scratch form. Every final scratchpad model scored exact match 0 at matrix sizes m=2 and m=4 on 256 inputs per size.
+A matrix is a table of numbers. The identity matrix leaves a list unchanged: each row selects its matching number. Other matrices need products and running sums. A five-layer network wrote those sums on a [scratchpad](../GLOSSARY.md#task-formats), a record of working; 8/10 fully trained runs got whole outputs right on 2,000 held-out inputs per run.
+
+Successful networks used running-sum bits and carries, the overflow passed to the next bit. Yet the proposed arithmetic rule failed when fed values read from the network by a fitted weighted sum. No from-scratch formula is accepted.
+
+The task is partly solved. Answer-only training succeeded less often, and every final scratchpad network failed at both other matrix sizes. With hand-built retrieval, a [partial formula](../GLOSSARY.md#verifying-a-circuit) passed replacement in three runs; swapping the other parts' signals between examples was tested in only two. All scores supplied correct earlier output tokens; they do not test unaided working.
 
 ## At a glance
 
@@ -18,6 +22,14 @@ Matrix-vector multiplication forms each answer by adding the products in one mat
 HAND sets every weight by formula, PART trains one stage on frozen HAND parts, and TRAIN learns all weights ([rungs](../GLOSSARY.md#the-three-rungs)). A scratchpad writes intermediate results before the answer; scores here are teacher-forced, with correct previous tokens supplied ([task formats](../GLOSSARY.md#task-formats)). Exact match requires the whole output to be correct, not just its final answer.
 
 Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [binary multiplication](multiplication.md) for the local carry step, or [finite-field linear systems](linear-systems-finite-fields.md) for row-update traces.
+
+## The circuit at a glance
+
+Figure S1 separates the matrix/vector input from the correct earlier running sum; both feed the late sum-bit write, whose arithmetic rule remains unrecovered.
+
+<a href="../figures/circuits/integer-matvec.svg"><img src="../figures/circuits/integer-matvec.svg" width="640" alt="Separate matrix/vector and correct-prior-trace branches converge on one residual stream before earlier neuron blocks, late operand routing and a dashed, unverified sum-bit write. For row one of identity times (1,2,3), a zero matrix entry paired with vector value 2 leaves the supplied running sum 1 unchanged, targeting units bit 1. This is a task example; the native arithmetic substitute was rejected."></a>
+
+*Figure S1 shows late retrieval feeding a sum-bit write in the final-exact scratchpad networks trained from scratch, seeds 0–6 and 8; their wiring differs from the hand-built network, the arithmetic substitute is rejected, and the teacher-forced evidence is limited to dimension three without size transfer ([evidence](#t2-from-scratch-scratchpad-family)).*
 
 ## 1. Task and data
 
@@ -75,19 +87,22 @@ HAND-b builds a position frame from BOS frequency, then uses delimiter heads, op
 
 For the scratchpad, x and x' denote the previous accumulator's current and previous bits; a and a' denote shifted matrix-entry bits; b is the selected vector bit, and s' is the already-written previous bit of the current field. SUM3 is the local carry/parity table, not a separate learned algorithm.
 
-```mermaid
-flowchart TD
-    accTitle: Hand-built accumulator route
-    accDescr: Operand and accumulator-bit heads feed selectors and the carry and next-bit table. Only the final MLP is trained in PART.
-    X["Matrix and vector bits"] --> F["L3H0 operands; L3H1 and L3H2 accumulator bits"]
-    F --> S["MLP3: selectors a, a-prime and b"]
-    S --> M["MLP4: SUM3 carry and next-bit table"]
-    M --> Y["Accumulator bit"]
-    classDef trained fill:lightblue,stroke:navy,color:black
-    class M trained
-```
+Table F1 records how the fixed readers supply a local accumulator update. The separate answer-only reference forms products before summing them; the two designs are alternatives.
 
-*Figure 1. HAND-b's scratchpad route. MLP4 is the only trained part in PART; HAND-a's answer-only product/sum route is described above.*
+<details>
+<summary>Technical accumulator inputs and carry rule (Table F1)</summary>
+
+*Table F1. HAND-b's scratchpad route. MLP4, the layer-4 feed-forward block, is the only trained part in PART; HAND-a's answer-only product/sum route is described above. PART trains one stage on frozen readers.*
+
+| Part and training status | Input, role and destination |
+|---|---|
+| Matrix and vector bits; supplied input | Feed the operand reader and select the shifted product to add. |
+| Layer 3, head 0 (L3H0); frozen | Fetches operand bits. Heads 1 and 2 (L3H1/L3H2) fetch the previous accumulator's current bit x and preceding bit x′. |
+| Layer-3 feed-forward block (MLP3); frozen | Selects matrix bits a and a′ and vector bit b for the final stage; s′ is the preceding output bit already written. |
+| Layer-4 feed-forward block (MLP4); trained | SUM3 is the local carry/parity table: c = [x′ + b·a′ − s′ ≥ 1], then y = (x + b·a + c) mod 2. Parity means whether the sum is odd. |
+| Accumulator-bit output | Writes y into the current field; this does not assert that a wholly trained network uses the same wiring. |
+
+</details>
 
 ## 4. What training finds
 
@@ -132,18 +147,23 @@ The same formula on ridge-decoded x,x',a,a',b,s' at L5 gives exact 0-.006 on 500
 Using y_i = sum_j p_ij on decoded products gives .52 in seed 1 versus native 1.0 and is not accepted; p_ij denotes a decoded row product.
 The published shorthand compares the failed T2 formula (exact 0-.006) with net 1.0 “on all 10 seeds”. The underlying scored substitution set instead has native 1.0 in nine seeds and .836 in seed 9; the headline final 2,000-row set has seed 7 at .9995 and seed 9 at .815. These are different evaluations, not interchangeable exact-match claims.
 
-```mermaid
-flowchart TD
-    accTitle: Trained matrix-vector scratchpad family
-    accDescr: Distributed routing feeds a last-layer accumulator, carry and next-bit code. The marked routing and readout are trained. The from-scratch formula fails substitution; PART has partial evidence on two complement-tested seeds only.
-    X["Input and previous trace"] --> R["L3 and L4: distributed operand routing"]
-    R --> M["MLP4 and residual L5: accumulator, carry and next bit"]
-    M --> Y["Trace bit"]
-    classDef trained fill:lightblue,stroke:navy,color:black
-    class R,M trained
-```
+Table F2 retains the observed late roles and the failed arithmetic test. A variable being recoverable from a network does not establish the hand-built route through it.
 
-*Figure 2. The T2 family trained from scratch; routing and readout nodes are trained. Status: rejected for the TRAIN closed form, with substitution exact 0-.006; the PART result remains partial because complement evidence covers two tested seeds only. Shared variables do not establish shared wiring or one stitch-compatible code.*
+<details>
+<summary>Technical late-layer roles and rejected arithmetic substitute (Table F2)</summary>
+
+*Table F2. The T2 family trained from scratch; routing and readout are trained. Status: rejected for the TRAIN closed form, with substitution exact 0-.006; the PART result remains partial because complement evidence covers two tested seeds only. Shared variables do not establish shared wiring or one stitch-compatible code.*
+
+| Part or test | Observed role and limit |
+|---|---|
+| Input and previous trace | Supply the prompt and correct earlier output tokens for this teacher-forced test. |
+| Layers 3 and 4; trained | Distribute operand routing across several components, rather than the fixed reference readers. |
+| Layer-4 feed-forward block (MLP4) and final residual L5; trained | Carry accumulator, carry and next-bit codes before the trace-bit write. L5 names the running state after the last layer, not another transformer layer. |
+| Trace-bit output | Reads that late code; no accepted native arithmetic formula is recovered. |
+| Arithmetic substitution | The rule on ridge-decoded inputs gives whole-output exact 0-.006 on 500 scored rows per seed (1000 saved: 500 fit and 500 scored). It is rejected, not an accepted TRAIN mechanism. |
+| Separate PART evidence | Substitution covers 3/3 seeds, but the reported resample evidence covers only two. This partial result cannot certify the from-scratch wiring or interchangeability between seeds. |
+
+</details>
 
 ### Relation to published work
 

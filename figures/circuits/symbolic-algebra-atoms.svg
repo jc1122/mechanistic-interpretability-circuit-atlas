@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="700" viewBox="0 0 640 700" role="img" aria-labelledby="title desc">
+<title id="title">All layers matter for expansion; the product rule remains unknown</title>
+<desc id="desc">Three layers branch from one upward residual stream. In each row, trained heads read context and return it to the stream before that layer’s feed-forward neuron block reads and updates it. Layer-0 and layer-1 heads are fetch heads; layer-2 heads feed the final neuron block and answer scores. All heads and blocks are retained, not just one strongest head. Input term atoms mean (2x+1)(3x+4); one product query has coefficients 2 and 3, target atom 6. Correct earlier tokens are supplied separately during scoring; arrows do not establish autonomous rollout. Dashed borders mean no verified product formula, not that component necessity is untested. The ten final from-scratch scratchpad expansion seeds retain every layer’s heads and feed-forward block (MLP), differing from the hand-built design: coefficients 2 and 3 have product target 6 within (2x+1)(3x+4) = 6x²+11x+4, with correct earlier tokens supplied, no accepted product formula or notation parser; the whole-network complement is empty rather than a compact certificate, and seed 3’s final snapshot is inexact. Unlabelled short connectors carry context with no recovered native values.</desc>
+<style>
+:root { color-scheme: light dark;
+  --bg:#ffffff; --fg:#172330; --muted:#46586a; --line:#526678;
+  --panel:#f4f7fa; --blue:#00679e; --blue-bg:#eaf5fc;
+  --amber:#885000; --amber-bg:#fff4dc;
+  --purple:#70509c; --purple-bg:#f3edfa; --idle:#eef0f2;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg:#101820; --fg:#f2f5f8; --muted:#c2ced9; --line:#b0bfcd;
+    --panel:#1c2a36; --blue:#79c8f5; --blue-bg:#132f43;
+    --amber:#f2c566; --amber-bg:#352b18;
+    --purple:#cbb1ee; --purple-bg:#30263e; --idle:#26313b; }
+}
+text { font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  fill:var(--fg); font-variant-numeric:tabular-nums; }
+.canvas { fill:var(--bg); }
+.node { fill:var(--panel); stroke:var(--line); stroke-width:2; }
+.input .node { fill:var(--blue-bg); stroke:var(--blue); }
+.output .node { fill:var(--purple-bg); stroke:var(--purple); }
+.trained .node { fill:var(--amber-bg); stroke:var(--amber); }
+.register .node { fill:var(--blue-bg); stroke:var(--blue); }
+.register-line { stroke:var(--blue); stroke-width:3; }
+.unused .node { fill:var(--idle); }
+.uncertain .node, .uncertain.arrow { stroke-dasharray:8 6; }
+.node-title { font-size:28px; font-weight:650; }
+.detail { font-size:24px; }
+.tag { font-size:22px; font-weight:600; fill:var(--muted); }
+.heading { font-size:30px; font-weight:700; }
+.note { font-size:24px; fill:var(--muted); }
+.arrow { fill:none; stroke:var(--line); stroke-width:2.5; }
+.arrowhead { fill:var(--line); }
+.arrow-label { font-size:24px; fill:var(--muted); paint-order:stroke;
+  stroke:var(--bg); stroke-width:8; stroke-linejoin:round; }
+.example-bg { fill:var(--panel); stroke:var(--line); stroke-width:1.5; }
+.bus-band { fill:none; stroke:var(--line); stroke-width:10; opacity:.14; }
+.bus-line { fill:none; stroke:var(--line); stroke-width:2.5; }
+.junction { fill:var(--line); }
+.lane { fill:none; stroke:var(--line); stroke-width:1.5; stroke-dasharray:3 7; }
+.value-label { font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
+  font-size:24px; fill:var(--fg); paint-order:stroke; stroke:var(--bg);
+  stroke-width:8; stroke-linejoin:round; }
+.legend-text { font-size:22px; fill:var(--muted); }
+.legend-frozen { fill:var(--panel); stroke:var(--line); stroke-width:2; }
+.legend-trained { fill:var(--amber-bg); stroke:var(--amber); stroke-width:2; }
+.legend-unverified { fill:none; stroke:var(--line); stroke-width:2; stroke-dasharray:5 4; }
+.tag,.legend-text {font-size:24px;} text {line-height:1.1;}
+</style>
+<defs><marker id="tip" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrowhead" d="M 0 0 L 10 5 L 0 10 Z"/></marker></defs>
+<rect class="canvas" width="640" height="700"/>
+<text x="20" y="38" class="heading" text-anchor="start">All layers matter for expansion;</text>
+<text x="20" y="82" class="heading" text-anchor="start">the product rule remains unknown</text>
+<rect class="legend-trained" x="20" y="100" width="24" height="20" rx="3"/>
+<text x="54" y="118" class="legend-text" text-anchor="start">trained</text>
+<rect class="legend-unverified" x="200" y="100" width="24" height="20" rx="3"/>
+<text x="234" y="118" class="legend-text" text-anchor="start">not verified</text>
+<path class="bus-line" d="M 320 616 V 218" marker-end="url(#tip)"/>
+<style>.bus-band{display:none}</style>
+<text x="20" y="246" class="note" text-anchor="start">residual stream</text>
+<path class="arrow uncertain" d="M 320 614 L 40 614 L 40 582" marker-end="url(#tip)"/>
+<text x="56" y="606" class="value-label" text-anchor="start">atoms 2,1;3,4</text>
+<path class="arrow uncertain" d="M 280 557 L 320 557" marker-end="url(#tip)"/>
+<g class="trained uncertain">
+<rect class="node" x="20" y="532" width="260" height="50" rx="10"/>
+<text x="38" y="567" class="node-title" text-anchor="start">Layer 0 fetches</text>
+</g>
+<path class="arrow uncertain" d="M 320 557 L 360 557" marker-end="url(#tip)"/>
+<path class="arrow uncertain" d="M 600 532 L 600 502 L 320 502" marker-end="url(#tip)"/>
+<text x="342" y="494" class="value-label" text-anchor="start">updated context</text>
+<g class="trained uncertain">
+<rect class="node" x="360" y="532" width="260" height="50" rx="10"/>
+<text x="378" y="567" class="node-title" text-anchor="start">Layer 0 neurons</text>
+</g>
+<path class="arrow uncertain" d="M 320 488 L 40 488 L 40 456" marker-end="url(#tip)"/>
+<text x="56" y="480" class="value-label" text-anchor="start">earlier context</text>
+<path class="arrow uncertain" d="M 280 431 L 320 431" marker-end="url(#tip)"/>
+<g class="trained uncertain">
+<rect class="node" x="20" y="406" width="260" height="50" rx="10"/>
+<text x="38" y="441" class="node-title" text-anchor="start">Layer 1 fetches</text>
+</g>
+<path class="arrow uncertain" d="M 320 431 L 360 431" marker-end="url(#tip)"/>
+<path class="arrow uncertain" d="M 600 406 L 600 376 L 320 376" marker-end="url(#tip)"/>
+<text x="342" y="368" class="value-label" text-anchor="start">updated context</text>
+<g class="trained uncertain">
+<rect class="node" x="360" y="406" width="260" height="50" rx="10"/>
+<text x="378" y="441" class="node-title" text-anchor="start">Layer 1 neurons</text>
+</g>
+<path class="arrow uncertain" d="M 320 362 L 40 362 L 40 330" marker-end="url(#tip)"/>
+<text x="56" y="354" class="value-label" text-anchor="start">earlier context</text>
+<path class="arrow uncertain" d="M 280 305 L 320 305" marker-end="url(#tip)"/>
+<g class="trained uncertain">
+<rect class="node" x="20" y="280" width="260" height="50" rx="10"/>
+<text x="38" y="315" class="node-title" text-anchor="start">Layer 2 heads</text>
+</g>
+<path class="arrow uncertain" d="M 320 305 L 360 305" marker-end="url(#tip)"/>
+<path class="arrow uncertain" d="M 600 280 L 600 250 L 320 250" marker-end="url(#tip)"/>
+<text x="342" y="242" class="value-label" text-anchor="start">product 6 target</text>
+<g class="trained uncertain">
+<rect class="node" x="360" y="280" width="260" height="50" rx="10"/>
+<text x="378" y="315" class="node-title" text-anchor="start">Layer 2 neurons</text>
+</g>
+<g class="output">
+<rect class="node" x="20" y="138" width="600" height="80" rx="12"/>
+<text x="42" y="170" class="node-title" text-anchor="start">One product-atom target: 6</text>
+<text x="42" y="204" class="detail" text-anchor="start">Coefficients 2 and 3; rule not recovered</text>
+</g>
+<text x="20" y="654" class="detail" text-anchor="start">Input meaning: left (2x + 1); right (3x + 4)</text>
+<text x="20" y="688" class="note" text-anchor="start">Task example, not a measurement.</text>
+</svg>

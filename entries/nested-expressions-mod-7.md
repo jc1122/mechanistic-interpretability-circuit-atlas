@@ -1,6 +1,10 @@
 # Nested expressions modulo seven
 
-Evaluating a parenthesised expression requires two jobs: track which subexpression is ready, then perform its arithmetic. This experiment froze a hand-built parser that keeps a stack of unfinished subexpressions and trained only its arithmetic block in a four-layer transformer, with results taken modulo 7. All 10 final independent training runs (seeds, [glossary](../GLOSSARY.md#counting-results)) scored 260/260 on held-out complete traces, and replacing the block with the exact residue rule kept 260/260. The block's formula is verified within this frozen-parser setting, including a test resampling everything outside the claimed circuit (the complement, [glossary](../GLOSSARY.md#verifying-a-circuit)) on 32 diagnostic rows, with no untouched test and only 16 expressions per formula stress set. The final frozen-parser cell is solved; networks trained entirely from scratch usually failed held-out single literals and did not recover the parser's generalisation.
+For (2+6), keeping the remainder after division by 7 gives 1. A hand-built parser keeps a stack, a last-in-first-out list: it reduces ready `2+6` entries to `1`, then removes the brackets. Only the arithmetic block of a four-layer network was trained.
+
+All 10 final runs got 260/260 held-out working traces right, with correct preceding tokens supplied. Replacing the block with exact arithmetic kept that score. Its internal values differed from the hand-built version: only the largest answer score had to be right.
+
+The final frozen-parser experiment is solved. Its [formula is verified](../GLOSSARY.md#verifying-a-circuit) within the supplied parser: swapping the other parts' signals between examples also passed on 32 diagnostic rows. There was no untouched test, and each formula stress set had only 16 expressions. Training entirely from scratch usually failed even held-out single numbers, so this does not show that a network learned the parser.
 
 | Fact | Value |
 |---|---|
@@ -14,6 +18,14 @@ Evaluating a parenthesised expression requires two jobs: track which subexpressi
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
 Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [symbol-level algebra](symbolic-algebra-atoms.md) for structured inputs, or [finite-field linear systems](linear-systems-finite-fields.md) for written arithmetic microsteps.
+
+## The circuit at a glance
+
+Figure 3 shows the local arithmetic block inside the supplied parser ([mechanism and verification](#5-mechanism-and-verification)).
+
+<img src="../figures/circuits/nested-expressions-mod-7.svg" width="640" alt="The parser writes the winning remainder after division by 7. One upward residual stream has separate read/write branches for Read top stack (layer 2 heads); Shift / copy (other parser actions); Score residues (trained arithmetic). Given stack: 2 + 6; arithmetic is modulo 7; Next stack: 1. Task values are illustrative; dashed boxes and branches are not verified.">
+
+*Figure 3. Final partly trained seeds 0–9 keep the hand-built parser but use a different residue-score code whose winning remainder after division by 7 feeds its frozen stack writer; the local block is verified, not a learned parser, with no untouched test and small diagnostic/stress sets.*
 
 ## 1. Task and data
 
@@ -66,23 +78,23 @@ The 30 arithmetic neurons use triangular hinges on a+b for addition, and on log�
 
 The test harness scored 1845/1845 exact with minimum logit margin 30. Coverage was exhaustive for at most 1 operator at each of 13 origins, and stratified up to n = 7 and depth 4; it was not exhaustive over every larger expression.
 
-```mermaid
-flowchart TD
-    accTitle: Frozen stack parser with a trained arithmetic block
-    accDescr: Frozen counters and stack-entry readers supply the trained arithmetic block, then frozen routing writes the next stack state. Verification covers only the arithmetic block within the frozen parser, with no untouched test and small diagnostic and stress sets.
-    P["Expression tokens<br/>and written stack state"] --> C["Frozen L1H0<br/>reads parser counters"]
-    C --> F["Frozen L2H0-2 fetch<br/>the top three stack entries"]
-    F --> M["L2 neurons 0-29:<br/>score the arithmetic result<br/>modulo 7"]
-    M --> W["Frozen MLP3 writes<br/>the next stack state"]
-    I["Frozen L2H3-4 fetch input<br/>or a copied stack cell"] --> W
-    W --> Y["Write the complete trace<br/>and final residue"]
-    %% Invisible link stacks separate inputs; it is not a computational path.
-    M ~~~ I
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class M trained
-```
+Table F1 records the arithmetic and copy routes into the fixed stack writer. Learning is confined to local arithmetic; the parser and its addressing are supplied.
 
-*Figure 1. The hand-built stack parser with a trained arithmetic block, shown in gold. The block's closed form is verified within the frozen-parser setting: substitution passed on 260 held-out expressions per seed and complement resampling on 32 diagnostic rows, in all ten final seeds. Validation rows were reused for selection; there is no untouched test, and substitution stress sets contain only 16 expressions each.*
+<details>
+<summary>Technical supplied parser, arithmetic block and copy bypass (Table F1)</summary>
+
+*Table F1. The hand-built stack parser with a trained arithmetic block. The block's closed form is verified within the frozen-parser setting: substitution passed on 260 held-out expressions per seed and complement resampling on 32 diagnostic rows, in all ten final seeds. Validation rows were reused for selection; there is no untouched test, and substitution stress sets contain only 16 expressions each.*
+
+| Part and training status | Input, role and destination |
+|---|---|
+| Expression tokens and written stack state | Supply the current expression and parser state. |
+| Layer 1, head 0 (L1H0); frozen | Reads parser counters that direct stack retrieval. |
+| Layer 2, heads 0–2 (L2H0–2); frozen | Fetch the top three stack entries for the local operation. |
+| Layer-2 neurons 0–29; trained | Score the arithmetic result modulo 7, the remainder after division by 7. Only this arithmetic block is learned. |
+| Layer 2, heads 3–4 (L2H3–4); frozen | Fetch the next input or a copied stack cell directly for the writer, bypassing arithmetic on copy/shift actions. |
+| Layer-3 feed-forward block (MLP3); frozen | Combines arithmetic and copy inputs to write the next stack state, complete trace and final residue. Local verification does not verify a learned parser. |
+
+</details>
 
 ## 4. What training finds
 
@@ -115,20 +127,24 @@ Replacing the block with `onehot((a op b) mod 7)`, using α = 1 and β = 0 with 
 
 Resampling everything outside the claimed 22-edge circuit kept exact 1.0 of base 1.0 in 10/10 final seeds, on 32 IID rows with three draws. Resampling the circuit itself, a random same-size set or setting it to zero gave 0; the self-checks passed. A mean replacement retained 1.0 and is not the deciding resample control. Both retention shares were 1.0 ≥ .90, meeting the atlas [verification rule](../GLOSSARY.md#verifying-a-circuit) for the trained block in the frozen-parser setting. This does not verify an independently learned parser, and there is no untouched test.
 
-Path patching, which corrupts only selected connections, broke exact to 0 in every seed for either L2H0–2 to MLP2 (operand fetch) or MLP2 to MLP3 (residue write), despite their small log-probability shares of approximately .05 / .22. Screening had the same accepted block in 3/3 seeds. Figure 2 explains why a weak one-hot fit can coexist with exact arithmetic decisions.
+Path patching, which corrupts only selected connections, broke exact to 0 in every seed for either L2H0–2 to MLP2 (operand fetch) or MLP2 to MLP3 (residue write), despite their small log-probability shares of approximately .05 / .22. Screening had the same accepted block in 3/3 seeds. Table F2 explains why a weak one-hot fit can coexist with exact arithmetic decisions.
 
-```mermaid
-flowchart TD
-    accTitle: Learned residue decisions inside the frozen parser
-    accDescr: The trained arithmetic block scores result residues, and the frozen writer chooses the largest score. The block is verified within this supplied parser; there is no untouched test, and diagnostic and stress sets are small.
-    F["Fetched residues a, b and operator"] --> M["Trained L2 arithmetic block writes seven AR scores"]
-    M --> A["Largest score identifies the result residue"]
-    A --> W["Frozen MLP3 writes that residue into the stack"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class M trained
-```
+Table F2 records why the winning score matters more than matching every score value. Different wrong-channel values can coexist with the correct local arithmetic decision.
 
-*Figure 2. The learned argmax residue code. Only the gold L2 block was trained. Its closed form is verified for the trained block within the frozen parser: all 98 local cases have the correct largest channel in every final seed, substitution passed on 260 expressions and complement resampling on 32 rows. There is no untouched test; the stress sets contain 16 expressions each. Different wrong-channel values on different inputs do not contradict correct largest-channel decisions on each input.*
+<details>
+<summary>Technical largest-score residue code and local verification (Table F2)</summary>
+
+*Table F2. The learned argmax residue code, where argmax means the largest-score choice. Only the layer-2 block was trained. Its closed form is verified for the trained block within the frozen parser: all 98 local cases have the correct largest channel in every final seed, substitution passed on 260 expressions and complement resampling on 32 rows. There is no untouched test; the stress sets contain 16 expressions each. Different wrong-channel values on different inputs do not contradict correct largest-channel decisions on each input.*
+
+| Part or decision | Role and scope |
+|---|---|
+| Fetched residues a and b, and operator | Supplied by the frozen stack readers. |
+| Layer-2 arithmetic block; trained | Writes seven AR residue scores. The largest score names (a op b) mod 7; exact one-hot values are not required. |
+| Largest-score selection | Identifies the local result even when the non-winning scores vary across inputs. |
+| Layer-3 feed-forward block (MLP3); frozen | Writes that selected residue into the stack. |
+| Verification boundary | The trained block is verified within the supplied parser only; validation was reused, the diagnostic and stress sets are small, and there is no untouched test. |
+
+</details>
 
 PART retains HAND-a's 22-edge parser circuit while changing its arithmetic code; it does not use a Fourier clock. TRAIN T has a dense scratchpad parser with HAND edge Jaccard .07, and its counters do not extend to unseen values. TRAIN A has a last-layer value code that beats T on the OOD sets but remains below .6. These dense, non-unique circuit observations are compared with [Chen et al. (2026)](#references); no failed discovery search proves that no other faithful circuit could be found.
 

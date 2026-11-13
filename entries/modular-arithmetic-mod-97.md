@@ -1,12 +1,10 @@
 # Modular arithmetic mod 97 in six number formats
 
-Writing numbers differently changed how these transformers learned the same arithmetic: addition, multiplication and squaring,
-keeping the remainder after division by 97. With one token per number and 90% of pairs in training, all 10 multiplication seeds
-placed nonzero numbers on circular codes ordered by their exponents as powers of 5, yet only 6/10 reached accuracy ≥ .99 on 941 held-out inputs per seed.
-The measured binary, decimal and hexadecimal networks carried no circular code; digit multiplication remained limited by
-memorisation in the studied cells. A fitted output rule supplied the true exponent of each input, so its success did not recover
-that computation inside the trained network. The task is partly solved; the closed form is partial and output-level only, supported
-by substitution on all 9216 nonzero pairs for 8 eligible seeds with native held-out accuracy ≥ .98, with no resample-complement certificate.
+The number 96 can be one symbol or two decimal digits. These networks learned differently from that choice, although both formats ask the same arithmetic: 96+2 leaves remainder 1 after division by 97. Whole-number multiplication produced circular codes ordered by powers of 5. An exponent counts the multiplications by 5; this code, called a [discrete logarithm](../GLOSSARY.md#analysis-measures), turns multiplication into addition.
+
+Every whole-number multiplication run developed circles, but only 6/10 reached held-out accuracy ≥ .99 on 941 inputs per run. The tested digit formats had no circular code; digit multiplication remained limited by memorisation. The task is partly solved.
+
+Its output-only formula is [partial](../GLOSSARY.md#verifying-a-circuit): replacement worked on all nonzero pairs in eight runs with held-out accuracy ≥ .98, but included training inputs and used externally supplied true exponents. It does not explain how the network calculates those exponents. No test swapping the other parts' signals between examples established that internal mechanism.
 
 | Fact | Value |
 |---|---|
@@ -20,6 +18,14 @@ by substitution on all 9216 nonzero pairs for 8 eligible seeds with native held-
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
 Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [mod-59 addition](modular-addition-mlp.md) for a simpler Fourier clock, or [multiplication across bases](multiplication-base-order.md) for digit-order comparisons.
+
+## The circuit at a glance
+
+Figure S1 compares scalar exponents in the hand-built lane with circular codes in the trained lane; the dashed trained arithmetic is unrecovered.
+
+<a href="../figures/circuits/modular-arithmetic-mod-97.svg"><img src="../figures/circuits/modular-arithmetic-mod-97.svg" width="640" alt="Alternative hand-built and trained-from-scratch lanes have separate residual streams. Hand-built embeddings turn tokens 5 and 25 into scalar exponents 1 and 2, add to 3 and look up 28. Trained embeddings use circular exponent codes; their internal arithmetic is dashed, not verified, and 28 is only a task target."></a>
+
+*Figure S1 shows circular exponent codes in all ten final token multipliers at training fraction .9, differing from the hand-built scalar code; the separate Partial output-only surrogate needs true external logarithms rather than recovered activations, leaving the internal arithmetic and complement unverified ([evidence](#5-mechanism-and-verification)).*
 
 ## 1. Task and data
 
@@ -85,7 +91,7 @@ The folder `modular-arithmetic-formats/` holds `hand_{mul,add}_tok` (HAND state 
 
 ## 3. Hand-built solution
 
-The 17 hand-built networks use one algorithm per operation and format (Figure 1). All 17 are exact on all 9409 inputs, with a logit
+The 17 hand-built networks use one algorithm per operation and format (Table F1). All 17 are exact on all 9409 inputs, with a logit
 margin ≥ 23.6.
 
 Token addition is a pizza, the variant of the Fourier clock described by [Zhong et al. (2023)](#references) in which the answer is read
@@ -98,34 +104,24 @@ In the digit formats, index heads fetch the digits and form place-value sums. Ad
 operands. Multiplication builds thermometer partial products and then compares and subtracts, [P >= 97j], to give the quotient q and
 the remainder r. Squaring compares and subtracts on x and then looks up the square.
 
-```mermaid
-flowchart TD
-    accTitle: Hand-built modular arithmetic by number format
-    accDescr: Token multiplication adds discrete logarithms; token addition reads summed circle vectors; digit formats fetch place values before arithmetic. These reference networks have no trained part.
-    subgraph MU["Token multiplication"]
-        direction TB
-        M1["embedding: log_5 v and v = 0 flag"] --> M2["averaging head: la + lb"]
-        M2 --> M3["MLP lookup: 5^(la + lb mod 96)"]
-        M3 --> M4["r = a b mod 97"]
-    end
-    subgraph AD["Token addition"]
-        direction TB
-        A1["embedding: angles at frequencies 17, 25, 32, 43"] --> A2["pizza: read r from the sum of the angle vectors"]
-    end
-    subgraph DG["Digit formats"]
-        direction TB
-        D1["index heads fetch digits"] --> D2["place-value sums"]
-        D2 --> D3["compare-subtract P >= 97 j, or lookup on A+B"]
-        D3 --> D4["quotient q and remainder r"]
-    end
-    %% Invisible edges stack independent format panels, not computational paths.
-    MU ~~~ AD
-    AD ~~~ DG
-```
+Table F1 records alternative reference algorithms for each number format. The token multiplier adds exponents, while the token adder reads summed circle vectors; neither is a claim about the trained network's internal arithmetic.
 
-*Figure 1. The hand-built networks. In token multiplication the embedding writes the discrete log, one head adds the logs and the MLP
-looks up the power of 5; token addition is a pizza; the digit formats fetch digits, sum place values and compare and subtract. No part
-is trained in these networks; the trained networks are trained from scratch.*
+<details>
+<summary>Technical hand-built exponent, circle and digit routes (Table F1)</summary>
+
+*Table F1. The hand-built networks. In token multiplication the embedding writes the discrete log, one head adds the logs and the feed-forward block (MLP) looks up the power of 5; token addition uses the “pizza” circle-vector readout. Digit formats fetch digits, sum place values and compare and subtract. No part is trained in these networks; the empirical networks are trained from scratch in full.*
+
+| Alternative reference route | Inputs, computation and output |
+|---|---|
+| Token multiplication: embedding | Writes log_5 v, the exponent of 5 giving nonzero value v, and the v = 0 flag. |
+| Token multiplication: head and MLP | An averaging head adds la + lb. The MLP looks up 5^(la + lb mod 96), giving r = a·b mod 97; zero is handled separately. |
+| Token addition | Embeds angles at frequencies 17, 25, 32 and 43. The “pizza” readout obtains remainder r from the sum of the angle vectors. |
+| Digit formats: shared readers | Index heads fetch digits and form place-value sums for operands A and B. |
+| Digit addition | Looks up A+B. This is an alternative to the product route, not a later multiplication stage. |
+| Digit multiplication | Thermometer partial products form P; comparisons P ≥ 97j and subtraction give quotient q and remainder r. |
+| Squaring | Compares and subtracts on x, then looks up the square. |
+
+</details>
 
 ## 4. What training finds
 
@@ -181,37 +177,25 @@ The closed form is output-level only: it uses the true discrete log, not a varia
 by a lookup T[ls] on the summed log ls keeps accuracy in seeds 0, 2, 4, 5, 6 and 9. No [resample ablation of the
 complement](../GLOSSARY.md#verifying-a-circuit) was reported, so the status is partial. A complement test would replace the circuitry
 outside a proposed mechanism with its values on other inputs. The externally supplied logarithms and the trained network's internal
-path must remain distinct (Figure 2).
+path must remain distinct (Table F2).
 
-```mermaid
-flowchart TD
-    accTitle: Native network and external-log output surrogate
-    accDescr: The marked embeddings, transformer and native output scores are trained. A separate surrogate receives true discrete logarithms externally and fits output scores. This is a partial output readout, with the internal circuit and complement unverified.
-    subgraph NATIVE["Native trained network"]
-        direction TB
-        T["tokens a and b"] --> E["Learned embeddings:<br/>circles in discrete-log order"]
-        E --> N["Trained transformer:<br/>no complete internal<br/>closed form"]
-        N --> L["Native output scores"]
-    end
-    subgraph SURROGATE["Separate output surrogate"]
-        direction TB
-        Q["Externally supplied TRUE<br/>discrete logs of a, b and c,<br/>not recovered from activations"]
-        Q --> D["d = log a + log b<br/>- log c mod 96"]
-        D --> O["Fitted cosine and sine<br/>output readout"]
-        O --> R["Surrogate answer c;<br/>zero-input rule<br/>handled separately"]
-    end
-    %% Invisible link stacks independent panels; it is not a computational path.
-    NATIVE ~~~ SURROGATE
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class E,N,L trained
-```
+Table F2 separates the native network from the external-log surrogate. The surrogate receives externally supplied logarithms of the same inputs; its scores are fitted and compared with the native output scores. These are separate evaluations, not successive network stages.
 
-The surrogate receives externally supplied logarithms of the same inputs; its scores are fitted and compared with the native output scores. The stacked panels are separate evaluations, not successive network stages.
+<details>
+<summary>Technical native network versus externally supplied logarithms (Table F2)</summary>
 
-*Figure 2. The trained network and its separate output surrogate. Shading marks the trained embeddings, transformer and native
-readout; the unshaded true-log step is supplied externally. Status: partial, output readout only, with no recovered internal circuit
-or complement test. Substitution accuracy 1.0 on all 9216 nonzero pairs in 8 eligible seeds does not establish faithfulness to the
-failed seeds' errors.*
+*Table F2. The trained network and its separate output surrogate. The embeddings, transformer and native readout are trained; the true-log step is supplied externally. Status: partial, output readout only, with no recovered internal circuit or complement test. Substitution accuracy 1.0 on all 9216 nonzero pairs in 8 eligible seeds does not establish faithfulness to the failed seeds' errors.*
+
+| Separate route or test | Information source, computation and limit |
+|---|---|
+| Native token input | Tokens a and b enter learned embeddings with circles in discrete-log order. |
+| Native transformer and readout; trained | Produce native output scores. No complete internal closed form is recovered. |
+| External surrogate keys | True discrete logarithms of a, b and candidate c are supplied externally, not recovered from activations. |
+| External surrogate difference | d = (log5 a + log5 b − log5 c) mod 96 feeds the fitted cosine-and-sine output readout. |
+| External surrogate answer | Candidate c is scored by that fitted readout; the zero-input rule is handled separately. |
+| Scope of substitution | Accuracy 1.0 covers all 9216 nonzero pairs, including training pairs, in 8 eligible seeds. It does not reproduce all failed seeds' errors or verify native arithmetic or the complement. |
+
+</details>
 
 The hand-built token multiplier and the trained networks share the
 isomorphism Z_97* ≅ Z_96, meaning that nonzero residues under multiplication correspond to exponents added modulo 96, but not the code: the hand-built network uses a ramp and a lookup, the trained networks use circles. The

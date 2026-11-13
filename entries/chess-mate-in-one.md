@@ -1,6 +1,8 @@
 # Chess mate-in-one selection
 
-A mating move leaves the opposing king no legal reply; this task selects the first mate from a supplied list of checking moves against a bare black king. Training one output stage on a frozen escape-square counter solved both formats in 3/3 seeds, but training on short lists left only 52–64% exact on a 608-sequence longer-list stress set. Later whole-network screens solved answer-only in 3/3 seeds and, after retries, the count-writing format in 3/3 seeds, each at exact 1.0 on 128 held-out sequences. The task remains partly solved: the count-writing TRAIN reference-keyed lookup is Verified in this three-seed screen, while answer-only TRAIN is Sufficient readout only because its complement test fails, and the frozen-network PART formulas remain Partial with complement untested. Longer-list TRAIN transfer is unreported and no ten-seed final result was obtained.
+If only the second of three supplied checks leaves a lone black king no escape square, this task picks the second; it selects the first mate from a list, without generating moves itself. Learning one output stage on a fixed hand-built escape-square counter solved both formats in 3/3 runs, but learning on short lists left only 52–64% exact on a 608-sequence longer-list stress set. Later whole-network screens reached exact 1.0 on 128 held-out sequences in 3/3 answer-only runs and, after retries, 3/3 count-writing runs, with correct earlier output tokens supplied.
+
+The task is partly solved: the count-writing lookup is [Verified](../GLOSSARY.md#verifying-a-circuit) in this three-run screen, but it receives escape counts and the winning index from the reference algorithm, so it does not explain how the network finds them. For the answer-only whole-network screen, the formula is Sufficient readout only: changing activity outside its circuit fails. For the learned stage on fixed hand-built machinery, the formulas are Partial because that test is unreported. Longer-list whole-network transfer is unreported and no ten-run final experiment was obtained.
 
 | Fact | Value |
 |---|---|
@@ -8,10 +10,18 @@ A mating move leaves the opposing king no legal reply; this task selects the fir
 | Input → output example | In words: if only the second of three supplied checks leaves the king no escape square, the answer is the second |
 | Model | HAND/PART: 8 layers, width 480, 24 heads × 20, MLP 640; PART trains only MLP7 (615,520 parameters). TRAIN: 4 layers, width 384 or 768 after the retry, with all weights trained. |
 | Rungs and seeds | HAND A/T; PART A/T, 3 seeds each in run 1 and coverage run 2; TRAIN A run 1: 3 seeds; T runs 1, 3 and 4: 3 seeds per setting, two weight decays in run 4. No completed ten-seed final. |
-| Closed form status | Verified (T TRAIN run 4 wd .1, 3/3: reference-keyed lookup substitution 1.0 on the 256-row cohort, complement .917/.917/1.0 on 64 rows, meeting .90 × matched native). A TRAIN: Sufficient readout only. PART: Partial; complement untested, T fits local only. |
+| Closed form status | Verified for count-writing TRAIN only (T run 4 wd .1, 3/3: reference-keyed lookup substitution 1.0 on the 256-row cohort, complement .917/.917/1.0 on 64 rows, meeting .90 × matched native). Answer-only TRAIN (A): Sufficient readout only; complement fails. Fixed-scaffold stage (PART): Partial; complement untested, T fits local only. |
 | Status | Partly solved (PART 3/3 per format; A TRAIN 3/3, T TRAIN retry 3/3 at exact 1.0 on 128 sequences); last completed screen 2026-11-10. No ten-seed final result. |
 | Weights | [Hugging Face: chess-mate-in-one](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/chess-mate-in-one) (HAND/PART weights and test archive; public follow-up TRAIN weights not confirmed). |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
+
+## The circuit at a glance
+
+Figure S1 shows the frozen escape-count and first-zero stages selecting a supplied check before the learned stage decodes its slot.
+
+<img src="../figures/circuits/chess-mate-in-one.svg" width="640" alt="In the answer-only partly trained network, three supplied checks fan into frozen virtual-board and escape-count stages. Task-example escape counts 2,0,1 enter the frozen earliest-zero selector, which writes slot 2. Trained layer-7 neurons decode that slot into answer 2. Only the decoder is dashed because the complement is untested. The board needs a bare black king, and candidates are supplied, not generated. This is not the later reference-keyed whole-network lookup; counts are illustrative, not a scored board.">
+
+*Figure S1 shows a learned decoder turning the first zero-escape slot into the answer (answer-only partly trained network, run 1, three seeds, best and final snapshots; matches hand-built selection); status is Partial because substitution passes but the complement is untested, short-list training does not transfer reliably to longer lists, and the escape counts illustrate the task rather than a scored board.*
 
 ## 1. Task and data
 
@@ -72,7 +82,7 @@ recorded and fp32 re-scored exact match, sha256). This is the original HAND/PART
 
 ## 3. Hand-built solution
 
-The hand-built network plays each candidate on a virtual board and counts the king's escapes (Figure 1). Source and capture terms
+The hand-built network plays each candidate on a virtual board and counts the king's escapes (Table F1). Source and capture terms
 delete the mover's old square, and a virtual destination inserts it. Nearest-live rays and leaper ORs test each square next to the
 black king, with the old king square removed. MLP5 sums the escapes into ESC. The MLP6 gate computes MATE = ReLU(u) − ReLU(u − 1) with
 u = 2·TO − 2·EQS − 4·ESC − 1. TO marks a candidate destination token; EQS records the retrieved `=` marker, separating the prompt candidates from the answer phase. For binary inputs MATE is 1
@@ -83,25 +93,22 @@ The network was verified on 339 stratified sequences per format, with K 1–16 a
 is 30.0 for A and 29.9 for T. Mate is exact only for a bare black king: with a black piece the count is of escapes only, because a
 capture of the checker can be legal at 0 escapes.
 
-In Figure 1, each supplied candidate creates a virtual board. Ray and leaper checks supply the escape count; a zero-count gate identifies mate, and the selector writes the first winning slot. MLP7 writes the output index, also reading escape counts in the scratchpad format. Only MLP7 is trained in PART.
+Table F1 records the fixed candidate-selection route shown in the worked circuit above. Each supplied candidate creates a virtual board. Ray and leaper checks supply the escape count; a zero-count gate identifies mate, and the selector writes the first winning slot. MLP7 writes the output index, also reading escape counts in the scratchpad format. Only MLP7 is trained in PART.
 
-```mermaid
-flowchart TD
-    accTitle: Hand-built escape count and first-mate selection
-    accDescr: A virtual board for each supplied candidate feeds ray and leaper checks, an escape counter and a zero-count mate gate. The selector finds the first mate. Only the final output MLP is trained in PART; upstream counting and selection are frozen.
-    C["Candidate move and board"] --> V["Virtual board: delete the old square, insert the destination"]
-    V --> RY["Nearest-live rays and leaper ORs on each king-neighbour square"]
-    RY --> M5["MLP5: sum escapes into ESC, 0-8"]
-    M5 --> M6["MLP6 gate: MATE = ReLU(u) - ReLU(u - 1)"]
-    M6 --> SEL["Layer 7 head 0: earliest-prefix selector writes WIN"]
-    SEL --> M7["MLP7: output index"]
-    M5 -->|"ESC, masked input"| M7
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class M7 trained
-```
+<details>
+<summary>Technical candidate selection and decoder input routes (Table F1)</summary>
 
-*Figure 1. The hand-built network. Frozen layers play each candidate, count the black king's escape squares into ESC and gate mate on a
-zero count; the selector head writes the first mating slot WIN. The shaded MLP7 is the only part that PART retrains.*
+*Table F1. The hand-built network. Frozen layers play each supplied candidate, count the black king's escape squares into ESC and gate mate on a zero count; the selector head writes the first mating slot WIN. MLP7 is the only part that PART retrains; upstream counting and selection remain frozen.*
+
+| Component | Input, operation and output |
+|---|---|
+| Fixed virtual board | Read candidate move and board; delete the old square and insert the destination. Nearest-live rays and leaper ORs check each king-neighbour square. |
+| Fixed MLP5 | Sum escapes into ESC, 0–8. |
+| Fixed MLP6 | Read ESC; compute the mate gate MATE = ReLU(u) − ReLU(u − 1). |
+| Fixed layer 7, head 0 | Read MATE; the earliest-prefix selector writes WIN, the first mating slot. |
+| MLP7, trained in PART | Read WIN to write the output index. ESC also has a masked direct input from MLP5. |
+
+</details>
 
 ## 4. What training finds
 
@@ -155,27 +162,24 @@ resample ablation of the complement, which scrambles everything outside the clai
 ### 5.2 Wiring
 
 The decoder is not a copy of HAND. In T it also uses a direct route from ESC to MLP7, next to HAND's route from MLP6 through the
-selector head to WIN (Figure 2). The largest patching drop is at layer 7 head 0 and MLP5 for A (1.0), and at MLP7 for T (1.0), followed
+selector head to WIN (Table F2). The largest patching drop is at layer 7 head 0 and MLP5 for A (1.0), and at MLP7 for T (1.0), followed
 by layer 2 head 3 (.66). JS 0 and the layer-6 count probe come from the frozen parts by construction, not from learned agreement.
 Edge-attribution checks fail (Spearman .35–.68 < .8), so edge wiring is not claimed.
 
-In Figure 2, the frozen escape count passes through the mate gate and winner selector to MLP7, with an additional direct count route in scratchpad T. The trained MLP uses tent features to write the index or count tokens. Status remains partial: substitution supports answer only and a local scratchpad decoder, with complement untested.
+Table F2 records the learned decoder's extra direct-count input. The frozen escape count passes through the mate gate and winner selector to MLP7, with an additional direct count route in scratchpad T. The trained MLP uses tent features to write the index or count tokens. Status remains partial: substitution supports answer only and a local scratchpad decoder, with complement untested.
 
-```mermaid
-flowchart TD
-    accTitle: PART decoder reading escape counts and the winner slot
-    accDescr: The frozen escape count reaches the trained final MLP through the mate gate and selector, with an additional direct count route in the scratchpad format. Status is partial: the tent-feature replacement holds for answer only and locally for scratchpads; complement was not tested.
-    M5["MLP5: ESC"] --> M6["MLP6: MATE gate"]
-    M6 --> SEL["Layer 7 head 0: selector writes WIN"]
-    SEL --> M7["MLP7: tent features on WIN and ESC, phase-gated"]
-    M5 -->|"direct route in T"| M7
-    M7 --> Y["index, or count tokens in T"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class M7 trained
-```
+<details>
+<summary>Technical learned decoder and direct-count bypass (Table F2)</summary>
 
-*Figure 2. The decoder training finds. MLP7 reads WIN through HAND's selector route and, in T, ESC directly. The tent closed form keeps
-every prediction for A and holds only locally for T; both are supported by substitution with the complement not tested (partial).*
+*Table F2. The decoder training finds. MLP7 reads WIN through HAND's selector route and, in T, ESC directly. The tent closed form keeps every prediction for A and holds only locally for T; both are supported by substitution with the complement not tested (partial).*
+
+| Decoder input route | Fixed or trained operation |
+|---|---|
+| Winner-slot route | Fixed MLP5 supplies ESC to the fixed MLP6 MATE gate, then the fixed layer 7, head 0 selector writes WIN. |
+| Extra direct-count route in T | ESC reaches MLP7 directly from MLP5, bypassing the mate gate and selector. |
+| Trained MLP7 | Phase-gated tent features on WIN and ESC write the index, or count tokens in T. This is the only trained PART stage; the scratchpad replacement holds locally only. |
+
+</details>
 
 ### 5.3 Whole-network TRAIN follow-up
 
@@ -192,22 +196,21 @@ At count positions, the last-MLP lookup is μ[ESC]; at the index it is μ[WIN], 
 
 An additive fit on the eight individual escape bits gives .22/.31/.37 in T and is rejected. This lookup is per count value, not a linear sum circuit. The first complement claim, used components plus L3 heads, passed only seed 0; seeds 1/2 gave .651/.524 until the full L2 head family and MLP1 were retained. The final claim passed with full_eq_base true, empty_eq_source 1.0, circuit_resampled 0 and random_same_size .00–.38. A's failed complement claim was not replaced by a verified wider claim.
 
-In Figure 3, board-token embeddings feed parallel head-family routes into the final joint count-and-winner write. All displayed components were trained. The reference-keyed local lookup is verified only in the screened cohort with the wider retained head and earlier-MLP claim; it does not establish extraction of the supplied keys. Additive escape-bit fits fail, and longer-list transfer is unreported.
+Table F3 records the separate whole-network screen and its externally supplied test keys. Board-token embeddings feed parallel head-family routes into the final joint count-and-winner write. All displayed components were trained. The reference-keyed local lookup is verified only in the screened cohort with the wider retained head and earlier-MLP claim; it does not establish extraction of the supplied keys. Additive escape-bit fits fail, and longer-list transfer is unreported.
 
-```mermaid
-flowchart TD
-    accTitle: Local reference-keyed lookup in widened scratchpad TRAIN
-    accDescr: Trained board-token and head-family paths feed the final joint count and winner write. All displayed components are trained. The reference-keyed local lookup is verified in the screened cohort only when the wider retained head and earlier-MLP claim is included. Additive escape-bit fits fail and longer-list transfer is unreported.
-  A["Board-token embedding"] --> B["L3 head family"]
-  A --> C["L2 heads and MLP2"]
-  B --> D["MLP3: joint count and winner lookup writes"]
-  C --> D
-  D --> E["Count tokens and first-mate index"]
-  classDef trained fill:gold,stroke:darkgoldenrod,color:black
-  class A,B,C,D trained
-```
+<details>
+<summary>Technical whole-network screen and external test keys (Table F3)</summary>
 
-*Figure 3. Verified local reference-keyed lookup with the widened T TRAIN screen, 3/3 seeds, when the retained L2/L3 head families and earlier MLPs are included. All displayed components are trained. Substitution and complement resampling pass locally; additive escape-bit fits fail, and longer-list transfer is unreported.*
+*Table F3. Verified local reference-keyed lookup with the widened T TRAIN screen, 3/3 seeds, when the retained L2/L3 head families and earlier MLPs are included. All listed network components are trained. Substitution and complement resampling pass locally; additive escape-bit fits fail, and longer-list transfer is unreported. The supplied test keys do not establish native extraction of the count or winner.*
+
+| Network role or separate intervention input | Recorded scope |
+|---|---|
+| Trained board-token embedding | Supplies the parallel late-head routes. |
+| Parallel trained layer-3 head family and layer-2 heads/MLP2 | Both routes feed MLP3's joint count and winner write in parallel, not as sequential stages of the PART selector. |
+| Trained MLP3 | Writes count tokens and the first-mate index. The accepted local lookup uses the wider retained head and earlier-MLP claim. |
+| External keys for the lookup test | ESC and WIN come from the task/reference calculation, as described above. The test does not establish extraction of those keys from native activity. |
+
+</details>
 
 ## 6. Limitations and open questions
 

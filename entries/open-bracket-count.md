@@ -1,11 +1,10 @@
 # Open-bracket count
 
-Count the opening brackets in a line, even though its prompt asks about bracket validity. A frozen, hand-built transformer supplies
-the length and final depth (opening minus closing brackets); only the small feed-forward network combining those features was
-trained. With 80% of the 1080 depth/length cells used for training, all 10 seeds showed delayed improvement, but final held-out
-accuracy was .78–.88 and none reached .90. Their responses suggest a clock-like sum of broad trigonometric features, helped by a
-smaller channel that distinguishes odd from even answers. The task remains unsolved at the .90 held-out criterion; the fitted
-cosine rule is a partial output approximation evaluated on all cells, including training cells, with no resample-complement test.
+The line `(()` contains two opening brackets. These networks had to give that count, although the inherited prompt asked whether the brackets were valid. A hand-built reader supplied the length and final depth, the number of openings minus closings. Only the small network combining those clues was trained.
+
+The learned responses resembled broad waves, helped by units that distinguished odd and even answers. All 10 runs improved late after training on 80% of the 1080 depth/length combinations. Yet final held-out accuracy stopped at .78–.88, below the .90 criterion. The task remains unsolved.
+
+The fitted cosine rule is a [partial approximation](../GLOSSARY.md#verifying-a-circuit). Its higher scores use all combinations, including training examples. No test swapping the other parts' signals between examples established it as the complete learned mechanism.
 
 | Fact | Value |
 |---|---|
@@ -19,6 +18,14 @@ cosine rule is a partial output approximation evaluated on all cells, including 
 | Reproduce | [Commands](#24-reproduction), run from `code/` |
 
 Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [compare counts](compare-counts.md) for a related counting task, or [mod-59 addition](modular-addition-mlp.md) for another periodic readout.
+
+## The circuit at a glance
+
+Figure 4 shows the parallel contributions to the approximate count readout ([mechanism and verification](#5-mechanism-and-verification)).
+
+<img src="../figures/circuits/open-bracket-count.svg" width="640" alt="Opening-bracket counts combine broad waves and odd/even votes. One upward residual stream has separate read/write branches for Read length (fixed number codes); Read depth (fixed head + decoder); Broad waves (coarse count votes); Odd / even (split neighbours). Input: ((); Opening-bracket target: 2. Task values are illustrative; dashed boxes and branches are not verified.">
+
+*Figure 4. All ten training-fraction-.8 seeds count opening brackets by merging broad-wave and odd/even votes, unlike the nearest hand-built design, but the partial form includes training cells, has no complement test and no native net reaches the .90 held-out criterion.*
 
 ## 1. Task and data
 
@@ -109,7 +116,7 @@ clock sum is in the `_f80` files) are published on Hugging Face at
 
 ## 3. Hand-built solution
 
-The hand-built network supplies the inputs of the count but not the count itself (Figure 1).
+The hand-built network supplies the inputs of the count but not the count itself (Table F1).
 
 The depth ratio is computed by layer 5, head 0 of m2. It attends uniformly over the bracket tokens and the newline of the current
 line, with value +1 for `(` and −1 for `)`, so it writes BAL = b/(L+1). The length L comes from the position scalar R.
@@ -121,21 +128,23 @@ The menu decodes BAL into a thermometer code of b with a second step stage gated
 No hand-built open-count brick was given. The nearest hand-built design adds the two integers linearly in the residual stream and reads
 the sum (L + b)/2 with step staircases.
 
-```mermaid
-flowchart TD
-    accTitle: Frozen bracket-depth and length features
-    accDescr: The hand-built base reads opening-minus-closing depth and line length, and the frozen menu re-encodes them. Only the final count MLP is trained; no hand-built count reader is supplied.
-    P["Prompt:<br/>VALID_BRACKETS line"] --> READ["Frozen m2 readers:<br/>layer 5 head 0,<br/>uniform attention, value<br/>+1 for open and -1 for close<br/>BAL = b/(L+1)<br/>Position scalar R gives L"]
-    READ --> MENU["Frozen menu inputs:<br/>step stage gated by one-hot L<br/>gives one-hot and thermometer<br/>of b (ou, tu)<br/>Direct scalar BAL (su)<br/>Scalar, one-hot and<br/>thermometer of L (sv, ov, tv)<br/>Distractors: count, neg,<br/>copy pointer, last letter"]
-    MENU --> M["TRAINED: MLP,<br/>256 ReLU units"]
-    M --> Y["46 logits: number of<br/>open brackets (L + b)/2"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class M trained
-```
+Table F1 records the two clues supplied to the count stage: line length and opening-minus-closing depth. The network must still learn how they determine the number of opening brackets.
 
-*Figure 1. The hand-built network and the trained stage. Frozen parts, set by formula, compute the depth ratio b/(L+1) through layer
-5, head 0 of m2 and re-encode b and the line length L in the 416-wide menu; there is no hand-built count reader. The shaded MLP is the
-only trained part.*
+<details>
+<summary>Technical length/depth reader and menu codes (Table F1)</summary>
+
+*Table F1. The hand-built network and the trained stage. Frozen parts, set by formula, compute the depth ratio b/(L+1) through layer 5, head 0 of m2 and re-encode b and the line length L in the 416-wide menu; there is no hand-built count reader. The final feed-forward block (MLP) is the only trained part.*
+
+| Part and training status | Code, information flow and role |
+|---|---|
+| Prompt | Supplies the `VALID_BRACKETS` line. |
+| m2 layer 5, head 0; frozen | Uniform attention reads +1 for an opening bracket and −1 for a closing bracket, giving BAL = b/(L+1), where b is opening-minus-closing depth. |
+| Position scalar R; frozen | Gives the line length L. |
+| Depth menu; frozen | A step stage gated by one-hot L re-encodes b as one-hot ou and thermometer tu; direct scalar BAL is su. One-hot means a category indicator; a thermometer marks passed thresholds. |
+| Length and distractor menu; frozen | Length scalar sv, one-hot ov and thermometer tv; distractors for count, neg, copy pointer and last letter. |
+| Count MLP; trained | 256 ReLU units write 46 answer scores (logits), targeting the number of opening brackets (L + b)/2. |
+
+</details>
 
 ## 4. What training finds
 
@@ -194,7 +203,7 @@ the count labels; agreement is equality with the native network's answer. The pr
 | One cosine per neuron, trained output weights | .906–.932 | .91–.93 | .88–.92 |
 | Straight-line replacement | .09–.11 | .09–.11 | |
 
-The networks combine two channels (Figure 2; numbers in Appendix A). The low-k (low-frequency) neurons are smooth, broad bumps over b and L (their
+The networks combine two channels (Table F2; numbers in Appendix A). The low-k (low-frequency) neurons are smooth, broad bumps over b and L (their
 single-cosine R² is only .15–.47, so "one cosine per neuron" is a coarse description); with output columns that vary slowly over the 46
 classes, their sum locates the answer (L + b)/2. Without the parity neurons the networks still score .92–.96 on all cells. A parity
 (odd/even) channel, found in the archived weights of 10/10 networks at fraction .8, resolves the remaining ambiguity between neighbouring answers:
@@ -203,25 +212,23 @@ carry (one sign change per step): (−1)^((L+b)/2) = cos(π(L+b)/2) = cos(πL/2)
 terms that the ReLU forms, and their alternating output column adds ± the parity to every class. Removing them lowers the all-cell
 accuracy by .01–.05; the networks get the parity of the answer right on .98–.99 of cells.
 
-```mermaid
-flowchart TD
-    accTitle: Approximate clock and parity count channels
-    accDescr: The trained hidden neurons combine broad low-frequency responses with a smaller odd-even channel before producing count scores. The cosine description is partial and tested on training-inclusive all-cell data, with no complement test.
-    IN["menu codes of b and L,<br/>one-hot main input"] --> LK["Mostly low-frequency neurons:<br/>broad bumps over b and L"]
-    IN --> PN["7 to 10 parity neurons:<br/>Nyquist terms cos and sin<br/>of pi b/2 and pi L/2"]
-    LK --> SUM["slowly varying output columns:<br/>sum locates (L + b)/2"]
-    PN --> PAR["alternating output column:<br/>adds the parity of the answer"]
-    SUM --> Y["46 logits"]
-    PAR --> Y
-    %% Invisible link stacks independent channels; it is not a computational path.
-    SUM ~~~ PN
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class LK,PN trained
-```
+Table F2 retains the two parallel score contributions: a broad location estimate and an odd/even correction. Their fitted account is training-inclusive and remains partial.
 
-*Figure 2. The circuit training finds at fraction .8. Low-frequency neurons form a trigonometric sum that locates the answer, and a
-small set of parity neurons adds the parity of the answer. Shading marks the trained hidden neurons. The cosine-sum description is
-partial: a coarse substitution on all cells, with the complement not tested.*
+<details>
+<summary>Technical broad-wave and odd/even score paths (Table F2)</summary>
+
+*Table F2. The circuit training finds at fraction .8. Low-frequency neurons form a trigonometric sum that locates the answer, and a small set of parity neurons adds the parity of the answer. Both groups of hidden neurons are trained. The cosine-sum description is partial: a coarse substitution on all cells, with the complement not tested.*
+
+| Input or parallel contribution | Computation and destination |
+|---|---|
+| Menu codes of depth b and length L | One-hot categories are the main input to both trained neuron groups. |
+| Broad-wave path; trained | Mostly low-frequency neurons form broad bumps over b and L. Slowly varying output columns sum them to locate (L + b)/2. |
+| Odd/even path; trained | 7 to 10 parity neurons use Nyquist terms, the highest-frequency grid patterns: cos and sin of πb/2 and πL/2. |
+| Odd/even output contribution | Alternating output columns add the parity of the answer, distinguishing neighbouring counts. This is parallel to the broad-wave path, not a later layer. |
+| Combined output | The two contributions meet in 46 answer scores (logits). |
+| Test boundary | A coarse cosine substitution on all cells includes training data; the complement was not tested. This is not a verified native identity or independent held-out success. |
+
+</details>
 
 The nearest hand-built design forms the sum linearly and reads it with step
 staircases. The failed straight-line substitution does not support that linear readout for the trained stage; its fitted
@@ -269,12 +276,14 @@ parity neurons, whose output column alternates in sign from class to class (neur
 
 ## Appendix B. Detailed evidence
 
-![Training accuracy rises before held-out accuracy in seed 0 at training fraction .8](../figures/qa1-open-count-learning.svg)
+Figure 3 follows the trained count MLP fed by fixed length and depth readers. The solid line measures training cells; the dashed line measures held-out cells.
+
+<img src="../figures/qa1-open-count-learning.svg" width="640" alt="Fixed length and depth readers supply codes to a trained count MLP. In seed 0 at training fraction .8, training accuracy reaches 1.0 at step 500, while held-out accuracy remains below .90 through 200,000 updates. All recorded observations are shown; the fitted formula is not verified.">
 
 *Figure 3. Recorded training and held-out accuracy for seed 0 at fraction .8, joined without smoothing or averaging. Training is
 perfect at step 500, while held-out performance improves later and remains below .90 through 200,000 steps. This is one seed, not
 the ten-seed range. Formula scores on all 1080 cells are a separate, training-inclusive test; the partial cosine description has no
-resample-complement certificate.*
+resample-complement certificate. Here MLP names the trained feed-forward block; the length/depth readers are frozen.*
 
 [Open Figure 3 at full size](../figures/qa1-open-count-learning.svg).
 

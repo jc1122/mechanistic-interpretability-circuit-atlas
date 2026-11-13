@@ -1,12 +1,10 @@
 # Binary multiplication
 
-Four-layer transformers were tested on all 4096 pairs of 6-bit operands, either writing the product directly or writing the running
-sums of long multiplication first, a [scratchpad](../GLOSSARY.md#task-formats). With hand-built retrieval frozen, 10/10 scratchpad seeds
-reached held-out whole-output exact match 1.0 on 1639 pairs per seed; on that test split the from-scratch retry reached recorded 1.0 in 8/10 seeds and ≥ .99 in 9/10. No
-answer-only seed reached ≥ .99 in these runs. In one examined scratchpad network, a table of average internal outputs for each
-position and column sum preserved exact match 1.000, while swapping individual outputs with those same labels kept only .584
-(Section 5.3). The task is partly solved, and the formulas are sufficient readouts only: the 2026-11-07 audit accepted none as a
-verified mechanism.
+Multiplying 5 by 3 gives 15, written here in binary. Four-layer networks learned more reliably when they wrote running sums on a [scratchpad](../GLOSSARY.md#task-formats), a record of working. With hand-built retrieval, 10/10 runs got whole outputs right on 1639 held-out pairs per run. Learning all weights needed a retry and still left failures; no answer-only run reached ≥ .99.
+
+One best saved network exposed a gap in the explanation. On 820 evaluation pairs, replacing internal outputs with averages grouped by position and externally supplied column sum kept whole-output accuracy 1.000. Swapping individual outputs from other examples in those same groups kept only .584. The average could extract answers without capturing everything that mattered inside.
+
+The task is partly solved. As the 2026-11-07 audit concluded, the formulas are [sufficient readouts only](../GLOSSARY.md#verifying-a-circuit), not verified mechanisms. Scores supplied correct earlier tokens. Checks on the full 4096-pair domain included training examples as well as held-out pairs of 6-bit numbers.
 
 | Fact | Value |
 |---|---|
@@ -20,6 +18,14 @@ verified mechanism.
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
 Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [binary addition](binary-addition.md) for the adder step, or [multiplication across bases](multiplication-base-order.md) for a broader digit-order study.
+
+## The circuit at a glance
+
+Figure S1 follows the twos-column query while the running sum 5 is updated by addend 10; the parallel readers supply local bits, but the learned carry rule is still unrecovered.
+
+<a href="../figures/circuits/multiplication.svg"><img src="../figures/circuits/multiplication.svg" width="640" alt="Parallel frozen heads fetch sum bits 0,1 and operand bits 1,0 into one residual stream. With multiplier bit 1 and supplied preceding output bit 1, the learned final block targets next bit 1 in the twos column of 5+10. Its native carry rule is dashed, not verified; no carry register is asserted."></a>
+
+*Figure S1 shows frozen bit retrieval feeding the learned sum-bit write in all ten networks with frozen readers and scratchpad output, matching the hand-built fetch roles; the task-keyed adder table is Sufficient readout only, with incomplete full-bar controls and no complement result establishing a native carry mechanism in this teacher-forced setting ([evidence](#51-closed-forms)).*
 
 ## 1. Task and data
 
@@ -87,7 +93,7 @@ stage tensors; A from both runs); `train_<F>_r1_s<seed>` / `train_<F>_r2_s<seed>
 ## 3. Hand-built solution
 
 Both hand-built networks share their first two layers: L0 and L1 compute positions and anchor on `*`. They differ in what the last
-two layers compute (Figure 1).
+two layers compute (Table F1).
 
 Format A (exact for n ≤ 6, 14 heads). Twelve [index heads](../GLOSSARY.md#hand-built-machinery), attention heads that each copy the token at one computed position, fetch
 the operand bits a_i and b_j. The L2 MLP has 36 AND neurons, relu(a_i + b_j − 1), each of which outputs 1 only when both bits are 1,
@@ -103,37 +109,23 @@ of the sum bit s = x ⊕ b_j a ⊕ c, with the carry recomputed from the previou
 conjunctions over the six inputs (x, b_j, a, x', a', s'), as the HAND neuron n25 in Appendix A shows. There are no carry tokens and no
 carry chain: each scratchpad step is one binary-adder column.
 
-```mermaid
-flowchart TD
-    accTitle: Hand-built direct and running-sum multiplication
-    accDescr: Position heads lead either to pairwise bit products and a parity staircase, or to the scratchpad adder truth table. The marked final MLP is trained in PART in each format.
-    subgraph FRAME["Common input to each format"]
-        direction TB
-        P["Prompt a*b=<br/>and scratchpad so far"] --> POS["L0 and L1: positions,<br/>anchor on *"]
-    end
-    subgraph FA["Format A: answer only"]
-        direction TB
-        FA1["12 index heads<br/>fetch a_i and b_j"] --> FA2["L2 MLP: 36 AND neurons<br/>relu(a_i + b_j - 1)"]
-        FA2 --> FA3["LK_k:<br/>low partial-product sum"]
-        FA3 --> FA4["L3 MLP: parity staircase,<br/>132 neuron pairs<br/>gated by E_k"]
-        FA4 --> FA5["product bit p_k"]
-    end
-    subgraph FB["Format B: scratchpad"]
-        direction TB
-        FB1["heads fetch<br/>b_j, x, x', a, a'"] --> FB2["L3 MLP:<br/>32-neuron truth table,<br/>s = x xor b_j a xor c"]
-        FB2 --> FB3["sum bit s of S_j"]
-    end
-    %% Both alternatives read the common input above. These invisible links
-    %% stack panels; they are not computational paths between formats.
-    FRAME ~~~ FA
-    FA ~~~ FB
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class FA4,FB2 trained
-```
+Table F1 records the two alternative reference designs. Answer-only multiplication sums many bit products before decoding; the scratchpad reuses one local adder column.
 
-*Figure 1. The hand-built networks for both formats. Each alternative reads the common input panel; the format panels are not successive stages. Layers 0 and 1 locate positions; in format A the operand bits are multiplied by
-AND neurons and summed into LK_k, whose bits are read by a parity staircase; in format B each step is one adder column. The shaded L3
-MLPs are the parts that PART replaces with a trained stage.*
+<details>
+<summary>Technical direct-product and running-sum alternatives (Table F1)</summary>
+
+*Table F1. The hand-built networks for both formats. Each alternative reads the common input; the formats are not successive stages. Layers 0 and 1 locate positions; in format A the operand bits are multiplied by AND neurons and summed into LK_k, whose bits are read by a parity staircase; in format B each step is one adder column. The layer-3 feed-forward blocks (L3 MLPs) are the parts that PART replaces with a trained stage; the other parts stay frozen.*
+
+| Route and part | Input, computation and destination |
+|---|---|
+| Shared positional frame; frozen | Reads prompt `a*b=` and scratchpad so far; layers 0 and 1 locate positions and anchor on `*`. |
+| A: operand readers; frozen | 12 index heads fetch a_i and b_j. |
+| A: layer-2 product block; frozen | 36 AND neurons compute ReLU(a_i + b_j − 1), active only for two 1 bits. Their outputs form LK_k, the low partial-product sum. |
+| A: layer-3 decoder; trained in PART | A parity staircase, alternating odd/even thresholds with 132 neuron pairs gated by output-bit indicator E_k, writes product bit p_k. |
+| B: readers; frozen | Fetch multiplier bit b_j, current/preceding accumulator bits x and x′, and shifted operand bits a and a′. The preceding written output bit is s′. |
+| B: layer-3 local adder; trained in PART | A 32-neuron truth table reconstructs c = [x′ + b_j·a′ − s′ ≥ 1], then writes sum bit s = x xor (b_j·a) xor c of S_j. “xor” is the odd/even sum of bits. |
+
+</details>
 
 ## 4. What training finds
 
@@ -226,7 +218,7 @@ zero-based.
 In B TRAIN, with x and a the current addend bits, x′, a′ and s′ the preceding-bit inputs and output, and b_j the multiplier bit, the
 carry is c = [x′ + b_j a′ − s′ ≥ 1] and the key is u = x + b_j a + c; MLP3 is replaced by μ[q, u], the mean MLP3 output vector over
 the fit pairs that share the output-query index q (which output token the position writes) and the key u, where the separator has its
-own key (Figure 2). This is a sufficient readout only at the adder-step boundary, as in the f(add) cells of Section 5.1. It does not
+own key (Table F2). This is a sufficient readout only at the adder-step boundary, as in the f(add) cells of Section 5.1. It does not
 establish HAND's five clean fetch heads or 32 truth-table neurons in this trained network. The head L3H6 (layer 3, head 6) is supported as a soft previous-sum and context retrieval: mean
 ablation leaves .031, and a hard previous-sum fetch keeps only .719. MLP3 neurons 182 and 67 (n182, n67) affect the step output but
 are not pure sum units.
@@ -237,34 +229,31 @@ and no operand or answer labels, gives 1.000 on all inputs. The products are the
 bottleneck, consistent with Section 4.2. The network's MLP3 neurons n193 and n172 track partial sums (R² .80 / .96) but miss the
 alternating thresholds; one hypothesis is misplaced or cancelling hinges.
 
-```mermaid
-flowchart TD
-    accTitle: Mean-table multiplication readout
-    accDescr: A trained retrieval head and final MLP contribute to the scratchpad output. The arithmetic key is supplied by the task-based test. A mean replacement is a sufficient readout only, with no verified internal carry circuit.
-    T["prompt and scratchpad<br/>tokens so far"] --> H6["L3H6: soft previous-sum<br/>and context retrieval"]
-    T --> F["task-derived key inputs:<br/>x, a, b_j and x', a', s'"]
-    F --> C["carry c =<br/>[x' + b_j a' - s' >= 1]"]
-    F --> U["key u = x + b_j a + c"]
-    C --> U
-    H6 --> M["MLP3 readout:<br/>mean table mu[q, u]"]
-    U --> M
-    %% Invisible link stacks the separate key path; it is not a network path.
-    H6 ~~~ F
-    M --> S["sum bit s = u mod 2"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class H6,M trained
-```
+Table F2 separates native retrieval from the externally calculated arithmetic key. Figure 3 compares the mean-table replacement with individual donor writes at this same boundary.
 
-*Figure 2. The readout that training finds in format B (TRAIN run 2, seed 0). MLP3 output is reproduced by a mean table on the query q
-and the adder key u; the wiring differs from the hand-built network (Section 5.2), and the table is a sufficient readout, not a
-verified mechanism (Sections 5.1 and 6). L3H6 and MLP3 are marked as trained; the key calculation is an external test of the readout,
-not a verified internal carry circuit.*
+<details>
+<summary>Technical native retrieval versus external adder-key test (Table F2)</summary>
 
-![One best snapshot: mean-table exact match 1.000 versus .5841 for individual same-key donors, on 820 evaluation pairs.](../figures/multiplication-mean-vs-donor.svg)
+*Table F2. The readout tested in format B (TRAIN run 2, seed 0). MLP3 output is reproduced by a mean table on the query q and the adder key u; the wiring differs from the hand-built network (Section 5.2), and the table is a sufficient readout, not a verified mechanism (Sections 5.1 and 6). L3H6 and MLP3 are trained; the key calculation is an external test of the readout, not a verified internal carry circuit.*
+
+| Native part or separate test | Input, role and provenance |
+|---|---|
+| Prompt and scratchpad tokens so far | Supply the input and correct earlier tokens in this teacher-forced evaluation. |
+| Layer 3, head 6 (L3H6); trained | Retrieves a soft mixture of previous-sum and context information; it is not established as a clean bit copy. |
+| Layer-3 feed-forward block (MLP3); trained | Writes the native step output. Its replacement uses the mean response μ[q, u], conditioned on output-query index q and adder key u. |
+| External test inputs | Task-derived current bits x, a and b_j, preceding bits x′ and a′, and preceding output s′. These are supplied labels, not a verified native decoder. |
+| External carry and key | Compute c = [x′ + b_j·a′ − s′ ≥ 1] and u = x + b_j·a + c for the replacement table. |
+| Decision and limit | Sum bit s = u mod 2. An exact mean readout does not establish the internal carry computation, HAND's wiring or a complement-verified mechanism. |
+
+</details>
+
+Figure 3 compares two replacements for the final MLP's output, grouping rows by the externally supplied output-query index q and arithmetic key u. A matching key does not make individual donor writes interchangeable.
+
+<img src="../figures/multiplication-mean-vs-donor.svg" width="640" alt="Two external interventions replace MLP3's write, leaving earlier residual writes intact. The mean of 819 fit pairs gives whole-output exact match 1.000 on 820 disjoint evaluation pairs; one same-query, same-arithmetic-key donor gives .5841 exact and .99336 token accuracy. A sufficient readout, not a verified native mechanism.">
 
 *Figure 3. One examined TRAIN retry seed (seed 0, best snapshot), with 819 fit and 820 disjoint non-training evaluation pairs. A mean
 table gives 1.000 whole-output exact match; individual same-key donors give .5841 (token accuracy .99336). These more precise source
-scores correspond to the published .584 / .993 display in Section 6. This is sufficient readout only, not a verified native mechanism.*
+scores correspond to the published .584 / .993 display in Section 6. This is sufficient readout only, not a verified native mechanism. MLP3 is the layer-3 feed-forward block; TRAIN means all weights were trained from scratch.*
 
 [Open Figure 3 at full size](../figures/multiplication-mean-vs-donor.svg).
 

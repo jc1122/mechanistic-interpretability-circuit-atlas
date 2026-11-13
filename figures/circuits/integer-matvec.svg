@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="704" viewBox="0 0 640 704" role="img" aria-labelledby="title desc">
+<title id="title">Operands and written sums meet; the native carry rule is unknown</title>
+<desc id="desc">Final-exact scratchpad networks trained from scratch, seeds 0–6 and 8. Separate matrix/vector and correct-prior-trace inputs converge on one upward residual stream. Earlier neuron blocks and distributed late operand routing feed the final sum-bit write. These are native roles, not a head partition or a certified sparse circuit. The final arithmetic rule is not verified: the arithmetic substitution was rejected and no scalar register is recovered. Task example: identity times (1,2,3), first row, after the running sum reaches 1; the zero matrix entry for vector value 2 adds zero, so the next units bit targets 1. No native intermediate amplitudes are supplied. Different HAND wiring, teacher-forced dimension-three scope and failed size transfer remain.</desc>
+<style>
+:root { color-scheme: light dark;
+  --bg:#ffffff; --fg:#172330; --muted:#46586a; --line:#526678;
+  --panel:#f4f7fa; --blue:#00679e; --blue-bg:#eaf5fc;
+  --amber:#885000; --amber-bg:#fff4dc;
+  --purple:#70509c; --purple-bg:#f3edfa; --idle:#eef0f2;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg:#101820; --fg:#f2f5f8; --muted:#c2ced9; --line:#b0bfcd;
+    --panel:#1c2a36; --blue:#79c8f5; --blue-bg:#132f43;
+    --amber:#f2c566; --amber-bg:#352b18;
+    --purple:#cbb1ee; --purple-bg:#30263e; --idle:#26313b; }
+}
+text { font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  fill:var(--fg); font-variant-numeric:tabular-nums; }
+.canvas { fill:var(--bg); }
+.node { fill:var(--panel); stroke:var(--line); stroke-width:2; }
+.input .node { fill:var(--blue-bg); stroke:var(--blue); }
+.output .node { fill:var(--purple-bg); stroke:var(--purple); }
+.trained .node { fill:var(--amber-bg); stroke:var(--amber); }
+.register .node { fill:var(--blue-bg); stroke:var(--blue); }
+.register-line { stroke:var(--blue); stroke-width:3; }
+.unused .node { fill:var(--idle); }
+.uncertain .node, .uncertain.arrow { stroke-dasharray:8 6; }
+.node-title { font-size:28px; font-weight:650; }
+.detail { font-size:24px; }
+.tag { font-size:22px; font-weight:600; fill:var(--muted); }
+.heading { font-size:30px; font-weight:700; }
+.note { font-size:24px; fill:var(--muted); }
+.arrow { fill:none; stroke:var(--line); stroke-width:2.5; }
+.arrowhead { fill:var(--line); }
+.arrow-label { font-size:24px; fill:var(--muted); paint-order:stroke;
+  stroke:var(--bg); stroke-width:8; stroke-linejoin:round; }
+.example-bg { fill:var(--panel); stroke:var(--line); stroke-width:1.5; }
+.bus-band { fill:none; stroke:var(--line); stroke-width:10; opacity:.14; }
+.bus-line { fill:none; stroke:var(--line); stroke-width:2.5; }
+.junction { fill:var(--line); }
+.lane { fill:none; stroke:var(--line); stroke-width:1.5; stroke-dasharray:3 7; }
+.value-label { font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
+  font-size:24px; fill:var(--fg); paint-order:stroke; stroke:var(--bg);
+  stroke-width:8; stroke-linejoin:round; }
+.legend-text { font-size:22px; fill:var(--muted); }
+.legend-frozen { fill:var(--panel); stroke:var(--line); stroke-width:2; }
+.legend-trained { fill:var(--amber-bg); stroke:var(--amber); stroke-width:2; }
+.legend-unverified { fill:none; stroke:var(--line); stroke-width:2; stroke-dasharray:5 4; }
+.tag,.legend-text {font-size:24px;} text {line-height:1.1;}
+</style>
+<defs><marker id="tip" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrowhead" d="M 0 0 L 10 5 L 0 10 Z"/></marker></defs>
+<rect class="canvas" width="640" height="704"/>
+<text x="24" y="36" class="heading" text-anchor="start">Operands and written sums meet;</text>
+<text x="24" y="80" class="heading" text-anchor="start">the native carry rule is unknown</text>
+<rect class="legend-trained" x="24" y="98" width="24" height="20" rx="3"/>
+<text x="58" y="116" class="legend-text" text-anchor="start">trained</text>
+<rect class="legend-unverified" x="214" y="98" width="24" height="20" rx="3"/>
+<text x="248" y="116" class="legend-text" text-anchor="start">not verified</text>
+<text x="24" y="690" class="note" text-anchor="start">Task example, not a measurement.</text>
+<path class="bus-line" d="M 320 570 V 184" marker-end="url(#tip)"/>
+<text x="352" y="530" class="note" text-anchor="start">residual stream</text>
+<g class="output">
+<rect class="node" x="24" y="128" width="592" height="56" rx="10"/>
+<text x="42" y="166" class="node-title" text-anchor="start">Next row-sum units bit</text>
+</g>
+<path class="arrow uncertain" d="M 320 322 L 258 322 L 258 302" marker-end="url(#tip)"/>
+<path class="arrow uncertain" d="M 258 226 L 258 204 L 320 204" marker-end="url(#tip)"/>
+<circle class="junction" cx="320" cy="322" r="4"/>
+<circle class="junction" cx="320" cy="204" r="4"/>
+<text x="280" y="214" class="value-label" text-anchor="end">bit target = 1</text>
+<g class="trained uncertain">
+<rect class="node" x="24" y="226" width="264" height="76" rx="10"/>
+<text x="42" y="260" class="node-title" text-anchor="start">Write sum bit</text>
+<text x="42" y="294" class="detail" text-anchor="start">Rule unrecovered</text>
+</g>
+<text x="352" y="244" class="note" text-anchor="start">Substitute rejected</text>
+<text x="352" y="284" class="note" text-anchor="start">Scalar code unknown</text>
+<path class="arrow" d="M 320 430 L 382 430 L 382 414" marker-end="url(#tip)"/>
+<path class="arrow" d="M 382 338 L 382 322 L 320 322" marker-end="url(#tip)"/>
+<circle class="junction" cx="320" cy="430" r="4"/>
+<circle class="junction" cx="320" cy="322" r="4"/>
+<g class="trained">
+<rect class="node" x="352" y="338" width="264" height="76" rx="10"/>
+<text x="370" y="372" class="node-title" text-anchor="start">Operand routing</text>
+<text x="370" y="406" class="detail" text-anchor="start">Late attention heads</text>
+</g>
+<path class="arrow" d="M 320 546 L 258 546 L 258 526" marker-end="url(#tip)"/>
+<path class="arrow" d="M 258 450 L 258 430 L 320 430" marker-end="url(#tip)"/>
+<circle class="junction" cx="320" cy="546" r="4"/>
+<circle class="junction" cx="320" cy="430" r="4"/>
+<g class="trained">
+<rect class="node" x="24" y="450" width="264" height="76" rx="10"/>
+<text x="42" y="484" class="node-title" text-anchor="start">Earlier neurons</text>
+<text x="42" y="518" class="detail" text-anchor="start">Native context</text>
+</g>
+<g class="input">
+<rect class="node" x="24" y="588" width="264" height="76" rx="10"/>
+<text x="42" y="622" class="node-title" text-anchor="start">Matrix + vector</text>
+<text x="42" y="656" class="detail" text-anchor="start">Identity × (1,2,3)</text>
+</g>
+<g class="input">
+<rect class="node" x="352" y="588" width="264" height="76" rx="10"/>
+<text x="370" y="622" class="node-title" text-anchor="start">Given prior trace</text>
+<text x="370" y="656" class="detail" text-anchor="start">Running sum = 1</text>
+</g>
+<path class="arrow" d="M 148 588 L 148 570 L 320 570" marker-end="url(#tip)"/>
+<text x="32" y="574" class="value-label" text-anchor="start">entry 0; value 2</text>
+<path class="arrow" d="M 484 588 L 484 570 L 320 570" marker-end="url(#tip)"/>
+<text x="360" y="574" class="value-label" text-anchor="start">given sum = 1</text>
+</svg>

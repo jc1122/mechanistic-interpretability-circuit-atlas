@@ -1,6 +1,8 @@
 # Composing arithmetic through scratchpad registers
 
-A register is a named place to store a number; using the right name matters as much as doing the arithmetic. A small transformer was trained to execute register programs in binary and write each intermediate step, a [scratchpad](../GLOSSARY.md#task-formats). Across all 10 final independent training runs (seeds, [glossary](../GLOSSARY.md#counting-results)), familiar compositions passed the recorded full-trace accuracy screen of ≥ .9, yet freely named one-step operations failed; the task remained unsolved, with 0/10 final seeds solved and mean trained-cell accuracy .871-.897. Diagnostics support fetching operands by position rather than register name; no faithful register-tag mechanism was recovered. Freezing a hand-built tag router let the local arithmetic stage become exact in 3/3 screening seeds; its formula is partial, with replacement accuracy 1.0 in 18/18 tests, but tests resampling everything outside the claimed circuit (the complement, [glossary](../GLOSSARY.md#verifying-a-circuit)) were restricted to final snapshots and only one seed for shift and reverse.
+A register is a named place to store a number; adding the stored 5 and 3 should write 8, whichever registers hold them. A small transformer learned binary register programs while writing every intermediate step, a [scratchpad](../GLOSSARY.md#task-formats). In all 10 final independent runs, familiar combinations of operations passed the recorded whole-trace accuracy screen of ≥ .9, yet freely named one-step operations failed: the task was unsolved, with 0/10 final runs solved and mean trained-cell accuracy .871-.897, scored with correct earlier output tokens supplied.
+
+Diagnostics support fetching numbers by their position in the written trace rather than by register name; no faithful name-based mechanism was recovered. Fixing a hand-built name-based router instead let the arithmetic stage become exact in 3/3 screening runs, but its formula is [partial](../GLOSSARY.md#verifying-a-circuit): replacement accuracy was 1.0 in 18/18 tests, while tests changing activity outside the proposed circuit covered final saved states only and just one run for shift and reverse.
 
 | Fact | Value |
 |---|---|
@@ -12,6 +14,14 @@ A register is a named place to store a number; using the right name matters as m
 | Status | Unsolved (from-scratch register-line/full-composition cell, TRAIN O c, 0/10); solved frozen-router STEP-only cell (PART S a, 3/3, screen); last run 2026-11-08 |
 | Weights | [Hugging Face: compose-arithmetic-registers](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/compose-arithmetic-registers) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
+
+## The circuit at a glance
+
+<img src="../figures/circuits/compose-arithmetic-registers.svg" width="640" alt="Hand-built and trained-from-scratch residual streams contrast name-based operand fetching with trace-order fetching before a layer-3 adder. The binary task 101 plus 11 targets 1000; trained free-register STEP can fail despite a causal carry.">
+
+*Figure S1. The hand-built reference and final register-line networks trained from scratch (seeds 0–9) fetch operands differently: the trained networks rely on trace order rather than recovered name-based fetching, so teacher-forced composition success does not solve free-register STEP or supply a complete formula.*
+
+Figure S1 contrasts the two fetch routes; the carry reaches the adder in the trained network, but a working name-based fetch was not recovered.
 
 ## 1. Task and data
 
@@ -77,7 +87,7 @@ The folder holds `hand_O` and `hand_S` (hand-built networks), `part_S_a_{best,fi
 
 ## 3. Hand-built solution
 
-The hand-built network finds each operand by its register tag and adds one column per step (Figure 1). Layer 0 head 0 (L0H0) attends
+The hand-built network finds each operand by its register tag and adds one column per step (Table F1). Layer 0 head 0 (L0H0) attends
 uniformly and supplies a position code. Eleven layer-1 recency heads, which attend to the most recent matching token, copy the latest
 P/A/S/GA/ST fields of the trace; among their outputs are PA and PS (the tags of the registers named in the current A and S fields,
 that is, the register addresses), GA_RD (the gathered operand bit) and PC (the previous carry bit). Layer-2 match heads fetch operands
@@ -92,37 +102,22 @@ long-product sampling in bases 8/10/16 resampled examples to fit that tag table,
 multipliers. These finite tests do not enumerate all register programs. The set of ADD-stage neurons is shared by STEP, SUM and MUL (Jaccard 1.00), so one adder
 serves every task.
 
-In Figure 1, position and recency heads recover register addresses, the gathered operand bit and the previous carry. Tag-match heads fetch the other bit; MLP3 combines the bits and incoming carry to write a column, or copies a shifted or reversed bit. Only MLP3 is trained in PART. Status remains partial because complement coverage is restricted to the named final snapshots.
+Table F1 records the fixed tag-fetch route alongside the worked circuit above. Position and recency heads recover register addresses, the gathered operand bit and the previous carry. Tag-match heads fetch the other bit; MLP3 combines the bits and incoming carry to write a column, or copies a shifted or reversed bit. Only MLP3 is trained in PART. Status remains partial because complement coverage is restricted to the named final snapshots.
 
-```mermaid
-%%{init: {"themeVariables": {"fontSize": "24px"}, "flowchart": {"nodeSpacing": 20, "rankSpacing": 40, "padding": 10}}}%%
-flowchart TD
-    accTitle: Hand-built tag fetch and arithmetic column stage
-    accDescr: Position and recency heads recover register addresses, operand bits and the previous carry. Tag-match heads fetch addends, then the column MLP writes a digit and carry or copies the shifted or reversed operand bit. Only the column MLP is trained in PART. Status is partial because complement coverage is restricted to the named final snapshots.
-    P["Prompt<br/>header:<br/>program<br/>counter,<br/>register<br/>tags; trace<br/>so far"] --> H0["L0H0:<br/>uniform<br/>attention,<br/>position<br/>code"]
-    H0 --> R["11 L1<br/>recency<br/>heads: copy<br/>latest<br/>P/A/S/GA/ST<br/>fields"]
-    R --> PA["PA, PS:<br/>register<br/>addresses"]
-    R --> GA["GA_RD:<br/>gathered<br/>operand bit"]
-    R --> PC["PC: previous<br/>carry"]
-    PA --> M2["L2 match<br/>heads by tag<br/>equality:<br/>L2H0, L2H1,<br/>L2H2"]
-    M2 --> NUM["NUM: fetched<br/>addend bit<br/>XA1, XS0 or<br/>XR"]
-    GA --> S3["L3 MLP<br/>column<br/>stage: t =<br/>GA_RD + NUM<br/>+ CI"]
-    NUM --> S3
-    PC --> CI["CI = ReLU(PC<br/>+ NF - 1)"]
-    CI --> S3
-    S3 --> D["digit d = t<br/>mod 2, carry<br/>c' =<br/>floor(t/2);<br/>SHL, REV<br/>copy GA_RD"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class S3 trained
-    %% Invisible links constrain vertical layout only, not computation.
-    PA ~~~ GA
-    GA ~~~ PC
-    PC ~~~ M2
-    NUM ~~~ CI
-```
+<details>
+<summary>Technical tag-fetch and local column interfaces (Table F1)</summary>
 
-*Figure 1. The hand-built register machine. Gold MLP3 is the only trained PART block in the gathered-bit format. The column formula
-has partial status: substitution passed in all three screening seeds, while complement tests used final snapshots only, ADD seeds
-0-2 and SHL/REV seed 0. No closed form was recovered for the final from-scratch cell.*
+*Table F1. The hand-built register machine. MLP3 is the only trained PART block in the gathered-bit format. The column formula has partial status: substitution passed in all three screening seeds, while complement tests used final snapshots only, ADD seeds 0–2 and SHL/REV seed 0. No closed form was recovered for the final from-scratch cell.*
+
+| Component | Input and operation |
+|---|---|
+| Fixed layer 0, head 0 (L0H0) | Read the prompt header (program counter and register tags) and trace so far with uniform attention to form a position code. |
+| Fixed layer-1 recency reads | 11 heads copy the latest P/A/S/GA/ST fields. PA and PS are register addresses; GA_RD is the gathered operand bit; PC is the previous carry. |
+| Fixed tag-match reads | Layer 2, heads 0, 1 and 2 (L2H0, L2H1, L2H2) use register-address tag equality to fetch addend bit NUM, namely XA1, XS0 or XR. |
+| Fixed carry input | From PC and NF (the flag for every column but the first), compute CI = ReLU(PC + NF − 1). |
+| Trained layer-3 MLP (MLP3) | Combine the gathered bit, fetched bit and carry: t = GA_RD + NUM + CI. Write digit d = t mod 2 and carry c' = floor(t/2). SHL and REV instead copy GA_RD. |
+
+</details>
 
 ## 4. What training finds
 
@@ -188,35 +183,26 @@ screen, with incomplete complement coverage; the final cell TRAIN O c has none (
 
 ### 5.2 The circuit trained from scratch
 
-The networks trained from scratch use a different code from HAND (Figure 2). The centred kernel alignment (CKA) of layer 4 with HAND
+The networks trained from scratch use a different code from HAND (Table F2). The centred kernel alignment (CKA) of layer 4 with HAND
 is .01-.05, and 55-64 of 64 heads best-match HAND's uniform head. Operands come from the trace convention, not from HAND's tag lookup.
 In the solved SUM5 sub-cell PA is also low (R² .40 at L2). The fetched operand XA1 is causally used under distributed alignment
 search (DAS), which tests an interchange in a learned rotated subspace (.92-1.0;
 [glossary](../GLOSSARY.md#analysis-measures)); MLP3 has the largest patching drop.
 
-In Figure 2, trained attention fetches operand bits by their positions in the fixed trace convention, rather than a recovered header-tag route. The operand bits and a causal carry path feed the trained adder MLP3. No TRAIN closed form was recovered; the entry's partial status belongs only to the separate PART screen.
+Table F2 records the diagnosed failure route. Trained attention fetches operand bits by their positions in the fixed trace convention, rather than a recovered header-tag route. The operand bits and a causal carry path feed the trained adder MLP3. No TRAIN closed form was recovered; the entry's partial status belongs only to the separate PART screen.
 
-```mermaid
-flowchart TD
-    accTitle: Positional operand fetching in the failing TRAIN family
-    accDescr: The fixed trace convention supplies operand bits by position, while header-tag fetching was not recovered. A causal carry path enters the trained adder MLP. Marked nodes are wholly trained components. No TRAIN closed form was recovered; the page's partial status applies only to the separate PART screen.
-    T["trace so far,<br/>fixed register<br/>convention"] --> F["attention: operand<br/>fetch by position<br/>in the trace"]
-    H["prompt header tags"] -.->|"tag fetch not recovered"| F
-    F --> X["operand bits, XA1"]
-    X --> M3["MLP3 adder"]
-    CY["carry CY, causal"] --> M3
-    M3 --> Y["register line<br/>digits"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class F,M3 trained
-    %% Invisible links constrain vertical layout only, not computation.
-    T ~~~ H
-    X ~~~ CY
-```
+<details>
+<summary>Technical trace-order retrieval and missing tag rule (Table F2)</summary>
 
-*Figure 2. The diagnosed from-scratch failure type in 10 of 10 final seeds. Gold nodes are wholly trained components, not a PART
-block. Fixed-convention operand fetching and a causal carry path support the diagnosis; the HAND-free pass matched no HAND and
-usually retained no small faithful circuit. The entry's closed-form status is partial for the separate PART screen only; none was
-recovered for this TRAIN circuit.*
+*Table F2. The diagnosed from-scratch failure type in 10 of 10 final seeds. The fetching attention and MLP3 are wholly trained components, not a PART block. Fixed-convention operand fetching and a causal carry path support the diagnosis; the HAND-free pass matched no HAND and usually retained no small faithful circuit. The entry's closed-form status is partial for the separate PART screen only; none was recovered for this TRAIN circuit.*
+
+| Observed component or missing route | Recorded behaviour |
+|---|---|
+| Trained fetching attention | Reads operand bits, including XA1, by position in the trace so far under the fixed register convention. |
+| Prompt header tags | A header-tag fetching rule was not recovered. The missing route must not be read as a verified tag-matching edge. |
+| Trained MLP3 adder | Reads fetched operand bits and the causal carry CY to write register-line digits. No TRAIN closed form was recovered. |
+
+</details>
 
 ### 5.3 Relation to the hand-built network and to published work
 

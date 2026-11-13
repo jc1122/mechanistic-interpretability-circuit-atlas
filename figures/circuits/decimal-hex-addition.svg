@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="704" viewBox="0 0 640 704" role="img" aria-labelledby="title desc">
+<title id="title">The digits skip the carry search; both meet at the learned digit writer</title>
+<desc id="desc">Read upwards for answer-only PART in decimal and hexadecimal. Frozen heads fetch digits and frozen flags plus a lookahead head find the incoming carry. The trained MLP3 reads the column total to score the answer digit. The decimal task example is 345 plus 678 equals 1023; its tens column is 4 plus 7 plus incoming carry 1, giving digit 2. This is a rule example, not a guarantee that every trained digit table is exact. The complete TRAIN algorithm is not drawn. The residual bus denotes information availability, not verified sparse edges. Values illustrate the task, not measured activations.</desc>
+<style>
+:root { color-scheme: light dark;
+  --bg:#ffffff; --fg:#172330; --muted:#46586a; --line:#526678;
+  --panel:#f4f7fa; --blue:#00679e; --blue-bg:#eaf5fc;
+  --amber:#885000; --amber-bg:#fff4dc;
+  --purple:#70509c; --purple-bg:#f3edfa; --idle:#eef0f2;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg:#101820; --fg:#f2f5f8; --muted:#c2ced9; --line:#b0bfcd;
+    --panel:#1c2a36; --blue:#79c8f5; --blue-bg:#132f43;
+    --amber:#f2c566; --amber-bg:#352b18;
+    --purple:#cbb1ee; --purple-bg:#30263e; --idle:#26313b; }
+}
+text { font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  fill:var(--fg); font-variant-numeric:tabular-nums; }
+.canvas { fill:var(--bg); }
+.node { fill:var(--panel); stroke:var(--line); stroke-width:2; }
+.input .node { fill:var(--blue-bg); stroke:var(--blue); }
+.output .node { fill:var(--purple-bg); stroke:var(--purple); }
+.trained .node { fill:var(--amber-bg); stroke:var(--amber); }
+.register .node { fill:var(--blue-bg); stroke:var(--blue); }
+.register-line { stroke:var(--blue); stroke-width:3; }
+.unused .node { fill:var(--idle); }
+.uncertain .node, .uncertain.arrow { stroke-dasharray:8 6; }
+.node-title { font-size:28px; font-weight:650; }
+.detail { font-size:24px; }
+.tag { font-size:22px; font-weight:600; fill:var(--muted); }
+.heading { font-size:30px; font-weight:700; }
+.note { font-size:24px; fill:var(--muted); }
+.arrow { fill:none; stroke:var(--line); stroke-width:2.5; }
+.arrowhead { fill:var(--line); }
+.arrow-label { font-size:24px; fill:var(--muted); paint-order:stroke;
+  stroke:var(--bg); stroke-width:8; stroke-linejoin:round; }
+.example-bg { fill:var(--panel); stroke:var(--line); stroke-width:1.5; }
+.bus-band { fill:none; stroke:var(--line); stroke-width:10; opacity:.14; }
+.bus-line { fill:none; stroke:var(--line); stroke-width:2.5; }
+.junction { fill:var(--line); }
+.lane { fill:none; stroke:var(--line); stroke-width:1.5; stroke-dasharray:3 7; }
+.value-label { font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
+  font-size:24px; fill:var(--fg); paint-order:stroke; stroke:var(--bg);
+  stroke-width:8; stroke-linejoin:round; }
+.legend-text { font-size:22px; fill:var(--muted); }
+.legend-frozen { fill:var(--panel); stroke:var(--line); stroke-width:2; }
+.legend-trained { fill:var(--amber-bg); stroke:var(--amber); stroke-width:2; }
+.legend-unverified { fill:none; stroke:var(--line); stroke-width:2; stroke-dasharray:5 4; }
+.tag,.legend-text {font-size:24px;} text {line-height:1.1;}
+</style>
+<defs><marker id="tip" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrowhead" d="M 0 0 L 10 5 L 0 10 Z"/></marker></defs>
+<rect class="canvas" width="640" height="704"/>
+<text x="24" y="36" class="heading" text-anchor="start">The digits skip the carry search;</text>
+<text x="24" y="80" class="heading" text-anchor="start">both meet at the learned digit writer</text>
+<rect class="legend-frozen" x="24" y="106" width="24" height="20" rx="3"/>
+<text x="58" y="124" class="legend-text" text-anchor="start">frozen</text>
+<rect class="legend-trained" x="214" y="106" width="24" height="20" rx="3"/>
+<text x="248" y="124" class="legend-text" text-anchor="start">trained</text>
+<rect class="legend-unverified" x="404" y="106" width="24" height="20" rx="3"/>
+<text x="438" y="124" class="legend-text" text-anchor="start">not verified</text>
+<text x="24" y="690" class="note" text-anchor="start">Task example, not a measurement.</text>
+<path class="bus-line" d="M 56 624 V 174" marker-end="url(#tip)"/>
+<text x="78" y="208" class="note" text-anchor="start">Residual stream</text>
+<path class="arrow" d="M 56 560 L 306 560" marker-end="url(#tip)"/>
+<text x="78" y="550" class="value-label" text-anchor="start">input = 345+678</text>
+<path class="arrow" d="M 306 516 L 56 516" marker-end="url(#tip)"/>
+<text x="78" y="506" class="value-label" text-anchor="start">digits = 4,7</text>
+<g class="process">
+<rect class="node" x="306" y="494" width="310" height="88" rx="10"/>
+<text x="324" y="534" class="node-title" text-anchor="start">Fetch digits</text>
+<text x="324" y="568" class="detail" text-anchor="start">layer-2 heads</text>
+</g>
+<path class="arrow" d="M 56 428 L 306 428" marker-end="url(#tip)"/>
+<text x="78" y="418" class="value-label" text-anchor="start">units = 5+8</text>
+<path class="arrow" d="M 306 384 L 56 384" marker-end="url(#tip)"/>
+<text x="78" y="374" class="value-label" text-anchor="start">carry = 1</text>
+<g class="process">
+<rect class="node" x="306" y="362" width="310" height="88" rx="10"/>
+<text x="324" y="402" class="node-title" text-anchor="start">Bring the carry</text>
+<text x="324" y="436" class="detail" text-anchor="start">carry flags + head</text>
+</g>
+<path class="arrow uncertain" d="M 56 296 L 306 296" marker-end="url(#tip)"/>
+<text x="78" y="286" class="value-label" text-anchor="start">total = 12</text>
+<path class="arrow uncertain" d="M 306 252 L 56 252" marker-end="url(#tip)"/>
+<text x="78" y="242" class="value-label" text-anchor="start">digit = 2</text>
+<g class="trained uncertain">
+<rect class="node" x="306" y="230" width="310" height="88" rx="10"/>
+<text x="324" y="270" class="node-title" text-anchor="start">Look up digit</text>
+<text x="324" y="304" class="detail" text-anchor="start">not verified</text>
+</g>
+<text x="24" y="656" class="detail" text-anchor="start">Decimal task: 345 + 678 = 1023</text>
+<text x="24" y="166" class="node-title" text-anchor="start">Tens-digit target: 2</text>
+</svg>

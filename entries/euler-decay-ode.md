@@ -1,6 +1,8 @@
 # Rounded decay by Euler steps
 
-This task repeatedly shrinks an integer quantity by a fixed rate and rounds down after each step, a discrete version of exponential decay. Seven-layer transformers were asked either to write each intermediate value or to give only the final value. Even with the hand-built routing frozen and only the first update block trained, none of the ten final independent training runs (seeds, [glossary](../GLOSSARY.md#counting-results)) achieved exact scratchpad output on all 480 held-out inputs: final accuracy was .963–.988. Nine seeds passed through a test-selected exact snapshot but did not retain it, so the result remains unsolved. No proposed formula was substituted for the learned block; separate tests resampling everything outside the claimed circuit (the complement, [glossary](../GLOSSARY.md#verifying-a-circuit)) retained accuracy in most seeds but did not distinguish the route from random same-size controls.
+Halving 8 twice gives 4, then 2; this task repeats a chosen shrinkage rate and rounds down after every step. Seven-layer transformers either wrote those intermediate values or gave only the final value, and even fixing the hand-built input routing left the first learned update short of reliable rounding. None of the ten final independent runs produced every output token correctly on all 480 held-out inputs with correct earlier tokens supplied: final accuracy was .963–.988.
+
+Nine runs passed through an exact saved state selected on that same test set, then lost exactness, so the task remains unsolved. The formula status is [None](../GLOSSARY.md#verifying-a-circuit): no proposed replacement was tested, and separate tests changing activity outside a proposed circuit retained accuracy in most runs but did not distinguish that circuit from randomly chosen ones of the same size.
 
 | Fact | Value |
 |---|---|
@@ -12,6 +14,14 @@ This task repeatedly shrinks an integer quantity by a fixed rate and rounds down
 | Status | Unsolved (final scratchpad PART, 0/10 at final whole-output exact 1.0); last run 2026-11-10 |
 | Weights | [Hugging Face: euler-decay-ode](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/euler-decay-ode) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
+
+## The circuit at a glance
+
+<img src="../figures/circuits/euler-decay-ode.svg" width="640" alt="Frozen rate retrieval feeds an unverified learned rounded step, whose value and scale channels reach a frozen ratio readout. Rate code 4 (C4), two requested steps (N2) and initial value 8 (Y8) target value 4 (Y4), then 2 (Y2). No native channel amplitudes are invented; every final seed remains inexact and formula status is none.">
+
+*Figure S1. Final scratchpad networks with only the first update learned (seeds 0–9) keep the hand-built retrieval path but learn a different value-and-scale code, illustrated with rate code 4 (C4), two requested steps (N2), value 8 (Y8) and target value 4 (Y4); status is none because every final seed is inexact, no update formula was substituted and the discovered circuit’s random control did not establish specificity.*
+
+Figure S1 shows the learned step writing value and scale into a frozen ratio readout; the example tokens are targets, not a claim of exact native rounding.
 
 ## 1. Task and data
 
@@ -74,31 +84,41 @@ The reference applies one bounded rounded-decay step at a time. L0H0 fetches c, 
 
 The readout scores are `Y<v> = 2v·Y1 − v²·ONE` and `R<v> = 2v·YT + (1 − v²)·ONE`. Y1 carries the first-step value and ONE is the reference constant channel. The network is exact on all 3,072 inputs in both formats; the answer-only network is the scratchpad network with its Y output rows removed.
 
-In Figure 1, frozen rate and duration retrieval supplies active-step flags to MLP1, the only trained PART update. Scratchpad scoring supplies the preceding correct value. Answer only instead passes its current-value channel through the remaining frozen updates to the final readout. Closed-form status remains none: no trained update formula was substituted.
+Table F1 records the fixed solver routes and single trained update. Frozen rate and duration retrieval supplies active-step flags to MLP1, the only trained PART update. Scratchpad scoring supplies the preceding correct value. Answer only instead passes its current-value channel through the remaining frozen updates to the final readout. Closed-form status remains none: no trained update formula was substituted.
 
-```mermaid
-flowchart TD
-    accTitle: Hand-built rounded-decay update and remaining frozen steps
-    accDescr: Frozen rate and duration retrieval and active-step flags feed the only trained PART update MLP. Scratchpad scoring supplies preceding correct values; answer only passes its absolute current-value channel through remaining frozen updates. Closed-form status is none because no trained update formula was substituted.
-    P["Initial value y,<br/>rate code c and<br/>requested steps T"] --> F["L0H0 fetches c and<br/>T; L0H1 counts<br/>written values"]
-    F --> G["L0 MLP sets<br/>active-step flags<br/>ON_l"]
-    G --> M["MLP1 computes the<br/>first rounded<br/>decay step"]
-    M --> Y["Scratchpad: read<br/>Y1 and write the<br/>next value token"]
-    M --> A["Answer only:<br/>frozen MLP2-6<br/>apply remaining<br/>steps to YT"]
-    A --> R["Read the final<br/>value"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class M trained
-```
+<details>
+<summary>Technical solver routes and single trained update (Table F1)</summary>
 
-*Figure 1. The hand-built rounded-decay solver. Gold MLP1 is the only trained block in PART. The scratchpad supplies each preceding correct value under teacher forcing; answer-only evaluation requires YT to survive the remaining frozen steps. Closed-form status is none: the trained update was not verified by substitution.*
+*Table F1. The hand-built rounded-decay solver. MLP1 is the only trained block in PART. The scratchpad supplies each preceding correct value under teacher forcing; answer-only evaluation requires YT to survive the remaining frozen steps. Closed-form status is none: the trained update was not verified by substitution.*
+
+| Component or output route | Input and operation |
+|---|---|
+| Fixed layer-0 reads | Initial value y, rate code c and requested steps T are supplied. Layer 0, head 0 (L0H0) fetches c and T; head 1 (L0H1) counts written values. |
+| Fixed layer-0 MLP | Sets active-step flags ON_l. |
+| MLP1, trained in PART | Uses the retrieved inputs and flags to compute the first rounded decay step. No trained update formula was substituted. |
+| Scratchpad readout | Read Y1 and write the next value token, with preceding correct values supplied at scoring. |
+| Answer-only readout | Frozen MLP2–6 apply the remaining steps to absolute current-value channel YT before the final value is read. |
+
+</details>
 
 ## 4. What training finds
 
-The final interpretation was dated 2026-11-11. The final scratchpad PART cell fell short in every seed despite passing through exact selected snapshots in 9/10 seeds (Figure 2). The test accuracy moved by up to 12 of 480 rows between late evaluations; selection on these same rows is not independent evaluation. There was no delayed test jump after training became exact, the pattern called grokking ([glossary](../GLOSSARY.md#counting-results)).
+The final interpretation was dated 2026-11-11. The final scratchpad PART cell fell short in every seed despite passing through exact selected snapshots in 9/10 seeds (Table F2). The test accuracy moved by up to 12 of 480 rows between late evaluations; selection on these same rows is not independent evaluation. There was no delayed test jump after training became exact, the pattern called grokking ([glossary](../GLOSSARY.md#counting-results)).
 
-![Best selected and final exact accuracies for each of ten rounded-decay PART seeds, with the test-selection warning](../figures/euler-decay-best-final.svg)
+*Table F2. No seed finished perfectly. Test-selected best and final snapshots use the same 480 held-out inputs in each of ten scratchpad PART seeds. Routing stays frozen; the update stage is trained. Success requires final exact accuracy 1.0; none met it. The former point plot used a .95–1.00 axis zoom. No untouched-test result is shown, and the closed-form status remains none.*
 
-*Figure 2. Test-selected best and final snapshots on the same 480 held-out inputs in each of ten scratchpad PART seeds. Success requires final exact accuracy 1.0; none met it. The point axis is zoomed to .95–1.00. No untouched-test result is shown, and the closed-form status remains none.*
+| Seed | Test-selected best | Final exact accuracy |
+|---|---|---|
+| 0 | 1.0 | .988 |
+| 1 | 1.0 | .975 |
+| 2 | 1.0 | .988 |
+| 3 | 1.0 | .965 |
+| 4 | 1.0 | .988 |
+| 5 | .990 | .975 |
+| 6 | 1.0 | .963 |
+| 7 | 1.0 | .975 |
+| 8 | 1.0 | .963 |
+| 9 | 1.0 | .975 |
 
 *Table 3. Whole-output exact accuracy. Ranges are copied from the original run summary; final seed values and the separate diagnostic bank are in Appendix B. “Solved” uses the final 1.0 criterion, not a selected best score.*
 

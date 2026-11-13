@@ -1,12 +1,8 @@
 # Chess attack maps
 
-An attack map marks every chessboard square threatened by pieces of a chosen colour, including squares occupied by friendly pieces.
-Four-layer transformers learned this task more often when they first wrote each piece's attacks along a ray, a straight line of board
-squares, in a scratchpad before the final map ([glossary](../GLOSSARY.md#task-formats)). On the recorded draw of 2048 held-out full boards
-per seed, 7/10 from-scratch networks reached whole-output exact match 1.0, reported to three decimals, and 10/10 reached ≥ .998. The
-task is partly solved: only 1/10 reached recorded 1.0 on sparse slider boards, and no tested answer-only cell reached 1.0. The proposed
-closed form was rejected by substitution and by resampling outside the claimed circuit; the shipped archive uses a different test
-board draw from the headline results.
+A rook threatens squares along a straight line until another piece blocks it; an attack map collects such threats from every piece of a chosen colour, including friendly-occupied squares. Four-layer transformers learned this task more often when they first listed attacks piece by piece as written working, a [scratchpad](../GLOSSARY.md#task-formats), before drawing the final map. On the recorded draw of 2048 held-out full boards per run, 7/10 networks trained from scratch reached whole-output accuracy 1.0, reported to three decimals, and 10/10 reached ≥ .998, with correct earlier output tokens supplied.
+
+The task is partly solved: on sparse boards containing sliding pieces only 1/10 reached recorded 1.0, and no tested answer-only setting reached 1.0. The proposed formula was [rejected](../GLOSSARY.md#verifying-a-circuit) both when it replaced the learned computation and when activity outside its proposed circuit was changed; the shipped archive also uses a different test-board draw from the headline results.
 
 ## At a glance
 
@@ -20,6 +16,14 @@ board draw from the headline results.
 | Status | Partly solved (recorded-test full-board hint TRAIN 7/10 at 1.0, 10/10 ≥ .998; slider hint TRAIN 1/10 at 1.0, 3/10 ≥ .99; 2048 boards/seed, scores to three decimals); last run analysis 2026-11-09; archive check 2026-11-10. |
 | Weights | [Hugging Face: chess-attack-maps](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/chess-attack-maps), published revision `3919dc14f8ab`; recorded and archived test draws differ. |
 | Reproduce | Not available yet: training code for this task is not yet in `code/`. |
+
+## The circuit at a glance
+
+Figure S1 separates the late piece-token and board-square reads from the neuron write; these roles occur at different token queries, and the dashed routes do not establish a square-by-square algorithm.
+
+<img src="../figures/circuits/chess-attack-maps.svg" width="640" alt="The board has White knight a1 and king h1, and Black king h8; White is requested. Independently supplied correct past scratchpad tokens include square b3. Early weighted counts and necessary middle layers supply context. Two layer-3 read roles are separated: at a direction marker heads read the piece token, and at a piece/square token heads read the named board square. In this task illustration the piece is a knight and b3 is empty. Neurons, not a next-square head, write steps and map bits; the targets include listing b3 and marking its bit 1. These are roles at different token queries, not two recovered exact heads or a measured b3 output. All learned routes are dashed because uniform/dominant-key substitution and complement tests fail.">
+
+*Figure S1 shows marker-to-piece and square-token-to-board reads feeding neuron writes, rather than the hand-built next-square head (type T1: ten full-board and four slider hint-scratchpad networks trained from scratch with recorded teacher-forced exact match ≥ .93; a marker denotes a direction, and the two read roles occur at different token queries); status is Rejected because uniform/dominant-key substitutions and complement tests fail, so this is not a recovered formula, correct past tokens are supplied, and the White-knight example’s empty b3 and attacked bit 1 are task targets, not measured outputs.*
 
 ## 1. Task and data
 
@@ -95,22 +99,21 @@ y = step(16(AW + M*CW - M)) + step(16(AB + M*CB - M))
 
 `AW/AB` are White/Black attack signals; `CW/CB` select the requested colour; `M` is the gate scale. A ray is a straight line of board squares; its blocker is the first occupied square. The colour gate selects pieces of the requested colour before the walk begins. In H, `cur` is the current square, `g` the direction, `occ_t` target occupancy, `nx` the next square and `y` the map bit. L1 reads piece, direction and target occupancy. L2 one-step heads move along the ray (`nx = cur + g` unless `cur` is occupied). The map head checks whether square `s` appears in the scratchpad.
 
-In Figure 1, the board and requested colour enter the coordinate stage. Piece, direction and occupancy reads then drive a ray step; the scratchpad lists attacked squares, and the map head checks whether each square appears. Only the middle read and step stages are trained in hint-format PART; the rest stays frozen.
+Table F1 records the fixed ray-step route alongside the worked circuit above. The board and requested colour enter the coordinate stage. Piece, direction and occupancy reads then drive a ray step; the scratchpad lists attacked squares, and the map head checks whether each square appears. Only the middle read and step stages are trained in hint-format PART; the rest stays frozen.
 
-```mermaid
-flowchart TD
-    accTitle: Hand-built ray-step attack-map network
-    accDescr: Board and colour coordinates feed piece, direction and occupancy reads, then a ray-step update. The scratchpad lists attacked squares and the map head checks their occurrence. The middle read and step stages are trained in hint-format PART; the rest stays frozen.
-  A["Board and requested colour"] --> B["L0 square and colour coordinates"]
-  B --> C["L1 piece, direction and occupancy reads"]
-  C --> D["L2 one-step ray heads: cur, g, nx"]
-  D --> E["Scratchpad attacked squares"]
-  E --> F["Map head: square s appears in scratchpad"]
-  F --> G["64-bit attack map"]
-  classDef trained fill:gold,stroke:darkgoldenrod,color:black
-  class C,D trained
-```
-*Figure 1. The hand-built H network reads and advances one ray step before forming the map. L1–L2 are the trained stages in H PART; the other stages stay fixed.*
+<details>
+<summary>Technical ray-step route and trained stages (Table F1)</summary>
+
+*Table F1. The hand-built H network reads and advances one ray step before forming the map. L1–L2 are the trained stages in H PART; the other stages stay fixed.*
+
+| Component | Input, operation and output |
+|---|---|
+| Fixed layer 0 (L0) | Read the board and requested colour; construct square and colour coordinates. |
+| Layer 1 (L1), trained in H PART | Use those coordinates to read piece, direction and target occupancy. |
+| Layer 2 (L2), trained in H PART | One-step ray heads use current square cur and direction g to find next square nx. The scratchpad lists attacked squares. |
+| Fixed map head | Check whether square s appears in the scratchpad; write the 64-bit attack map. |
+
+</details>
 
 Exactness checks covered C1's 768 cases; A C2 5000 random and 5000 out-of-distribution boards; A C3 5000 random and 4096 playout boards; H C2/C3 3000 each. A C3 uses 14 heads and 264 neurons. H uses 24 heads and 1041 neurons, of which the task part is 22 heads and 397 neurons. Only one HAND design was built; no alternative HAND was tested.
 
@@ -159,27 +162,30 @@ kept L0, L3 and the MLPs but resampled L1–L2 heads; C3 seeds 12 and 15 and C2 
 
 At the four sites with an exact or near-exact sparse-dictionary splice, replacing the residual by reconstructed sparse features, no feature tracked a HAND variable above the relevant basis baseline: colour correlation ≤ .22 and map-bit correlation ≤ .35. The compact account calls these four splices exact; the source includes a .97 splice. No feature-level closed form was available to substitute. This is the distinction between reconstruction and feature recovery discussed by [Korznikov et al. (2026)](#references).
 
-In Figure 2, weighted token counts feed the needed middle contextual heads, then late piece and board-square pointers. The output MLP writes ray steps and map bits. All shown heads and MLPs were trained. The proposed form remains rejected: uniform-head and dominant-key substitutions or complement tests fail, so this family sketch is not a faithful recovered formula.
+Table F2 records the observed component roles and rejected replacement. Weighted token counts feed the needed middle contextual heads, then late piece and board-square pointers. The output MLP writes ray steps and map bits. All shown heads and MLPs were trained. The proposed form remains rejected: uniform-head and dominant-key substitutions or complement tests fail, so this family sketch is not a faithful recovered formula.
 
-```mermaid
-flowchart TD
-    accTitle: Trained count, pointer and ray-step family
-    accDescr: A trained token-count block feeds needed middle heads, late contextual pointers and the output MLP for ray steps and map bits. All shown heads and MLPs are trained. Status is rejected: uniform-head and dominant-key substitutions or complement tests fail, so this is not a faithful recovered formula.
-  A["Board tokens"] --> B["L0 weighted token counts and MLP0"]
-  B --> C["L1-L2 needed contextual heads and MLP1-2"]
-  C --> D["L3 piece and board-square pointers"]
-  D --> E["MLP3 and output: ray step and map bit"]
-  E --> F["Scratchpad and map"]
-  classDef trained fill:gold,stroke:darkgoldenrod,color:black
-  class B,C,D,E trained
-```
-*Figure 2. T1 in the fully trained H networks. All shown heads and MLPs are trained. Closed-form status: rejected; near-uniform and dominant-key descriptions fail substitution or complement resampling and do not identify a faithful circuit.*
+<details>
+<summary>Technical observed roles and rejected replacements (Table F2)</summary>
 
-![Recorded chess attack-map outcomes: 7/10 full-board seeds and 1/10 slider seeds at 1.0; different archive draw](../figures/chess-attack-maps-outcomes.svg)
+*Table F2. T1 in the fully trained H networks. All listed heads and MLPs are trained. Closed-form status: rejected; near-uniform and dominant-key descriptions fail substitution or complement resampling and do not identify a faithful circuit.*
 
-*Figure 3. Final hint-scratchpad TRAIN outcomes on 2048 boards per seed, with scores reported to three decimals. Filled dots mark the
-recorded whole-output 1.0 criterion; dot order does not identify seeds. Full-board 10/10 ≥ .998 and slider 3/10 ≥ .99 use different
-thresholds. These are recorded-test results, not scores on the shipped draw. Closed-form status is rejected.*
+| Trained components | Input and observed role |
+|---|---|
+| Layer 0 (L0) and MLP0 | Read board tokens; form weighted token counts. |
+| Layers 1–2 (L1–L2) and MLP1–2 | Needed contextual heads and middle computation, following the count block. |
+| Layer 3 (L3) pointers | Later contextual reads of pieces and board squares. |
+| MLP3 and output | Use the late context to write ray steps and map bits, producing the scratchpad and map. This role inventory is not a faithful recovered formula. |
+
+</details>
+
+Table F3 compares the two board generators at their recorded thresholds.
+
+*Table F3. Perfect maps depend on the board generator. Final hint-scratchpad TRAIN outcomes on 2048 boards per seed, reported to three decimals. The whole network is trained. These are recorded-test results, not scores on the different shipped draw. Closed-form status is rejected.*
+
+| Board generator | Seeds at whole-output 1.0 | Weaker threshold |
+|---|---|---|
+| Full boards with generated armies | 7/10 | 10/10 at ≥ .998 |
+| Sparse random-colour sliders | 1/10 | 3/10 at ≥ .99 |
 
 The trained layout differs from HAND-H: the latter steps in L2 and uses one map head; TRAIN adds the L0 count block, requires middle
 heads, points at L3 and steps in MLPs one to two layers later. In the final C3 diagnostics, current square `cur` has linear-probe

@@ -1,11 +1,8 @@
 # Compare two counts
 
-Given a shuffled list of a's and b's, the model must name the more frequent letter or report a tie. A fixed hand-built transformer
-supplied several encodings of the count and list length to one trained feed-forward block. All 30 networks (ten seeds at each of
-three training fractions) learned an approximate comparison; at training fraction .8, held-out accuracy was .917–.963. Every network
-got every held-out tie wrong. A random frozen base and a scalar-only input both gave better test accuracy than the richer hand-built
-feature menu. The task is partly solved, with equality unsolved; the fitted two-way comparator is only a partial description, because
-it never returns a tie and the rest of its circuit was not resampled.
+Picking the more common letter in a shuffled line of a's and b's sounds like a counting problem; recognising a tie turned out to be the stumbling block. A fixed hand-built transformer supplied the count and line length in several representations, leaving one small output-processing block to learn the comparison. All 30 networks, ten runs at each of three training fractions, learned an approximate dividing line between “more a's” and “more b's”; at training fraction .8, held-out accuracy was .917–.963.
+
+Every network got every held-out tie wrong, and both a random fixed base network and inputs containing only the numerical values beat the richer hand-built representations. The task is partly solved with equality unsolved: the fitted comparison formula is [partial](../GLOSSARY.md#verifying-a-circuit), never returns a tie, and was not tested while changing activity outside its proposed circuit.
 
 | Fact | Value |
 |---|---|
@@ -17,6 +14,14 @@ it never returns a tie and the rest of its circuit was not resampled.
 | Status | Partly solved (greater/less learned; at fraction .8, test .917–.963; `=` 0 correct test cells in 30/30); last run 2026-11-04 |
 | Weights | [Hugging Face: compare-counts](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/compare-counts) (hand-built base in `_shared/m2`) |
 | Reproduce | [Commands](#24-reproduction), run from `code/` |
+
+## The circuit at a glance
+
+Figure S1 shows two score paths inside one learned block: letter comparison and a separately memorised tie score, whose held-out failures limit the rule.
+
+<img src="../figures/circuits/compare-counts.svg" width="640" alt="A frozen feature menu supplies count 12 and length 20 for a line containing 12 a's and 8 b's. Inside ONE trained neuron block, a tilted letter-comparison score and a separately memorised tie score read these features in parallel, then meet at the answer. The task example answers a; every held-out tie fails. Dashed scores are approximate, fitted on all count/length cells, with the complement untested.">
+
+*Figure S1 shows supplied counts feeding an approximate letter comparator and a separately memorised tie score (all 30 menu-trained networks, differing from the hand-built equality-by-default rule); status is Partial, the formula fit includes every count/length cell, complement resampling was not tested, and values are a task example, not measured answer scores.*
 
 ## 1. Task and data
 
@@ -97,7 +102,7 @@ published on Hugging Face at [huggingface.co/jc1122/circuit-atlas-nets/tree/main
 ## 3. Hand-built solution
 
 The hand-built network counts with a single attention head, decodes the count with step functions and compares with three step pairs, two of which act on
-the difference of the counts (Figure 1).
+the difference of the counts (Table F1).
 
 The count is computed by layer 4, head 1 of m2. Its query is the question letter, supplied by an earlier has-letter head. Every key
 token equal to that letter, and the newline that ends the counted line, scores 300, plus a recency term of 3 per position of the
@@ -115,44 +120,23 @@ g = 200·[task flag] + 200·[space token]. The `=` unit fires at g ≥ 300 and w
 therefore the default output, what remains when neither difference unit fires, and it is exact on unseen cells. Weights are in
 Appendix A.
 
-In Figure 1, the frozen count head supplies X and the position scalar supplies length L. Count decoders form the one-hot and thermometer codes; these, scalar inputs, length codes and distractors enter the trained menu-reading MLP. A separate frozen comparator supplies the hand-built reference answer. Only the menu-reading MLP is trained.
+Table F1 records the supplied count/length features and the fixed comparator alternative. The frozen count head supplies X and the position scalar supplies length L. Count decoders form the one-hot and thermometer codes; these, scalar inputs, length codes and distractors enter the trained menu-reading MLP. A separate frozen comparator supplies the hand-built reference answer. Only the menu-reading MLP is trained.
 
-```mermaid
-%%{init: {"themeVariables": {"fontSize": "24px"}, "flowchart": {"nodeSpacing": 20, "rankSpacing": 40, "padding": 10}}}%%
-flowchart TD
-    accTitle: Frozen count menu and learned comparison stage
-    accDescr: The frozen count head and position scalar supply count and length encodings to a trained MLP. A separate fixed comparator supplies the hand-built reference answer. Only the menu-reading MLP is trained; scalar, one-hot, thermometer and distractor inputs are distinct routes.
-    P["Prompt:<br/>shuffled<br/>line of a's<br/>and b's"] --> H["m2 layer 4<br/>head 1:<br/>uniform<br/>attention<br/>over the c<br/>matches and<br/>the newline"]
-    H --> X["X = 1/(c+1)"]
-    P --> R["m2 position<br/>scalar R,<br/>gives L"]
-    X --> D["Menu decode:<br/>GELU step<br/>ladder at<br/>the<br/>midpoints<br/>m_k"]
-    D --> OU["one-hot of c<br/>(ou)"]
-    D --> TU["thermometer<br/>of c (tu)"]
-    X --> SU["scalar X<br/>(su)"]
-    R --> LB["scalar,<br/>one-hot and<br/>thermometer<br/>of L (sv,<br/>ov, tv)"]
-    OU --> M["TRAINED:<br/>MLP, 256<br/>ReLU units"]
-    TU --> M
-    SU --> M
-    LB --> M
-    DS["distractors:<br/>brackets,<br/>copy<br/>pointer,<br/>last letter"] --> M
-    M --> Y["3 logits: a,<br/>b, ="]
-    P --> C["m2 layer 5<br/>MLP<br/>comparator:<br/>= by<br/>default,<br/>greater and<br/>less step<br/>units on NA<br/>- NB"]
-    C --> HY["hand-built<br/>answer: a, b<br/>or ="]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class M trained
-    %% Invisible links constrain vertical layout only, not computation.
-    X ~~~ R
-    R ~~~ D
-    OU ~~~ TU
-    TU ~~~ SU
-    SU ~~~ LB
-    LB ~~~ DS
-    Y ~~~ C
-```
+<details>
+<summary>Technical supplied-feature menu and fixed comparator (Table F1)</summary>
 
-*Figure 1. The hand-built network and the trained stage. Frozen parts, set by formula, compute the count c through layer 4, head 1
-of m2 and re-encode it, together with the line length L, in the 326-wide menu; m2's layer 5 MLP holds the hand-built comparator. The
-shaded MLP is the only trained part.*
+*Table F1. The hand-built network and the trained stage. Frozen parts, set by formula, compute count c through layer 4, head 1 of m2 and re-encode it, together with line length L, in the 326-wide menu; m2's layer 5 MLP holds the hand-built comparator. The menu-reading MLP is the only trained part.*
+
+| Component or feature route | Input, operation and output |
+|---|---|
+| Fixed count head | The prompt is a shuffled line of a's and b's. m2 layer 4, head 1 attends uniformly over the c matches and the newline, giving X = 1/(c+1). |
+| Fixed length route | m2 position scalar R gives line length L. |
+| Fixed count decoder | A GELU step ladder at midpoints m_k reads X to form one-hot count indicators (ou) and thermometer count flags (tu). The scalar X route is su. |
+| Fixed length codes and distractors | Scalar, one-hot and thermometer codes of L are sv, ov and tv. Brackets, copy pointer and last letter are distractors. All enter the menu alongside count codes. |
+| Trained menu-reading MLP | 256 ReLU units read the supplied menu and write 3 scores (logits): a, b and =. |
+| Separate fixed hand-built comparator | m2 layer 5 MLP reads the prompt's counts. It answers = by default, with greater/less step units on NA − NB choosing a or b. |
+
+</details>
 
 ## 4. What training finds
 
@@ -189,32 +173,24 @@ held-out formula-fit split. A form built on the exact variable 2c − L scores l
 reproduce the measured decisions as well; this does not prove it is absent internally. The closed form is supported by substitution; no [resample ablation of the
 complement](../GLOSSARY.md#verifying-a-circuit) was reported, so the status is partial.
 
-The weights show the tilt (Figure 2; numbers in Appendix A). The a − b difference is a tilted line, β/α ≈ −.6 instead of the exact
+The weights show the tilt (Table F2; numbers in Appendix A). The a − b difference is a tilted line, β/α ≈ −.6 instead of the exact
 −.5, so the boundary drifts away from 2c = L as L grows. Of the 22 equality cells in the full domain, the `=` logit is large only on
 those assigned to the training split and very negative on the held-out ones (margin over the best other class +13.7 on training cells and −15.5 on test cells for seed 0): it
 is a per-cell lookup on the one-hot codes, not a function of 2c − L.
 
-In Figure 2, thermometer count and length features feed the trained letter-score difference, approximated by a tilted linear rule. One-hot codes feed a separate trained tie score that is memorised on training cells and fails on unseen ties. Status remains partial: substitution supports the approximation, with complement untested; it is not an exact equality-aware comparator.
+Table F2 records the separate letter and tie scores shown in the worked circuit above. Thermometer count and length features feed the trained letter-score difference, approximated by a tilted linear rule. One-hot codes feed a separate trained tie score that is memorised on training cells and fails on unseen ties. Status remains partial: substitution supports the approximation, with complement untested; it is not an exact equality-aware comparator.
 
-```mermaid
-flowchart TD
-    accTitle: Approximate comparison with a memorised tie score
-    accDescr: Thermometer count and length features feed a tilted linear approximation to the letter-score difference. One-hot codes feed a separate tie score that does not generalise to test ties. Both score computations are trained. Status is partial, supported by substitution with complement untested; it is not an exact equality-aware comparator.
-    TU["thermometer of c<br/>(tu), main input"] --> D["a - b logit<br/>difference: alpha<br/>c + beta L +<br/>gamma, beta/alpha<br/>-.56 to -.64"]
-    LB["L blocks (ov, tv,<br/>sv)"] --> D
-    D --> AB["answer a or b;<br/>boundary tilted<br/>away from 2c = L"]
-    OH["one-hot codes of c<br/>and L (ou, ov)"] --> EQ["= logit: per-cell<br/>lookup, large on<br/>training cells<br/>only"]
-    EQ --> NE["= never<br/>generalises: 0<br/>correct test cells"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class D,EQ trained
-    %% Invisible links constrain vertical layout only, not computation.
-    TU ~~~ LB
-    AB ~~~ OH
-```
+<details>
+<summary>Technical letter comparison and memorised tie score (Table F2)</summary>
 
-*Figure 2. The circuit type found in 30/30 networks. The trained MLP's a − b difference is approximated by a tilted linear function
-of c and L, while `=` has a separate score memorised over training cells. Both trained score computations are shaded. The linear
-rule is partial: supported by substitution, with the complement not tested, and never an equality-aware exact comparator.*
+*Table F2. The circuit type found in 30/30 networks. The trained MLP's a − b difference is approximated by a tilted linear function of c and L, while `=` has a separate score memorised over training cells. Both score computations are trained. The linear rule is partial: supported by substitution, with the complement not tested, and never an equality-aware exact comparator.*
+
+| Separate trained score | Supplied inputs and recorded behaviour |
+|---|---|
+| Letter-score difference | Thermometer count flags tu are the main input, alongside length blocks ov, tv and sv. The a − b score is approximated by alpha c + beta L + gamma, with beta/alpha −.56 to −.64. The a/b boundary is tilted away from 2c = L. |
+| Tie score | One-hot codes of c and L (ou, ov) feed a per-cell lookup. The = score is large on training cells only; it gives 0 correct test tie cells. |
+
+</details>
 
 The hand-built comparator makes `=` the default output and subtracts two steps on the difference (greater, less), so equality is
 "neither" and is exact on unseen cells. The trained stage instead gives `=` its own logit. On one-hot or thermometer codes, equality is a

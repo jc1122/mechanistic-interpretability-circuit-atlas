@@ -1,6 +1,8 @@
 # DPLL search on small Boolean formulas
 
-A Boolean satisfiability solver tries to make every clause in a formula true, making choices and undoing them when they conflict. Here a transformer wrote the intermediate state of DPLL, a search procedure that combines forced assignments, decisions and backtracking. With the search machinery hand-built and frozen, all 10/10 seeds learned its final local update and produced 192/192 exact held-out traces per seed; neither whole-network training format solved the task. The headline local-update cell is solved, with a parameter-free replacement verified by substitution and complement resampling; that replacement also repairs the trained update's errors on the sampled longer formulas.
+If a rule says “not a, or b, or c”, setting a true and b false forces c to be true. A satisfiability solver combines such forced choices with guesses and backtracking, undoing choices that cause a conflict; here a transformer wrote the intermediate states of that procedure, called [DPLL](../GLOSSARY.md#standard-machine-learning-terms). With the search controller hand-built and fixed, 10/10 runs learned the final local update and produced 192/192 exact held-out traces per run with correct earlier output tokens supplied, while neither whole-network training format solved the task.
+
+The local-update experiment is solved, and a replacement formula with no fitted parameters is [verified](../GLOSSARY.md#verifying-a-circuit) by both substitution and tests changing activity outside its circuit. The replacement also repairs the trained update's mistakes on sampled longer formulas; this verifies a learned update inside fixed search machinery, not a network that learned the whole search.
 
 | Fact | Value |
 |---|---|
@@ -12,6 +14,14 @@ A Boolean satisfiability solver tries to make every clause in a formula true, ma
 | Status | Solved (scratchpad PART final, 10/10 at whole-trace exact 1.0 on 192 test formulas per seed); last run 2026-11-08. Whole-network TRAIN remains unsolved. |
 | Weights | [Hugging Face: dpll-search](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/dpll-search) (weights and test evidence archive). |
 | Reproduce | Not available yet: training code for this task is not yet in `code/`. |
+
+## The circuit at a glance
+
+<img src="../figures/circuits/dpll-search.svg" width="640" alt="Frozen old-state retrieval and search control are parallel inputs to one learned layer-5 update on the residual stream. Clause not a or b or c with a true and b false forces c true from unset. The verified rule is local; the network did not learn search control.">
+
+*Figure S1. Final scratchpad networks with only the state update learned (seeds 0–9) match the hand-built local rule under substitution and complement tests, but this verified rule still depends on frozen search control and correct earlier trace tokens, and native longer-trace errors remain.*
+
+Figure S1 shows old-state and controller branches joining the learned copy, clear or set update; the controller itself remains frozen.
 
 ## 1. Task and data
 
@@ -63,28 +73,22 @@ The safetensors archive at revision `30eb66049a35` contains `hand_{A,T}`, screen
 
 The T network retrieves the current clock and previous state, checks clauses, chooses an action and applies one local state update. L0 retrieves clock/header information; L1 retrieves the previous state and clause operands (L1H0 supplies the updated variable's old state/level). L2 copies clauses and selects unknown variables or the deepest decision. L3 selects the first unit clause and determines conflict/action. L4 copies the controller through L4H0 and computes equality flags in MLP4. MLP5 conditionally copies, clears or flips the state and level.
 
-In Figure 1, clock and previous-state retrieval feed clause selection, the conflict controller and a local state update. A separate answer-only route tests fixed witnesses, pools clauses and thresholds survivors. Only the update MLP or answer-only threshold MLP is trained in PART; search control and witness computation remain frozen.
+Table F1 records the fixed search and witness-enumeration alternatives. Clock and previous-state retrieval feed clause selection, the conflict controller and a local state update. A separate answer-only route tests fixed witnesses, pools clauses and thresholds survivors. Only the update MLP or answer-only threshold MLP is trained in PART; search control and witness computation remain frozen.
 
-```mermaid
-flowchart TD
-    accTitle: Hand-built search controller and answer-only witness route
-    accDescr: Clock and previous-state retrieval feed clause selection, a conflict controller and the local state update. A separate answer-only route pools clause tests over fixed witnesses and thresholds survivors. Only the marked update or threshold MLP is trained in the respective PART format; search and witness computation remain frozen.
-  A["L0: clock and<br/>header"] --> B["L1-L2: previous<br/>state and clause<br/>operands"]
-  B --> C["L3: unit clause,<br/>conflict and<br/>action"]
-  C --> D["L4H0 and MLP4:<br/>controller and<br/>equality flags"]
-  B --> E["MLP5: copy, clear,<br/>force, decide or<br/>backtrack"]
-  D --> E
-  E --> F["New state, level<br/>and next trace<br/>tokens"]
-  G["A: clause<br/>falsification for<br/>128 witnesses"] --> H["One head: pool<br/>clauses"]
-  H --> I["MLP1: count<br/>survivors and<br/>threshold"]
-  I --> J["SAT or UNSAT"]
-  classDef trained fill:gold,stroke:darkgoldenrod,color:black
-  class E,I trained
-    %% Invisible links constrain vertical layout only, not computation.
-    F ~~~ G
-```
+<details>
+<summary>Technical fixed search and answer-only witness routes (Table F1)</summary>
 
-*Figure 1. The hand-built search and answer-only circuits. MLP5 is the only trained part in scratchpad PART; A PART trains MLP1. Both are shaded. Clause checks, witness pooling and the search controller remain frozen.*
+*Table F1. The hand-built search and answer-only circuits. MLP5 is the only trained part in scratchpad PART; A PART trains MLP1. Clause checks, witness pooling and the search controller remain frozen.*
+
+| Alternative route or stage | Input, operation and output |
+|---|---|
+| Scratchpad fixed retrieval | Layer 0 (L0) reads clock and header. Layers 1–2 (L1–L2) retrieve previous state and clause operands. |
+| Scratchpad fixed control | Layer 3 (L3) finds unit clause, conflict and action; layer 4, head 0 (L4H0) and MLP4 supply the controller and equality flags. |
+| Scratchpad trained MLP5 | Read previous state and controller/flags; copy, clear, force, decide or backtrack. Write new state, level and next trace tokens. |
+| A: answer-only fixed witness tests | Test clause falsification for 128 witnesses, then pool clauses with one head. |
+| A: trained MLP1 | Count surviving witnesses and threshold to answer SAT or UNSAT. |
+
+</details>
 
 Clock equality uses a signed binary ID code, preventing a stale conflict from outranking a current clause. Formula weights use gates ±128 and unit steps. T uses 14 heads and 71 neurons [3,12,8,5,11,32]. The answer-only HAND takes a different route: it embeds clause falsification for 128 fixed witness assignments, pools over clauses with one head, then counts surviving witnesses and thresholds the count (> 0 means SAT). It uses 1 head and 130 neurons; only its last MLP is trained in A PART.
 
@@ -134,24 +138,21 @@ Y's states are (U, D0, D1, F0, F1): unassigned, decided false/true and forced fa
 
 Substitution replaces a trained component by its formula; complement resampling scrambles everything outside the proposed circuit using other inputs ([glossary](../GLOSSARY.md#verifying-a-circuit)). Both checks passed, so this local form is verified on 10/10 seeds. The discovery-mask complement also passed, with seed 7 at .969 and the other seeds at 1.0; this is separate from the canonical-circuit test above.
 
-In Figure 2, frozen old-state retrieval, force-decide-backtrack control and equality or keep flags enter MLP5, the sole trained update stage. It writes the next state and level. Substitution and complement resampling verify this local update on the stated traces, not a wholly learned search algorithm; the frozen upstream search remains part of the claim.
+Table F2 records the converging inputs to the local update shown above. Frozen old-state retrieval, force-decide-backtrack control and equality or keep flags enter MLP5, the sole trained update stage. It writes the next state and level. Substitution and complement resampling verify this local update on the stated traces, not a wholly learned search algorithm; the frozen upstream search remains part of the claim.
 
-```mermaid
-flowchart TD
-    accTitle: Verified local decision update inside frozen DPLL search
-    accDescr: Frozen old-state retrieval, force-decide-backtrack control and equality or keep flags feed the sole trained update MLP. It writes the next state and level. Substitution and complement resampling verify this local update on the stated traces, not a wholly learned search algorithm.
-  A["L1H0: old state<br/>and level"] --> D["MLP5: learned<br/>seven-field update"]
-  B["L4H0: force,<br/>decide and<br/>backtrack<br/>controller"] --> D
-  C["MLP4: target and<br/>keep flags"] --> D
-  D --> E["Y, YL and YL2: new<br/>state and level"]
-  classDef trained fill:gold,stroke:darkgoldenrod,color:black
-  class D trained
-    %% Invisible links constrain vertical layout only, not computation.
-    A ~~~ B
-    B ~~~ C
-```
+<details>
+<summary>Technical inputs to the verified local update (Table F2)</summary>
 
-*Figure 2. Verified local update in final scratchpad PART, 10/10 seeds. The shaded MLP5 is trained; substitution and complement resampling preserve the tested trace accuracy. Frozen upstream search is part of the claim.*
+*Table F2. Verified local update in final scratchpad PART, 10/10 seeds. MLP5 is trained; substitution and complement resampling preserve the tested trace accuracy. Frozen upstream search is part of the claim, not a wholly learned search algorithm.*
+
+| Component | Fixed input or trained output |
+|---|---|
+| Fixed layer 1, head 0 (L1H0) | Supplies old state and level to MLP5. |
+| Fixed layer 4, head 0 (L4H0) | Supplies the force, decide and backtrack controller to MLP5. |
+| Fixed MLP4 | Supplies target, equality and keep flags to MLP5. |
+| Trained MLP5 | Combines those inputs in the learned seven-field update; writes Y, YL and YL2 (new state and level). |
+
+</details>
 
 On n = 7, with 24 longer traces per seed, native whole-trace exact match was .667–.833 and token accuracy .979–.996; substituting the update gave 24/24 on every seed. The older rounded report gave .67–.83 (also .67–.83 in the summary). These repairs locate the sampled longer-trace errors in the learned MLP, rather than the frozen retrieval. The proposed cause, decision level 7 never appearing at n ≤ 6, was not tested. A TRAIN run 1 reached .63–.79 and T TRAIN 0 on this length test.
 

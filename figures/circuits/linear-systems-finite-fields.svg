@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="704" viewBox="0 0 640 704" role="img" aria-labelledby="title desc">
+<title id="title">Native operands stay unknown; the test supplies its own labels</title>
+<desc id="desc">All ten final modulo-5 dimension-two detailed-trace networks trained from scratch. The native left branch groups early neurons and late attention before the unknown-operand final residue writer on one residual stream. The right branch is a separate replacement test, not a native layer: a reference algorithm computes phase/operand labels from the input system, feeding a mean-output table in place of the last block. Native and replacement writes are alternatives, not simultaneous contributions. The test covers seeds 0,3,9, not all ten, and complement resampling fails. Example x+2y=3, y=1, with correct written product 2 supplied; reference labels old 3/product 2 target subtraction token 1 modulo 5. Native operand computation remains unrecovered. Sufficient readout only, teacher forcing and failed dimension transfer remain.</desc>
+<style>
+:root { color-scheme: light dark;
+  --bg:#ffffff; --fg:#172330; --muted:#46586a; --line:#526678;
+  --panel:#f4f7fa; --blue:#00679e; --blue-bg:#eaf5fc;
+  --amber:#885000; --amber-bg:#fff4dc;
+  --purple:#70509c; --purple-bg:#f3edfa; --idle:#eef0f2;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg:#101820; --fg:#f2f5f8; --muted:#c2ced9; --line:#b0bfcd;
+    --panel:#1c2a36; --blue:#79c8f5; --blue-bg:#132f43;
+    --amber:#f2c566; --amber-bg:#352b18;
+    --purple:#cbb1ee; --purple-bg:#30263e; --idle:#26313b; }
+}
+text { font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  fill:var(--fg); font-variant-numeric:tabular-nums; }
+.canvas { fill:var(--bg); }
+.node { fill:var(--panel); stroke:var(--line); stroke-width:2; }
+.input .node { fill:var(--blue-bg); stroke:var(--blue); }
+.output .node { fill:var(--purple-bg); stroke:var(--purple); }
+.trained .node { fill:var(--amber-bg); stroke:var(--amber); }
+.register .node { fill:var(--blue-bg); stroke:var(--blue); }
+.register-line { stroke:var(--blue); stroke-width:3; }
+.unused .node { fill:var(--idle); }
+.uncertain .node, .uncertain.arrow { stroke-dasharray:8 6; }
+.node-title { font-size:28px; font-weight:650; }
+.detail { font-size:24px; }
+.tag { font-size:22px; font-weight:600; fill:var(--muted); }
+.heading { font-size:30px; font-weight:700; }
+.note { font-size:24px; fill:var(--muted); }
+.arrow { fill:none; stroke:var(--line); stroke-width:2.5; }
+.arrowhead { fill:var(--line); }
+.arrow-label { font-size:24px; fill:var(--muted); paint-order:stroke;
+  stroke:var(--bg); stroke-width:8; stroke-linejoin:round; }
+.example-bg { fill:var(--panel); stroke:var(--line); stroke-width:1.5; }
+.bus-band { fill:none; stroke:var(--line); stroke-width:10; opacity:.14; }
+.bus-line { fill:none; stroke:var(--line); stroke-width:2.5; }
+.junction { fill:var(--line); }
+.lane { fill:none; stroke:var(--line); stroke-width:1.5; stroke-dasharray:3 7; }
+.value-label { font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
+  font-size:24px; fill:var(--fg); paint-order:stroke; stroke:var(--bg);
+  stroke-width:8; stroke-linejoin:round; }
+.legend-text { font-size:22px; fill:var(--muted); }
+.legend-frozen { fill:var(--panel); stroke:var(--line); stroke-width:2; }
+.legend-trained { fill:var(--amber-bg); stroke:var(--amber); stroke-width:2; }
+.legend-unverified { fill:none; stroke:var(--line); stroke-width:2; stroke-dasharray:5 4; }
+.tag,.legend-text {font-size:24px;} text {line-height:1.1;}
+</style>
+<defs><marker id="tip" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrowhead" d="M 0 0 L 10 5 L 0 10 Z"/></marker></defs>
+<rect class="canvas" width="640" height="704"/>
+<text x="24" y="36" class="heading" text-anchor="start">Native operands stay unknown;</text>
+<text x="24" y="80" class="heading" text-anchor="start">the test supplies its own labels</text>
+<rect class="legend-trained" x="24" y="98" width="24" height="20" rx="3"/>
+<text x="58" y="116" class="legend-text" text-anchor="start">trained</text>
+<rect class="legend-unverified" x="214" y="98" width="24" height="20" rx="3"/>
+<text x="248" y="116" class="legend-text" text-anchor="start">not verified</text>
+<text x="24" y="690" class="note" text-anchor="start">Task example, not a measurement.</text>
+<path class="bus-line" d="M 320 588 V 184" marker-end="url(#tip)"/>
+<text x="24" y="578" class="note" text-anchor="start">residual stream</text>
+<g class="output">
+<rect class="node" x="24" y="128" width="592" height="56" rx="10"/>
+<text x="42" y="166" class="node-title" text-anchor="start">Next subtraction token</text>
+</g>
+<text x="24" y="250" class="tag" text-anchor="start">native network</text>
+<text x="352" y="250" class="tag" text-anchor="start">replacement test</text>
+<path class="arrow uncertain" d="M 320 402 L 258 402 L 258 336" marker-end="url(#tip)"/>
+<path class="arrow uncertain" d="M 258 260 L 258 224 L 320 224" marker-end="url(#tip)"/>
+<circle class="junction" cx="320" cy="402" r="4"/>
+<circle class="junction" cx="320" cy="224" r="4"/>
+<text x="280" y="392" class="value-label" text-anchor="end">unknown operands</text>
+<text x="280" y="214" class="value-label" text-anchor="end">token target 1</text>
+<g class="trained uncertain">
+<rect class="node" x="24" y="260" width="264" height="76" rx="10"/>
+<text x="42" y="294" class="node-title" text-anchor="start">Native writer</text>
+<text x="42" y="328" class="detail" text-anchor="start">Operands unknown</text>
+</g>
+<path class="arrow" d="M 320 550 L 258 550 L 258 528" marker-end="url(#tip)"/>
+<path class="arrow" d="M 258 452 L 258 430 L 320 430" marker-end="url(#tip)"/>
+<circle class="junction" cx="320" cy="550" r="4"/>
+<circle class="junction" cx="320" cy="430" r="4"/>
+<g class="trained">
+<rect class="node" x="24" y="452" width="264" height="76" rx="10"/>
+<text x="42" y="486" class="node-title" text-anchor="start">Neurons + heads</text>
+<text x="42" y="520" class="detail" text-anchor="start">Early + late context</text>
+</g>
+<g class="input">
+<rect class="node" x="352" y="452" width="264" height="76" rx="10"/>
+<text x="370" y="486" class="node-title" text-anchor="start">Reference labels</text>
+<text x="370" y="520" class="detail" text-anchor="start">From system, not net</text>
+</g>
+<g class="process uncertain">
+<rect class="node" x="352" y="260" width="264" height="76" rx="10"/>
+<text x="370" y="294" class="node-title" text-anchor="start">Mean table</text>
+<text x="370" y="328" class="detail" text-anchor="start">Replaces last block</text>
+</g>
+<path class="arrow" d="M 484 588 L 484 528" marker-end="url(#tip)"/>
+<text x="360" y="574" class="value-label" text-anchor="start">from system</text>
+<path class="arrow" d="M 484 452 L 484 336" marker-end="url(#tip)"/>
+<text x="360" y="392" class="value-label" text-anchor="start">old 3; product 2</text>
+<path class="arrow uncertain" d="M 484 260 L 484 224 L 320 224" marker-end="url(#tip)"/>
+<text x="360" y="214" class="value-label" text-anchor="start">test target 1</text>
+<g class="input">
+<rect class="node" x="24" y="588" width="592" height="76" rx="10"/>
+<text x="42" y="622" class="node-title" text-anchor="start">System: x+2y=3; y=1</text>
+<text x="42" y="656" class="detail" text-anchor="start">Modulo 5; correct product 2 supplied</text>
+</g>
+</svg>

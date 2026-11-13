@@ -1,13 +1,8 @@
 # Base conversion: hexadecimal, binary and decimal
 
-Each hexadecimal digit names a block of binary bits, whereas conversion between decimal and binary combines place values across
-digits. Two-layer transformers were tested on every number from 0 to 255, writing either the answer directly or intermediate steps
-first. From-scratch hexadecimal-to-binary training reached held-out whole-output exact match ≥ .99 in 16/40 seeds; substituting a
-fitted digit code gave 1.00 on all 256 inputs in 36/40 networks, including networks whose own answers were wrong, but the fit included
-test inputs. With frozen hand-built attention, decimal-to-binary answer-only training reached the same criterion in 6/10 seeds. The
-task is partly solved and the closed forms are partial: the digit code is a sufficient readout at the tested boundary, while later
-context interventions rule out a complete digit-only routing mechanism; no test resampled everything outside the claimed circuit
-([verification glossary](../GLOSSARY.md#verifying-a-circuit)).
+The hexadecimal digit `f` translates to the binary block `1111`; translating each digit separately works for hexadecimal, while decimal-to-binary conversion needs information from across the number. Two-layer transformers were tested on every number from 0 to 255, with or without written intermediate steps, to see which kind of conversion they could learn. Learning all weights from scratch brought 16/40 hexadecimal-to-binary runs to held-out whole-output accuracy ≥ .99; with hand-built input-reading components fixed, 6/10 decimal-to-binary answer-only runs reached that criterion.
+
+Replacing an internal representation with a fitted code for each hexadecimal digit gave 1.00 accuracy on all 256 inputs in 36/40 networks, even repairing some networks' mistakes, but the fit included test inputs. The task is partly solved and the formulas are [partial](../GLOSSARY.md#verifying-a-circuit): this replacement can read out the answer at the tested point, yet changing context showed that digit identity alone does not explain how information reaches it, and no test changed everything outside the proposed circuit.
 
 | Fact | Value |
 |---|---|
@@ -15,10 +10,18 @@ context interventions rule out a complete digit-only routing mechanism; no test 
 | Input → output example | Decimal to binary, answer only: `^255=` → `11111111` (eight 1 bits) |
 | Model | GPT-NeoX, 2 layers × 4 heads, d_model 256, MLP 256 ReLU, no LayerNorm, no positional encoding; PART trains only the layer-1 MLP |
 | Rungs and seeds | HAND (formula-set weights) exact in 6/6 cells; PART (one learned stage) and TRAIN (all weights learned) 10 seeds per cell; TRAIN also at .8, 10 seeds ([rungs](../GLOSSARY.md#the-three-rungs)) |
-| Closed form status | Partial (hex digit-code substitution 1.00 on all 256 inputs in 36/40 TRAIN nets, fit includes test; decimal-to-binary PART threshold rule; no complement test; joint digit-only scrub fails in probe seeds 1 and 4: [cohort and retained displays](#52-circuit-probes)) |
+| Closed form status | Partial (hex digit-code substitution 1.00 on all 256 inputs in 36/40 TRAIN nets, fit includes test; decimal-to-binary PART threshold rule, with HAND-stage substitution repairing rather than reproducing native errors; no complement test; joint digit-only scrub fails in probe seeds 1 and 4: [cohort and retained displays](#52-circuit-probes)) |
 | Status | Partly solved (hex-to-binary TRAIN 16/40 and decimal-to-binary answer-only PART 6/10 reach best test ≥ .99; three carry-type cells PART 0/30, TRAIN 0/60); last run 2026-11-05; circuit probes 2026-11-06 |
 | Weights | [Hugging Face: base-conversion](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/base-conversion) (6 HAND, 77 PART/TRAIN) |
 | Reproduce | [Commands](#24-reproduction), run from `code/` |
+
+## The circuit at a glance
+
+Figure S1 shows the written-digit read and the context read merging at the bit decoder, rather than a direct read of only the original digit.
+
+<img src="../figures/circuits/base-conversion.svg" width="640" alt="A hexadecimal prompt ^a5= and its written echo a enter layer 0's weighted prefix summary. Parallel layer-1 heads read mainly the echo (head 1) and additional original context (head 3). Layer-1 neurons decode the bit. The illustrative digit a has binary block 1010, starting with 1. Learned roles are dashed: the joint digit-only scrub fails and the complement is untested.">
+
+*Figure S1 shows the probed hexadecimal scratchpad circuit mainly reading the written digit echo, unlike the hand-built original-digit route (trained from scratch, seed 1); status is Partial because local substitutions pass but the joint digit-only scrub fails and complement resampling was not reported, and values are a task example, not a measurement.*
 
 ## 1. Task and data
 
@@ -105,7 +108,7 @@ HAND nets. Each was reloaded and checked to reproduce its recorded test accuracy
 
 ## 3. Hand-built solution
 
-All six hand-built networks share a position frame and differ in their layer-1 stage (Figure 1, Table 3).
+All six hand-built networks share a position frame and differ in their layer-1 stage (Tables F1 and 3).
 
 The position frame is frozen in PART. Layer 0, head 0 attends the start token with score ln 64 and writes P = 64/(64 + r). The layer-0
 MLP has one hinge neuron per position (L - 2 of them) that interpolates the position one-hot POS[m] on the P grid, with coefficients
@@ -133,32 +136,22 @@ All six networks are exact on 256/256 inputs (token accuracy 1.0000), with a min
 9.0 / 9.9 (binary to decimal) and 8.8 / 5.0 (decimal to binary), checked with `python run.py convert check`. Answer only is smaller
 than the scratchpad here, because with a fixed length one mixture head reads both the input and the answer digits already written.
 
-In Figure 1, the frozen position frame addresses the table heads. Depending on the conversion, these deliver the source hexadecimal digit code X, remainder F, or current digit C and X. The final MLP turns those variables into an output digit or bit. Only that final stage is trained in PART.
+Table F1 records the fixed-reader interfaces. The frozen position frame addresses the table heads. Depending on the conversion, these deliver the source hexadecimal digit code X, remainder F, or current digit C and X. The final MLP turns those variables into an output digit or bit. Only that final stage is trained in PART.
 
-```mermaid
-flowchart TD
-    accTitle: Hand-built base-conversion routes
-    accDescr: A frozen position frame addresses table heads. They supply a hexadecimal digit code, a remainder, or the scratchpad digit variables to the output MLP. Only the final stage MLP is trained in PART; the other routes remain fixed.
-    T["Prompt tokens"] --> F0["Layer 0 head 0: P<br/>= 64/(64 + r) from<br/>the start token"]
-    F0 --> F1["Layer 0 MLP: hinge<br/>neurons give the<br/>position one-hot<br/>POS"]
-    F1 --> TH["Layer 1 table<br/>heads: weighted<br/>mixtures of key<br/>tokens"]
-    TH --> X["hex to binary: X,<br/>one-hot of the<br/>source hex digit"]
-    TH --> FV["binary to decimal,<br/>decimal to binary<br/>A: remainder<br/>scalar F"]
-    TH --> CX["decimal to binary<br/>B: current digit C<br/>and X"]
-    X --> M["Layer 1 MLP: bit<br/>lookup, thresholds<br/>F >= c, or parity<br/>and floor(C/2)"]
-    FV --> M
-    CX --> M
-    M --> Y["output digit or<br/>bit"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class M trained
-    %% Invisible links constrain vertical layout only, not computation.
-    X ~~~ FV
-    FV ~~~ CX
-```
+<details>
+<summary>Technical fixed-reader interfaces and trained decoder (Table F1)</summary>
 
-*Figure 1. The hand-built networks. A frozen position frame locates every position; layer-1 table heads deliver the cell's variable
-(the hex digit one-hot X, the remainder F, or C and X); the layer-1 MLP decodes it. The shaded layer-1 MLP is the part that PART
-replaces with a trained stage.*
+*Table F1. Locate the needed digits, then decode the output. A frozen position frame locates every position; layer-1 table heads deliver the conversion's variables, and the layer-1 MLP decodes them. The conversion-specific inputs are alternatives, not extra stages. Only the layer-1 MLP is trained in PART.*
+
+| Component | Input, operation and output |
+|---|---|
+| Fixed layer 0, head 0 | From the start token, locate the output position with P = 64/(64 + r). |
+| Fixed layer-0 MLP | Read P; hinge responses mark position POS with one active slot (one-hot). |
+| Fixed layer-1 table heads | Read the needed prompt tokens as weighted mixtures, addressed by POS. |
+| Conversion-specific variables | Hex to binary: source digit code X (one-hot). Binary to decimal or decimal to binary A: running remainder F. Decimal to binary B: current digit C and X (higher digit or bit). |
+| Layer-1 MLP, trained in PART | Read the relevant variables; look up a bit, test F ≥ c, or use parity and floor(C/2). Write the output digit or bit. |
+
+</details>
 
 ## 4. What training finds
 
@@ -228,8 +221,14 @@ the others .94), above the nets' own accuracy (.85-.99). This supports a suffici
 it does not establish how the trained heads compute that code or prove that the remaining residual components are irrelevant.
 
 For decimal to binary A in PART, bit_q = [F_q >= theta_q] with theta_q in [.94, 1.06]. The network agrees with its own best-threshold
-rule on .984-1.000 of inputs per answer position; with theta = 1, HAND's rule, the rule is HAND and exact. All errors of the networks
+rule on .984-1.000 of inputs per answer position. The earlier description sets theta = 1 for HAND's ideal-grid rule. All errors of the networks
 lie between theta and 1, at the high bits where F's grid is finest (1/128).
+
+Replacing the trained MLP by the actual HAND stage is task-exact on all 256 values in each of ten final PART seeds, but repairs
+6, 8, 13, 2, 18, 9, 5, 7, 8 and 3 native errors in seeds 0–9, respectively. It therefore does not make the same decisions as these
+networks on every input. This does not revoke the separately reported seed-3 fitted-threshold form, which reproduces its native
+errors. Complement provenance remains missing for this legacy HAND-stage claim; the software-level threshold qualification is in
+[Appendix A](#appendix-a-weights-excerpt-and-reading).
 
 These closed forms are supported by substitution. The substitution fit uses all 256 inputs, test included. A joint scrub of the
 nibble-only story fails (Section 5.2), and no [resample ablation of the complement](../GLOSSARY.md#verifying-a-circuit) is reported,
@@ -267,7 +266,7 @@ repairs that network to 1/1, which is a repair and not its mechanism.
 
 Supported only: in hex B TRAIN seed 1, echoed-digit transplants through H1 flip .179 / .263 of targets (original digits .016 / .005),
 and original-digit transplants through H3 flip .095 / .152 (echoes 0). The bits are therefore read mainly from the written echo,
-unlike HAND (Figure 2).
+unlike HAND (Table F2).
 
 The probes also set limits. A joint scrub of the selected-nibble-only story fails (.556 / .923 in seeds 1 / 4; .379 / .686 after
 pruning), and installing every accepted head form at once gives .992 / .996 full exact, not identity. The scrub values retain the
@@ -287,26 +286,21 @@ probes show that the prefix content matters (equalising affinities drops exact t
 [.94, 1.06] in Section 5.1 is the earlier best-agreement threshold summary on the discrete F grid (Appendix A). At the low bits F's
 grid is coarse, so θ values between the same adjacent grid points give the same decisions; the parameter fits need not coincide. The 12 / 16-neuron PART decoders are refitted replacements, not the 7–38 / 51–72 used-neuron counts from ablation.
 
-In Figure 2, the content-weighted prefix summary passes through MLP0 to the echo-reading L1H1 and restricted-softmax L1H3 routes; MLP1 decodes the bits. All these computational blocks were trained. Status remains partial: local substitutions pass, the joint digit-only scrub fails, and complement resampling was not reported.
+Table F2 records the learned echo route and its failed joint test. The content-weighted prefix summary passes through MLP0 to the echo-reading L1H1 and restricted-softmax L1H3 routes; MLP1 decodes the bits. All these computational blocks were trained. Status remains partial: local substitutions pass, the joint digit-only scrub fails, and complement resampling was not reported.
 
-```mermaid
-flowchart TD
-    accTitle: Probed hexadecimal-to-binary trained circuit
-    accDescr: A content-weighted prefix summary and MLP feed echo-reading and restricted-softmax heads, then the bit decoder. The displayed computational blocks are trained. Status is partial: local substitutions pass, a joint digit-only scrub fails, and complement resampling was not reported.
-    T["prompt and written<br/>tokens"] --> L0["L0 attention:<br/>content-weighted<br/>prefix summary"]
-    L0 --> M0["MLP0"]
-    M0 --> H1["L1H1: two-key<br/>mixture, reads the<br/>written echo"]
-    M0 --> H3["L1H3: six-key<br/>softmax<br/>restriction"]
-    H1 --> M1["MLP1: bit decoding"]
-    H3 --> M1
-    M1 --> B["answer bits"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class L0,M0,H1,H3,M1 trained
-```
+<details>
+<summary>Technical echo-reading route and failed joint test (Table F2)</summary>
 
-*Figure 2. The probed hex-to-binary TRAIN scratchpad circuit (seed 1). The shaded L0 attention, MLP0, L1H1, L1H3 and MLP1 are trained.
-L0 attention, MLP0 and MLP1 are jointly substituted with full / held-out / agreement 1/1/1 (Table 5); the bits mainly use the written
-echo. Status is partial: the digit-code readout is sufficient, but a joint digit-only scrub fails and no complement test was reported.*
+*Table F2. Read the written digit echo, then decode bits: the probed hex-to-binary TRAIN scratchpad circuit (seed 1). L0 attention, MLP0, L1H1, L1H3 and MLP1 are trained. L0 attention, MLP0 and MLP1 are jointly substituted with full / held-out / agreement 1/1/1 (Table 5); the bits mainly use the written echo. Status is partial: the digit-code readout is sufficient, but a joint digit-only scrub fails and no complement test was reported.*
+
+| Trained component | Input and recorded role |
+|---|---|
+| Layer-0 attention and MLP0 | Combine earlier prompt and written tokens with content-based weights into a prefix summary; pass it through MLP0. |
+| Layer 1, head 1 (L1H1) | Read the written digit echo with a two-key mixture. |
+| Layer 1, head 3 (L1H3) | Parallel read from the MLP0 context, with attention restricted to six keys (restricted softmax). |
+| MLP1 | Read both head outputs and decode the answer bits. Local checks pass, but the joint digit-only scrub fails; the complement was not tested. |
+
+</details>
 
 ### 5.3 Relation to the hand-built network and to published work
 
@@ -347,8 +341,11 @@ have bias -1, weight 1 on X_v for the 8 nibble values with bit j set (j = 0: v =
 12-15; j = 3: 8-15) and weight 1 on the position one-hot entries of the answer slots that carry bit j (j = 0: slots 6 and 10; j = 1: 5,
 9; j = 2: 4, 8; j = 3: 3, 7).
 
-HAND decimal to binary A. The two step neurons have weight 128 on F and bias -127 and -128, with output weights +2 / -2 on the '1'
-logit, that is, [F >= 1] on the 1/128 grid; the value rows are digit value x 111 (head 0) and x -254 (head 1).
+HAND decimal to binary A. The two ReLU neurons have weight 128 on F and bias -127 and -128, with output weights +2 / -2 on the '1'
+logit; the value rows are digit value x 111 (head 0) and x -254 (head 1). These neurons implement a finite ramp of width 1/128 ending
+at F = 1. On the ideal 1/128 grid this realises [F >= 1], but a literal software comparison F ≥ 1 is not identical on the live fp32
+residual, the network's running internal values in 32-bit floating-point arithmetic: it produces the correct whole output on only 223/256 inputs and differs from the
+HAND-stage decision on 33 inputs in every final seed. Software-level exactness requires the finite-ramp implementation.
 
 Table A1 is computed from the archived PART hex to binary A network, seed 0 (test 1.00): a forward pass on all inputs, grouped by the
 source digit. It gives the mean over inputs of logit('1') - logit('0') at the answer bits from the first hex digit (b7..b4), by its
@@ -389,8 +386,9 @@ inflate the margins.
 
 Reading. In hex to binary the frozen head delivers the nibble one-hot, so the stage is a 16-entry table per answer bit; a ReLU layer
 realises it as a bit-pattern lookup. The sign table above is HAND's bit pattern, with the same +-8 magnitude for all values (HAND's own
-margin is 10). In decimal to binary the frozen heads deliver F exactly (a multiple of 1/2^i), so a learned single step must sit between
-the largest F below 1 and 1. The 128 training inputs pin theta only to the nearest observed F values, so theta drifts by up to .06 at
+margin is 10). In decimal to binary the frozen heads ideally deliver F on a grid of multiples of 1/2^i, so a learned single step
+must sit between the largest ideal F below 1 and 1. Live fp32 values can fall slightly below that ideal grid, so the finite ramp
+above must not be replaced by a literal comparison when claiming software-level exactness. The 128 training inputs pin theta only to the nearest observed F values, so theta drifts by up to .06 at
 the high bits, where the F grid is finest and unseen values fall between theta and 1.
 
 ## Appendix B. Detailed evidence

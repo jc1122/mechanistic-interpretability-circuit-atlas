@@ -1,6 +1,8 @@
 # Symbolic differentiation (chain and product rule)
 
-Differentiating a nested expression requires tracking which functions contain which subexpressions. These transformers either wrote the expanded derivative or first stored local derivatives in named registers, intermediate results reused by later steps. Whole-network training solved the register format in 10/10 final seeds, with every output token correct on 256 held-out expressions per seed when the correct preceding tokens were supplied; training only a feed-forward output stage (MLP) on a frozen hand-built parser failed in all 12 seed-runs (.46–.92). The learned first layer could be replaced by weighted token counts in 16/16 tested networks, but the rewrite behind it has no compact closed form: the status is Partial, supported by substitution with the complement untested. The headline final cell is solved, with no trained network transferring to depth 3 or powers 7–8.
+A derivative describes how an expression changes as x changes; for sin of x^2, the chain rule combines changes in the outer function with changes in the expression inside it. These transformers either wrote the derivative in full or built it from local derivatives stored in named registers, places where later steps can find earlier results. Learning all weights solved the register format in 10/10 final runs, with every output token correct on 256 held-out expressions per run when correct earlier tokens were supplied; learning only the output block on a fixed hand-built expression reader failed in all 12 runs (.46–.92 whole-output accuracy).
+
+In 16/16 tested networks, the first layer could be replaced by a rule that counts earlier symbols and weights their contributions according to the symbol being read; the later derivative-writing computation still has no compact formula: its status is [Partial](../GLOSSARY.md#verifying-a-circuit), supported by replacement without testing changes to everything outside the proposed circuit. The headline final experiment is solved within its training range, yet no trained network transferred to nesting depth 3 or powers 7–8.
 
 | Fact | Value |
 |---|---|
@@ -12,6 +14,14 @@ Differentiating a nested expression requires tracking which functions contain wh
 | Status | Solved (TRAIN `T` final 10/10, TRAIN `A` 3/3; PART 0/12); last run 2026-11-08 |
 | Weights | [Hugging Face: chain-rule-differentiation](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/chain-rule-differentiation) (weights and held-out evidence archive; 28 nets + 2 HAND) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
+
+## The circuit at a glance
+
+Figure S1 shows the final heads and the preceding neuron block feeding separate inputs into the unresolved derivative writer; it does not supply a recovered chain-rule algorithm.
+
+<img src="../figures/circuits/chain-rule-differentiation.svg" width="640" alt="The meaning sin(x squared) and correct earlier rewrite rows enter token-weighted prefix pooling and early neurons in layers 0–2. Layer-3 neurons and final heads provide parallel inputs to layer-4 neurons, which write local derivative rows. The target meaning is cos(x squared) times the derivative of x squared. No hidden amplitudes or compact rewrite law are known; all roles are dashed, and complement testing and depth/power transfer are missing or failed.">
+
+*Figure S1 shows a weighted-prefix front end feeding the unresolved derivative rewrite, differing from the hand-built uniform-prefix front end (scratchpad networks trained from scratch: three screening seeds and ten final seeds); status is Partial because the complement is untested and the rewrite has no compact form, with no trained transfer to depth 3 or powers 7–8, and values illustrate the task rather than measured activations.*
 
 ## 1. Task and data
 
@@ -74,7 +84,7 @@ exact, sha256). Reloaded in fp32, all 28 reproduce their recorded held-out exact
 
 ## 3. Hand-built solution
 
-Both hand-built networks parse the expression with attention and emit the derivative rule by rule (Figure 1). A uniform prefix head
+Both hand-built networks parse the expression with attention and emit the derivative rule by rule (Table F1). A uniform prefix head
 gives the bracket balance, completion counts and a position frame. Depth- and recency-routed heads and child reads give each subtree's
 start, end and children. Format `T` then fetches the completed node and its children's results and emits the local rule (power rule,
 sin/cos/exp, sum, product) as one 16-token row. Format `A` instead propagates derivative lengths and descends an expansion template
@@ -87,34 +97,20 @@ reference token with step thresholds (Appendix A). `A` uses 16 heads + 1,963 neu
 allocation and not a measured minimum. The networks are exact on 1,497/1,497 expressions (all 160 of depth ≤ 1, stratified above,
 powers 1–8, padding 0–7) and 2,265/2,265 on the widened retry domain, with minimum logit margins 30 (`A`) and 27.5 (`T`).
 
-In Figure 1, the shared parser supplies subtree spans and children. Scratchpad T fetches a node and its children's results, emits a local rewrite, and converts addresses into reference tokens. Answer-only A descends the expansion template and copies source spans. PART trains only the rewrite emitter in T or descent emitter in A; parsing remains frozen.
+Table F1 records the fixed-parser routes alongside the worked circuit above. The shared parser supplies subtree spans and children. Scratchpad T fetches a node and its children's results, emits a local rewrite, and converts addresses into reference tokens. Answer-only A descends the expansion template and copies source spans. PART trains only the rewrite emitter in T or descent emitter in A; parsing remains frozen.
 
-```mermaid
-%%{init: {"flowchart": {"subGraphTitleMargin": {"top": 5, "bottom": 35}}}}%%
-flowchart TD
-    accTitle: Hand-built differentiation parser and emitters
-    accDescr: A uniform-prefix and depth-routed parser supplies subtree spans and children. One route emits local register rewrites; the other descends an expansion template and copies source spans. The marked emitter MLPs are the only stages trained in the respective PART formats.
-    P["Prompt: pad dots,<br/>prefix source<br/>symbols, ="] --> U["uniform prefix<br/>head: bracket<br/>balance,<br/>completion counts,<br/>position frame"]
-    U --> D["depth- and<br/>recency-routed<br/>heads, child<br/>reads: subtree<br/>start, end,<br/>children"]
-    subgraph FT["Format T: 5 layers"]
-        T1["fetch completed<br/>node and<br/>children's results"] --> T3["layer-3 rewrite<br/>MLP: text and<br/>reference neurons<br/>on OP, SLOT, END"]
-        T3 --> T4["layer 4: step<br/>thresholds turn<br/>the address into a<br/>reference token"]
-    end
-    subgraph FA["Format A: 15<br/>layers"]
-        A1["propagate<br/>derivative<br/>lengths, descend<br/>expansion template"] --> A13["layer-13 descent<br/>emitter MLP"]
-        A13 --> A2["copy source spans"]
-    end
-    D --> T1
-    D --> A1
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class T3,A13 trained
-    %% Invisible links constrain vertical layout only, not computation.
-    T4 ~~~ A1
-```
+<details>
+<summary>Technical shared parser and alternative derivative writers (Table F1)</summary>
 
-*Figure 1. The hand-built networks. A shared parsing front end gives each subtree's span and children; format `T` emits one rewrite
-row per node and format `A` expands a template and copies spans. The shaded MLPs (layer 3 in `T`, layer 13 in `A`) are the stages that
-PART re-initialises and trains.*
+*Table F1. Parse first, then write a derivative. A shared parsing front end gives each subtree's span and children; the rows are alternative output routes. Format `T` emits one rewrite row per node and format `A` expands a template and copies spans. Only the emitter MLPs (layer 3 in `T`, layer 13 in `A`) are re-initialised and trained in PART.*
+
+| Route or component | Fixed computation and trained interface |
+|---|---|
+| Shared frozen parser | Read pad dots, prefix source symbols and =. A uniform prefix head counts bracket balance and completions and supplies a position frame. Depth- and recency-routed heads read subtree start, end and children. |
+| T: register rewrites, 5 layers | Fetch the completed node and its children's results. The layer-3 rewrite MLP, trained in PART, uses text and reference neurons on OP, SLOT and END (operation, slot and end flag). Fixed layer 4 thresholds the address into a reference token. |
+| A: expanded derivative, 15 layers | Propagate derivative lengths and descend the expansion template. The layer-13 descent emitter MLP is trained in PART; source spans are copied into the expanded output. |
+
+</details>
 
 ## 4. What training finds
 
@@ -146,7 +142,7 @@ expressions (run 2) test rose to .88–.91, still unsolved.
 Circuit types were clustered by ablation map, patching, attention divergence, edges and alignment; each TRAIN cell has one type.
 TRAIN `T` has one type in 10/10 final seeds and 3/3 screens, a weighted-prefix count with a late-MLP rewrite read-out: all five MLPs
 are needed, last-layer heads are used in 19–20 of 20 snapshots, MLP4 is the top patching recovery in 20/20, and the strongest edges are
-MLP4 to output and MLP3 to MLP4 (Figure 2). Layer-3 and layer-4 head signatures differ by seed and switch between best and final in 3 seeds; a
+MLP4 to output and MLP3 to MLP4 (Table F2). Layer-3 and layer-4 head signatures differ by seed and switch between best and final in 3 seeds; a
 seed-0/seed-1 interpolation barrier of 1.40 nats shows different basins of the same type. TRAIN `A` has one type in 3/3, a late MLP14
 read-out: 1–4 heads and 3–10 MLPs are used (HAND 11 + 12), the MLP14 patch drop is .81–.95, and the pointer, start and node-end
 interchange flips are ≈ 1 only in layers 12–15. HAND as a causal model of the network scores .10–.18 (HAND on itself .84).
@@ -192,25 +188,20 @@ cohorts in 6/6 nets, but only when y is supplied by the hand-built parse. A line
 derivative addresses off by ±1, so the token decision has no compact form. Whole-program fits on pruned TRAIN `T` circuits fail (14
 joint fits: 11.3%; refit 56.6%).
 
-In Figure 2, trained content-weighted prefix heads feed the MLP stack, while final-layer heads also enter MLP4's rewrite readout. All displayed computational stages were trained. The partial status covers first-layer substitution with complement untested; the later rewrite readout still has no compact closed form.
+Table F2 records the supported front end and unresolved rewrite stage. Trained content-weighted prefix heads feed the MLP stack, while final-layer heads also enter MLP4's rewrite readout. All displayed computational stages were trained. The partial status covers first-layer substitution with complement untested; the later rewrite readout still has no compact closed form.
 
-```mermaid
-flowchart TD
-    accTitle: Weighted-prefix front end and trained rewrite stack
-    accDescr: Trained content-weighted prefix heads feed the early MLPs and the late rewrite readout, which also receives final-layer head outputs. All displayed computational nodes are trained. Status is partial: first-layer substitution is supported with complement untested, while the rewrite has no compact closed form.
-    P["prompt and rows so far"] --> L0["layer-0 heads: content-weighted prefix count, rank-4 token-pair table"]
-    L0 --> M["MLP0 to MLP2"]
-    M --> M3["MLP3"]
-    M3 --> M4["MLP4: rewrite read-out, top patching recovery"]
-    H["last-layer heads"] --> M4
-    M4 --> Y["output token"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class L0,M,M3,M4,H trained
-```
+<details>
+<summary>Technical learned front end and unresolved rewrite (Table F2)</summary>
 
-*Figure 2. The circuit type training from scratch finds in format `T` (10/10 final seeds, 3/3 screens); all five MLPs are needed, and MLP3 to MLP4 is the strongest MLP edge. The first layer is a
-content-weighted prefix count. Its status is Partial, supported by substitution with the complement not tested; the rewrite read-out in MLP4 has no compact
-closed form. All displayed computational nodes are trained in TRAIN; shading denotes those trainable components.*
+*Table F2. A prefix summary feeds the rewrite in format `T` trained from scratch (10/10 final seeds, 3/3 screens); all five MLPs are needed, and MLP3 to MLP4 is the strongest MLP edge. MLP4 also receives final-head inputs; the heads are not claimed to follow MLP3. The first layer is a content-weighted prefix count. Its status is Partial, supported by substitution with the complement not tested; the rewrite read-out in MLP4 has no compact closed form. All listed computational components are trained in TRAIN.*
+
+| Trained component | Input and recorded role |
+|---|---|
+| Layer-0 heads | Weight earlier prompt and row tokens by content, forming a prefix count with a rank-4 token-pair table. |
+| MLP0 to MLP2, then MLP3 | Process the prefix summary in the needed MLP stack. This is not a compact formula for the later rewrite. |
+| Final-layer heads and MLP4 | Heads supply extra reads to MLP4 alongside MLP3's write. MLP4 writes the output rewrite token and has the top patching recovery. Only first-layer substitution is supported; the complement is untested and the rewrite has no compact form. |
+
+</details>
 
 ### 5.3 PART T stage: a faithful fit of a failing network
 

@@ -8,6 +8,10 @@ Unreleased changes are not a tagged release or a DOI deposit.
 
 ### Changed
 
+- README's figures now show the active count indicators and a worked division step, with values on the information paths and
+  frozen/trained labels. Explicit image widths and shorter drawing proportions keep the main text readable on phones. The division
+  picture contrasts parallel internal comparisons with a written-state feedback loop; its counts remain hand-built design sizes.
+  Partial mechanism status, omitted wiring and all existing evidence tables and limitations are retained.
 - README now opens with a letter-counting picture, four linked finding stories and a three-entry tour. Detailed scrub failures,
   attribution ranges, acceptance rules and historical counts remain below the catalogue, with their original qualifications.
 - The scratchpad size figure now shows how written intermediate state lets a hand-built compare-and-subtract circuit be reused.
@@ -36,6 +40,8 @@ Unreleased changes are not a tagged release or a DOI deposit.
 
 ### Corrected
 
+- README's scratchpad diagram now separates the comparison boxes and keeps result labels clear of their arrows. Solid outlines
+  identify every formula-set part as frozen; the design counts, worked values and stated limits are unchanged.
 - [Comparison of counts](entries/compare-counts.md): the catalogue's held-out range now names fraction .8, its ten seeds and the
   copied .917–.963 range; the 30-network family census and universal held-out tie failure remain separate.
 - README's [subtraction scrub](entries/subtraction.md#5-mechanism-and-verification) now includes the documented 416 fit and 416

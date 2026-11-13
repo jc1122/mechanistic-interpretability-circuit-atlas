@@ -1,6 +1,10 @@
 # Linear systems over F₅ and F₇
 
-These transformers solved small linear systems with arithmetic that wraps modulo 5 or 7. Writing each intermediate multiplication and subtraction made the detailed-trace final cell, modulo 5 at dimension 2, learnable: all 10/10 final seeds reached whole-output exact 1.0 on 2000 held-out systems per seed, while answer-only training solved none of its screening cells. Training completed the arithmetic in a late, distributed lookup rather than following the hand-built network's layer-by-layer decomposition; the final networks failed transfer to dimension 3. The task is partly solved, and the final lookup is Sufficient readout only: substitution using supplied operand labels from the reference algorithm gives 1.0 in 3/3 tested seeds, but complement resampling on 128 systems per seed fails (.00–.30 for the claimed circuit, .79–.89 for discovered circuits, below .90). A separate replacement for the partly trained update stage is Partial and repairs failed networks; it does not explain their native errors.
+The equations x+2y=3 and y=1 give x=y=1. Arithmetic wrapped back to zero after 5 or 7, keeping only the remainder. Writing every multiplication and subtraction helped small networks: in the final modulo-5, two-equation experiment, 10/10 runs got whole traces right on 2000 held-out systems per run. Correct earlier tokens were supplied.
+
+The work was spread across the network rather than following the hand-built stages. A table could replace the last arithmetic block only with operand labels supplied by a reference algorithm. Swapping the remaining parts' signals between examples failed. This is a [sufficient readout only](../GLOSSARY.md#verifying-a-circuit): a way to extract answers, without a verified internal mechanism.
+
+The task is partly solved: final networks failed on three-equation systems, and no answer-only screen succeeded. A separate replacement for the partly trained update stage remains partial: it repairs failures rather than reproducing the networks' errors.
 
 | Fact | Value |
 |---|---|
@@ -16,6 +20,14 @@ These transformers solved small linear systems with arithmetic that wraps modulo
 HAND sets every weight by formula; PART learns one stage on a frozen scaffold; TRAIN learns all weights ([rungs](../GLOSSARY.md#the-three-rungs)). The output formats are A (answer only), T (matrix-update trace) and S (detailed arithmetic trace), defined in [Table 1](#1-task-and-data).
 
 Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [GF(2) elimination](gf2-elimination.md) for binary row operations, or [integer matrix-vector products](integer-matvec.md) for another matrix task.
+
+## The circuit at a glance
+
+Figure S1 contrasts the native operand path on the left with the separate replacement test on the right, where a reference algorithm supplies the mean-output table's operand labels rather than reading them from the network.
+
+<a href="../figures/circuits/linear-systems-finite-fields.svg"><img src="../figures/circuits/linear-systems-finite-fields.svg" width="640" alt="The native left branch groups early neurons and late heads before an unknown-operand last writer on one residual stream. A separate right branch computes reference labels from the input system and feeds a mean-output table replacing that writer; these are alternative writes, not two native stages. Modulo 5, x+2y=3 and y=1 with correct product 2 supplied targets subtraction token 1. The tested table is a sufficient readout only; complement resampling fails."></a>
+
+*Figure S1 shows the late residue write shared by all ten final modulo-5, dimension-two detailed-trace networks trained from scratch, which differ from the hand-built network; the table tested in seeds 0, 3 and 9 is Sufficient readout only because its operands come from the reference algorithm and complement resampling fails, with teacher-forced scoring and no dimension transfer ([evidence](#53-s-train-final-sufficient-readout-only)).*
 
 ## 1. Task and data
 
@@ -93,7 +105,7 @@ unfinished F₇m3 S PART run.
 ## 3. Hand-built solution
 
 Attention picks the pivot and fetches the operands, a lookup does the modular arithmetic (a circle code in T, one-hot candidates in S),
-and the last layer subtracts or routes (Figure 1). Layer 0 builds a position R = q/64 from uniform-BOS attention and ReLU hinges;
+and the last layer subtracts or routes (Table F1). Layer 0 builds a position R = q/64 from uniform-BOS attention and ReLU hinges;
 layer 1 derives block, row and column and grammar gates; layer 2 fetches operands with scores −24‖key − query‖²; layer 3 picks the
 pivot by coordinate match plus 120[nz] − 120[used] − 20r.
 
@@ -104,24 +116,25 @@ e_(a−b mod p), and a frozen typed router selects the candidate belonging to th
 195/211 neurons and S 15 + 400/482 (F₅/F₇). HAND is exact on all 12,000/98,784 m = 2 systems, on exhaustive local arithmetic, on
 stratified m = 3 fixtures and in greedy rollouts (m = 3 not exhausted).
 
-```mermaid
-flowchart TD
-    accTitle: Hand-built finite-field elimination routes
-    accDescr: Positions, operands and pivot selection feed the modular arithmetic stage, followed by circle subtraction or a typed router. Only the modular arithmetic MLP is trained in PART.
-    P["Augmented matrix<br/>and trace so far"] --> L0["L0: position R = q/64<br/>from BOS attention,<br/>ReLU hinges"]
-    L0 --> L1["L1: block, row, column,<br/>grammar gates"]
-    L1 --> L2["L2: operand fetch,<br/>score -24 times squared<br/>key-query distance"]
-    L2 --> L3A["L3 attention: pivot by<br/>coordinate match,<br/>first unused nonzero"]
-    L3A --> M3["L3 MLP:<br/>modular arithmetic lookup"]
-    M3 --> ROUTES["Alternative frozen routes:<br/>T: discrete-log lookup<br/>onto the circle, then<br/>T, L4: pizza subtraction<br/>by paired ReLUs<br/>S: categorical candidates,<br/>product and difference, then<br/>S, L4: typed router picks<br/>candidate or pivot-row copy"]
-    ROUTES --> Y["next residue token"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class M3 trained
-```
+Table F1 records the shared readers and the two alternative arithmetic routes. T combines a circle code with subtraction; S keeps separate candidate residues for a fixed router.
 
-*Figure 1. The hand-built networks for formats T and S. Attention builds positions, fetches operands and picks the pivot; the layer-3
-MLP does the modular arithmetic and layer 4 subtracts (T) or routes (S). The shaded layer-3 MLP is the part that PART replaces with a
-trained stage.*
+<details>
+<summary>Technical pivot, operand and alternative arithmetic routes (Table F1)</summary>
+
+*Table F1. The hand-built networks for formats T and S. Attention builds positions, fetches operands and picks the pivot; the layer-3 feed-forward block (MLP) does the modular arithmetic and layer 4 subtracts (T) or routes (S). Only the layer-3 MLP is trained in PART; the rest stays frozen.*
+
+| Part and training status | Input, role and destination |
+|---|---|
+| Augmented matrix and trace so far | Supply the current system and previously written state. |
+| Layer 0; frozen | Beginning-of-sequence (BOS) attention and ReLU threshold units build position R = q/64. |
+| Layer 1; frozen | Derives block, row, column and grammar gates for the readers. |
+| Layer 2; frozen | Fetches operands with score −24 times squared key–query distance. |
+| Layer-3 attention; frozen | Matches coordinates and selects the first unused nonzero pivot. |
+| Layer-3 MLP; trained in PART | Performs the modular arithmetic lookup before the format-specific final stage. |
+| T route; alternative | A discrete-log lookup maps the product to a circle code. Frozen layer 4 uses paired ReLUs for “pizza” subtraction, a trigonometric readout from two number-circle vectors, then writes the next residue token. |
+| S route; alternative | Categorical product and difference candidates feed the frozen layer-4 typed router, which chooses the current microstep's candidate or copies the pivot row, then writes the next residue token. |
+
+</details>
 
 ## 4. What training finds
 
@@ -201,35 +214,23 @@ values on other inputs, uses 128 systems per seed in all 10 final seeds. It give
 MLP4 has no closed form here and no whole-net closed form passes the circuit check. The operand table is Sufficient readout only, despite its successful local substitution. An earlier phase-conditioned additive MLP4
 formula on the screen nets was rejected (2/18 numerical passes, none on solved snapshots).
 
-```mermaid
-flowchart TD
-    accTitle: Late trained lookup and partly trained bypass
-    accDescr: The from-scratch route finishes arithmetic at the last layer; its reference-keyed output table is a sufficient readout only because complement resampling fails. The separate PART route trains only the bypass MLP and has a partial repair substitute with complement untested.
-    subgraph TR["S TRAIN final, 10/10 seeds"]
-        direction TB
-        E["embedding"] --> M02["MLP0 to MLP2"]
-        M02 --> H34["11 to 20 needed heads,<br/>mostly L3 and L4"]
-        H34 --> M4["MLP4: late write tested by<br/>a reference-keyed table"]
-        H34 -.-> M3T["MLP3:<br/>L3 heads to MLP3<br/>nearly unused"]
-        M4 --> O["residue token, every microstate<br/>at the last layer"]
-        %% Invisible link stacks branches; it is not a computational path.
-        M3T ~~~ M4
-    end
-    subgraph TP["T PART, 12 seed-runs"]
-        direction TB
-        F["frozen HAND fetch and pivot"] --> M3P["trained MLP3 writes<br/>answer scores directly"]
-        M3P --> OP["residue token"]
-        M3P -.-> M4P["frozen MLP4:<br/>MLP4 subtractor bypassed,<br/>ablation costs 0"]
-        %% Invisible link stacks branches; it is not a computational path.
-        OP ~~~ M4P
-    end
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    %% Invisible edge stacks independent panels; it is not a computational path.
-    TR ~~~ TP
-    class E,M02,H34,M4,M3T,M3P trained
-```
+Table F2 separates the wholly trained late write from the partly trained bypass. The outside reference-keyed test is not a recovered native operand computation.
 
-*Figure 2. S TRAIN's late operand table is Sufficient readout only: reference-keyed substitution gives 1.0 on 2000 systems in 3/3 tested seeds, but complement .00–.30 / .79–.89 on 128 systems per seed fails the .90 circuit check. The native computational nodes in that panel are trained; the substitution keys are supplied by the reference algorithm, not decoded network state. In T PART only MLP3 is shaded and trained; its Partial decision surrogate repairs errors and bypasses the frozen subtractor, with complement untested.*
+<details>
+<summary>Technical native roles, external-key test and separate bypass (Table F2)</summary>
+
+*Table F2. S TRAIN's late operand table is Sufficient readout only: reference-keyed substitution gives 1.0 on 2000 systems in 3/3 tested seeds, but complement .00–.30 / .79–.89 on 128 systems per seed fails the .90 circuit check. S TRAIN's native components are trained; the substitution keys are supplied by the reference algorithm, not decoded network state. In T PART only MLP3 is trained; its Partial decision surrogate repairs errors and bypasses the frozen subtractor, with complement untested.*
+
+| Separate route or test | Components, information flow and limit |
+|---|---|
+| S TRAIN final; 10/10 seeds | Trained embedding feeds feed-forward blocks MLP0 to MLP2, then 11 to 20 needed heads, mostly in layers 3 and 4. All five MLPs remain needed. |
+| S TRAIN late write | MLP4 writes the residue token, with every microstate available at the last layer. The layer-3-head-to-MLP3 path is nearly unused; that does not say MLP3 itself is absent. |
+| External-key substitution; separate test | A reference algorithm supplies phase and operands to a mean-output table replacing MLP4. Seeds 0, 3 and 9 pass; this is not an internal operand decoder. |
+| S TRAIN complement; failed | Claimed-circuit .00–.30 and discovered-circuit .79–.89 are both below .90 on 128 systems per seed. The successful output table is therefore Sufficient readout only. |
+| T PART; separate 12 seed-runs | Frozen hand-built fetch and pivot stages feed trained MLP3, which writes answer scores directly to the residue output. |
+| T PART bypass and repair | The frozen MLP4 subtractor is bypassed; its ablation costs 0. The Partial decision surrogate can repair errors; complement resampling was not tested. |
+
+</details>
 
 ### 5.4 Relation to the hand-built network and to published work
 

@@ -1,12 +1,8 @@
 # Binary matrix product over GF(2)
 
-In this version of matrix multiplication, an answer bit is one when an odd number of paired input bits are both one (AND products,
-XOR sums, arithmetic over GF(2)). Four-layer transformers learned direct answers and a scratchpad of running parities
-for 3×3 matrices: all three reported cells reached held-out whole-output exact match 1.0 in 10/10 seeds. With hand-built retrieval
-frozen, the trained stage reduced to a table of the three bits needed for an update; from scratch, the operand bits were fetched one layer later through
-different wiring. The fixed-size task is solved, but the lookup with frozen retrieval is partial: substitution preserved answers,
-while no test resampled everything outside the claimed circuit. No cell transferred to matrix sizes 4 or 5, and the detailed
-matrix-vector interventions reported separately cannot verify this matrix-product mechanism.
+Multiply the bit row (1, 1, 0) by the bit column (1, 0, 1): only the first pair has two ones, so the answer is 1. In this arithmetic, each such pair flips the running answer bit; an odd number of flips leaves it at one. Four-layer transformers learned direct answers or a [scratchpad](../GLOSSARY.md#task-formats), written working that tracks these flips, for 3×3 matrices: all three reported training settings reached whole-output accuracy 1.0 in 10/10 runs on 2k held-out pairs per run, with correct earlier output tokens supplied. With hand-built input retrieval fixed, the learned update became a table of three input bits; networks trained from scratch fetched the operands one layer later through different wiring.
+
+The fixed-size task is solved, but the fixed-retrieval lookup is [partial](../GLOSSARY.md#verifying-a-circuit): replacing it preserved answers, while changing activity outside its circuit was not tested. No setting transferred to matrix sizes 4 or 5, and the detailed tests on matrix-vector multiplication reported separately cannot verify this matrix-matrix mechanism.
 
 | Fact | Value |
 |---|---|
@@ -18,6 +14,14 @@ matrix-vector interventions reported separately cannot verify this matrix-produc
 | Status | Solved at matrix size 3 (10/10 seeds per reported cell at held-out whole-output exact match 1.0; 0 at sizes 4 and 5); last run 2026-11-05; controls 2026-11-08 |
 | Weights | [Hugging Face: gf2-matrix-product](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/gf2-matrix-product) (15 networks) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
+
+## The circuit at a glance
+
+<img src="../figures/circuits/gf2-matrix-product.svg" width="640" alt="Layers 0 to 2 build the frame and make an earlier feed-forward contribution. Parallel layer-3 heads fetch A and B bits for the later layer-3 feed-forward writer, never backwards into layer 2. The running answer bit, called parity, is 1 for an odd and 0 for an even number of paired ones. Old bit 0 and first bits 1 and 1 target bit 1. No native decoder formula was accepted.">
+
+*Figure S1. Trace networks trained from scratch (seeds 0–9) fetch operands one layer later than the hand-built reference and update the running odd/even answer bit (parity) in the layer-3 feed-forward block, with 1 for an odd and 0 for an even number of paired ones; this is a diagnostic role map, not an accepted native decoder formula, and none transfers to matrix sizes 4 or 5.*
+
+Figure S1 keeps the layer-2 feed-forward block’s earlier work separate from the layer-3 operand heads, which feed the later layer-3 block, never backwards into layer 2.
 
 ## 1. Task and data
 
@@ -78,7 +82,7 @@ earliest and latest best step), split.safetensors, config.json and manifest.json
 ## 3. Hand-built solution
 
 The hand-built network locates each operand bit by matching position attributes and then looks up one XOR-AND cell per token
-(Figure 1). Layer 0 computes the position R from a uniform head and 256 reciprocal neurons. Layer 1 has 4 first/last heads (first
+(Table F1). Layer 0 computes the position R from a uniform head and 256 reciprocal neurons. Layer 1 has 4 first/last heads (first
 separator, which gives the row length; first `;`, which gives the segment length; last terminator; last separator), and its MLP uses
 clean steps to give the segment SEG, the group G and the offset J, together with their next-token versions SEGN, GN and JN.
 
@@ -92,34 +96,23 @@ coordinates for bits zero and one. The original task record checks all 2^8 pairs
 not every m = 3 pair. A later saved reference control checks all 256 m = 2 pairs, 2,048 random m = 3 pairs and 512 random pairs each
 at m = 4 and 5. Earlier public check wording is corrected in Appendix B.
 
-In Figure 1, frozen position and separator frames address two operand-fetch heads. Their bits MA and MB, the preceding parity and separator flags enter MLP3's XOR-of-AND lookup. It writes the next running parity or separator. Only this final stage is trained in PART.
+Table F1 records the fixed frame and operand interfaces alongside the worked circuit above. Frozen position and separator frames address two operand-fetch heads. Their bits MA and MB, the preceding parity and separator flags enter MLP3's XOR-of-AND lookup. It writes the next running parity or separator. Only this final stage is trained in PART.
 
-```mermaid
-flowchart TD
-    accTitle: Hand-built operand fetch and XOR-of-AND update
-    accDescr: Frozen position and separator frames address two operand-fetch heads. Their bits, the preceding parity and separator flags enter the final XOR-of-AND lookup MLP. Only that final stage is trained in PART.
-    P["Prompt: B<br/>column-major<br/>; A<br/>row-major =<br/>and trace so<br/>far"] --> L0["L0: position<br/>R, uniform<br/>head and 256<br/>reciprocal<br/>neurons"]
-    L0 --> L1["L1: 4<br/>first/last<br/>heads; MLP<br/>gives SEG,<br/>G, J and<br/>SEGN, GN, JN"]
-    L1 --> H0["L2H0: match<br/>SEG 1, G =<br/>GN, J = JN"]
-    L1 --> H1["L2H1: match<br/>SEG 0, G =<br/>SEGN - 2, J<br/>= JN"]
-    H0 --> MA["MA = A_ij"]
-    H1 --> MB["MB = B_jk"]
-    L1 --> F["L2 MLP:<br/>separator<br/>flags TS,<br/>TSEMI, TB"]
-    MA --> M3["L3 MLP: 4<br/>cell<br/>neurons,<br/>tok1 xor (MA<br/>and MB)"]
-    MB --> M3
-    F --> M3
-    M3 --> Y["next running<br/>parity s_ij,<br/>or separator"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class M3 trained
-    %% Invisible links constrain vertical layout only, not computation.
-    H0 ~~~ H1
-    H1 ~~~ MA
-    MA ~~~ MB
-    MB ~~~ F
-```
+<details>
+<summary>Technical position frame, operand reads and parity update (Table F1)</summary>
 
-*Figure 1. The hand-built network for the trace format. Layers 0 and 1 build a position frame, two layer-2 heads fetch A_ij and B_jk,
-and the layer-3 MLP looks up the XOR-AND cell. The shaded layer-3 MLP is the part that PART replaces with a trained stage.*
+*Table F1. The hand-built network for the trace format. Layers 0 and 1 build a position frame, two layer-2 heads fetch A_ij and B_jk, and the layer-3 MLP looks up the XOR-AND cell. Only that layer-3 MLP is replaced by a trained stage in PART.*
+
+| Component | Input, operation and output |
+|---|---|
+| Prompt and fixed layer 0 (L0) | B is column-major, then ; A is row-major, followed by = and the trace so far. A uniform head and 256 reciprocal neurons supply position R. |
+| Fixed layer 1 (L1) | 4 first/last heads and the MLP give segment SEG, group G and offset J, plus next-token versions SEGN, GN and JN. |
+| Fixed layer 2, head 0 (L2H0) | Match SEG 1, G = GN and J = JN to fetch MA = A_ij. |
+| Fixed layer 2, head 1 (L2H1) | In parallel, match SEG 0, G = SEGN − 2 and J = JN to fetch MB = B_jk. |
+| Fixed layer-2 MLP | Read the frame and supply separator flags TS, TSEMI and TB. |
+| Layer-3 MLP, trained in PART | 4 cell neurons read MA, MB, preceding parity tok1 and separator flags. Write tok1 xor (MA and MB), giving next running parity s_ij, or a separator. |
+
+</details>
 
 ## 4. What training finds
 
@@ -163,24 +156,18 @@ For TRAIN there is no shared basis with HAND. The AND and s are linear at L4 (fl
 fit_r2 < 0, the QK/OV comparison has mean_ov ≤ .05 and the edge Jaccard against HAND is .09: TRAIN uses HAND's variables without HAND's
 wiring. The TRAIN candidates of the earlier audit still lack the zero and shuffle controls.
 
-In Figure 2, trained early layers build a frame, later heads fetch operand bits, and the final MLPs update the running parity. All marked stages were trained. No TRAIN matrix-product formula was accepted; the entry's partial status refers only to the separate PART lookup, whose complement was not tested.
+Table F2 separates the earlier and later roles behind the circuit overview. Layer-3 heads cannot feed the earlier MLP2; the distributed XOR-AND description does not imply that both MLPs follow those heads.
 
-```mermaid
-flowchart TD
-    accTitle: Later operand fetch in trained matrix-product traces
-    accDescr: Trained early layers build a frame; later heads fetch the operand bits and the final MLPs update the running parity. All marked computational stages are trained. No TRAIN matrix-product formula was accepted. The page's partial status refers only to the separate PART lookup, whose complement was not tested.
-    P["prompt and trace so far"] --> FR["L0 to L2: position and current-token frame"]
-    FR --> H3["2 to 7 L3 heads: fetch A_ij and B_jk"]
-    H3 --> X["MLP2 and MLP3: XOR-AND"]
-    FR --> X
-    X --> Y["running parity s_ij, linear at L4"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class FR,H3,X trained
-```
+*Table F2. The circuit type found from scratch in the trace format (TRAIN T). The operand fetch moves to layer 3 and XOR-AND spreads over MLP2 and MLP3. All listed network components are trained. These are observed roles, not a verified edge map. No trained matrix-product decoder formula was accepted. The entry's partial status covers only the separate PART lookup, whose complement was not tested.*
 
-*Figure 2. The circuit type found from scratch in the trace format (TRAIN T). The operand fetch moves to layer 3 and the XOR-AND
-spreads over MLP2 and MLP3; all displayed network components are trained and shaded. No trained matrix-product decoder formula was
-accepted. The entry's partial status covers only the separate PART lookup, whose complement was not tested.*
+| Network part | Observed role |
+|---|---|
+| Prompt and correct trace so far | Supply the tokens read by the trained network. |
+| Layers 0–2 (L0–L2) | Build the position and current-token frame. |
+| MLP2 | Makes the earlier contribution to XOR-AND, which combines an operand-bit product with the previous parity. |
+| Layer 3: 2–7 heads | Fetch operand bits A_ij and B_jk for the later computation. |
+| MLP3 | Makes the later contribution to XOR-AND after the layer-3 head reads. |
+| Residual after layer 3 (probe label L4) | Running parity s_ij is linearly readable. |
 
 ### 5.2 Circuit probes
 

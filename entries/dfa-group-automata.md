@@ -1,6 +1,8 @@
 # Group automata (parity, Z3, S3)
 
-A finite-state machine updates its current label, or state, after each input symbol. These six-layer transformers tracked odd/even counts, counts modulo 3, or the six rearrangements of three objects, either giving the final state or writing each intermediate state on a scratchpad. All 10 seeds in the final permutation scratchpad run reached whole-output exact match 1.0 on 2k held-out words, yet the learned computation used a chain of feed-forward blocks rather than the formula-set network's single state-fetch head and update table. The task is partly solved and the closed-form status is partial: final-run table substitution passed in 10/10 seeds and complement resampling passed in all 8 measured discovered circuits, leaving 2 without that certificate; older failed joint scrubs remain failed. At 128 symbols every final trained seed scored 0 on 1000 random words, while the frozen-scaffold scratchpad models were exact at that length.
+Rearrange three objects, then rearrange them again: the final order depends on the sequence of moves. Six-layer transformers tracked these six possible arrangements, odd/even counts or remainders after division by 3, either answering directly or writing the current state after every symbol as a [scratchpad](../GLOSSARY.md#task-formats). All 10 final arrangement-tracking runs reached whole-output accuracy 1.0 on 2k held-out words with correct earlier output tokens supplied, but the computation ran through a chain of feed-forward blocks, which process each position, rather than the hand-built design's single state reader and update table.
+
+The task is partly solved and the formulas are [partial](../GLOSSARY.md#verifying-a-circuit): table replacement passed in 10/10 final runs and tests changing activity outside the discovered circuits passed in all 8 measured runs, leaving 2 without that certificate; older failed joint tests remain failed. At 128 symbols every final trained run scored 0 on 1000 random words, while models learning one stage on the fixed hand-built scaffold were exact at that length.
 
 | Fact | Value |
 |---|---|
@@ -14,6 +16,14 @@ A finite-state machine updates its current label, or state, after each input sym
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
 HAND sets every weight by formula, PART trains one stage on those frozen parts and TRAIN learns all weights ([rungs](../GLOSSARY.md#the-three-rungs)). An MLP is the feed-forward block between attention stages ([glossary](../GLOSSARY.md#standard-machine-learning-terms)). A scratchpad writes intermediate results as output tokens, not hidden memory ([task formats](../GLOSSARY.md#task-formats)). Complement resampling replaces everything outside a proposed circuit using values from other inputs ([verification](../GLOSSARY.md#verifying-a-circuit)).
+
+## The circuit at a glance
+
+<img src="../figures/circuits/dfa-group-automata.svg" width="640" alt="For S3, the permutations of three items, an unverified early state-code and fetch branch feeds late feed-forward blocks, also called MLPs, on one residual stream. Their table tests use externally supplied true state and symbol keys. Some seeds bypass the last block. Identity with a first-pair swap targets that swap; upstream computation and the complete circuit remain partial.">
+
+*Figure S1. Final scratchpad networks for S3 (permutations of three items), trained from scratch (seeds 0–9), differ from the hand-built reference through a serial feed-forward-block (MLP) path with an optional last block and late tables tested using externally supplied true state/symbol keys; status is partial, with paired acceptance on 8/10, two missing circuit certificates, upstream fetching unverified and older failed joint scrubs still failed.*
+
+Figure S1 shows the serial state-code route and the last-block bypass; the table tests use true state and symbol keys rather than a recovered native fetch law.
 
 ## 1. Task and data
 
@@ -92,7 +102,7 @@ weights, not two independent networks.
 ## 3. Hand-built solution
 
 Layer 0 is a position stage with BOS as attention sink (a position that heads can attend to when nothing else is relevant): it computes P = 1/(j+1) at position j, and hinges give R = j/256. The later
-layers differ by format (Figure 1). G is the group size, QP holds the copied previous-state code, and a one-hot code gives each state its own coordinate ([glossary](../GLOSSARY.md#standard-machine-learning-terms)).
+layers differ by format (Table F1). G is the group size, QP holds the copied previous-state code, and a one-hot code gives each state its own coordinate ([glossary](../GLOSSARY.md#standard-machine-learning-terms)).
 
 Scratchpad (B). A layer-1 recency head, with score 100·[state token] + 20 j, copies the previous state q_{t-1} into a block QP. The
 layer-1 MLP has G² neurons relu(QP_a + TOK_b − 1), each writing OUT[a·b], where TOK_b is the one-hot of the current symbol. This is one
@@ -106,39 +116,21 @@ the two blocks into the block states ST1..ST4. This is 5 heads and 180 neurons, 
 
 All 6 HAND cells are exact on 2000 words with n = 1..16.
 
-In Figure 1, a frozen position stage feeds separate routes. Scratchpad B fetches the previous state and applies a transition table; answer-only parity and Z3 sum symbols and read a residue; answer-only S3 composes blocks by prefix doubling. PART trains only each route's marked MLP, leaving the other stages frozen.
+Table F1 records the fixed reference alternatives. A frozen position stage feeds separate routes. Scratchpad B fetches the previous state and applies a transition table; answer-only parity and Z3 sum symbols and read a residue; answer-only S3 composes blocks by prefix doubling. PART trains only each route's named final MLP, leaving the other stages frozen.
 
-```mermaid
-%%{init: {"flowchart": {"subGraphTitleMargin": {"top": 5, "bottom": 35}}}}%%
-flowchart TD
-    accTitle: Hand-built state-table, residue and prefix-doubling routes
-    accDescr: A frozen position stage feeds three routes: scratchpads fetch the previous state and apply a transition table; abelian answer-only cells sum symbols and read a residue; permutation answer-only cells compose blocks by prefix doubling. The marked MLPs are the stages trained in the corresponding PART cells.
-    P["Word s_1 ..<br/>s_t"] --> L0["L0: position<br/>stage, P =<br/>1/(j+1), R =<br/>j/256"]
-    subgraph FB["Format B:<br/>scratchpad"]
-        B1["L1 recency<br/>head: copy<br/>q_t-1 into<br/>QP"] --> B2["L1 MLP: G<br/>squared<br/>neurons<br/>relu(QP_a +<br/>TOK_b - 1)"]
-        B2 --> B3["OUT: state<br/>q_t = q_t-1<br/>times s_t"]
-    end
-    subgraph FA["Format A, parity<br/>and Z3"]
-        A1["BOS-sink<br/>head: symbol<br/>sum S"] --> A2["L1 MLP:<br/>(G-1) n<br/>hinges<br/>relu(S - k)"]
-        A2 --> A3["answer [S<br/>mod G = r]"]
-    end
-    subgraph FS["Format A, S3"]
-        S1["layers 1 to<br/>4: index<br/>head fetches<br/>block<br/>2^(k-1)<br/>back,<br/>36-neuron<br/>table<br/>composes,<br/>ST1..ST4"] --> S2["L5 MLP:<br/>compose the<br/>last blocks"]
-        S2 --> S3["answer q_n"]
-    end
-    L0 --> B1
-    L0 --> A1
-    L0 --> S1
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class B2,A2,S2 trained
-    %% Invisible links constrain vertical layout only, not computation.
-    B3 ~~~ A1
-    A3 ~~~ S1
-```
+<details>
+<summary>Technical state-table, residue and prefix-doubling references (Table F1)</summary>
 
-*Figure 1. The hand-built networks. Format B copies the previous state with one recency head and applies the transition with a G²
-neuron table; answer-only parity and Z3 sum the symbols and read the residue with hinges; answer-only S3 composes blocks by prefix
-doubling. The shaded MLPs are the parts that PART replaces with a trained stage.*
+*Table F1. The hand-built networks. Format B copies the previous state with one recency head and applies the transition with a G²-neuron table; answer-only parity and Z3 sum the symbols and read the residue with hinges; answer-only S3 composes blocks by prefix doubling. Only the named final MLP in each route is replaced by a trained stage in PART.*
+
+| Alternative route | Fixed computation and trained interface |
+|---|---|
+| Shared fixed position stage | Read word s_1 .. s_t. Layer 0 gives P = 1/(j+1) and R = j/256. |
+| B: scratchpad | A fixed layer-1 recency head copies q_t-1 into QP. The layer-1 MLP, trained in PART, has G squared neurons ReLU(QP_a + TOK_b − 1). The output is state q_t = q_t-1 times s_t. |
+| A: parity and Z3 | A fixed BOS-sink head supplies symbol sum S. The layer-1 MLP, trained in PART, uses (G−1) n hinges ReLU(S − k) and answers [S mod G = r]. |
+| A: S3 | Fixed layers 1 to 4 fetch the block 2^(k−1) back with an index head and compose it with a 36-neuron table, storing ST1..ST4. The layer-5 MLP, trained in PART, composes the last blocks and answers q_n. |
+
+</details>
 
 ## 4. What training finds
 
@@ -220,26 +212,21 @@ The final round uses one HAND design. Previous-state use is not established by i
 MLP0 to MLP1 .44, MLP1 to MLP2 .44 and fetch head L2H0 .41. Low single-head mean-ablation effect does not establish that a head
 carries no signal, a concern discussed by [Parodi et al. (2026)](#references).
 
-In Figure 2, trained early MLPs and seed-dependent fetch heads feed the late transition-table writes. The final MLP is needed only in one subtype. All computational nodes were trained. Status remains partial: late-table substitution passes, complement certificates cover only measured discovered circuits, and upstream fetching is unverified. Earlier failed joint scrubs remain failed.
+Table F2 records the final trained family and its incomplete certificate coverage. Trained early MLPs and seed-dependent fetch heads feed the late transition-table writes. The final MLP is needed only in one subtype. All computational nodes were trained. Status remains partial: late-table substitution passes, complement certificates cover only measured discovered circuits, and upstream fetching is unverified. Earlier failed joint scrubs remain failed.
 
-```mermaid
-flowchart TD
-    accTitle: Final trained permutation scratchpad chain
-    accDescr: Trained early MLPs and seed-dependent fetch heads feed late transition-table writes. The last MLP is needed only in one subtype. All computational nodes are trained. Status is partial: late-table substitution passes, complement certificates cover only the measured discovered circuits, and upstream fetching remains unverified. Earlier failed joint scrubs remain failed.
-    W["Word and written states so far"] --> M0["MLP0, MLP1, MLP2: serial state code"]
-    W --> H["seed-dependent fetch heads"]
-    M0 --> H
-    H --> M3["MLP3 and MLP4: delta tables on previous state and symbol"]
-    M3 --> M5["MLP5: needed in 4 of 10, idle in 6 of 10"]
-    M3 --> Q["state q_t"]
-    M5 --> Q
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class M0,H,M3,M5 trained
-```
+<details>
+<summary>Technical final trained roles and missing certificates (Table F2)</summary>
 
-*Figure 2. The final S3 scratchpad TRAIN circuit. Shaded nodes are trained. The status is partial: late-table substitution passes
-in 10/10 and the discovered-circuit complement passes in 8/8 tested seeds, giving acceptance on 8/10; two seeds have no discovered
-circuit. The upstream state-fetch formula is unverified. This does not reverse the older failed whole-hypothesis scrub or establish independent modules.*
+*Table F2. The final S3 scratchpad TRAIN family. All listed computational components are trained. The status is partial: late-table substitution passes in 10/10 and the discovered-circuit complement passes in 8/8 tested seeds, giving acceptance on 8/10; two seeds have no discovered circuit. The upstream state-fetch formula is unverified. This does not reverse the older failed whole-hypothesis scrub or establish independent modules.*
+
+| Trained components | Input and recorded role |
+|---|---|
+| MLP0, MLP1 and MLP2 | Read the word and written states so far; form a serial state code. |
+| Seed-dependent fetch heads | Read the word/history and earlier MLP code; feed the late transition readouts. No upstream fetch formula is verified. |
+| MLP3 and MLP4 | Delta tables on previous state and symbol write state q_t, directly or through MLP5. |
+| MLP5 alternative | Needed in 4 of 10 seeds and idle in 6 of 10. The idle subtype retains the direct state-output route. |
+
+</details>
 
 ## 5. Mechanism and verification
 
@@ -309,23 +296,20 @@ Sizes are sufficient upper bounds, not minima. S3 B TRAIN seed 4 keeps 7H + 2202
 HAND B has 2H + 292N (256 position hinges + 36 pair gates), not re-minimised. In the learned PART stage, 34/512 (B) and 22/512 (A)
 neurons suffice, 256/256.
 
-In Figure 3, trained prefix-histogram heads feed a redundant later fetch, then late state-table MLPs. These components are sufficient readouts separately, but their joint scrub fails. This earlier hypothesis has no full-bar certificate and is not retroactively verified by the later final run.
+Table F3 retains the earlier rejected joint hypothesis separately from the final family. Trained prefix-histogram heads feed a redundant later fetch, then late state-table MLPs. These components are sufficient readouts separately, but their joint scrub fails. This earlier hypothesis has no full-bar certificate and is not retroactively verified by the later final run.
 
-```mermaid
-flowchart TD
-    accTitle: Earlier permutation scratchpad hypothesis
-    accDescr: Trained prefix-histogram heads feed a redundant later fetch and late state-table MLPs. Every displayed component is trained. Components are sufficient readouts, but scrubbing their joint hypothesis fails. This earlier hypothesis has no full-bar certificate and is not retroactively verified by the later final run.
-    W["Word and written states so far"] --> H0["L0 heads: weighted prefix histograms"]
-    H0 --> F["later heads: previous-state fetch, redundant, distributed pair and position thresholds"]
-    F --> M["late MLPs: delta table on fetched state and symbol"]
-    M --> Q["state q_t"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class H0,F,M trained
-```
+<details>
+<summary>Technical earlier hypothesis and failed joint scrub (Table F3)</summary>
 
-*Figure 3. The earlier circuit hypothesis for format B (S3 B TRAIN, seeds 0 and 4). Prefix-histogram heads in layer 0
-feed a later, redundant fetch of the previous state, and late MLPs apply the δ table. Each part is a sufficient readout; scrubbing the
-joint hypothesis fails (71.42% and 1.69%), and per the 2026-11-07 audit no closed form passes the full bar.*
+*Table F3. The earlier circuit hypothesis for format B (S3 B TRAIN, seeds 0 and 4). Prefix-histogram heads in layer 0 feed a later, redundant fetch of the previous state, and late MLPs apply the δ table. All components were trained. Each part is a sufficient readout; scrubbing the joint hypothesis fails (71.42% and 1.69%), and per the 2026-11-07 audit no closed form passes the full bar. The later final run does not retroactively verify this hypothesis.*
+
+| Earlier trained component | Proposed role, not a jointly accepted formula |
+|---|---|
+| Layer-0 heads | Read the word and written states so far as weighted prefix histograms. |
+| Later heads | Redundantly fetch the previous state using distributed pair and position thresholds. |
+| Late MLPs | Apply a delta table to the fetched state and symbol to write state q_t. The joint hypothesis fails the scrub above. |
+
+</details>
 
 ### 5.4 Relation to the hand-built network and to published work
 

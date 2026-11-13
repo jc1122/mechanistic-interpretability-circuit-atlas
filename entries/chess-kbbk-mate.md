@@ -1,6 +1,8 @@
 # King and two bishops versus king
 
-A king and two bishops can force checkmate against a lone king, but predicting one chosen winning move is a separate learning problem. Six-layer transformers were trained on a policy for 2,503,608 winning positions; 99.63% of its labels came from a distance-to-mate table, with geometric rules supplying the rest. The task remained unsolved across nine independent training runs (seeds, [glossary](../GLOSSARY.md#counting-results)): the best answer-only accuracy was .627 on the fixed 2,048-position held-out screen, and the candidate-list scratchpad did worse. In all three scratchpad seeds, interventions supported a copy from the first candidate in the supplied trace to the destination output, placing the failing step upstream in candidate generation. No hand-built neural reference or accepted replacement formula was recovered; these scores supply the correct earlier output tokens and do not measure free play.
+A king and two bishops can force checkmate against a lone king; here the challenge was to imitate one fixed choice of winning move. Six-layer transformers learned from 2,503,608 winning positions, with 99.63% of labels supplied by a distance-to-mate table, an exhaustive record of how far optimal play is from checkmate, and the rest by geometric rules. The task stayed unsolved across nine independent runs: the best answer-only accuracy was .627 on the fixed 2,048-position held-out screen, and writing a candidate-move list before the answer did worse.
+
+In all three candidate-list runs, changing internal activity supported a simpler operation: copy the first listed candidate into the destination answer, leaving the failure in how candidates were generated. No hand-built neural reference or accepted replacement formula was recovered, and the scores supply correct earlier output tokens rather than measuring free play.
 
 | Fact | Value |
 |---|---|
@@ -12,6 +14,14 @@ A king and two bishops can force checkmate against a lone king, but predicting o
 | Status | Unsolved (0/9 at the requested ≥ .99 whole-output exact target); last run 2026-11-11 |
 | Weights | [Hugging Face: chess-kbbk-mate](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/chess-kbbk-mate) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
+
+## The circuit at a glance
+
+Figure S1 separates the unresolved candidate generator from the independently supplied candidate that the final layer copies into the destination.
+
+<img src="../figures/circuits/chess-kbbk-mate.svg" width="640" alt="The board feeds unresolved candidate generation. Independently, the first candidate c4 is supplied in the correct earlier trace at test; it is not shown as the verified output of the generator. A final-layer copy reads that supplied token and writes destination c4, including on wrong rows. Both learned roles are dashed: no faithful replacement was recovered. The source route is outside scope; c4 illustrates copying, not a legal move, autonomous candidate generation or free play.">
+
+*Figure S1 shows the supplied first candidate being copied into the destination while generation remains unresolved (candidate-list networks trained from scratch, run 1, all three seeds; no hand-built network exists); status is None because no faithful replacement was recovered, and the causal copy uses correct earlier tokens supplied at test, with c4 illustrating copying rather than a legal move or free play.*
 
 ## 1. Task and data
 
@@ -56,37 +66,39 @@ Published revision `15eb9d53b409` contains `train_{A,T}_r1_{best,final}_s{0-2}`,
 
 ## 3. Hand-built solution
 
-No HAND neural network was built. The reference is an exhaustive retrograde solver, which works backwards from checkmate positions, and a hybrid policy, illustrated in Figure 1. Geometric cage rules alone were inadequate: their universal-defender attractor certified only 9,257 of 2,503,608 won states within 50 moves. The earlier public summary describes the geometric branch as 0.37% of states. The retained rule set uses MATE, RESCUE, BARRIER, APPROACH, REGROUP and WAIT. A smaller local cage is not by itself a guarantee of progress after the defender's move.
+No HAND neural network was built. The reference is an exhaustive retrograde solver, which works backwards from checkmate positions, and a hybrid policy, documented in Table F1. Geometric cage rules alone were inadequate: their universal-defender attractor certified only 9,257 of 2,503,608 won states within 50 moves. The earlier public summary describes the geometric branch as 0.37% of states. The retained rule set uses MATE, RESCUE, BARRIER, APPROACH, REGROUP and WAIT. A smaller local cage is not by itself a guarantee of progress after the defender's move.
 
 The remaining 2,494,351 states use `DTM_FALLBACK`, a share of 99.6302536%. The earlier public text reports this same fallback share at precisions 99.63% and 99.6%; none is a measured share of DTM-optimal moves for the whole hybrid policy. The geometric branch was not separately measured for optimality. No compact HAND policy was recovered in this study; that is not a proof that none could exist.
 
-In Figure 1, a winning position takes the geometric move only when that policy stays in its certified safe attractor. Otherwise it takes a distance-to-mate table move with geometric tie-breaking. The chosen move becomes a training label. This is label generation, not a hand-built neural circuit; there is no HAND or PART component.
+Table F1 records the label-generation policy, separately from the trained network shown above. A winning position takes the geometric move only when that policy stays in its certified safe attractor. Otherwise it takes a distance-to-mate table move with geometric tie-breaking. The chosen move becomes a training label. This is label generation, not a hand-built neural circuit; there is no HAND or PART component.
 
-```mermaid
-flowchart TD
-    accTitle: Hybrid policy used to label the bishops endgame
-    accDescr: A winning board uses a geometric move inside its certified safe attractor and a distance-to-mate table move elsewhere. The resulting policy label trains a board-to-move transformer. This is label generation, not a hand-built neural circuit; no HAND or PART component exists, and no node is marked as such.
-    P["Winning position:<br/>white king and two<br/>bishops against a<br/>king"] --> G["Does the geometric<br/>policy stay in its<br/>certified<br/>attractor?"]
-    G -->|"yes"| R["Use the geometric<br/>rule move"]
-    G -->|"no"| D["Use a<br/>distance-to-mate<br/>optimal move, with<br/>geometric<br/>tie-breaks"]
-    R --> Y["Policy label: one<br/>chosen move"]
-    D --> Y
-    Y --> T["Train the<br/>board-to-move<br/>transformer"]
-    %% Invisible links constrain vertical layout only, not computation.
-    R ~~~ D
-```
+<details>
+<summary>Technical reference policy used to label the data (Table F1)</summary>
 
-*Figure 1. The reference policy used to label the data. This is a label-generation diagram, not a hand-built neural circuit. No HAND or PART network exists, so no node is marked as a trained PART component. The fallback fraction measures use of the distance-to-mate table, not the policy's optimal-move rate.*
+*Table F1. The reference policy used to label the data. This is label generation, not a hand-built neural circuit. No HAND or PART network exists. The fallback fraction measures use of the distance-to-mate table, not the policy's optimal-move rate.*
+
+| Label-generation step | Condition and action |
+|---|---|
+| Input | A winning position: white king and two bishops against a king. |
+| Geometric branch | If the geometric policy stays in its certified safe attractor, use the geometric rule move. |
+| Fallback branch | Otherwise use a distance-to-mate optimal move, with geometric tie-breaks. |
+| Training target | Either branch supplies one chosen move as the policy label used to train the board-to-move transformer. |
+
+</details>
 
 The solver had 0 Bellman discrepancies, inconsistencies between a state's solved value and the values of its legal successors, on all 4,194,304 raw slots. Validation against [python-chess, by Fiekas](#references), using its [software documentation](https://python-chess.readthedocs.io/), found 0 move-set mismatches on 3,000 random legal states per side. There were 150 games per policy, each finishing in checkmate at the certified ply count; a ply is one player's move. The actual hybrid mates every won state against every defence, with maximum 22 white moves and mean 14.365783 in the source verification; the earlier public summary reports mean 14.37. The DTM-optimal maximum is 19 white moves. The 50-move guarantee assumes a fresh halfmove clock, the counter since the last capture or pawn move; arbitrary nonzero clocks cannot have the same guarantee.
 
 ## 4. What training finds
 
-The last reported analysis was dated 2026-11-11. The candidate list did not improve whole-output accuracy (Figure 2). Both run-1 formats had training accuracy close to test accuracy, consistent with underfitting rather than memorising the training partition. There was no delayed generalisation jump, or grokking ([glossary](../GLOSSARY.md#counting-results)).
+The last reported analysis was dated 2026-11-11. The candidate list did not improve whole-output accuracy (Table F2). Both run-1 formats had training accuracy close to test accuracy, consistent with underfitting rather than memorising the training partition. There was no delayed generalisation jump, or grokking ([glossary](../GLOSSARY.md#counting-results)).
 
-![Per-seed best exact scores for width-384 answer-only and candidate-list networks on the fixed held-out screen](../figures/chess-kbbk-screen.svg)
+*Table F2. A candidate list did not solve king-and-two-bishops versus king. Best whole-output exact accuracy on the fixed 2,048-position held-out screen, three seeds per width-384 format; 0/3 solved in each. Candidate-list scoring includes every candidate token and supplies the correct preceding tokens. Free play was not evaluated. The truncated wider retry is excluded from this table; no closed form was recovered.*
 
-*Figure 2. Best whole-output exact accuracy on the fixed 2,048-position held-out screen, three seeds per width-384 format. Scratchpad scoring includes every candidate token and supplies the correct preceding tokens. Free play was not evaluated. The truncated wider retry is excluded from this plot; no closed form was recovered.*
+| Seed | Answer only | Candidate list |
+|---|---|---|
+| 0 | .627 | .410 |
+| 1 | .590 | .394 |
+| 2 | .582 | .407 |
 
 *Table 2. Training-screen results. Best and final are snapshots of the same seed. The width-768 final is the saved 22.5k-step network, while the wall cap occurred at 23.5k.*
 

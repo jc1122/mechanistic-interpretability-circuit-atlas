@@ -1,12 +1,8 @@
 # CRC remainder
 
-This task divides a polynomial of bits by another polynomial and writes its 4 remainder bits, using XOR, addition without carries.
-Small transformers learned it with a scratchpad, a written record of each shift-and-update step: the final from-scratch experiment
-reached held-out whole-output exact match 1.0 in 10/10 seeds at the joint stopping evaluation. The readout and each seed's discovered
-circuit passed substitution and resampling outside the circuit at ≥ .90 of native accuracy, but earlier layers still had no formula
-and the coarse readout table used the emitted bit itself as a key. The overall closed form is therefore partial and the task partly
-solved: answer-only training was exact in 2/3 screening seeds, while the final scratchpad networks scored only 0–.26 at input width 12.
-Learning the local step in range did not ensure reliable repetition at unseen lengths.
+Dividing `10000000` by `10001` leaves the 4-bit remainder `1000` in this version of long division, where adding and subtracting use XOR, addition without carries. Small transformers learned to write each shift-and-update step as a [scratchpad](../GLOSSARY.md#task-formats), reaching whole-output accuracy 1.0 in 10/10 final from-scratch runs at their joint stopping evaluation on 1,536 held-out pairs per run, with correct earlier output tokens supplied.
+
+Their answer-reading formulas and circuits passed the original replacement and outside-circuit tests at ≥ .90 of unmodified-network accuracy; over all inputs of widths 1–12, however, 9/10 circuits failed that share and even the remaining pass changed the unmodified network's answers. The overall formula is [partial](../GLOSSARY.md#verifying-a-circuit): earlier layers remain unexplained, and the coarse answer table receives the reference answer bit itself, so a better answer can be a repair rather than an explanation. The task is partly solved because answer-only training was exact in 2/3 screening runs, while the final scratchpad networks scored only 0–.26 at input width 12; learning the step did not ensure reliable repetition on longer inputs.
 
 | Fact | Value |
 |---|---|
@@ -14,10 +10,18 @@ Learning the local step in range did not ensure reliable repetition at unseen le
 | Input → output example | Answer only: `BOS 10000000 / 10001 =` → `1000` (x^7 mod x^4 + 1 = x^3) |
 | Model | GPT-NeoX-shaped, ReLU, no LayerNorm or positional encoding, d_model 128; answer only 4 layers × 16 heads; scratchpad 3 layers × 4 heads; PART trains only the stage MLP |
 | Rungs and seeds | HAND fixes weights; PART trains one stage; TRAIN learns all weights ([rungs](../GLOSSARY.md#the-three-rungs)). HAND exact in both formats; PART scratchpad 10 seeds; PART answer only and TRAIN answer only 3 screening seeds each; TRAIN scratchpad 10 final plus 3 screening seeds |
-| Closed form status | Partial overall (TRAIN scratchpad readout and discovered circuit pass both checks in 10/10 seeds at share ≥ .90; coarse table 1.0 in 19/20 best/final snapshots; fine table seed 7 best .9883, final .9694; coarse key includes emitted bit; no upstream formula) |
+| Closed form status | Partial overall (original sampled TRAIN scratchpad readout and circuit checks pass in 10/10 seeds at share ≥ .90; coarse table 1.0 in 19/20 best/final snapshots; fine table seed 7 best .9883, final .9694; wider-domain circuit share fails in 9/10 final seeds; coarse key includes the reference answer bit, not a recovered upstream computation; [domain and fidelity limits](#51-current-acceptance-and-scope)) |
 | Status | Partly solved (TRAIN scratchpad final 10/10 exact, answer only 2/3 screening); last run 2026-11-09 |
 | Weights | [Hugging Face: crc-remainder](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/crc-remainder), revision `58be416bb224` |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
+
+## The circuit at a glance
+
+<img src="../figures/circuits/crc-remainder.svg" width="640" alt="One residual stream connects an unverified early step code, layer-2 fetch heads and the native bit writer. Prior remainder 0100 and next input bit 0 target 1000. A separate dashed test table receives a true emitted-bit key from outside the network and can replace the writer and repair errors; the upstream formula is unknown.">
+
+*Figure S1. Final scratchpad networks trained from scratch (seeds 0–9) differ from the compact hand-built stage; status is partial because the coarse table uses reference-answer keys and can repair errors, the upstream law is unverified, and widths 1–12 circuit checks retain below .90 of native accuracy in 9/10 seeds and change native decisions in all ten.*
+
+Figure S1 separates the native code-to-bit route from the test-only table, whose emitted-bit keys are supplied by the reference computation.
 
 ## 1. Task and data
 
@@ -81,7 +85,7 @@ check matched 60/60 file hashes, and 3/3 re-scored networks reproduced their rec
 
 ## 3. Hand-built solution
 
-The scratchpad network T (7 used heads + 236 neurons) performs one step of long division per input bit (Figure 1). Its heads fetch the
+The scratchpad network T (7 used heads + 236 neurons) performs one step of long division per input bit (Table F1). Its heads fetch the
 previous state's shift bit X, the input bit A, the divisor bit DB and the quotient bit QB. The layer-2 MLP computes
 r = ((r ≪ 1) | a) XOR (q·D): it shifts the remainder left, appends input bit a and XORs the divisor in when quotient bit q is 1.
 At each bit this is `next = shift XOR (divisor_bit AND quotient)`. The stage has 10 neurons, with W_in values ±1 and −2.
@@ -92,24 +96,20 @@ MLP3 holds 262 parity-staircase neurons, grouped by divisor D and answer bit j, 
 S(D, j) = {i: bit j of x^i mod D is 1}; here S is the set of input-bit positions contributing to that remainder bit. Input weights
 are 1 and gates 32. Both formats are exact on 9,568 sequences per format (n ≤ 6 exhaustive, n 7–12 stratified over all D), with margin 30.
 
-In Figure 1, frozen scratchpad heads fetch the shift, input, divisor and quotient bits before the stage MLP shifts and XORs the conditional divisor. The separate answer-only route uses frozen heads and parity staircases. PART trains only the marked stage MLP in each format; its heads stay frozen.
+Table F1 records the fixed scratchpad and answer-only alternatives. Frozen scratchpad heads fetch the shift, input, divisor and quotient bits before the stage MLP shifts and XORs the conditional divisor. The separate answer-only route uses frozen heads and parity staircases. PART trains only the marked stage MLP in each format; its heads stay frozen.
 
-```mermaid
-flowchart TD
-    accTitle: Hand-built scratchpad and answer-only remainder routes
-    accDescr: Scratchpad heads fetch shift, input, divisor and quotient bits before the stage shifts and XORs the conditional divisor. The answer-only route instead uses parity staircases. Only the marked stage MLP is trained in each PART format; heads remain frozen.
-    P["BOS N / D = and<br/>scratchpad so far"] --> HT["T heads: fetch<br/>shift bit X, input<br/>bit A, divisor bit<br/>DB, quotient bit<br/>QB"]
-    HT --> ST["T layer-2 MLP:<br/>shift r, append a,<br/>XOR q times D"]
-    ST --> YT["quotient bit and 4<br/>remainder bits per<br/>step"]
-    P --> HA["A: 18 frozen heads"]
-    HA --> SA["A layer-3 MLP:<br/>GF(2) parity<br/>staircases per<br/>divisor"]
-    SA --> YA["4 remainder bits"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class ST,SA trained
-```
+<details>
+<summary>Technical scratchpad and answer-only reference routes (Table F1)</summary>
 
-*Figure 1. The hand-built scratchpad (T) and answer-only (A) networks. The shaded stage MLPs (T layer 2, A layer 3) are the parts that
-PART replaces with a trained stage; the heads stay frozen.*
+*Table F1. The hand-built scratchpad (T) and answer-only (A) networks. Only the stage MLPs (T layer 2, A layer 3) are replaced by a trained stage in PART; the heads stay frozen.*
+
+| Alternative route | Fixed reads, trained interface and output |
+|---|---|
+| Shared input | BOS N / D = and scratchpad so far. BOS is the beginning-of-sequence marker. |
+| T: written division steps | Fixed heads fetch shift bit X, input bit A, divisor bit DB and quotient bit QB. The layer-2 MLP shifts r, appends a and XORs q times D. It writes a quotient bit and 4 remainder bits per step. |
+| A: answer only | 18 frozen heads feed the layer-3 MLP's GF(2) parity staircases per divisor, producing 4 remainder bits. |
+
+</details>
 
 ## 4. What training finds
 
@@ -179,13 +179,13 @@ the criterion alone explains this difference; these ranges must not be used inte
 
 ### 5.1 Current acceptance and scope
 
-Substitution replaces the last MLP output at every answer query by a table fitted on separate batches. Current tests score
+Substitution replaces the last MLP output at every answer query by a table fitted on separate batches. The original sampled tests scored
 3 × 512 held-out rows at n 8/9/10; complement checks used 256 n 10 rows and 3 resample draws, not the same evaluation batch.
 Acceptance requires both substitution and resample ablation of the complement to retain ≥ .90 of
 the native network's exact match ([glossary](../GLOSSARY.md#verifying-a-circuit)). The complement test replaces everything outside
 the claimed circuit with activations from other inputs.
 
-*Table 4. Current closed forms and controls. Best and final are tested separately.*
+*Table 4. Original sampled closed-form acceptance and controls. Best and final are tested separately. The input-exhaustive follow-up below qualifies domain coverage and fidelity without replacing these recorded scores.*
 
 | Cell | Substitute | Substitution | Complement and controls | Scope |
 |---|---|---|---|---|
@@ -202,33 +202,50 @@ final as .969; the acceptance record gives .9694 and locates its loss at n 10 (.
 coarse table has 11 keys and the fine table 35, with none unseen in the evaluation; the fine best-snapshot exception cannot be folded
 into the coarse 19/20 exact count.
 
-In Figure 2, trained scratchpad codes pass through fetch heads to the final bit write. The answer-only candidate instead uses a dense last-layer readout. All marked components were trained. Overall status remains partial: scoped scratchpad tests pass, but earlier layers lack a formula and the coarse key includes the emitted bit. The tested answer-only form is rejected.
+An input-exhaustive follow-up checks every input in a stated finite domain, rather than a sample. For PART T seeds 0–9, both frozen
+readout tables make exactly the same decisions as the native network and are task-exact on all 131,040 inputs per seed of the full specification domain. That domain
+covers lengths 1–12, every degree-4 monic divisor and every bit string, including leading zeros and withheld divisors. The nine-edge
+family circuit preserves every scored native decision under three registered full-domain same-length donor derangements, in which
+each input receives activity from a different input of the same length. Necessity, random-size and endpoint controls pass.
+Best and final tensors coincide within each seed. This is input-exhaustive decision equivalence for these substitutions and draws,
+not enumeration of all donor pairs; seeds 3–9 use the historically extrapolated family mask, not separately recovered per-seed masks.
 
-```mermaid
-flowchart TD
-    accTitle: Trained scratchpad readout and dense answer-only candidate
-    accDescr: A trained scratchpad code passes through fetch heads to the final bit write; the answer-only route uses a dense last-layer readout. All marked components are trained. Overall status is partial: the scratchpad readout and discovered circuit pass their scoped tests, but earlier layers have no formula and the coarse key includes the emitted bit. The tested answer-only form is rejected.
-    I["TRAIN T: input,<br/>divisor and<br/>previous state"] --> M1["trained MLP1 code"]
-    M1 --> H["trained layer-2<br/>fetch heads"]
-    H --> M2["trained MLP2: bit<br/>readout W phase,<br/>column, next"]
-    M2 --> Y["quotient and<br/>remainder bits"]
-    IA["TRAIN A: input<br/>bits, divisor and<br/>column"] --> RA["trained last-layer<br/>MLP: dense<br/>non-HAND parity<br/>readout"]
-    RA --> YA["4 remainder bits"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class M1,H,M2,RA trained
-```
+For PART A, Table 4 gives sampled acceptance scores on seen divisors, not fidelity to native errors over the whole domain.
+Over all 28,672 primary inputs of lengths 8–10, including the four withheld divisors, the coarse table repairs 6,415/6,495 errors in
+best/final seed 0, 6,461/6,466 in best/final seed 1, and 6,469 in seed 2. It remains task-exact but does not reproduce all native
+decisions. The fine table, which also uses the divisor as a key, has no fitted entries for the four withheld divisors. Preserving
+native outputs for absent keys is a fallback, not closed-form coverage.
 
-*Figure 2. The circuits found from scratch. All shaded nodes are trained. The TRAIN T readout and discovered circuit pass substitution
-and complement checks at the .90 share in 10/10 seeds. Overall closed-form status is partial: earlier layers have no formula and the
-coarse table uses the emitted bit, so it is a readout rather than an upstream algorithm. TRAIN A's tested form is rejected.*
+All ten final TRAIN T seeds still meet the original accuracy-share gate on the exhaustive primary n 8–10 domain, including withheld
+divisors, but every complementary circuit changes native decisions. On the wider 131,040-input specification domain (n 1–12), nine of ten original
+complementary circuits fall below 90% of native accuracy. Seed 5 alone retains the share, not the predictions. The coarse tables
+differ from native on 64,581–94,979 inputs per final seed; their keys use values supplied by HAND, the reference algorithm, and often
+repair upstream errors rather than reproduce the trained computation. These results qualify scope and fidelity, not the original
+sampled acceptance scores. No new complement test was run for best or screening snapshots.
+
+Table F2 records the learned readout roles and the failed answer-only form. Trained scratchpad codes pass through fetch heads to the final bit write. The answer-only candidate instead uses a dense last-layer readout. All marked components were trained. Overall status remains partial: scoped scratchpad tests pass, but earlier layers lack a formula and the coarse key includes the emitted bit. The tested answer-only form is rejected.
+
+<details>
+<summary>Technical learned readouts and external-key boundary (Table F2)</summary>
+
+*Table F2. The roles found from scratch. All listed network components are trained. The TRAIN T readout and discovered circuit pass substitution and complement checks at the .90 share in 10/10 seeds. Overall closed-form status is partial: earlier layers have no formula and the coarse table uses the emitted bit, so it is a readout rather than an upstream algorithm. TRAIN A's tested form is rejected.*
+
+| Alternative route or test boundary | Input and recorded role |
+|---|---|
+| TRAIN T code and fetching | Input, divisor and previous state feed trained MLP1's code, then trained layer-2 fetch heads. The upstream computation has no formula. |
+| TRAIN T MLP2 | The trained bit readout uses W (indexed by phase, column and next) to write quotient and remainder bits. |
+| Coarse reference-keyed test | Its key includes the emitted bit; this test must not be drawn as native computation of that bit. Scoped readout acceptance does not identify the upstream algorithm. |
+| TRAIN A | Input bits, divisor and column feed a trained last-layer MLP's dense non-HAND parity readout for 4 remainder bits. The tested form is rejected. |
+
+</details>
 
 ### 5.2 Earlier substitution evidence
 
 The earlier article's last run was dated 2026-11-07. That audit used fresh held-out screens of 768 rows per snapshot (n 8/9/10), best and final. For PART T seeds 0–2 an eight-ReLU
 table with 8 fitted coefficients keeps 11,587 of 11,587 rows: write `;` at SEP, X at QF, otherwise
 `(if LOW then A, else X) XOR (DB AND QB)`. SEP marks a separator, QF the quotient-bit slot and LOW the lowest remainder-bit slot.
-At that audit seeds 3–9 lacked matched zero controls and no complement was reported. The later complement evidence above applies
-to the tested seeds; it does not fill those seven earlier control gaps.
+At that audit seeds 3–9 lacked matched zero controls and no complement was reported. The later sampled complement evidence applies to the directly tested seeds; it does not fill those seven earlier control gaps.
+The input-exhaustive follow-up reports new registered controls for all ten seeds, with the transferred-family-mask qualification above.
 
 For PART A seeds 1–2, a native ReLU ridge bank over input bits NB, divisor and column used 36,867 numbers against 263,296 in the
 stage and reproduced the learned behaviour, errors included (768/768; seed 2 767/767). Projection onto one HAND low-bit count
@@ -253,8 +270,10 @@ Discovery used 256 n 10 rows from final snapshots. The TRAIN readout leaves earl
 support a strict HAND-edge superset in every seed.
 
 The earlier audit left ten-seed TRAIN T, TRAIN A's wider-data retry and scratchpad complement tests open; their outcomes are reported
-above, including the negative retry. Still open are ten-seed PART A and TRAIN A, matched zero controls for the PART T table on seeds
-3–9, TRAIN A seed 2 checkpoint dynamics and public code. One final-run dynamics record reaches only step 7,500, and the training
+above, including the negative retry. Still open are ten-seed PART A and TRAIN A, the historical matched-zero-control provenance for the earlier PART T table on seeds
+3–9, TRAIN A seed 2 checkpoint dynamics and public code. The new full-domain PART T controls do not establish that missing historical
+provenance; they are separately registered tests. TRAIN T's wider-domain circuit failures and native-decision changes also remain
+limitations, even though primary-domain accuracy-share acceptance survives. One final-run dynamics record reaches only step 7,500, and the training
 device was not logged. No missing diagnostic is treated as a passed check.
 
 ## 7. Prediction record

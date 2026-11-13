@@ -1,6 +1,10 @@
 # Output order in 16-bit base conversion
 
-Converting a number between decimal and binary preserves its value, but the order of the output digits changes the computation a model must learn. The hand-built solution writes the largest place first by comparing the remaining magnitude with place-value thresholds; units-first output instead needs a remainder calculation, which the trained answer-only stages often miss. Exact success also depends on reporting precision: in a later seven-seed decimal-to-binary completion, rounded stop labels say 3/7 solved while only 1/7 is exactly correct on all 6554 held-out integers. A scratchpad of intermediate steps solved the completed binary-to-decimal frozen-routing comparison in 10/10 seeds per order, not every scratchpad cell. The task is partly solved and the formulas are Partial: local partly trained stages retain identical token predictions in 12/12 tested snapshots, including their errors, but complement resampling was not tested and no whole-network formula is accepted.
+Decimal `00012` becomes binary `0000000000001100` largest-place-first or `0011000000000000` units-first. The value stays the same, but the calculation changes. The hand-built solution compares the remaining value with each place size, largest first. Units-first needs a remainder calculation, which trained answer-only stages often missed.
+
+Even success needed checking. In a later decimal-to-binary completion, rounded stopping records called 3/7 runs solved, but only 1/7 was right on all 6554 held-out integers. A [scratchpad](../GLOSSARY.md#task-formats), written intermediate steps, helped the completed binary-to-decimal comparison with hand-built retrieval. It did not help every scratchpad experiment.
+
+The task is partly solved. Its [partial formulas](../GLOSSARY.md#verifying-a-circuit) reproduce the partly trained stages' token predictions in the tested saved states, including mistakes. Swapping the other parts' signals between examples was not tested, and no whole-network formula is accepted. Output scores supplied correct preceding tokens.
 
 | Fact | Value |
 |---|---|
@@ -16,6 +20,14 @@ Converting a number between decimal and binary preserves its value, but the orde
 MSB-first means largest place first; LSB-first means units first ([formats](../GLOSSARY.md#task-formats)). HAND sets every weight by formula, PART learns one stage on a frozen scaffold, and TRAIN learns all weights ([rungs](../GLOSSARY.md#the-three-rungs)).
 
 Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [base conversion](base-conversion.md) for the companion task, or [multiplication across bases](multiplication-base-order.md) for digit-order effects in multiplication.
+
+## The circuit at a glance
+
+Figure 3 isolates the partly trained largest-first binary-to-decimal route ([mechanism and verification](#5-mechanism-and-verification)).
+
+<img src="../figures/circuits/output-order-base-conversion.svg" width="640" alt="Largest-first digits use what remains at this place. One upward residual stream has separate read/write branches for Read input (fixed weighted fetch); Read prefix (fixed weighted fetch); Cut by place (learned digit votes). Input: 0000000000001100; given prefix 0001; Next-digit target: 2. Task values are illustrative; dashed boxes and branches are not verified.">
+
+*Figure 3. Partly trained binary-to-decimal largest-first seeds 0–2 match the hand-built magnitude-ladder algorithm, but the partial local substitution preserves native mistakes with the complement untested; units-first and whole-network mechanisms are not shown.*
 
 ## 1. Task and data
 
@@ -100,7 +112,7 @@ within 3/2048), and every HAND scores 1.0.
 
 ## 3. Hand-built solution
 
-All hand-built networks share their routing (Figure 1). L0 builds a positional frame (a BOS head and a position one-hot), the L1 MLP
+All hand-built networks share their routing (Table F1). L0 builds a positional frame (a BOS head and a position one-hot), the L1 MLP
 cleans positions to an exact one-hot, and L2 heads fetch exact weighted mixtures of input digits, with BOS as an attention sink. The L2
 MLP is the arithmetic stage.
 
@@ -118,23 +130,23 @@ for B MSB).
 The exhaustive check gives 65536/65536 integers in every cell. Non-zero heads and neurons, including the frame, are d2b A MSB 3+67,
 A LSB 3+99; b2d A MSB 3+83, A LSB 3+215; d2b B 3+382 and b2d B 2+346.
 
-```mermaid
-flowchart TD
-    accTitle: Hand-built conversion magnitude and remainder routes
-    accDescr: Frozen positional framing and digit-fetch heads supply a magnitude and place unit for largest-place-first output, or a residue for units-first output. Only the final arithmetic MLP is trained in PART.
-    P["Prompt: BOS input =<br/>and answer so far"] --> L0["L0: positional frame,<br/>BOS head and position one-hot"]
-    L0 --> L1["L1 MLP: clean positions<br/>to an exact one-hot"]
-    L1 --> L2H["L2 heads: weighted<br/>digit mixtures, BOS sink"]
-    L2H --> F["F = x - W and unit T (MSB)<br/>or summed residue F (LSB)"]
-    F --> M["L2 MLP: arithmetic stage"]
-    M --> OUT["Alternative output orders:<br/>MSB: comparator ladder,<br/>digit a wins when<br/>F - aT >= 0<br/>LSB: digit = F mod base_out"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class M trained
-```
+Table F1 records why the output orders need different local readouts. Largest-place-first output compares a remaining magnitude; units-first output reads a remainder.
 
-*Figure 1. The hand-built answer-only network. Layers 0 and 1 build a clean position code, the layer-2 heads compute the magnitude F
-(and the unit T for MSB-first), and the layer-2 MLP turns F into the output digit. The shaded MLP is the part that PART replaces with a
-trained stage.*
+<details>
+<summary>Technical common readers and alternative digit orders (Table F1)</summary>
+
+*Table F1. The hand-built answer-only network. Layers 0 and 1 build a clean position code, the layer-2 heads compute the magnitude F (and the unit T for MSB-first), and the layer-2 feed-forward block (MLP) turns F into the output digit. Only that MLP is trained in PART; all routing stays frozen.*
+
+| Part or alternative route | Information flow and rule |
+|---|---|
+| Prompt and layer 0; frozen | `BOS input =` and the answer so far feed a beginning-of-sequence head and position one-hot code. |
+| Layer-1 MLP; frozen | Cleans positions to an exact one-hot category code. |
+| Layer-2 heads; frozen | Read weighted digit mixtures with BOS as an attention sink, supplying F and, for largest-first output, place unit T. |
+| Largest-place-first (MSB) route | F = x − W is input magnitude minus the written value; T is the current place unit. The arithmetic MLP uses a comparator ladder: digit a wins when F − aT ≥ 0. |
+| Units-first (LSB) route; alternative | F is a summed residue; the arithmetic MLP writes digit = F mod base_out. This is not a stage following the MSB route. |
+| Training boundary | PART replaces only the layer-2 arithmetic MLP, not the readers or positional frame. |
+
+</details>
 
 ## 4. What training finds
 
@@ -201,7 +213,7 @@ The hard part is the middle band, where neither a few-digit residue nor a coarse
 
 ### 5.1 Closed forms for PART
 
-Two closed forms were derived from the weights of the trained stage (Figure 2). For PART b2d MSB the magnitude stage (3/3 measured
+Two closed forms were derived from the weights of the trained stage (Table F2). For PART b2d MSB the magnitude stage (3/3 measured
 seeds) is
 
 M′ = e_Z0 + Σ_{a=1..9} e_Za·[F ≥ θ(q, t, a)],
@@ -227,23 +239,23 @@ zeroing the MLP scores 0. The closed forms are therefore supported by substituti
 | b2d A MSB | 1024/1024 | 1020/1019 | 1018/1018 |
 | d2b A LSB | 585/562 | 563/566 | 493/470 |
 
-```mermaid
-flowchart TD
-    accTitle: Partly trained threshold and imperfect parity substitutes
-    accDescr: Frozen heads supply F to learned thresholds for binary-to-decimal largest-place-first output or a piecewise-linear imperfect-parity response for decimal-to-binary units-first output. Marked thresholds and spline are trained. These local partial substitutes preserve native errors; the complement is untested.
-    F["F from the frozen L2 heads"] --> TH["b2d MSB: 366 thresholds<br/>theta(q, t, a) on F"]
-    TH --> Z["thermometer units<br/>Z1..Z9 plus Z0"]
-    F --> SP["d2b LSB: clip F to 0..33,<br/>grid coefficients c(q, t, k),<br/>1054 per snapshot"]
-    SP --> Y["Y = (10 + m)/20 plus ONE,<br/>approximate parity"]
-    %% Invisible link stacks alternatives; it is not a computational path.
-    Z ~~~ SP
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class TH,SP trained
-```
+Table F2 records two local substitutes, including the one that preserves an imperfect odd/even readout. These are alternatives for different conversion cells, not successive stages.
 
-*Figure 2. The two closed forms of the trained PART stage. In b2d MSB the stage is a threshold thermometer on F; in d2b LSB it is a
-piecewise-linear spline on F that approximates parity with wrong bands. Both are supported by substitution on seeds 0–2, with the
-complement not tested, so their status is Partial. The shaded thresholds and spline are the trained PART stage; all routing is frozen.*
+<details>
+<summary>Technical learned threshold ladder and failing parity spline (Table F2)</summary>
+
+*Table F2. The two closed forms of the trained PART stage. In binary-to-decimal largest-first (b2d MSB), the stage is a threshold thermometer on F; in decimal-to-binary units-first (d2b LSB), it is a piecewise-linear spline on F that approximates parity with wrong bands. Both are supported by substitution on seeds 0–2, with the complement not tested, so their status is Partial. The thresholds or spline describe the trained stage; all routing is frozen.*
+
+| Alternative cell or value | Response and scope |
+|---|---|
+| Shared frozen layer-2 heads | Supply F to the trained arithmetic stage. |
+| b2d MSB: threshold ladder | 366 thresholds θ(q, t, a) per snapshot compare F with answer-specific boundaries; q is the query and t the preceding symbol. |
+| b2d MSB: output code | Thermometer units Z1..Z9 plus Z0 mark passed thresholds and feed the fixed digit readout. |
+| d2b LSB: grid response | Clip F to 0..33; grid coefficients c(q, t, k), 1054 per snapshot, define a piecewise-linear spline m. |
+| d2b LSB: output code | Writes Y = (10 + m)/20 plus constant ONE. This approximates odd/even parity with wrong bands; it does not turn the failing network into exact arithmetic. |
+| Acceptance boundary | Local substitution on seeds 0–2 preserves native errors. No complement test or whole-network TRAIN formula is established. |
+
+</details>
 
 ### 5.2 The template rejected for TRAIN
 

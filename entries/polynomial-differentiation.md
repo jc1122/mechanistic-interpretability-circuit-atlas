@@ -1,6 +1,10 @@
 # Polynomial differentiation
 
-Differentiating a polynomial means multiplying each coefficient by its power and reducing that power by one. A 3-layer transformer was trained on degree-3 polynomials, either answering directly or first writing intermediate coefficients in a [scratchpad](../GLOSSARY.md#task-formats). With coefficient-fetching machinery frozen, the arithmetic stage reached exact whole-output accuracy in all 10 independent training runs (seeds, [glossary](../GLOSSARY.md#counting-results)) per format within 2–3k steps, on 1024 held-out draws per evaluation. From scratch, only 6/10 seeds in the final scratchpad cell were exact; the other final seeds made errors only when copying coefficients, despite correct product and exponent tokens under teacher forcing (the preceding correct trace tokens were supplied). The task is partly solved; the frozen-stage formula is partial, with replacement accuracy 1.000 on 40/40 snapshots but no test resampling everything outside the claimed circuit (the complement, [glossary](../GLOSSARY.md#verifying-a-circuit)), while the from-scratch substitute is only a numerical compression, a smaller fitted model checked in 4 of the 6 solved final seeds.
+Differentiating 5+4x+x²+x³ gives 4+2x+3x²: multiply each coefficient, the number in front, by its power and lower the power by one. For these three-layer networks, fetching the coefficient proved harder than the arithmetic. With hand-built fetching, every tested run produced exact outputs.
+
+Learning all weights succeeded in only 6/10 final [scratchpad](../GLOSSARY.md#task-formats) runs, which wrote working before the answer, on 1024 held-out draws per evaluation. Failures were coefficient copies; arithmetic tokens were right with the correct copied coefficient already supplied. This was not a test of unaided working.
+
+The task is partly solved. The frozen-stage [formula is partial](../GLOSSARY.md#verifying-a-circuit): replacement passed, but covers only multiplier bits seen during training; swapping the other parts' signals between examples was not tested. For from-scratch networks, the substitute is only a smaller fitted numerical model, checked in 4 of the 6 solved final runs, not a recovered differentiation rule.
 
 | Fact | Value |
 |---|---|
@@ -14,6 +18,14 @@ Differentiating a polynomial means multiplying each coefficient by its power and
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
 Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [polynomial integration](polynomial-integration.md) for reduced-fraction outputs, or [polynomial addition and multiplication](polynomial-add-mul.md) for coefficient operations.
+
+## The circuit at a glance
+
+Figure 3 separates seed-dependent coefficient copies from the supplied-trace product path ([mechanism and verification](#5-mechanism-and-verification)).
+
+<img src="../figures/circuits/polynomial-differentiation.svg" width="640" alt="Copy routes vary by seed; products read the supplied trace. One upward residual stream has separate read/write branches for Layer-1 copy (varies by seed); Layer-2 copy (varies by seed); Product code (rule unknown). Prompt: BOS 5 4 1 1 = ; given trace: 3 1; Third-term target tokens: 3 2. Task values are illustrative; dashed boxes and branches are not verified.">
+
+*Figure 3. From-scratch scratchpad seeds 7, 8, 10 and 12 (four of six solved finals) use seed-dependent copies and a supplied-trace product code that differs from the hand-built one; numerical compression is supported, not recovered power-rule algebra, autonomous rollout or a complement certificate.*
 
 ## 1. Task and data
 
@@ -81,7 +93,7 @@ The public archive is linked above; no additional round-trip result is claimed h
 ## 3. Hand-built solution
 
 The hand-built network builds a position frame, fetches each coefficient by position and multiplies it by k with signed bit gates
-(Figure 1).
+(Table F1).
 
 Uniform attention to BOS gives P = 1/(r+1) at position r. Reciprocal hinges recover r/64 and r²/4096. An anchor on `=` and
 relative-step thresholds write the term and phase, the multiplier bits of k and the index of the coefficient to fetch.
@@ -90,24 +102,23 @@ set, sum a·2^j into S = k·a_k, and an integer read-out with logits 30(2vS − 
 + 48 neurons in format `A` and 3H+82N in format `T`. The network is exact on 34320 polynomials per format (exhaustive at degree 1 and
 2, stratified at 3–6) and on 217 primitive products, with minimum margin 30.0 (`A`) and 29.9998 (`T`).
 
-```mermaid
-flowchart TD
-    accTitle: Hand-built coefficient fetch and power-rule gates
-    accDescr: A frozen position frame and coefficient head supply the masked final MLP, the only trained PART block. Signed gates multiply by the observed bits of the power. The formula is partial, with complement untested and no coverage of the unseen higher multiplier bit.
-    P["Prompt: BOS a0 ... a_d ="] --> U["uniform BOS attention: P = 1/(r+1)"]
-    U --> HG["reciprocal hinges: r/64, r^2/4096"]
-    HG --> AN["anchor on = and step thresholds: term, phase, multiplier bits, index"]
-    AN --> F["quadratic-score attention L2H0: fetch a_k"]
-    F --> M["MLP2: signed bit gates, S = sum over set bits j of a times 2^j = k a_k"]
-    AN --> M
-    M --> R["integer read-out: logits 30(2vS - v^2)"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class M trained
-```
+Table F1 records the fixed coefficient reader and the bit-gated multiplication stage. The trained rule covers the multiplier bits seen during training, not every higher power.
 
-*Figure 1. The hand-built differentiator. The layer-2 head L2H0 fetches a_k, then gold MLP2 forms k·a_k; MLP2 is the only trained
-PART block. Its closed form has partial status: substitution passed on 40/40 snapshots, but complement resampling was not reported.
-The trained rule covers the two multiplier bits seen at degree 3, not an unseen bit or larger-degree routing.*
+<details>
+<summary>Technical power-rule readers, gates and readout (Table F1)</summary>
+
+*Table F1. The hand-built differentiator. The layer-2 head L2H0 fetches a_k, then MLP2 forms k·a_k; MLP2, a feed-forward block, is the only trained PART block. Its closed form has partial status: substitution passed on 40/40 snapshots, but complement resampling was not reported. The trained rule covers the two multiplier bits seen at degree 3, not an unseen bit or larger-degree routing.*
+
+| Part and training status | Information flow and formula |
+|---|---|
+| Prompt | Supplies `BOS a0 ... a_d =`. |
+| Positional frame; frozen | Uniform beginning-of-sequence attention gives P = 1/(r+1); reciprocal hinges recover r/64 and r²/4096. |
+| Anchor and step thresholds; frozen | Anchor on `=` and write term, phase, multiplier bits and coefficient index. These supply both the fetch address and the arithmetic gates. |
+| Layer 2, head 0 (L2H0); frozen | Quadratic-score attention fetches coefficient a_k. |
+| Layer-2 feed-forward block (MLP2); trained | Signed bit gates sum a·2^j over set multiplier bits j into S = k·a_k. Only the two observed bits are covered by the trained formula. |
+| Integer readout; frozen | Candidate integer v receives score 30(2vS − v²). The complement is untested and unseen higher-bit routing is not established. |
+
+</details>
 
 ## 4. What training finds
 
@@ -184,28 +195,23 @@ exception of seed 8's best snapshot at .9995. All 8/8 final-cell substitutions k
 replacement gave identical predictions. In the screens, 12/12 substitutions kept ≥ .99 × native. This is a compression and not a
 recovered power-rule algebra.
 
-```mermaid
-flowchart TD
-    accTitle: Seed-dependent coefficient-copy routes
-    accDescr: Trained heads in layers one and two copy coefficients into the trace, and trained MLPs use a categorical product code to write the derivative. The measured route covers only part of the solved-seed cohort under correct-prefix conditioning. TRAIN has numerical compression only, not recovered power-rule algebra.
-    P["Prompt: BOS a0 ... a_d ="] --> H1["H1: copies a_k<br/>in some seeds"]
-    P --> H2["H2: copies a_k<br/>in some seeds"]
-    H1 --> C["trace slot: copied a_k"]
-    H2 --> C
-    C --> M["MLPs: categorical,<br/>higher-rank product code"]
-    K["k and exponent,<br/>linear at L1"] --> M
-    M --> Y["written k a_k and k-1"]
-    %% Invisible links stack separate inputs; they are not computational paths.
-    H1 ~~~ H2
-    C ~~~ K
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class H1,H2,M trained
-```
+Table F2 records the seed-dependent copies and the supplied-trace boundary. Numerical compression of this route is not a recovered power-rule algorithm.
 
-*Figure 2. The diagnosed from-scratch scratchpad route, covering 4 of the 6 solved final seeds. Gold nodes are wholly trained
-components, not a separate PART stage. Copy routing differs by seed, and the products read the supplied trace. The entry's
-closed-form status is partial for PART only; for TRAIN, a numerical compression substitutes successfully, but no power-rule algebra
-or complement-resample verification was recovered.*
+<details>
+<summary>Technical alternative copy routes and numerical-only compression (Table F2)</summary>
+
+*Table F2. The diagnosed from-scratch scratchpad route, covering 4 of the 6 solved final seeds. Components are wholly trained, not a separate PART stage. Copy routing differs by seed, and the products read the supplied trace. The entry's closed-form status is partial for PART only; for TRAIN, a numerical compression substitutes successfully, but no power-rule algebra or complement-resample verification was recovered.*
+
+| Part or alternative route | Role and limit |
+|---|---|
+| Prompt `BOS a0 ... a_d =` | Supplies coefficients to the copy heads. |
+| Layer-1 copy head (H1); trained | Copies a_k into the trace in some seeds and slots. |
+| Layer-2 copy head (H2); trained | Provides an alternative copy route in other seeds and slots; the two heads are not a mandatory serial chain. |
+| Copied-coefficient trace slot | Supplies a_k to product computation under correct-prefix conditioning. This is not autonomous rollout evidence. |
+| k and exponent | Linearly recoverable at layer 1 (L1); meet the supplied coefficient at trained feed-forward blocks (MLPs). |
+| Product code and output; trained | A categorical, higher-rank code writes k·a_k and k−1. Its successful numerical compression does not recover power-rule algebra or a complement certificate. |
+
+</details>
 
 ### 5.3 Relation to the hand-built network
 

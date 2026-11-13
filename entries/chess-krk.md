@@ -1,12 +1,8 @@
 # KRK mate (king + rook vs king)
 
-A king and rook can force checkmate against a lone king by shrinking the defender's space. These networks were trained to imitate a
-fixed 8-rule version of that strategy, rather than choose the fastest move from an exact endgame table. A six-layer transformer
-that wrote the strategy's box and active rule before its move reached .990–.997 whole-output accuracy in all 7 completed final seeds
-on 2,048 held-out positions, but none was exact and 3 launched seeds never finished. The written rule suffices to choose which white
-piece moves; how the network chooses its destination remains unexplained. The task remains unsolved at the final audit's exact
-criterion, despite 7/7 passing the separate ≥ .99 milestone; partial output rules have substitution support, but failed diagnostic
-jobs left no resample-complement certificate for the learned policy.
+A king and rook can trap a lone king by shrinking the space it can use. These networks learned to imitate a fixed 8-rule version of that strategy, rather than the fastest move from an exhaustive endgame table. A six-layer transformer that wrote the box around the defender and the active rule before its move reached .990–.997 whole-output accuracy in all 7 completed final runs on 2,048 held-out positions, with correct earlier output tokens supplied; none was exact and 3 launched runs never finished.
+
+The written rule suffices to choose whether the king or rook moves, but the destination remains unexplained. The task is unsolved at the final audit's exact criterion despite 7/7 passing the separate ≥ .99 milestone: the output formulas are [partial](../GLOSSARY.md#verifying-a-circuit), supported by replacement, while failed diagnostic jobs left no test showing that activity outside the proposed circuit can be changed without harming accuracy.
 
 | Fact | Value |
 |---|---|
@@ -18,6 +14,14 @@ jobs left no resample-complement certificate for the learned policy.
 | Status | Unsolved (final strategy scratchpad, 0/7 exact on 2,048 held-out positions; 7/7 ≥ .99, 3 unfinished); last run 2026-11-08; diagnostic update 2026-11-09 |
 | Weights | [Hugging Face: chess-krk](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/chess-krk) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
+
+## The circuit at a glance
+
+Figure S1 shows the phase-to-source copy bypassing the destination decoder, whose coordinate-based rule remains unknown.
+
+<img src="../figures/circuits/chess-krk.svg" width="640" alt="One residual stream retains board and supplied strategy-phase information. The source copy reads that phase directly: APPROACH selects the white king's square, otherwise the white rook's. Independently, early neurons encode king file/rank, late layer-5 heads read coordinates, and layer-5 neurons decode an unresolved destination. The source path bypasses destination decoding; both contribute to the move. Learned roles are dashed: source substitution passes but complement is untested and the additive destination fit fails. The phase example asserts no board move.">
+
+*Figure S1 shows the written phase selecting the source independently of the unresolved coordinate-based destination, differing from the hand-built priority/key selector (strategy-scratchpad networks trained from scratch, seven completed final seeds); status is Partial because source substitution passes but the complement is untested and the additive destination fit fails, with APPROACH illustrating a supplied phase rather than a legal board move.*
 
 ## 1. Task and data
 
@@ -95,41 +99,28 @@ The Hugging Face folder `chess-krk/` holds `train_{G,C}_s{0-2}_{best,final}`, `t
 ## 3. Hand-built solution
 
 The hand-built network computes the fence frame from the piece coordinates, then, for each rule p, a candidate mask m_pt over
-destination squares t together with integer keys key_pt (Figure 1). A rule applies when it has a candidate, E_p = 1[Σ_t m_pt > 0]. The
+destination squares t together with integer keys key_pt (Table F1). A rule applies when it has a candidate, E_p = 1[Σ_t m_pt > 0]. The
 priority level keeps the first applicable rule, g_p = ReLU(E_p − Σ_{r<p} E_r). The destination is
 
 to = argmax_t ReLU(10000 g_p + 10000 m_pt + 10000 P_to − 64 key_pt − 20000 − t),
 
 so the smallest key among the active rule's candidates wins. P_to flags the output position at which the destination is written. The network writes 0 wrong tokens on all states.
 
-In Figure 1, piece indicators produce the fence frame, each rule's candidate mask and keys, and flags saying which rules apply. The first applicable rule and its smallest key select the move. PART instead trains a router on those frozen features to write phase, source and destination; it does not train the feature construction.
+Table F1 records the fixed-feature policy and router alternative. Piece indicators produce the fence frame, each rule's candidate mask and keys, and flags saying which rules apply. The first applicable rule and its smallest key select the move. PART instead trains a router on those frozen features to write phase, source and destination; it does not train the feature construction.
 
-```mermaid
-flowchart TD
-    accTitle: Hand-built fence policy and frozen-feature router
-    accDescr: Piece indicators feed a fence frame, per-rule candidate masks and keys, and the first-applicable-rule selector. The smallest key selects the destination. PART replaces priority and selection with the marked trained router, which reads the frozen features.
-    P["Piece<br/>one-hots on<br/>64 squares"] --> H["1 counting<br/>head and 3<br/>gather heads"]
-    H --> F["Fence frame<br/>from the<br/>piece<br/>coordinates"]
-    F --> M["Per rule p:<br/>candidate<br/>mask m_pt<br/>and keys<br/>key_pt"]
-    M --> E["E_p = 1 if<br/>rule p has a<br/>candidate"]
-    E --> G["Priority:<br/>g_p =<br/>ReLU(E_p -<br/>sum of<br/>earlier E_r)"]
-    G --> T["to = argmax<br/>over t,<br/>smallest key<br/>wins"]
-    M --> T
-    subgraph PR["PART"]
-        R["Trained<br/>router, 3 x<br/>512 ReLU, on<br/>3,122 frozen<br/>features"]
-    end
-    M --> R
-    E --> R
-    R --> O["phase, from,<br/>to"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class R trained
-    %% Invisible links constrain vertical layout only, not computation.
-    T ~~~ R
-```
+<details>
+<summary>Technical fixed policy and trained-router alternative (Table F1)</summary>
 
-*Figure 1. The hand-built network. The frozen levels compute the fence frame, each rule's candidates and keys, and whether each rule
-applies; the priority and argmax levels pick the move. The shaded router is the trained part of PART; it reads the frozen features
-below the priority level in place of the priority and argmax levels.*
+*Table F1. The hand-built network and PART alternative. The frozen levels compute the fence frame, each rule's candidates and keys, and whether each rule applies; the priority and argmax levels pick the move. The router is the trained part of PART; it reads the frozen features below the priority level in place of the priority and argmax levels.*
+
+| Component or alternative | Input and operation |
+|---|---|
+| Fixed coordinate gathering | Piece indicators (one-hots) on 64 squares feed 1 counting head and 3 gather heads. Piece coordinates define the fence frame. |
+| Fixed per-rule features | For rule p, the frame gives candidate mask m_pt and keys key_pt. E_p = 1 if rule p has a candidate. |
+| Fixed priority and destination selection | Compute g_p = ReLU(E_p − sum of earlier E_r). Read g_p together with the candidate masks and keys; to = argmax over t, with the smallest key winning. |
+| PART router, trained | A 3 × 512 ReLU router reads 3,122 frozen features, including candidates, keys and E_p. It replaces priority and selection, writing phase, from and to. |
+
+</details>
 
 ## 4. What training finds
 
@@ -205,28 +196,21 @@ The PART phase rule and the TRAIN G source rule are supported by substitution; n
 would replace everything outside the claimed circuit with its values on other inputs; failed discovery jobs produced no such test
 in any of the 7 final seeds. Two controls
 test the source rule: always copying the rook gives .869–.875, and a shuffled phase gives .780–.786. How G decodes the destination
-square stays open, because the additive model fails (Figure 2).
+square stays open, because the additive model fails (Table F2).
 
-In Figure 2, trained king-coordinate features feed late heads and the destination decoder. A separate source-copy description uses the written phase to choose the white king or rook square. Status remains partial: source substitution passes with complement untested, while an additive destination formula fails. The source rule is not a complete destination mechanism.
+Table F2 records the separate source and destination routes shown in the worked circuit above. Trained king-coordinate features feed late heads and the destination decoder. A separate source-copy description uses the written phase to choose the white king or rook square. Status remains partial: source substitution passes with complement untested, while an additive destination formula fails. The source rule is not a complete destination mechanism.
 
-```mermaid
-flowchart TD
-    accTitle: Partial source-copy rule and unresolved destination decoder
-    accDescr: Trained king-coordinate features feed late heads and the destination MLP. Separately, the written phase selects whether the source is the white king or rook. Status is partial: source substitution passes with complement untested, while an additive destination formula fails. Shading marks trained components and the describing source rule.
-    B["Board tokens"] --> M0["MLP0: kings as<br/>file and rank"]
-    M0 --> L5["Layer-5 heads"]
-    L5 --> M5["MLP5: decodes to,<br/>not additive in<br/>HAND variables"]
-    PH["written phase<br/>token"] --> SRC["from = square of<br/>WK if phase is<br/>APPROACH, else<br/>square of WR"]
-    B --> SRC
-    M5 --> TO["to"]
-    SRC --> FR["from"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class M0,L5,M5,SRC trained
-```
+<details>
+<summary>Technical source rule and unresolved destination (Table F2)</summary>
 
-*Figure 2. The partial mechanism in TRAIN G (120k budget). Shading marks the trained components and the source rule that describes
-one output. The source rule keeps whole-output accuracy in 7/7 final seeds under substitution on 17,516 held-out positions; the
-complement was not tested. MLP5 has no accepted destination closed form: an additive model fails (from .995 to .34).*
+*Table F2. The partial mechanism in TRAIN G (120k budget). The components were trained; the source rule describes one output. The source rule keeps whole-output accuracy in 7/7 final seeds under substitution on 17,516 held-out positions; the complement was not tested. MLP5 has no accepted destination closed form: an additive model fails (from .995 to .34).*
+
+| Separate route | Recorded computation and limit |
+|---|---|
+| Destination | Board tokens feed MLP0's king file/rank features, then layer-5 heads and MLP5. MLP5 decodes to, but is not additive in HAND variables and has no accepted destination formula. |
+| Source | Board tokens and the written phase supply the rule: from = square of WK if phase is APPROACH, else square of WR. WK is the white king; WR is the white rook. This source-copy rule is not a complete destination mechanism. |
+
+</details>
 
 ### 5.2 Relation to the hand-built network and to published work
 

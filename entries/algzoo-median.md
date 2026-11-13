@@ -1,6 +1,8 @@
 # Median in ARC's AlgZoo recurrent networks
 
-A median is the middle value after sorting, or the average of the central pair for an even-sized list. This analysis examined 100 frozen recurrent networks trained by the Alignment Research Center (ARC) to estimate that value, without training new models. At the 2026-11-13 snapshot, all 100 had formulas passing their registered sampled interpretation tests, although only 49 were source-classified accurate median forms and 51 were inexact approximators. The task is partly solved and the population-level formula status is Partial: 20 complements are empty, so that part of verification is vacuous, and no global equivalence is proved. Some explanations are nearly as large as the networks, showing that identifying a formula need not compress what the network does.
+A median is the middle value after sorting, or the average of the central pair for an even-sized list: for `1, 3` it is 2, their average. Finding it while reading one number at a time means deciding what to remember. This study examined 100 already-trained recurrent networks, which update a memory after each number, from the Alignment Research Center (ARC), without training new models. The accurate ones average pairs or keep values in sorted order as each new number arrives; others follow approximate rules that explain their mistakes too.
+
+At the 2026-11-13 snapshot, all 100 had formulas passing their registered sampled interpretation tests, but only 49 were source-classified accurate median forms and 51 were inexact approximators. The task is partly solved and the population-level formula status is [Partial](../GLOSSARY.md#verifying-a-circuit): 20 proposed circuits include the entire network, leaving nothing outside them to scramble, so that test cannot show which parts could be discarded, no all-input equivalence is proved, and some explanations are nearly as large as the networks themselves.
 
 | Fact | Value |
 |---|---|
@@ -14,6 +16,14 @@ A median is the middle value after sorting, or the average of the central pair f
 | Reproduce | Not available yet: analysis code for this task is not yet in `code/`; see [archive](#25-archive) |
 
 Here HAND means weights set by formula and TRAIN means weights trained from scratch ([rungs](../GLOSSARY.md#the-three-rungs)). A ReLU keeps the positive part of a number ([glossary](../GLOSSARY.md#standard-machine-learning-terms)). A closed form replaces a network computation with equations; a complement test resamples everything outside the claimed circuit ([verification](../GLOSSARY.md#verifying-a-circuit)). The word “proven” below is the source's sampled-certificate category, not an all-input theorem.
+## The circuit at a glance
+
+Figure S1 shows the two remembered bounds meeting a separate new value at the final comparison neurons, which keep that value between the bounds.
+
+<img src="../figures/circuits/algzoo-median.svg" width="640" alt="The accurate three-input recurrent family keeps lower and upper bounds from the first pair in parallel memory. For 1 then 3 those bounds are 1 and 3. Final comparison neurons keep the separate next input 2 between those bounds, giving median 2. Learned roles are dashed: these are sampled family certificates, not global native equivalence or the inexact families.">
+
+*Figure S1 shows the accurate three-input family keeping the first pair’s bounds and using final comparison neurons to keep the new value between them (15 recurrent networks, matching the hand-built sorted-bounds role); status is Partial at population level, these sampled certificates do not establish global native equivalence or describe the inexact families, and values are a task example, not a measurement.*
+
 ## 1. Task and data
 
 Inputs are independent standard-Gaussian scalar sequences of length T=2,3,5,10. The output is the median, averaging the central pair for even T. For example, values 1, 3 have median 2. Error is root mean square error (RMSE), not classification accuracy. Skill R² compares mean squared error with the variance of the true median; its acceptance criterion is in [Section 6](#6-limitations-and-open-questions). The source's accurate/inexact labels classify the recovered forms; they do not impose one newly invented RMSE cutoff across all lengths and widths. Standard-Gaussian inputs are independent bell-shaped draws centred at zero with unit standard deviation.
@@ -44,26 +54,20 @@ Our nine hand-built nets, `config.json`, the native loader and a roundtrip repor
 ## 3. Hand-built solution
 The references offer different ways to retain information about the sequence. HAND-a stores sums of the largest k positive-side and negative-side prefix values, padded with zeros; A and B are registers whose sum is S. HAND-b sorts the preceding pair into lower/upper bounds L/U, then clips the new input between them. HAND-c stores a signed running sum as nonnegative P and Q and divides by the length, giving the median only for a pair. With p(u)=max(u,0): a uses signed top-k sums A'_k=S_k, B'_k=p(±x+S_(k−1)−S_k), S=A+B; central differences recover median. b is L+p(x−L)−p(x−U), where L/U sort the preceding pair (T3). c uses P'=p(P−Q+x), Q'=p(−P+Q−x), y=(P−Q)/T (median only T≤2). Real-arithmetic derivations and exhaustive/grid/random CPU checks pass; a's 8/12/24-register layouts at T3/5/10 are not global width lower bounds.
 
-In Figure 1, HAND-a obtains the median from signed top-k sums and central differences; HAND-b sorts the preceding pair and clips. HAND-c instead accumulates a signed sum to compute a mean, which is a median only on the stated short-list domain. There was no PART cell, and register counts are not width lower bounds.
+Table F1 records the fixed memory alternatives alongside the worked circuit above. HAND-a obtains the median from signed top-k sums and central differences; HAND-b sorts the preceding pair and clips. HAND-c instead accumulates a signed sum to compute a mean, which is a median only on the stated short-list domain. There was no PART cell, and register counts are not width lower bounds.
 
-```mermaid
-flowchart TD
-    accTitle: Hand-built median references
-    accDescr: Scalar inputs and stored state feed signed top-k sums, pair sorting and clipping, or a signed running sum. The first two yield median constructions; the mean is a median only on the stated short-list domain. No component was partly trained, and register counts are not width lower bounds.
-    X["Scalar input<br/>and previous<br/>state"] --> A["HAND-a:<br/>signed top-k<br/>sums"]
-    X --> B["HAND-b: sort<br/>preceding<br/>pair and<br/>clip"]
-    X --> C["HAND-c:<br/>signed sum P<br/>minus Q"]
-    A --> M["Central<br/>differences:<br/>median"]
-    B --> M
-    C --> Y["Mean: median<br/>only for T<br/><= 2"]
-    %% Invisible links constrain vertical layout only, not computation.
-    A ~~~ B
-    B ~~~ C
-    C ~~~ M
-    M ~~~ Y
-```
+<details>
+<summary>Technical fixed-memory alternatives and domains (Table F1)</summary>
 
-*Figure 1. The three hand-built references. No node is marked as trained: there was no PART cell. HAND-a's register counts are constructions, not width lower bounds.*
+*Table F1. Different memories yield a median on their stated domains. The rows are alternative fixed hand-built references, not sequential stages. There was no PART cell. HAND-a's register counts are constructions, not width lower bounds.*
+
+| Fixed reference | Input and stored information | Readout |
+|---|---|---|
+| HAND-a | New scalar input and stored state; store signed top-k sums of the largest values. | Take central differences to recover the median. |
+| HAND-b | New number and previous pair; order that pair into lower and upper bounds. | Clip the next value between the bounds to obtain the median. |
+| HAND-c | New number and stored state; store the signed running sum as P minus Q. | Mean, which is a median only for list length T ≤ 2. |
+
+</details>
 
 ## 4. What training finds
 
@@ -77,30 +81,30 @@ Inaccurate, 51: one-sided hinges, five; h2 dead-zone/level-excess/capped means, 
 
 The status is Partial at the population level. All 100 pass their own registered sampled tests, subject to the [coefficient counts and complete flag ledger in Appendix B](#appendix-b-detailed-evidence): 20 complements are empty, several proofs have weaker control types, and none establishes a global native identity for the wide nets. A working formula is not automatically a compact or unique mechanism.
 
-In Figure 2, Gaussian inputs pass through pair-mean banks, comparator insertions or inexact threshold, level and renewal forms to the native scalar output. These are alternative descriptions of ARC-trained families, including inaccurate networks. Status remains partial: empty complements, other flagged proofs and uncompressed forms are retained, and sampled certificates are not global equivalence proofs.
+Table F2 records the learned families. Gaussian inputs pass through pair-mean banks, comparator insertions or inexact threshold, level and renewal forms to the native scalar output. These are alternative descriptions of ARC-trained families, including inaccurate networks. Status remains partial: empty complements, other flagged proofs and uncompressed forms are retained, and sampled certificates are not global equivalence proofs.
 
-```mermaid
-flowchart TD
-    accTitle: Interpreted families in frozen median networks
-    accDescr: Gaussian inputs feed pair-mean banks, comparator-insertion forms or inexact threshold, level and renewal forms before the native scalar output. All family nodes describe ARC-trained components. Status is partial: empty complements, other flagged proofs and uncompressed forms remain exceptions; sampled certificates are not global equivalence proofs.
-    X["Gaussian<br/>inputs"] --> P["21 pair-mean<br/>banks"]
-    X --> I["28<br/>comparator<br/>insertions"]
-    X --> R["51 inexact<br/>threshold,<br/>level and<br/>renewal<br/>forms"]
-    P --> Y["Native<br/>output on<br/>sampled<br/>tests"]
-    I --> Y
-    R --> Y
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class P,I,R trained
-    %% Invisible links constrain vertical layout only, not computation.
-    P ~~~ I
-    I ~~~ R
-```
+<details>
+<summary>Technical learned-family census and certificate limits (Table F2)</summary>
 
-*Figure 2. The trained families in the 100 terminal networks. All family nodes were trained by ARC, not in this analysis. Status: partial; sampled substitution/complement certificates include 20 empty-complement exceptions, other flagged proofs and large uncompressed forms, not global native equivalence.*
+*Table F2. Accurate and inexact rules coexist in the 100 terminal networks. The rows are alternative families trained by ARC, not in this analysis. Status: partial; sampled substitution/complement certificates include 20 empty-complement exceptions, other flagged proofs and large uncompressed forms, not global native equivalence.*
 
-![Median explanations can approach network size: 274 coefficients versus 288 parameters at width 16, and 1056 versus 1088 at width 32, both at length 10.](../figures/algzoo-median-size.svg)
+| Family and networks | Description on Gaussian inputs |
+|---|---|
+| Accurate pair-mean banks (21 networks) | Average the input pair to produce the native scalar output. |
+| Accurate comparator insertion (28 networks) | Insert each new value into an ordered list to produce the native scalar output. |
+| Inexact families (51 networks) | Follow inexact thresholds, stored levels or histories (renewal forms) to produce the native scalar output. |
+| Population-wide certificate limits | Sampled tests only; some circuits keep every node. Empty complements, other flags and large uncompressed forms remain. No all-input identity is established. |
 
-*Figure 3. Independent form coefficients beside network parameters for the five width-16 and two inaccurate width-32 networks at length 10. Fixed signs and offsets remain disclosed in Table 2. Status: Partial; sampled fidelity, empty-complement exceptions elsewhere in the census and these near-network-sized forms do not establish global equivalence or description compression.*
+</details>
+
+Table F3 shows why these descriptions do not establish compression.
+
+*Table F3. The formulas can approach network size. At length 10, counts compare independent form coefficients with network parameters; fixed signs and offsets are additional and remain in Table 2. Status: Partial; sampled fidelity, empty-complement exceptions elsewhere in the census and near-network-sized forms do not establish global equivalence or description compression.*
+
+| Networks and width | Form coefficients | Network parameters |
+|---|---|---|
+| Five; width 16 | 274 | 288 |
+| Two, both inaccurate; width 32 | 1056 | 1088 |
 
 ### 5.1 Pair means and comparator insertion
 

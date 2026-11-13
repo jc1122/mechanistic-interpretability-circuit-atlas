@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="704" viewBox="0 0 640 704" role="img" aria-labelledby="title desc">
+<title id="title">The heads read operands in parallel; only the token router is learned</title>
+<desc id="desc">Read upwards for final GCD trace PART. Frozen row clocks and heads read the old operand pair. Frozen MLP2 computes its absolute difference, minimum and stop flag. Trained MLP3 chooses which typed token to write. The local rule example maps A:6 B:4 to A:2 B:4. This is a router account, not learned arithmetic or a complete TRAIN formula. Paired verification covers the seven exact seeds, not all ten. The residual bus denotes information availability, not verified sparse edges. Values illustrate the task, not measured activations.</desc>
+<style>
+:root { color-scheme: light dark;
+  --bg:#ffffff; --fg:#172330; --muted:#46586a; --line:#526678;
+  --panel:#f4f7fa; --blue:#00679e; --blue-bg:#eaf5fc;
+  --amber:#885000; --amber-bg:#fff4dc;
+  --purple:#70509c; --purple-bg:#f3edfa; --idle:#eef0f2;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg:#101820; --fg:#f2f5f8; --muted:#c2ced9; --line:#b0bfcd;
+    --panel:#1c2a36; --blue:#79c8f5; --blue-bg:#132f43;
+    --amber:#f2c566; --amber-bg:#352b18;
+    --purple:#cbb1ee; --purple-bg:#30263e; --idle:#26313b; }
+}
+text { font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  fill:var(--fg); font-variant-numeric:tabular-nums; }
+.canvas { fill:var(--bg); }
+.node { fill:var(--panel); stroke:var(--line); stroke-width:2; }
+.input .node { fill:var(--blue-bg); stroke:var(--blue); }
+.output .node { fill:var(--purple-bg); stroke:var(--purple); }
+.trained .node { fill:var(--amber-bg); stroke:var(--amber); }
+.register .node { fill:var(--blue-bg); stroke:var(--blue); }
+.register-line { stroke:var(--blue); stroke-width:3; }
+.unused .node { fill:var(--idle); }
+.uncertain .node, .uncertain.arrow { stroke-dasharray:8 6; }
+.node-title { font-size:28px; font-weight:650; }
+.detail { font-size:24px; }
+.tag { font-size:22px; font-weight:600; fill:var(--muted); }
+.heading { font-size:30px; font-weight:700; }
+.note { font-size:24px; fill:var(--muted); }
+.arrow { fill:none; stroke:var(--line); stroke-width:2.5; }
+.arrowhead { fill:var(--line); }
+.arrow-label { font-size:24px; fill:var(--muted); paint-order:stroke;
+  stroke:var(--bg); stroke-width:8; stroke-linejoin:round; }
+.example-bg { fill:var(--panel); stroke:var(--line); stroke-width:1.5; }
+.bus-band { fill:none; stroke:var(--line); stroke-width:10; opacity:.14; }
+.bus-line { fill:none; stroke:var(--line); stroke-width:2.5; }
+.junction { fill:var(--line); }
+.lane { fill:none; stroke:var(--line); stroke-width:1.5; stroke-dasharray:3 7; }
+.value-label { font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
+  font-size:24px; fill:var(--fg); paint-order:stroke; stroke:var(--bg);
+  stroke-width:8; stroke-linejoin:round; }
+.legend-text { font-size:22px; fill:var(--muted); }
+.legend-frozen { fill:var(--panel); stroke:var(--line); stroke-width:2; }
+.legend-trained { fill:var(--amber-bg); stroke:var(--amber); stroke-width:2; }
+.legend-unverified { fill:none; stroke:var(--line); stroke-width:2; stroke-dasharray:5 4; }
+.tag,.legend-text {font-size:24px;} text {line-height:1.1;}
+</style>
+<defs><marker id="tip" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrowhead" d="M 0 0 L 10 5 L 0 10 Z"/></marker></defs>
+<rect class="canvas" width="640" height="704"/>
+<text x="24" y="36" class="heading" text-anchor="start">The heads read operands in parallel;</text>
+<text x="24" y="80" class="heading" text-anchor="start">only the token router is learned</text>
+<rect class="legend-frozen" x="24" y="106" width="24" height="20" rx="3"/>
+<text x="58" y="124" class="legend-text" text-anchor="start">frozen</text>
+<rect class="legend-trained" x="214" y="106" width="24" height="20" rx="3"/>
+<text x="248" y="124" class="legend-text" text-anchor="start">trained</text>
+<rect class="legend-unverified" x="404" y="106" width="24" height="20" rx="3"/>
+<text x="438" y="124" class="legend-text" text-anchor="start">not verified</text>
+<text x="24" y="690" class="note" text-anchor="start">Task example, not a measurement.</text>
+<path class="bus-line" d="M 320 628 V 174" marker-end="url(#tip)"/>
+<text x="24" y="160" class="note" text-anchor="start">Residual stream</text>
+<path class="arrow" d="M 320 628 L 258 628 L 258 588" marker-end="url(#tip)"/>
+<text x="24" y="618" class="value-label" text-anchor="start">old A = 6</text>
+<path class="arrow" d="M 258 500 L 258 480 L 320 480" marker-end="url(#tip)"/>
+<g class="process">
+<rect class="node" x="24" y="500" width="264" height="88" rx="10"/>
+<text x="42" y="540" class="node-title" text-anchor="start">Read old A</text>
+<text x="42" y="574" class="detail" text-anchor="start">layer 2, head 0</text>
+</g>
+<path class="arrow" d="M 320 628 L 386 628 L 386 588" marker-end="url(#tip)"/>
+<text x="406" y="618" class="value-label" text-anchor="start">old B = 4</text>
+<path class="arrow" d="M 386 500 L 386 480 L 320 480" marker-end="url(#tip)"/>
+<g class="process">
+<rect class="node" x="356" y="500" width="264" height="88" rx="10"/>
+<text x="374" y="540" class="node-title" text-anchor="start">Read old B</text>
+<text x="374" y="574" class="detail" text-anchor="start">layer 2, head 1</text>
+</g>
+<path class="arrow" d="M 320 470 L 258 470 L 258 438" marker-end="url(#tip)"/>
+<path class="arrow" d="M 258 350 L 258 330 L 320 330" marker-end="url(#tip)"/>
+<text x="24" y="320" class="value-label" text-anchor="start">difference = 2</text>
+<g class="process">
+<rect class="node" x="24" y="350" width="264" height="88" rx="10"/>
+<text x="42" y="390" class="node-title" text-anchor="start">Subtract</text>
+<text x="42" y="424" class="detail" text-anchor="start">frozen arithmetic</text>
+</g>
+<text x="406" y="314" class="value-label" text-anchor="start">minimum = 4</text>
+<path class="arrow uncertain" d="M 320 320 L 386 320 L 386 288" marker-end="url(#tip)"/>
+<path class="arrow uncertain" d="M 386 200 L 386 180 L 320 180" marker-end="url(#tip)"/>
+<text x="406" y="170" class="value-label" text-anchor="start">target = B:4</text>
+<g class="trained uncertain">
+<rect class="node" x="356" y="200" width="264" height="88" rx="10"/>
+<text x="374" y="240" class="node-title" text-anchor="start">Route one token</text>
+<text x="374" y="274" class="detail" text-anchor="start">not verified</text>
+</g>
+<text x="24" y="240" class="note" text-anchor="start">Query: next B token</text>
+<text x="24" y="656" class="detail" text-anchor="start">Earlier row: A:6 B:4; next B role supplied</text>
+</svg>

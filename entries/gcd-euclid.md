@@ -1,6 +1,8 @@
 # Greatest common divisor by repeated subtraction
 
-The greatest common divisor is the largest positive integer that divides both inputs; repeated subtraction finds it by replacing the pair with their absolute difference and their minimum. These four-layer transformers either gave the answer directly or wrote that subtractive-Euclid trace before answering. With the arithmetic and token-fetching stages frozen, 7/10 final seeds produced exact whole traces on 256 held-out tuples, while a three-rule router substituted into all 10 models was exact on all 4096 six-bit pairs. The task is partly solved and the closed-form status is partial: both substitution and complement resampling passed in the 7 exact frozen-scaffold seeds, but 3 trained routers still made held-out errors and no complete form was accepted for the from-scratch models, of which 5/10 were exact. Neither trained cell reliably transferred to eight-bit inputs.
+The largest number that divides both 6 and 4 is 2; repeated subtraction finds this greatest common divisor by keeping the pair's absolute difference and smaller value. Four-layer transformers either gave the answer directly or wrote each such step before answering. With the arithmetic and input-reading stages fixed by hand, 7/10 final runs produced exact whole traces on 256 held-out input tuples with correct earlier output tokens supplied; a three-rule selector that chooses which supplied value to write next was substituted into all 10 models and was exact on all 4096 six-bit pairs, repairing errors in every seed rather than reproducing each model's answers.
+
+The task is partly solved and the formula status is [partial](../GLOSSARY.md#verifying-a-circuit): replacement and tests changing activity outside the circuit passed in the 7 exact fixed-scaffold runs, but 3 trained output selectors still made held-out errors, and no complete formula was accepted for the from-scratch models, of which 5/10 were exact. Neither training setting reliably transferred to eight-bit inputs.
 
 | Fact | Value |
 |---|---|
@@ -8,12 +10,20 @@ The greatest common divisor is the largest positive integer that divides both in
 | Input → output example | Answer only: prompt `BOS GCD A:6 B:4 →`, output `R:2 EOS` |
 | Model | GPT-NeoX-shaped, 4 layers × 4 heads, d_model 128, ReLU MLP; PART trains only the layer-3 MLP |
 | Rungs and seeds | GCD PART trace: 3 screening + 10 final seeds; TRAIN trace final: 10 seeds, including 3 from the budget retry; answer-only and side-cell screens: 3 seeds each |
-| Closed form status | Partial (PART router substitution 1.0 in 10/10 on 4096 six-bit pairs; complement .974–1.0 in 7/7 exact seeds on 128 tuples; no complete TRAIN form) |
+| Closed form status | Partial (PART router substitution 1.0 in 10/10 on 4096 six-bit pairs, repairing native errors rather than matching every decision; complement .974–1.0 in 7/7 held-out-exact seeds on 128 tuples, not exhaustively replayed; no complete TRAIN form) |
 | Status | Partly solved (PART trace 7/10 exact, TRAIN trace 5/10 exact on 256 held-out tuples; both 10/10 ≥ .99); last run 2026-11-10 |
 | Weights | [Hugging Face: gcd-euclid](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/gcd-euclid), published revision `6ca84a561e25` |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
 HAND sets every weight by formula; PART trains one stage on frozen HAND parts; TRAIN learns all weights ([rungs](../GLOSSARY.md#the-three-rungs)). A scratchpad is a written sequence of intermediate results ([task formats](../GLOSSARY.md#task-formats)). A router chooses the next token's role and value from supplied arithmetic channels. An MLP is a feed-forward block ([glossary](../GLOSSARY.md#standard-machine-learning-terms)). Complement resampling replaces everything outside a proposed circuit with values from other inputs ([verification](../GLOSSARY.md#verifying-a-circuit)).
+
+## The circuit at a glance
+
+<img src="../figures/circuits/gcd-euclid.svg" width="640" alt="Two frozen layer-2 heads read the previous row A:6 B:4 in parallel. A frozen layer-2 block supplies difference 2 and minimum 4. For the query asking for the next B token, the learned layer-3 router targets B:4 from that minimum; the role is supplied, and one token rather than a whole row is illustrated. Substitution can repair native decisions; acceptance is partial.">
+
+*Figure S1. Final trace networks with only the router learned (seeds 0–9) use frozen hand-built arithmetic; status is partial because sampled paired checks cover seven held-out-exact seeds, substitution repairs native decisions in every seed and native eight-bit transfer fails.*
+
+Figure S1 shows parallel operand reads and frozen arithmetic feeding the learned token router; for the illustrated next-B query, minimum 4 supplies the single token B:4.
 
 ## 1. Task and data
 
@@ -99,7 +109,7 @@ The answer-only reference is a pair-index lookup, a lookup control rather than a
 MLP2 holds 702 pair-index hinges, writing gcd(a, b) as a scalar. Together with the last router, its size is 1 head + 705 neurons at
 5 bits.
 
-The trace reference computes one subtractive-Euclid step per row (Figure 1). L0H0 and MLP0/1 build three position clocks with periods
+The trace reference computes one subtractive-Euclid step per row (Table F1). L0H0 and MLP0/1 build three position clocks with periods
 16, 19 and 23 from the 1/position signal. L2H0 and L2H1 fetch the previous row's a and b into OLD channels by clock offset. MLP2 computes
 the absolute difference, minimum and zero flag using five ReLU neurons (Appendix A); MLP3's seven neurons route the result to the token
 being written. The earlier description called these fetch heads layer 1; the current component names are L2H0/H1. Inverse T adds the
@@ -111,23 +121,21 @@ fraction A 1 + 2557. Exactness was checked on all inputs of small domains (gcd A
 reported 1.000 on each run's 256 test tuples in all five published cells. The later compact reference gives the weaker bound margin
 ≥ 9; both reports are retained. There is one design, HAND-a; no HAND-b or HAND-c was designed.
 
-In Figure 1, frozen clocks address the preceding operand pair. MLP2 computes the absolute difference, minimum and stop flag; MLP3 then chooses which token role to write. Only that final router MLP is trained in PART, so successful routing does not show that the arithmetic was learned.
+Table F1 records the fixed arithmetic and trained routing interfaces. Frozen clocks address the preceding operand pair. MLP2 computes the absolute difference, minimum and stop flag; MLP3 then chooses which token role to write. Only that final router MLP is trained in PART, so successful routing does not show that the arithmetic was learned.
 
-```mermaid
-flowchart TD
-    accTitle: Hand-built subtractive-Euclid step and output router
-    accDescr: Frozen position clocks address the preceding operand pair. The arithmetic MLP computes absolute difference, minimum and the stop flag; the final router chooses the next token role. Only the router MLP is trained in PART.
-    P["Prompt and rows so far"] --> F["L0H0 and MLP0/1: clocks with periods 16, 19, 23"]
-    F --> H["L2H0 and L2H1: fetch previous OLD_a and OLD_b"]
-    H --> S["MLP2: five ReLU neurons compute ABS, MIN and ZERO"]
-    S --> R["MLP3: route by current token role"]
-    R --> Y["Next token: A, B, R value or EOS"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class R trained
-```
+<details>
+<summary>Technical fixed Euclid step and trained token router (Table F1)</summary>
 
-*Figure 1. The hand-built GCD trace network. Clocks address the previous row, MLP2 computes the Euclid step, and MLP3 routes it to the
-output. The shaded MLP3 is the only stage trained in PART.*
+*Table F1. The hand-built GCD trace network. Clocks address the previous row, MLP2 computes the Euclid step, and MLP3 routes it to the output. MLP3 is the only stage trained in PART.*
+
+| Component | Input, operation and output |
+|---|---|
+| Fixed layer 0, head 0 (L0H0) and MLP0/1 | Read prompt and rows so far; form position clocks with periods 16, 19 and 23. |
+| Fixed layer-2 heads 0 and 1 (L2H0, L2H1) | Use the clocks to fetch the preceding operands OLD_a and OLD_b. |
+| Fixed MLP2 | Five ReLU neurons compute absolute difference ABS, minimum MIN and stop flag ZERO. |
+| Trained MLP3 | Route by current token role to write the next A, B or R value, or EOS (end of sequence). |
+
+</details>
 
 ## 4. What training finds
 
@@ -220,6 +228,16 @@ The three rules read only frozen OLD, ABS, MIN, ZERO and role channels. After a 
 after A, emit `B:MIN`; after R, emit EOS. In all 10 final seeds, replacing MLP3 gives 100% on all 4096 6-bit inputs (native
 .9988–.9998) and on 256 sampled 8-bit inputs with maximum operand ≥ 128 (native 0%). The six-bit grid includes training inputs. The eight-bit intervention set differs from the trainer's eight-bit set (.05–.17); the 256-tuple count here belongs to the substitution test.
 
+The exhaustive six-bit router substitution repairs 3, 4, 2, 2, 5, 2, 1, 2, 2 and 5 native input errors in final seeds 0–9, respectively;
+every seed errs on (63, 63). The router is therefore task-exact but does not exactly reproduce the native router's errors. The
+published complement remains its original sampled acceptance check.
+
+A further check enumerates the complete eight-bit grid for seed 0: all 65,536 ordered tuples with operands 0..255, without filtering
+out any trace lengths. Native accuracy is 5,453/65,536 and router substitution is 65,536/65,536, repairing 60,083 inputs and changing
+1,060,347 scored tokens. This is task-exact arithmetic, not a faithful account of native errors. The earlier 0% native result refers
+to the 256-row large-operand/length-filtered sample, not this complete grid. No exhaustive complement certificate is established by
+these substitution checks.
+
 Resampling everything outside the claimed 8 edges keeps .974–1.0 exact match against base 1.0 on 128 diagnostic tuples in each of the seven exact seeds; resampling
 the circuit or random 8 edges gives ≤ .021. Path drops are .70–.88 for the L2-heads-to-MLP2-to-MLP3 route and .16–.31 for the direct
 L2-heads-to-MLP3 route. Both acceptance shares are ≥ .90 on those seven seeds. The closed form is accepted in 7/7 exact seeds, but
@@ -240,7 +258,7 @@ extend the current GCD acceptance claim.
 
 No complete closed form is accepted for final TRAIN. Among the 5 exact seeds, only seed 9's discovered circuit passes the .90 complement share (.938). The compact .83–.94 range summarises all five, including that pass; Table B3 gives the individual values on 128 diagnostic tuples per seed. A complement pass alone is not a formula certificate. The HAND old-A rule gives 57.8% exact, and per-component MLP laws give 0/512 on 7-bit networks.
 
-The front end of TRAIN T run 2, seed 2, pruned, has a finite token-table description (Figure 2). Head h computes
+The front end of TRAIN T run 2, seed 2, pruned, has a finite token-table description (Table F2). Head h computes
 T_h(q) = Σ_k softmax_k(Q_h(t_q)·K_h(t_k)/√32) O_h(t_k) with per-token tables Q, K and O; MLP0 neuron j computes
 u_j = ReLU(b_j(t_q) + c_j·Σ_h T_h(q)). Replacing all four layer-0 heads and MLP0 by these tables gives 99.2% / 93.0% / 93.8% (native /
 fresh 7-bit / all 1024 5-bit), identical to the pruned network on every input. This finite token-table compilation is a set of
@@ -254,23 +272,20 @@ A categorical-table MLP3 for TRAIN T run 2 (≈ 29.6k fitted scalars) was reject
 and 500 / 512 on seed 2, below the .99 bar. Jointly substituting all candidate TRAIN T components gives 1.2% native. The later
 11 heads and MLP1–3 of that pruned network remain unexplained.
 
-In Figure 2, token-table attention heads and MLP0 specify the measured front end of the historical pruned TRAIN network. Later heads and MLPs still lack a complete closed form. All marked components were trained. This finite token-table description is not a complete Euclid mechanism or paired-complement certificate; the entry's partial status belongs to PART.
+Table F2 records the historical front-end description, not a complete Euclid circuit. Token-table attention heads and MLP0 specify the measured front end of the historical pruned TRAIN network. Later heads and MLPs still lack a complete closed form. All marked components were trained. This finite token-table description is not a complete Euclid mechanism or paired-complement certificate; the entry's partial status belongs to PART.
 
-```mermaid
-flowchart TD
-    accTitle: Historical pruned TRAIN front end
-    accDescr: Token-table attention heads and an MLP compile the measured front-end computation, followed by unexplained later heads and MLPs. All marked components were trained. This is a historical finite token-table description, not a complete Euclid formula or paired-complement certificate; the page's partial status belongs to PART.
-    T["Prompt and row tokens"] --> H0["Run 2 seed 2: four layer-0 heads use per-token Q, K, O tables"]
-    H0 --> M0["MLP0: ReLU of token bias plus weighted head sum"]
-    M0 --> U["Later 11 heads and MLP1-3: no complete closed form"]
-    U --> Y["Next token"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class H0,M0,U trained
-```
+<details>
+<summary>Technical historical front end and unexplained later computation (Table F2)</summary>
 
-*Figure 2. The historical pruned TRAIN trace network, run 2 seed 2. All shaded components were trained. The token-table substitution
-matches this network on the measured sets, but the complete closed-form status remains partial for the entry's PART claim; no complete
-TRAIN form or paired complement certificate is supplied by this front-end description.*
+*Table F2. The historical pruned TRAIN trace network, run 2 seed 2. All listed computational components were trained. The token-table substitution matches this network on the measured sets, but the complete closed-form status remains partial for the entry's PART claim; no complete TRAIN form or paired complement certificate is supplied by this front-end description.*
+
+| Trained component | Input and recorded description |
+|---|---|
+| Four layer-0 heads | Read prompt and row tokens using per-token Q, K and O tables in run 2, seed 2. |
+| MLP0 | ReLU of token bias plus the weighted head sum. |
+| Later 11 heads and MLP1–3 | Produce the next token, but have no complete closed form. The finite front-end description does not recover a complete Euclid algorithm. |
+
+</details>
 
 ### 5.3 Relation to the hand-built network and to published work
 
@@ -290,7 +305,8 @@ can mix mechanisms. That is a hypothesis, not a measured cause here; per-role/pe
 
 Scoring is teacher-forced, not free rollout. Diagnostics use 128 tuples in one length bucket and are exact on the final diagnostic
 bank; this does not imply exactness on full held-out traces. Scalar tokens test magnitude transfer, not unseen digit-string lengths.
-Earlier magnitude sets have 64 tuples; the final router's 8-bit set has 256 sampled tuples and is not exhaustive. The earlier
+Earlier magnitude sets have 64 tuples; the original final-router 8-bit intervention set has 256 sampled tuples and is not exhaustive.
+The later seed-0 check covers the complete eight-bit input grid, but only for substitution, not complement resampling. The earlier
 226-tuple stress set is stratified. Neither native trained cell reliably extrapolates to 8 bits.
 
 Interchange tested only compare on most PART seeds, with nf 0; other variables are untested except the recorded seed-8 minimum test.

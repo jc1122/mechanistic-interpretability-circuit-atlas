@@ -1,6 +1,8 @@
 # Binary addition
 
-Binary addition tests whether a network can pass a carry across columns instead of memorising short sums. Four-layer transformers were trained on 6-bit operands, either from scratch or with hand-built routing frozen and one feed-forward block learned. A column-sum scratchpad, which writes each pair of input bits' sum before the answer ([glossary](../GLOSSARY.md#task-formats)), exposed a position shortcut: preventing the learned block from reading absolute position made it exact on 1000 sampled 12-bit pairs in all 10 independent training runs (seeds, [glossary](../GLOSSARY.md#counting-results)). The from-scratch networks still failed at 12 bits, so the task is partly solved across the tested lengths. The local sum-table formula is partial, supported by replacement only in the formats and seeds listed below, without a test that resamples everything outside the claimed circuit (the complement, [glossary](../GLOSSARY.md#verifying-a-circuit)); the separate from-scratch replacement is seed-specific and its pruned circuit fails stronger intervention checks.
+In binary, 1 + 1 is written 10: an extra unit, the carry, has to travel to the next column. Four-layer transformers learned sums of 6-bit numbers either from scratch or with hand-built input routing fixed and only an output-processing block trained. A [scratchpad](../GLOSSARY.md#task-formats), written working that lists each pair of bits' sum before the answer, exposed a shortcut: removing absolute position, the column's fixed address in the line, from that learned block made all 10 independent runs exact on 1000 sampled 12-bit pairs.
+
+The networks trained entirely from scratch still failed at 12 bits, so the task is partly solved across the tested lengths. The local sum-table formula remains [partial](../GLOSSARY.md#verifying-a-circuit): replacement works only in the formats and runs listed below, no test changed everything outside that circuit, and the separate from-scratch replacement covers one run whose reduced circuit failed stronger intervention checks.
 
 | Fact | Value |
 |---|---|
@@ -12,6 +14,14 @@ Binary addition tests whether a network can pass a carry across columns instead 
 | Status | Partly solved (in-range TRAIN outcomes reported as 10/10 per format after retries; selected snapshots have qualifications below. Every TRAIN net fails at n = 12); last run 2026-11-05 |
 | Weights | [Hugging Face: binary-addition](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/binary-addition) (recorded publication inventory: 62 networks; earlier task archive record: 59, unresolved; [archive scope](#25-archive)) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
+
+## The circuit at a glance
+
+Figure S1 shows the frozen operand and carry readers working in parallel before the only learned stage writes the sum bit.
+
+<img src="../figures/circuits/binary-addition.svg" width="640" alt="In the answer-only partly trained network, frozen operand heads and a frozen lookahead head read in parallel. For the low column of binary 1 plus 1 they supply bits 1,1 and incoming carry 0 to residual registers. Layer-3 neurons read that local total 2 and write parity bit 0. Only the learned parity rule is dashed; complement resampling was not tested.">
+
+*Figure S1 shows frozen heads fetching column bits and carry in parallel before a learned table writes parity (answer-only partly trained network, 10/10 seeds, matching hand-built arithmetic); status is Partial because substitution is supported but complement resampling was not tested, this is not the failed-length from-scratch circuit, and values are a task example, not a measurement.*
 
 ## 1. Task and data
 
@@ -89,7 +99,7 @@ The hand-built networks first compute positions. A uniform head gives 1/(r+1) at
 on `+` gives r_plus, further hinge MLPs give r², and the thermometer codes mark which position thresholds have been passed:
 T[m] = [r ≥ m] and VT[m] = [r − r_plus ≥ m] ([glossary](../GLOSSARY.md#standard-machine-learning-terms)). Index heads, attention
 heads that fetch a token at a computed position ([glossary](../GLOSSARY.md#hand-built-machinery)), score
-−20(r_j − t)², with t linear in r and r_plus, and copy the bit at position t. The formats then differ (Figure 1).
+−20(r_j − t)², with t linear in r and r_plus, and copy the bit at position t. The formats then differ (Table F1).
 
 Format A. A lookahead head attends to the first column j < i with a_j = b_j and copies a_j, which is the carry into column i (the `=`
 sentinel gives 0). The MLP writes parity(a_i + b_i + c).
@@ -103,36 +113,21 @@ parity(d_i + c) in phase 2.
 The networks use 3 + 8 / 3 + 6 / 4 + 10 heads + neurons (A / B / C). They are exact on all pairs for n = 1..6 and on 2000 pairs per n =
 7..12, with minimum logit margin 30.
 
-In Figure 1, frozen position and index heads fetch the operand bits. Answer-only A uses carry lookahead before MLP3 writes parity; carry-token B uses MLP2 to write parity and carry, then copies the carry token; column-sum C combines lookahead with MLP2's two phases. Only the named MLP is trained in each PART cell. Learned sum-table status remains partial, with complement untested.
+Table F1 records the format-specific routes alongside the worked circuit above. Frozen position and index heads fetch the operand bits. Answer-only A uses carry lookahead before MLP3 writes parity; carry-token B uses MLP2 to write parity and carry, then copies the carry token; column-sum C combines lookahead with MLP2's two phases. Only the named MLP is trained in each PART cell. Learned sum-table status remains partial, with complement untested.
 
-```mermaid
-flowchart TD
-    accTitle: Hand-built binary addition in three output formats
-    accDescr: Position and index heads fetch operand bits. Answer-only and column-sum routes use carry lookahead; the carry-token route writes digit parity and carry before copying the carry output. Only the marked stage MLP is trained in each PART cell. Learned sum-table status is partial, with complement untested.
-    P["Prompt a+b=<br/>and output<br/>so far"] --> POS["positions:<br/>r, r_plus, r<br/>squared,<br/>thermometers<br/>T and VT"]
-    POS --> IDX["index heads<br/>copy a_i,<br/>b_i"]
-    subgraph FA["Format A"]
-        A1["lookahead<br/>head L3H0:<br/>first j<br/>below i with<br/>a_j = b_j,<br/>copies a_j =<br/>carry"] --> A2["MLP3:<br/>parity(a_i +<br/>b_i + c)"]
-    end
-    subgraph FB["Format B"]
-        B1["MLP2: parity<br/>and MAJ"] --> B2["previous-token<br/>head copies<br/>MAJ into the<br/>carry token"]
-    end
-    subgraph FC["Format C"]
-        C1["lookahead<br/>head: first<br/>d_j != 1,<br/>copies [d_j<br/>= 2]"] --> C2["MLP2: digit<br/>of a_i +<br/>b_i, then<br/>parity(d_i +<br/>c)"]
-    end
-    IDX --> A1
-    IDX --> B1
-    IDX --> C1
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class A2,B1,C2 trained
-    %% Invisible links constrain vertical layout only, not computation.
-    A2 ~~~ B1
-    B2 ~~~ C1
-```
+<details>
+<summary>Technical addition routes and their trained stages (Table F1)</summary>
 
-*Figure 1. The hand-built binary adders: A is answer only, B interleaves carry tokens, and C writes column sums first. Gold MLP3
-or MLP2 is the only block trained in each PART network. The learned sum tables have partial status: substitution is supported in
-the named seed subsets, but complement resampling was not reported.*
+*Table F1. Read the bits and carry, then add. The rows are alternative hand-built binary adders sharing the frozen reader: A is answer only, B interleaves carry tokens, and C writes column sums first. Parity records whether a sum is odd; MAJ gives the carry out. MLP3 or MLP2 is the only block trained in each PART network. The learned sum tables have partial status: substitution is supported in the named seed subsets, but complement resampling was not reported.*
+
+| Route | Fixed reads and trained operation |
+|---|---|
+| Shared frozen reader | From prompt a+b= and output so far, form positions r, r_plus, r squared and threshold flags T and VT (thermometer codes). Index heads fetch a_i and b_i. |
+| A: answer only | Fixed layer 3, head 0 (L3H0) finds the first j below i with a_j = b_j and reads a_j as carry c. Trained MLP3 writes the answer bit parity(a_i + b_i + c). |
+| B: interleaved carry tokens | Trained MLP2 writes parity and MAJ (majority: next carry). A fixed previous-token head copies MAJ into the carry token. The output contains bit and carry tokens. |
+| C: column sums first | Fixed lookahead finds the first d_j ≠ 1 and reads [d_j = 2] as carry. Trained MLP2 writes the digit of a_i + b_i, then parity(d_i + c). The output contains column sums followed by answer bits. |
+
+</details>
 
 ## 4. What training finds
 
@@ -164,11 +159,13 @@ read-subspace overlap with HAND .36-.39). Holding their position inputs at 0 rem
 10/10 (was 0). This repair is format-specific. The masked carry-token stages reached .99–1.00 at n = 7, .95–1.00 at n = 8, and
 .53–1.00 at n = 12; their remaining 12-bit errors, .53–.88 in 9/10 seeds, were unexplained.
 
-![Column-sum PART accuracy without a position mask falls at 7, 8 and 12 bits; the masked stage is exact in ten seeds at every length](../figures/binary-addition-position-mask.svg)
+Figure 2 separates the operand-reader path from the position inputs held at zero in this repair.
+
+<img src="../figures/binary-addition-position-mask.svg" width="640" alt="Fixed operand readers still supply bits and carry to the trained column-sum stage, while the fixed slot and phase codes are blocked at zero. At 7, 8 and 12 bits, original exact-match ranges .17–.20, .01–.02 and 0 become 1.00 with the mask. The local formula remains partial, not verified.">
 
 *Figure 2. Original and position-masked column-sum stages, 10 seeds per setting, on 1000 random pairs per length in fp32. Intervals
 are copied seed ranges, not confidence intervals. This figure concerns PART only: the carry-token mask remained imperfect, and
-TRAIN failed at 12 bits. The local sum-table status is partial, with substitution supported and the complement not tested.*
+TRAIN failed at 12 bits. The local sum-table status is partial, with substitution supported and the complement not tested. MLP means a feed-forward block. PART trains one stage on frozen routing; TRAIN trains all weights from scratch.*
 
 ### 4.2 Training from scratch (TRAIN)
 
@@ -237,7 +234,7 @@ operand routes, the other heads as
 `g_h = Σ_j A_h[q, t_q, j] V_h(T[j, t_j])`, and MLP3 as 88 query/state prototypes, all at once. It scores **4096/4096**. Read locally, a
 bit slot emits a_i ⊕ b_i ⊕ c_i, and a carry slot (current token s_i) emits 1 if and only if a_i + b_i = 2 or (a_i + b_i = 1 and s_i = 0)
 (supported). No scalar MAJ gate is recovered. The tied exact seed 0 rejects the same joint formula (3/4096), so the mechanism is not
-seed-universal (Figure 3). Here A_h is head h's fitted attention table and V_h its value/output write; both read the live tokens
+seed-universal (Table F3). Here A_h is head h's fitted attention table and V_h its value/output write; both read the live tokens
 and their positions. The fit bank includes only training pairs, while the 4096-pair substitution bank includes training and held-out
 pairs.
 
@@ -251,30 +248,22 @@ semantic scrub, which swaps activations between inputs that agree on the arithme
 ([glossary](../GLOSSARY.md#verifying-a-circuit)). Its retained accuracies are .980 / .985 / .983, although the joint formulas restore
 4096/4096: pruning and explanation do not compose.
 
-In Figure 3, earlier token and position summaries feed the operand-copy heads L3H0 and L3H3 and the current-token-switched L3H1. Their outputs enter MLP3's prototypes, which write bit or carry slots. These heads and the MLP were wholly trained. This seed-specific replacement remains partial: the stronger semantic scrub fails, and no seed-universal native algorithm is verified.
+Table F3 records the seed-specific replacement and its failed scrub. Earlier token and position summaries feed the operand-copy heads L3H0 and L3H3 and the current-token-switched L3H1. Their outputs enter MLP3's prototypes, which write bit or carry slots. These heads and the MLP were wholly trained. This seed-specific replacement remains partial: the stronger semantic scrub fails, and no seed-universal native algorithm is verified.
 
-```mermaid
-flowchart TD
-    accTitle: Seed-specific carry-token TRAIN replacement
-    accDescr: Earlier token and position summaries feed operand-copy heads and a current-token-switched head; MLP prototypes write bit or carry slots. Heads and MLP were wholly trained. Status is partial: the replacement is seed-specific and the pruned circuit fails the stronger semantic scrub; no seed-universal mechanism is verified.
-    T["layers 0-2:<br/>token and<br/>position<br/>means T[j,<br/>t_j]"] --> H0["L3H0: copy<br/>current a_i"]
-    T --> H3["L3H3: copy<br/>current b_i"]
-    T --> H1["L3H1:<br/>attention<br/>switched by<br/>the current<br/>token"]
-    H0 --> M["MLP3: 88<br/>query and<br/>state<br/>prototypes"]
-    H3 --> M
-    H1 --> M
-    M --> S["bit slot:<br/>a_i xor b_i<br/>xor c_i;<br/>carry slot:<br/>1 iff a_i +<br/>b_i = 2, or<br/>= 1 and s_i<br/>= 0"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class H0,H3,H1,M trained
-    %% Invisible links constrain vertical layout only, not computation.
-    H0 ~~~ H3
-    H3 ~~~ H1
-```
+<details>
+<summary>Technical seed-specific replacement and failed scrub (Table F3)</summary>
 
-*Figure 3. The seed-specific replacement for carry-token TRAIN run 2, seed 2. Gold heads and MLP3 were wholly trained; there is no
-separate PART block here. The joint replacement scores 4096/4096 on the full operand bank for seed 2, but 3/4096 on seed 0, and the
-pruned circuit fails a 99% semantic scrub. Closed-form status remains partial: these tests do not verify a seed-universal native
-algorithm or establish the complement acceptance rule.*
+*Table F3. A token selects the carry read in the seed-specific replacement for carry-token TRAIN run 2, seed 2. The head reads are parallel, not sequential stages. The heads and MLP3 were wholly trained; there is no separate PART block here. The joint replacement scores 4096/4096 on the full operand bank for seed 2, but 3/4096 on seed 0, and the pruned circuit fails a 99% semantic scrub. Closed-form status remains partial: these tests do not verify a seed-universal native algorithm or establish the complement acceptance rule.*
+
+| Component or output | Recorded role |
+|---|---|
+| Earlier layers 0–2 | Summarise tokens and positions as means T[j, t_j]. |
+| Parallel layer-3 heads | Layer 3, head 0 (L3H0) copies current a_i; head 3 (L3H3) copies current b_i; head 1 (L3H1) switches attention using the current token. |
+| MLP3 | Read the head outputs and match 88 query and state prototypes to write the selected slot. |
+| Bit slot | a_i xor b_i xor c_i. |
+| Carry slot | 1 if and only if a_i + b_i = 2, or a_i + b_i = 1 and s_i = 0. |
+
+</details>
 
 ### 5.3 Seed census
 

@@ -1,6 +1,10 @@
 # Subtraction (base 10 and 2)
 
-Subtraction must decide when a column borrows from the next one, as well as which digit to write. Four-layer transformers were trained on three-digit decimal and six-bit binary problems, either writing just the answer or also writing borrows or column differences. Each of the four retried answer-only/column-difference cells reached test exact match 1.0 on 2k decimal or 832 binary pairs per seed in 10/10 independent training runs (seeds, [glossary](../GLOSSARY.md#counting-results)), but whole-network training did not transfer to longer operands. Most local responses could be reproduced by a table indexed by the signed difference after borrowing, with that index supplied from outside the network. The task is partly solved and the formulas are sufficient readouts only ([glossary](../GLOSSARY.md#verifying-a-circuit)): resampling the proposed whole mechanism, using internal states from other inputs with matching claimed arithmetic labels, retained .938 and .933 in the two tested binary borrow-token seeds, below its .99 control bar.
+In 742 minus 358, the units column must borrow before subtracting 8. Four-layer networks had to learn both the answer digit and how borrowing affects the next column. Each of four retried direct-answer/column-difference settings got whole outputs right in 10/10 runs on 2k decimal or 832 binary test pairs per run. Whole-network training did not transfer to longer numbers.
+
+A table reproduced most local responses when supplied the signed difference after borrowing. That label came from outside the network, so the table did not explain how the network computed it.
+
+The task is partly solved. Its formulas are [sufficient readouts only](../GLOSSARY.md#verifying-a-circuit): swapping internal states between examples with matching claimed arithmetic labels kept only .938 and .933 whole-output accuracy in the two tested binary borrow-token runs, below the .99 control bar. The stronger whole-mechanism test failed. Scores supplied correct earlier tokens.
 
 | Fact | Value |
 |---|---|
@@ -14,6 +18,14 @@ Subtraction must decide when a column borrows from the next one, as well as whic
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
 Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [router addition](router-addition.md) for shared column labels, or [binary multiplication](multiplication.md) for a different sufficient-readout example.
+
+## The circuit at a glance
+
+Figure 3 shows the observed direct digit write that bypasses the hand-built store ([mechanism and verification](#5-mechanism-and-verification)).
+
+<img src="../figures/circuits/subtraction.svg" width="640" alt="The trained block writes digit scores, bypassing the hand-built store. One upward residual stream has separate read/write branches for Read first bit (layer 2, head 0); Read other bit (layer 2, head 1); Write digit (layer 2 block). Local input: 1 − 0; given incoming borrow 1; Digit target: 0. Task values are illustrative; dashed boxes and branches are not verified.">
+
+*Figure 3. Binary borrow-token partly trained seed 0 differs from the hand-built design through its layer-2 feed-forward block writing digit scores around the supplied digit store at digit queries, a sufficient-readout result rather than endogenous difference/borrow proof; separate from-scratch whole-role controls failed.*
 
 ## 1. Task and data
 
@@ -80,7 +92,7 @@ bit-identically.
 ## 3. Hand-built solution
 
 The hand-built networks reuse the bricks of [decimal-hex-addition](decimal-hex-addition.md), with a borrow in place of the carry.
-Each answer digit is (a_i − b_i − borrow) mod b, and the formats differ in where the borrow comes from (Figure 1).
+Each answer digit is (a_i − b_i − borrow) mod b, and the formats differ in where the borrow comes from (Table F1).
 
 In format A, layer-2 index heads, which attend to one operand position and copy its digit, copy a_i and b_i, and a_j at b_j's
 position. The L2 MLP reads D = b_j − a_j and writes EQ = [D ≠ 0] and GEN = [D ≥ 1]. The chain head L3H0 attends to the first lower
@@ -100,47 +112,23 @@ for n = 1..12 in both bases. Table 3 gives their sizes.
 
 For base 2, the compact note “L3 6/6/0, L2 4/3/11” lists formats A/B/C in that order. The source design notes give A 64/114/4/6, B 64/64/3/6 and C 64/119/11/0 neurons in L0/L1/L2/L3, with 6, 5 and 5 heads respectively. These are hand-built counts, not measured TRAIN minima.
 
-```mermaid
-flowchart TD
-    accTitle: Hand-built borrow-chain and borrow-token alternatives
-    accDescr: Frozen fetch heads supply column digits. A chain head in direct-answer and difference-trace formats, or the previous borrow token, supplies the borrow. Shaded stages are the trained PART blocks. Later external-label tables remain sufficient readouts only, with failed whole-mechanism controls.
-    subgraph FETCH["Common input to each format"]
-        direction TB
-        P["Prompt a-b=<br/>and output so far"] --> F["L2 index heads copy<br/>a_i, b_i and a_j at b_j"]
-    end
-    subgraph FA["Format A: answer only"]
-        direction TB
-        A1["L2 MLP on D = b_j - a_j:<br/>EQ = D != 0, GEN = D >= 1"] --> A2["L3H0 chain head:<br/>first lower column with EQ,<br/>copies GEN = borrow_in"]
-        A2 --> A3["L3 MLP: one-hot of<br/>a_i - b_i - c mod b"]
-        A3 --> YA["answer digit"]
-    end
-    subgraph FB["Format B: borrow token"]
-        direction TB
-        B1["L2 MLP: digit z mod b<br/>and borrow 1 minus<br/>indicator of z >= b"]
-        B0["L3H0 copies the<br/>previous borrow token"]
-        %% Invisible link stacks independent branches; it is not a data path.
-        B1 ~~~ B0
-        B1 --> YB["answer digit"]
-        B0 --> YB
-    end
-    subgraph FC["Format C: signed differences"]
-        direction TB
-        C1["phase 1:<br/>e_i = a_i - b_i"] --> C2["chain head: first e_j != 0,<br/>borrow = 1 if e_j is negative"]
-        C2 --> C3["phase 2: one-hot of<br/>e_i - c mod b"]
-        C3 --> YC["answer digit"]
-    end
-    %% Each alternative reads the common input above. These invisible links
-    %% stack panels; they are not computational paths between formats.
-    FETCH ~~~ FA
-    FA ~~~ FB
-    FB ~~~ FC
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class A3,B1,C1,C3 trained
-```
+Table F1 records the three alternative borrow sources. The shared readers do not make the answer-only, borrow-token and difference-trace formats successive stages.
 
-*Figure 1. The hand-built networks for the three formats. Each alternative reads the common input panel; the format panels are not successive stages. Index heads fetch the column digits; the borrow comes from a chain head that
-finds the first lower column where the digits differ (A, C) or from the previous borrow token (B). The shaded MLPs (layer 3 in A,
-layer 2 in B and C, which in C writes both phases) are the parts that PART replaces with a trained stage. The learned tables are sufficient readouts only: external-label substitutions do not establish how TRAIN computes its difference or borrow, and the stronger audit controls failed.*
+<details>
+<summary>Technical alternative borrow routes and trained stages (Table F1)</summary>
+
+*Table F1. The hand-built networks for the three formats. Each alternative reads the common input; the formats are not successive stages. Index heads fetch the column digits; the borrow comes from a chain head that finds the first lower column where the digits differ (A, C) or from the previous borrow token (B). The MLPs (layer 3 in A, layer 2 in B and C, which in C writes both phases) are the parts that PART replaces with a trained stage. The learned tables are sufficient readouts only: external-label substitutions do not establish how TRAIN computes its difference or borrow, and the stronger audit controls failed.*
+
+| Part or alternative format | Input, computation and destination |
+|---|---|
+| Common input and readers; frozen | Prompt `a-b=` and output so far feed layer-2 index heads copying a_i, b_i and a_j at b_j's position. |
+| A: comparison and borrow chain; frozen | Layer-2 feed-forward block (MLP) computes D = b_j − a_j, EQ = [D ≠ 0], GEN = [D ≥ 1]. Layer 3, head 0 (L3H0) finds the first lower column with EQ and copies GEN as borrow_in. |
+| A: digit stage; trained in PART | Layer-3 MLP writes the one-hot category of (a_i − b_i − c) mod b, where c is the borrow and b the base. |
+| B: local digit/borrow stage; trained in PART | Layer-2 MLP writes digit z mod b and borrow 1 − [z ≥ b], with z = a_i − b_i − [own token c] + b. Frozen L3H0 copies the previous borrow token for the output route. |
+| C: signed-difference stage; trained in PART | Phase 1 writes e_i = a_i − b_i. A frozen chain head finds the first e_j ≠ 0; borrow is 1 if e_j is negative. Phase 2 writes the one-hot of (e_i − c) mod b. Both phases use the layer-2 trained stage. |
+| Audit boundary | Later task-label readout tables do not recover endogenous TRAIN difference or borrow. Their stronger whole-mechanism controls failed. |
+
+</details>
 
 ## 4. What training finds
 
@@ -248,7 +236,7 @@ c_i, q is the index of the output query, and μ[key] is the mean MLP-output vect
 | Base 10 A PART / TRAIN retry: MLP3 | final digit readout | m3 = μ[q, d] 1.000 / 1.000 on 2,000 fresh pairs; μ[d mod 10] (ten vectors) 1.000 / 1.000 |
 | Base 2 B TRAIN: MLP3 | four-template digit/borrow decoder | m3 = μ[p, v] 1.000, drop 0, in 2/2 solved seeds tested |
 
-In base 2 B PART the trained MLP2 writes the digit straight to the answer logits and bypasses HAND's digit register DIG (Figure 2).
+In base 2 B PART the trained MLP2 writes the digit straight to the answer logits and bypasses HAND's digit register DIG (Table F2).
 At digit queries m2 = μ[q, d], and the final m3 = μ[q, [d < 0]] (1.000 each). Keeping only the HAND-like registers DIG = d mod 2 and
 MAJ = [d < 0] at digit queries gives .423, so the learned borrow calibration matters. In base 2 B TRAIN, MLP3 is four vectors indexed
 by the phase p = 0 (digit) / 1 (borrow) and v = (1 − p)(d mod 2) + p[d < 0], with no column dependence. These keys use external
@@ -278,23 +266,23 @@ Section 4.2 reports HAND's L2 fetch roles re-found in 9/10 base 10 A retry seeds
 sit in L3 and forcing HAND's hard b route keeps only .273, so attention-mass labels overstate copy behaviour. The base 2 B PART bypass
 refines the stage-level f(diff) closed form and does not contradict it.
 
-```mermaid
-flowchart TD
-    accTitle: Trained local digit write bypasses the supplied digit register
-    accDescr: Frozen operand heads feed the trained MLP, which writes directly to the answer scores while frozen final-layer machinery relays borrowing. The task-labelled mean tables are sufficient readouts only; the internal difference and borrow computation is not verified.
-    H["frozen L2H0, L2H1:<br/>operand fetches"] --> M2["trained MLP2:<br/>m2 = mu[q, d]"]
-    M2 -->|"digit write at digit queries,<br/>deleting it gives 0"| Y["answer logits"]
-    DIG["HAND DIG register,<br/>d mod 2"] -.->|"deleting DIG<br/>keeps 1.000"| L3["frozen layer 3:<br/>L3H0 borrow relay;<br/>MLP3 m3 = mu[q, d negative]"]
-    L3 --> Y
-    %% Invisible link separates parallel paths vertically; it is not a data path.
-    M2 ~~~ DIG
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class M2 trained
-```
+Table F2 records the direct digit write and the separate frozen borrow relay. Bypassing the digit register at digit queries does not establish that the entire register is globally unused.
 
-*Figure 2. The digit path that training finds in base 2 format B (PART, seed 0). The trained MLP2 writes the digit straight to the
-answer logits and bypasses the hand-built DIG register. The mean tables are a local readout on task-derived labels; the stage-level
-closed form remains a sufficient readout only, not a verified mechanism (Section 5.1).*
+<details>
+<summary>Technical binary digit bypass and task-labelled readout (Table F2)</summary>
+
+*Table F2. The digit path that training finds in base 2 format B (PART, seed 0). The trained MLP2 writes the digit straight to the answer scores (logits) and bypasses the hand-built DIG register. The mean tables are a local readout on task-derived labels; the stage-level closed form remains a sufficient readout only, not a verified mechanism (Section 5.1).*
+
+| Part or intervention | Route, evidence and boundary |
+|---|---|
+| Layer 2, heads 0 and 1 (L2H0/L2H1); frozen | Fetch operands for the trained layer-2 feed-forward block MLP2. |
+| MLP2; trained | Local replacement m2 = μ[q, d] uses the mean output for query q and task-derived signed difference d. It writes digit scores directly; deleting that write at digit queries gives 0. |
+| Hand-built DIG register | Stores d mod 2. Deleting DIG keeps 1.000 in the tested digit path, supporting a bypass at those queries. |
+| Frozen layer 3 | L3H0 relays borrowing; MLP3 admits m3 = μ[q, [d < 0]], a mean table on query and the negative-difference flag. This route also contributes to output. |
+| Meaning of the test keys | d = a_i − b_i − c_i comes from external arithmetic labels, not an accepted native decoder. The local tables do not verify the endogenous difference/borrow computation. |
+| Separate whole-role controls | The failed from-scratch controls reported above remain failures; this one-seed PART bypass does not certify a whole TRAIN mechanism. |
+
+</details>
 
 ### 5.4 Relation to the hand-built network and to published work
 

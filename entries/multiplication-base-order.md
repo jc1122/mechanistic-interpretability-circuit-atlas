@@ -1,6 +1,10 @@
 # Multiplication across bases and digit orders
 
-Writing a product's units digit first lets a model build the answer in the same direction as the carries in long multiplication. These small transformers multiplied numbers below 256: on 2000 held-out pairs per seed, decimal units-first output reached best whole-output exact match ≥ .99 in 20/20 seeds, while largest-place-first output met that bar in only 1/60 seeds across the three tested bases at the original width. Writing running sums before the final product succeeded in all 18/18 screened seeds at that width. The task is partly solved, with no reliable transfer to longer numbers and no hand-built network for comparison. The formula is Partial and covers only outgoing scratchpad digit votes, with decimal passing in the same 6/6 seeds at both best and final snapshots and hexadecimal in 3/6 at best versus 4/6 at final snapshots of the same seed cohort; complement resampling was not tested.
+For 7×3=21, the largest-place-first answer is `00021`. Units-first reverses that writing direction, following the direction of long multiplication and its carries. Decimal units-first output reached best whole-output exact match ≥ .99 in 20/20 runs on 2000 held-out pairs per run, for numbers below 256.
+
+Largest-place-first output rarely succeeded at the original network width. Writing running sums before the product helped across bases, although the learned number codes differed. A [scratchpad](../GLOSSARY.md#task-formats) is this written record of intermediate working.
+
+The task is partly solved: longer numbers still failed, and there was no hand-built network for comparison. The [partial formula](../GLOSSARY.md#verifying-a-circuit) replaces only the final scratchpad block's outgoing digit scores, keeping its internal signals; it does not calculate sums or carries. Replacement passed in all tested decimal runs but only some hexadecimal runs; swapping the other parts' signals between examples was not tested. Scores supplied correct preceding tokens.
 
 | Fact | Value |
 |---|---|
@@ -14,6 +18,14 @@ Writing a product's units digit first lets a model build the answer in the same 
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
 Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [binary multiplication](multiplication.md) for the running-sum step, or [output-order base conversion](output-order-base-conversion.md) for the same ordering question in conversion.
+
+## The circuit at a glance
+
+Figure S1 follows the branch whose outgoing digit votes are replaced; the native neuron responses and the other writes on the residual stream stay unchanged.
+
+<a href="../figures/circuits/multiplication-base-order.svg"><img src="../figures/circuits/multiplication-base-order.svg" width="640" alt="One residual stream keeps other native writes while a final feed-forward branch retains native neuron signals and replaces only outgoing digit votes with a dashed, not-verified map. Native upstream arithmetic stays unchanged. Decimal 007*003= targets first scratch digit 1 in running-sum line 12000; no numeric native activation is asserted."></a>
+
+*Figure S1 shows that only outgoing scratchpad digit votes are replaced, with no hand-built comparator; the Partial substitute passes whole-output exact match ≥ .99 × native accuracy on 2048 fresh pairs in decimal 6/6 seeds at both best and final snapshots and hex 3/6 best versus 4/6 final, retaining native activations and other writes without verifying upstream arithmetic or the complement, or establishing length transfer ([evidence](#51-closed-form-of-the-scratchpad-readout)).*
 
 ## 1. Task and data
 
@@ -74,33 +86,27 @@ re-scored.
 ## 3. Hand-built solution
 
 There is no hand-built network for this entry (an explicit exception; no HAND or PART rung). The trained networks were probed instead
-for the variables of long multiplication in base B (Figure 1): the product digit p_k, the column sum col_k = Σ_{i+j=k} x_i y_j, the
+for the variables of long multiplication in base B (Table F1): the product digit p_k, the column sum col_k = Σ_{i+j=k} x_i y_j, the
 carry carry_k into column k, and low_k / high_k, the product mod / div B^k. For SP lines the same variables were probed for
 S_j = S_{j−1} + x y_j B^j.
 
-```mermaid
-flowchart TD
-    accTitle: Long-multiplication variables used for probes
-    accDescr: A trained network is probed for column sums, carries, product digits and low and high product parts. No hand-built network or PART cell exists for this study; no node is shaded as a PART stage.
-    subgraph VARIABLES["Reference arithmetic variables"]
-        direction TB
-        X["operand digits x_i and y_j"] --> C["column sum col_k =<br/>sum of x_i y_j<br/>over i + j = k"]
-        C --> K["carry carry_k"]
-        C --> P["product digit p_k"]
-        K --> P
-        C --> LH["low_k and high_k:<br/>product mod and div B^k"]
-        %% Invisible link stacks outputs; it is not a computational path.
-        P ~~~ LH
-    end
-    subgraph PROBE["Separate measurement"]
-        N["TRAIN network: 4 layers,<br/>all weights trained;<br/>probed for col_k and carry_k"]
-    end
-    %% Invisible link stacks panels; it is not a computational path.
-    VARIABLES ~~~ PROBE
-```
+Table F1 defines the reference variables used to probe the networks. A probe target is not a hand-built circuit or a recovered native arithmetic step.
 
-*Figure 1. The reference variables of long multiplication that the trained networks were probed for. No hand-built network or PART cell exists for
-this entry, so no node is shaded. The network is trained from scratch in full.*
+<details>
+<summary>Technical reference variables, not a hand-built network (Table F1)</summary>
+
+*Table F1. The reference variables of long multiplication that the trained networks were probed for. No hand-built network or PART cell exists for this entry. The four-layer network is trained from scratch in full.*
+
+| Reference variable or measurement | Meaning and scope |
+|---|---|
+| Operand digits x_i and y_j | Digits at places i and j in base B. |
+| Column sum col_k | Sum of x_i·y_j over i + j = k, before the incoming carry. |
+| Carry carry_k and product digit p_k | The incoming overflow and output digit for column k; both the column sum and carry determine the digit. These are reference quantities, not asserted neuron identities. |
+| Low part low_k | Product mod B^k, the part below place k. |
+| High part high_k | Product div B^k, the integer quotient above that place. |
+| Separate probe measurement | The 4-layer TRAIN network, with all weights trained, is tested for col_k and carry_k as well as the product-digit and low/high variables. |
+
+</details>
 
 ## 4. What training finds
 
@@ -163,27 +169,33 @@ exact ≥ .99 × native accuracy on 2048 fresh pairs. Decimal passed in 6/6 best
 3/6 and 4/6 (lossless in 1/6). The full DFT keeps all accuracy and the mean-only map keeps none (0). This is supported by substitution;
 the complement was not tested, so the closed form status is partial.
 
-```mermaid
-flowchart TD
-    accTitle: Scratchpad outgoing digit-vote substitute
-    accDescr: The trained network keeps its native final-MLP activations and other writes while selected Fourier modes replace outgoing digit votes. This is partial, scratchpad-only substitution support; complement resampling is untested.
-    X["prompt and scratch lines so far"] --> R["TRAIN network:<br/>native final-MLP activations,<br/>unchanged"]
-    R --> E["MLP3 outgoing<br/>digit-vote map E"]
-    F["Weight-derived Fourier modes<br/>K_dec or K_hex"] -.->|"SP substitution only"| E
-    E --> D["digit logits, with other<br/>native writes retained"]
-    %% Invisible link stacks inputs; it is not a computational path.
-    R ~~~ F
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class R,E trained
-```
+Table F2 records exactly what the output-vote substitution changes and what stays native. It does not replace the network's upstream arithmetic or neuron activations.
 
-*Figure 2. Substitution of the outgoing MLP3 digit-vote map in SP, leaving native neuron activations and other writes unchanged. The column-variable interventions were at L4, after the fourth layer; they do not show that MLP3 receives either variable as a single scalar. The Fourier closed form is Partial (substitution only, SP only); answer-only types A-C have no closed form. The shaded network and digit-vote map are trained; decimal passes in 6/6 best and final seeds, hexadecimal in 3/6 best and 4/6 final, and complement resampling is untested.*
+<details>
+<summary>Technical outgoing-only digit-vote substitution (Table F2)</summary>
 
-![Multiplication at the original width: units-first successes are 17/20 binary, 20/20 decimal and 4/20 hexadecimal, versus 0/20, 1/20 and 0/20 largest-place-first.](../figures/multiplication-base-order-success.svg)
+*Table F2. Substitution of the outgoing MLP3 digit-vote map in SP, the running-sum scratchpad, leaving native neuron activations and other writes unchanged. The column-variable interventions were at L4, after the fourth layer; they do not show that MLP3 receives either variable as a single scalar. The Fourier closed form is Partial (substitution only, SP only); answer-only types A-C have no closed form. The network and digit-vote map are trained; decimal passes in 6/6 best and final seeds, hexadecimal in 3/6 best and 4/6 final, and complement resampling is untested.*
 
-*Figure 3. Original-width answer-only screens, 20 seeds per base and order across four data mixes. Success means best whole-output exact match ≥ .99 on 2000 held-out pairs. Scratchpad 18/18 covers a separate screened comparison; neither result establishes length generalisation or a compute-matched format effect.*
+| Part or intervention | Kept native or replaced |
+|---|---|
+| Prompt and scratch lines so far | Feed the wholly trained network. |
+| Final feed-forward block's activations | Kept unchanged; the test does not supply scalar column/carry values to MLP3. |
+| Outgoing digit-vote map E of MLP3 | Only this map is replaced by selected weight-derived Fourier modes, repeating sine/cosine patterns over digits. |
+| Decimal or hexadecimal mode set | K_dec or K_hex supplies the replacement map in the SP substitution test only. |
+| Output and bypass | Digit scores use the substituted vote map; other native writes remain intact. |
+| Acceptance limit | Partial, scratchpad-only substitution support. No complement test, upstream arithmetic certificate or answer-only A-C closed form follows. |
 
-[Open Figure 3 at full size](../figures/multiplication-base-order-success.svg).
+</details>
+
+Table F3 compares how often each output order reached the screening criterion.
+
+*Table F3. Units-first multiplication succeeds more often in these screens. Original-width answer-only screens, 20 seeds per base and order across four data mixes, five seeds each; operands below 256. Success means best whole-output exact match ≥ .99 on 2000 held-out pairs. Running-sum scratchpad 18/18 covers a separate screened comparison; neither result establishes reliable length generalisation or a compute-matched, format-only causal effect.*
+
+| Number base | Units first (LSB) | Largest place first (MSB) |
+|---|---|---|
+| Binary | 17/20 | 0/20 |
+| Decimal | 20/20 | 1/20 |
+| Hexadecimal | 4/20 | 0/20 |
 
 ### 5.2 Answer only
 

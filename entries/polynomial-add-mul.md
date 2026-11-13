@@ -1,12 +1,10 @@
 # Integer polynomial addition and multiplication
 
-Adding polynomials combines coefficients of the same power; multiplying them requires products of coefficients followed by collecting
-terms of the same power. Small transformers were trained on degree-3 polynomials, writing either the result directly or a trace of
-intermediate calculations. Addition reached held-out whole-output exact match 1.0 on 1000 pairs per seed in all 40/40 final-run seeds across the two formats
-and both training settings (fixed hand-built parts or from scratch), while no learned multiplication cell reached 1.0. A separate
-multiplication arm froze hand-built product gates and learned only the output sum, reaching .998–.999 in 3/3 screening seeds. The task is partly solved, and the frozen-scaffold addition
-formula is partial: substitution preserved in-range answers in the partly trained networks only, but the rest of the circuit was not resampled and the formula did not
-reproduce the networks' out-of-range errors.
+Adding (1+2x) and (3+x²) gives 4+2x+x². This combines coefficients, the numbers in front of matching powers of x. Multiplication also needs products across different powers. Small networks learned addition on degree-3 inputs in 40/40 final runs across direct answers, written working, hand-built retrieval and training from scratch. Each got whole outputs right on 1000 held-out pairs, with correct preceding tokens supplied. No learned multiplication experiment was exact.
+
+Networks trained from scratch with working read coefficients back from that working to produce the sum. Supplying hand-built products and training only their sum helped multiplication, but still stopped short of exact outputs. Learning to combine products differed from learning to construct them.
+
+The task is partly solved. The [addition formula is partial](../GLOSSARY.md#verifying-a-circuit): replacement preserved in-range answers only for partly trained networks. It repaired rather than reproduced their out-of-range errors, and swapping the other parts' signals between examples was not tested.
 
 | Fact | Value |
 |---|---|
@@ -20,6 +18,14 @@ reproduce the networks' out-of-range errors.
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
 Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [polynomial differentiation](polynomial-differentiation.md) for coefficient arithmetic, or [symbol-level algebra](symbolic-algebra-atoms.md) for collecting and expanding terms.
+
+## The circuit at a glance
+
+Figure 4 shows the partly trained answer-only addition cell ([mechanism and verification](#5-mechanism-and-verification)).
+
+<img src="../figures/circuits/polynomial-add-mul.svg" width="640" alt="Addition writes a value and scale; the fixed output reads their ratio. One upward residual stream has separate read/write branches for Read first list (coefficient fetch); Read other list (coefficient fetch); Add this pair (write value + scale). Add lists: (1, 2, 0, 0) + (3, 0, 1, 0); Constant-term target: 4. Task values are illustrative; dashed boxes and branches are not verified.">
+
+*Figure 4. Final partly trained answer-only addition seeds 0–9 match the hand-built in-range sum through a value/scale ratio, a partial substitution form with no complement test that repairs rather than describes out-of-range errors; multiplication is not covered.*
 
 ## 1. Task and data
 
@@ -91,7 +97,7 @@ JSON, a manifest (seed, rung, accuracy, sha256) and the test pairs of each run (
 
 ## 3. Hand-built solution
 
-The hand-built network fetches the operand coefficients by position and combines them with ReLU ramps or bit gates (Figure 1).
+The hand-built network fetches the operand coefficients by position and combines them with ReLU ramps or bit gates (Table F1).
 
 A reciprocal-position frame gives every token a position scalar. Quadratic index heads, with score −β(r_key − target)², fetch a_k and
 b_k in format `A`, or the shifted a, b_j and the previous coefficient in format `T`. Addition writes S = relu(a + b) − relu(−a − b),
@@ -104,36 +110,23 @@ multiplication `T`. The networks are exact on 17,676 stratified sequences (degre
 full-polynomial checks per cell, alongside exhaustive scalar primitives (31^2 signed factor pairs), not exhaustive enumeration of
 the 19^8 degree-3 input combinations.
 
-```mermaid
-flowchart TD
-    accTitle: Hand-built coefficient sum and signed-product routes
-    accDescr: Positional fetches supply coefficients to a sum of signed ReLU ramps or signed-bit product gates. The marked stage MLPs are trained in ordinary PART. The separate frozen-product split-sum arm trains output weights only and is not this full-stage comparison.
-    subgraph INPUT["Common input to each operation"]
-        direction TB
-        P["Prompt: a_0..a_3, + or *,<br/>b_0..b_3, ="] --> F["reciprocal-position frame"]
-        F --> H["quadratic index heads fetch<br/>a_k and b_k, or shifted a,<br/>b_j and the previous coefficient"]
-    end
-    subgraph ADD["Addition"]
-        SA["stage MLP:<br/>S = relu(a + b) - relu(-a - b)"]
-    end
-    subgraph MUL["Multiplication"]
-        SM["stage MLP: signed bit gates<br/>relu(a + 32 bit - 32)<br/>- relu(-a + 32 bit - 32),<br/>weights 1, 2, 4, 8, -16"]
-    end
-    subgraph OUTPUT["Common read-out after either operation"]
-        R["read-out:<br/>logit(v) = 2vS - v^2 ONE,<br/>answer S/ONE"]
-    end
-    %% Alternatives share the input and read-out panels. Invisible links
-    %% stack panels; they are not computational paths between operations.
-    INPUT ~~~ ADD
-    ADD ~~~ MUL
-    MUL ~~~ OUTPUT
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class SA,SM trained
-```
+Table F1 records the two alternative coefficient operations and their common readout. The separate split-sum arm in Table F3 trains only output weights after supplied product gates; it is not this full-stage PART comparison.
 
-*Figure 1. The hand-built networks for addition and multiplication. Each operation uses the common input and read-out panels; addition and multiplication are alternatives, not successive stages. Index heads on a reciprocal-position frame fetch the operands; the
-stage MLP adds them with two ReLU ramps or multiplies them with signed bit gates on b_j; the read-out picks the integer closest to
-S/ONE. The shaded stage MLPs are the parts that PART replaces with a trained stage (layer 2 in format `A`, layer 3 in format `T`).*
+<details>
+<summary>Technical coefficient readers, sum/product gates and readout (Table F1)</summary>
+
+*Table F1. The hand-built networks for addition and multiplication. Each operation uses the common input and readout; addition and multiplication are alternatives, not successive stages. Index heads on a reciprocal-position frame fetch the operands; the stage feed-forward block (MLP) adds them with two ReLU ramps or multiplies them with signed bit gates on b_j; the readout picks the integer closest to S/ONE. Only the stage MLP is trained in PART (layer 2 in format A, layer 3 in format T).*
+
+| Part or alternative operation | Input, formula and destination |
+|---|---|
+| Common input and frame; frozen | Prompt `a_0..a_3, + or *, b_0..b_3, =` supplies coefficients to a reciprocal-position frame. |
+| Quadratic index heads; frozen | Fetch a_k and b_k, or shifted a, b_j and the previous coefficient, for the current operation. |
+| Addition stage; trained in PART | S = ReLU(a + b) − ReLU(−a − b), a signed sum from two threshold ramps. |
+| Multiplication stage; alternative, trained in PART | Signed bit gates ReLU(a + 32·bit − 32) − ReLU(−a + 32·bit − 32), with weights 1, 2, 4, 8, −16, combine products selected by bits of b_j. |
+| Common integer readout; frozen | Score candidate v by logit(v) = 2vS − v²·ONE; choose the integer nearest S/ONE, with ONE the scale channel. |
+| Separate split-sum arm | Frozen product gates supply the terms; only output weights are trained. Its screening results do not establish a verified multiplication mechanism. |
+
+</details>
 
 ## 4. What training finds
 
@@ -202,39 +195,39 @@ so its status is partial.
 For TRAIN, a fitted MLP2 decoder in format `A` scores .993–1.0 against the network's .999–1.0 (seeds 0–2), so it is lossy. In format
 `T` the closed form was rejected (.05–.59 against 1.0, seeds 0–2).
 
-```mermaid
-flowchart TD
-    accTitle: From-scratch addition reads the written trace
-    accDescr: The trained retrieval and readout use written operand coefficients for the sum row rather than prompt operands under the tested patches. This TRAIN trace formula was rejected; partial status applies only to the separate PART sum, with complement untested.
-    P["prompt operands a_k, b_k"] -.->|"patching 0"| M
-    W["written trace tokens a_k, b_k"] --> M["TRAIN T: trained attention<br/>and MLPs read the trace<br/>for the sum row"]
-    M --> C["written c_k"]
-    %% Invisible link stacks inputs; it is not a computational path.
-    P ~~~ W
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class M trained
-```
+Table F2 distinguishes the supplied earlier trace from the original prompt. Reading the correct trace under teacher forcing does not establish unaided generation or an accepted TRAIN arithmetic formula.
 
-*Figure 2. The circuit type training from scratch finds in format `T` (10/10 seeds): the sum row reads the network's own written
-a_k and b_k (patching .79–.87) and not the prompt operands (0). The trained retrieval/readout is shaded. This TRAIN closed form was
-rejected (.05–.59 against 1.0); the entry's partial status applies to the separate PART sum, whose complement was not tested.*
+<details>
+<summary>Technical trace reuse and rejected from-scratch sum formula (Table F2)</summary>
+
+*Table F2. The circuit type training from scratch finds in format T (10/10 seeds): the sum row reads the network's own written a_k and b_k (patching .79–.87) and not the prompt operands (0). The retrieval/readout is trained. This TRAIN closed form was rejected (.05–.59 against 1.0); the entry's partial status applies to the separate PART sum, whose complement was not tested.*
+
+| Source, component or test | Evidence and boundary |
+|---|---|
+| Original prompt operands a_k and b_k | Patching contribution 0 to the tested sum row. This is the unused route in that test, not a claim that prompts are never used elsewhere. |
+| Written trace operands a_k and b_k | Patching .79–.87. Scoring supplies the correct earlier tokens, even though those slots represent the network's preceding writes. |
+| Attention and feed-forward blocks (MLPs); trained | Retrieve from the trace and write coefficient c_k on the sum row. |
+| Proposed TRAIN formula; rejected | Substitution .05–.59 against native 1.0 does not support a recovered from-scratch arithmetic law. |
+| Separate PART sum | Partial substitution support only, with complement untested; it must not be promoted by this trace-reuse result. |
+
+</details>
 
 ### 5.2 Relation to the hand-built network and to published work
 
 PART addition admits HAND's sum with a free logit scale as a partial, substitution-supported form; its complement was not tested.
-TRAIN uses degree-specific routing, and in format `T` it routes through its own trace (Figure 2). The separate split-sum arm (Figure 3)
+TRAIN uses degree-specific routing, and in format `T` it routes through its own trace (Table F2). The separate split-sum arm (Table F3)
 shows that accumulation can be learned once the products are supplied. [Madsen and Johansen (2020)](#references) studied structured
 learned arithmetic units, [Trask et al. (2018)](#references) studied approximate product fitting and extrapolation, and
 [Bai et al. (2025)](#references) analysed long-range partial-product dependencies in transformers. These comparisons do not establish
 that the failed cells here are impossible to learn.
 
-![Frozen signed-product gates followed by trained output weights: 3/3 seeds at .998–.999 whole-output exact match.](../figures/polynomial-split-sum.svg)
+*Table F3. Supplied products make the output sum easier to learn, but leave errors. This is the separate answer-only split-sum multiplication arm, not the main ten-seed result. Its 3/3 screening seeds reached .998–.999 whole-output exact match on 1000 held-out pairs per seed, none 1.0. No verified learned multiplication mechanism is claimed; the entry's partial closed form covers addition only, without a complement test.*
 
-*Figure 3. The separate answer-only split-sum multiplication arm, with product gates frozen and output weights trained. Its 3/3
-screening seeds reached .998–.999 whole-output exact match on 1000 held-out pairs per seed, none 1.0. No verified learned
-multiplication mechanism is claimed; the entry's partial closed form covers addition only, without a complement test.*
-
-[Open Figure 3 at full size](../figures/polynomial-split-sum.svg).
+| Part of the computation | Fixed or trained | Role |
+|---|---|---|
+| Operand-coefficient readers | Frozen | Read the input numbers for each power. |
+| Signed-product gates | Frozen | Supply the products to be added. |
+| Output weights W_out and bias b_out | Trained | Combine those products into coefficient scores. |
 
 ## 6. Limitations and open questions
 

@@ -1,6 +1,8 @@
 # Binary Gaussian elimination
 
-Solving a binary linear system means finding bits that satisfy equations whose sums wrap modulo two. This experiment asked transformers to do that either directly or by writing each row update of Gauss–Jordan elimination. A trained update inside a frozen hand-built solver succeeded in 10/10 seeds, while whole-network training at the larger data setting reached exact match 1.0 on 2000 unseen-matrix systems in all 10/10 final seeds. The headline final cell is solved, but its networks split into three circuit families despite the same accuracy; the available formulas are Partial, supported by local substitutions without a reported complement-resampling test, and no cell established reliable exact transfer across all tested sizes.
+If x xor y = 1 and y = 1, then x = 0: here adding two 1 bits gives 0, and xor means addition with that wraparound rule. Four-layer transformers learned either to give the solution directly or to write each row update of Gauss–Jordan elimination, a method that removes variables from the other equations one at a time. Learning only an update inside a fixed hand-built solver succeeded in 10/10 runs, while whole-network training at the larger data setting reached whole-output accuracy 1.0 on 2000 unseen-matrix systems in all 10/10 final runs, with correct earlier output tokens supplied.
+
+The headline experiment is solved, yet its networks used three different internal routes to the same accuracy. The available formulas are [Partial](../GLOSSARY.md#verifying-a-circuit), supported by local replacements without testing changes to everything outside the proposed circuit, and no setting established reliable exact transfer across all tested matrix sizes.
 
 | Fact | Value |
 |---|---|
@@ -8,10 +10,18 @@ Solving a binary linear system means finding bits that satisfy equations whose s
 | Input → output example | Equations x xor y = 1 and y = 1 give x = 0, y = 1. |
 | Model | 4-layer transformer, width 384, 12 heads per layer, ReLU MLP width 256; PART trains only the final row-update MLP. |
 | Rungs and seeds | HAND: formula-set solver; m = 3 PART, attention-only PARTp, and both whole-network TRAIN formats: 10 seeds each; m = 4 retry: 3 seeds per format; final answer-only TRAIN: 10 seeds. |
-| Closed form status | Partial (PART row-write substitution: 20/20 snapshots, 400 test systems; complement not tested). A local attention-removal formula covers only 2/10 final TRAIN seeds. |
+| Closed form status | Partial (PART row-write substitution: 20/20 snapshots, 400 test systems; all 1344 invertible 3×3 systems in the 10 archived best snapshots; complement not tested). A local attention-removal formula covers only 2/10 final TRAIN seeds. |
 | Status | Solved (answer-only TRAIN m = 4, 10/10 final seeds at exact 1.0 on 2000 unseen-matrix tests); last run 2026-11-08. No reliable size transfer. |
 | Weights | [Hugging Face: gf2-elimination](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/gf2-elimination) (weights and split archive). |
 | Reproduce | Not available yet: training code for this task is not yet in `code/`. |
+
+## The circuit at a glance
+
+<img src="../figures/circuits/gf2-elimination.svg" width="640" alt="Earlier trained layers leave an unknown answer code on one residual stream. Mutually exclusive seed families use individual layer-3 heads, a layer-3 head group, or an attention bypass before the final bit writer. Identity matrix with right side 1010 targets solution 1010, not a new model test.">
+
+*Figure S1. Final answer-only networks trained from scratch (10 seeds: 6 head-readout, 2 diffuse and 2 that finish before the last attention) have three last-layer routes and no hand-built answer-only counterpart; only the two early-finish seeds have a partial constant-attention substitute, with complement untested, no complete algorithm and failed size transfer.*
+
+Figure S1 shows mutually exclusive seed families: individual-head readout, a head group or a bypass when the answer is already available.
 
 ## 1. Task and data
 
@@ -58,24 +68,21 @@ The row update is new_r = old_r xor ((old_r[k−1] AND [r ≠ p_k]) old_p_k). Fo
 
 L0–L1 compute the block, row and column frames (BLK, ROW, J) and their next-token versions. A uniform head and 256 position neurons, five anchor heads and paired ReLU steps `relu(4z+3) − relu(4z+2)` provide the frame. L2 uses five 3-D match heads, which fetch values by address, to retrieve OLD, OLDF, K, PB, USED and PX; its MLP computes slot flags and EQ ([glossary](../GLOSSARY.md#hand-built-machinery)). OLDF is the previous row's pivot-used flag, USED marks an already chosen pivot row, and PX is the row address for reading the solution. L3 H0 chooses the pivot with score −B·dist² + G·bit − G·USED − A·ROW; H1 reads the answer bit. Here dist is address distance, ROW is the candidate row index, and B, G and A are fixed score gains. The last MLP has one neuron per 1-cell of the row-update truth table, which lists the output for every Boolean input combination.
 
-In Figure 1, a frozen row and column frame supplies fetched operand bits and the equality flag. Pivot and answer reads run alongside MLP3's XOR-AND row update before the matrix and solution are written. Only MLP3 is trained in PART; the separate attention-only PARTp cell trains different components.
+Table F1 records the parallel row-update and pivot/readout interfaces. A frozen row and column frame supplies fetched operand bits and the equality flag. Pivot and answer reads run alongside MLP3's XOR-AND row update before the matrix and solution are written. Only MLP3 is trained in PART; the separate attention-only PARTp cell trains different components.
 
-```mermaid
-flowchart TD
-    accTitle: Hand-built binary row update and parallel pivot reads
-    accDescr: A frozen row and column frame feeds operand-bit fetches and the equality flag. Pivot and answer reads run alongside the XOR-AND row-update MLP before writing the matrix and solution. Only the update MLP is trained in PART; the separate attention-only PART cell has different trainable components.
-  A["L0-L1: block, row<br/>and column frame"] --> B["L2: fetch OLD, K<br/>and PB; compute EQ"]
-  B --> C["L3 H0-H1: pivot<br/>and answer reads"]
-  B --> D["MLP3: OLD xor (K<br/>and PB and not EQ)"]
-  C --> E["Updated matrix<br/>block, then<br/>solution bits"]
-  D --> E
-  classDef trained fill:gold,stroke:darkgoldenrod,color:black
-  class D trained
-    %% Invisible links constrain vertical layout only, not computation.
-    C ~~~ D
-```
+<details>
+<summary>Technical row-update, pivot and readout interfaces (Table F1)</summary>
 
-*Figure 1. The hand-built row-update circuit. Pivot/answer reads and MLP3's row-bit write have parallel output routes. MLP3 is the only trained part in PART. The separate PARTp cell trains L3 attention instead; it does not share this shading.*
+*Table F1. The hand-built row-update circuit. Pivot/answer reads and MLP3's row-bit write have parallel output routes. MLP3 is the only trained part in PART. The separate PARTp cell trains L3 attention instead; it has different trainable components.*
+
+| Component | Input, operation and output |
+|---|---|
+| Fixed layers 0–1 (L0–L1) | Construct the block, row and column frame. |
+| Fixed layer 2 (L2) | Fetch OLD, K and PB and compute equality flag EQ. These are the row-update inputs defined above. |
+| Fixed layer 3, heads 0–1 (L3 H0–H1) | Read pivot and answer information, alongside the row-update MLP rather than after it. |
+| MLP3, trained in PART | Write OLD xor (K and PB and not EQ). Together with the parallel pivot/answer route, this produces the updated matrix block, then solution bits. |
+
+</details>
 
 HAND uses 13 heads, neurons 256/80/14/32 and 1630 non-zero weights. It was exact on all systems at m = 2, 3, 4 and on 200 random systems at m = 5. These allocations are not measured minimum sizes.
 
@@ -101,35 +108,41 @@ PART has one type in 10/10 seeds: frozen HAND fetches plus a learned cell-detect
 
 The final answer-only networks form three types: L3-head readout in 6/10 seeds (4–10 L3 heads, answer R² at L3 ≤ .26), diffuse L3 readout in 2/10 (no individual L3 head crosses the ablation threshold, but the whole layer is needed; R² at L3 .54), and L2-complete in 2/10 (L3 attention idle; R² at L3 .89).
 
-In Figure 2, earlier trained layers feed alternative last-layer roles: head-based readout, diffuse group readout, or an already-complete representation with replaceable attention. The final MLP and output readout write solution bits. All computational nodes were trained. Partial status covers only constant-attention substitution in the already-complete family, with complement untested; this is a family schematic, not a whole-network formula or minimum circuit.
+Table F2 records the alternative last-layer roles shown above. Earlier trained layers feed alternative last-layer roles: head-based readout, diffuse group readout, or an already-complete representation with replaceable attention. The final MLP and output readout write solution bits. All computational nodes were trained. Partial status covers only constant-attention substitution in the already-complete family, with complement untested; this is a family-role inventory, not a whole-network formula or minimum circuit.
 
-```mermaid
-flowchart TD
-    accTitle: Final binary-elimination readout families
-    accDescr: Earlier trained layers feed head-based, diffuse or already-complete last-layer attention roles before the final MLP and solution output. All computational nodes are trained. Status is partial only for constant-attention substitution in the already-complete family; complement is untested and no whole-network formula is established. This is a family-role schematic, not a minimum circuit.
-  A["Earlier<br/>trained<br/>layers"] --> B["L3<br/>attention: 6<br/>head-readout<br/>seeds"]
-  A --> C["L3 attention<br/>as a group:<br/>2 diffuse<br/>seeds"]
-  A --> D["L3 attention<br/>replaceable:<br/>2<br/>L2-complete<br/>seeds"]
-  B --> E["MLP3 and<br/>output<br/>readout"]
-  C --> E
-  D --> E
-  E --> F["Solution<br/>bits"]
-  classDef trained fill:gold,stroke:darkgoldenrod,color:black
-  class A,B,C,D,E trained
-    %% Invisible links constrain vertical layout only, not computation.
-    B ~~~ C
-    C ~~~ D
-```
+<details>
+<summary>Technical last-attention roles and limited substitution scope (Table F2)</summary>
 
-*Figure 2. Roles of the last-layer attention in the three final TRAIN families; every computational node is trained. Status: Partial for the two L2-complete seeds' constant-attention substitution, with complement untested and no whole-network formula. This is a family-role schematic, not a minimum circuit or an edge-discovery claim.*
+*Table F2. Roles of the last-layer attention in the three final TRAIN families; every computational component is trained. Status: Partial for the two L2-complete seeds' constant-attention substitution, with complement untested and no whole-network formula. This is a family-role inventory, not a minimum circuit or an edge-discovery claim.*
 
-![Final binary-elimination circuit census: 6 of 10 seeds use L3 heads, 2 diffuse L3, and 2 complete the answer by L2.](../figures/gf2-elimination-census.svg)
+| Alternative last-layer role | Recorded scope and common output |
+|---|---|
+| Head readout | 6 of the ten final seeds use layer-3 (L3) attention to read the answer from earlier trained layers. |
+| Diffuse group readout | 2 of the ten final seeds use L3 attention as a group. |
+| Layer-2-complete (L2-complete) | 2 of the ten final seeds already have the needed representation before L3 attention, which is replaceable in the scoped constant-attention test. |
+| Common readout | Each alternative feeds trained MLP3 and the output readout to write solution bits. No whole-network formula or minimum-circuit claim follows. |
 
-*Figure 3. Circuit families in the 10-seed final answer-only run, all at exact 1.0 on 2000 unseen-matrix systems. The L2-complete family's constant-attention substitution is partial evidence only: no complement test is reported, and this is not a whole-network formula. The whole network is trained; the bars do not mark individual trainable components.*
+</details>
+
+Table F3 counts the three last-layer roles rather than drawing them a second time.
+
+*Table F3. Correct answers do not imply one circuit. The dimension-4 final answer-only run has 10 seeds, all at exact 1.0 on 2000 unseen-matrix systems. The whole network is trained. The layer-2-complete family's constant-attention substitution is partial evidence only: no complement test is reported, and this is not a whole-network formula or minimum circuit.*
+
+| Last-layer role | Seeds | What the role means |
+|---|---|---|
+| Layer 3 head readout | 6/10 | Late heads read the answer. |
+| Layer 3 diffuse readout | 2/10 | No single head passes the drop test. |
+| Answer complete by layer 2 (L2) | 2/10 | Layer 3 attention can be replaced by a per-slot constant. |
 
 ## 5. Mechanism and verification
 
 PART replaces MLP3's row-bit write by μ[OLD, K·PB·¬EQ, query], a table of mean writes indexed by live HAND registers and output query. On 944 fit / 400 test systems it keeps native exact 1.0 in 20/20 best/final snapshots. Zeroed, shuffled and negated controls give 0, ≤ .01 and 0; another seed's table gives 1.0. This supports the local update, as in [binary matrix multiplication](gf2-matrix-product.md). Its atlas status is Partial: substitution is supported, but resampling everything outside the claimed circuit (the complement test) was not reported ([glossary](../GLOSSARY.md#verifying-a-circuit)).
+
+A later full-domain check covers the ten archived best PART snapshots. The frozen tables, fitted on 944 rows, make exactly the same
+decisions as the native networks and are task-exact on all 1344 invertible 3×3 systems, covering every matrix and right-hand-side
+vector. There are no missing keys or counterexamples. Zero, mean and update-flip controls each score 0/1344. This upgrades
+substitution coverage only; a matching exhaustive resample-complement certificate is not established. It makes no claim for
+unarchived final tensors or the rejected PARTp forms.
 
 The corresponding PARTp substitution gives 1.0 in 20/20 snapshots, but zero/shuffle controls keep ≥ .2 in 7/20. It is rejected as a separable account of the row update. For TRAIN m = 3, fitted Boolean tables score .05–.06, so no closed form is accepted.
 

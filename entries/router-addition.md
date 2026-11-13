@@ -1,13 +1,10 @@
 # Routing addition by column
 
-Column addition needs the matching digits and incoming carry at each step; a [router scratchpad](../GLOSSARY.md#task-formats)
-gives those digits a shared column label. Four-layer transformers were tested on numbers of up to 16 bits or 6 decimal digits,
-comparing labelled columns, ordinary written steps and direct answers. With hand-built retrieval frozen and position inputs masked
-from the learned stage, the binary and decimal index-scratchpad arms and the decimal direct-answer arms each reached whole-output exact match 1.0 in 10/10 seeds on 1000 doubled-length pairs per seed, while every
-from-scratch format failed at that length. Unmasked router stages on the frozen scaffold transferred imperfectly: source-reported
-mean doubled-length accuracy was .80 in binary and .999 in decimal over ten seeds, so the labels alone did not guarantee exact
-transfer. The task is partly solved, and the frozen-scaffold stage formula is partial: substitution preserved in-range answers, but
-the rest of its circuit was not resampled; a separate subtraction final run has limited complement-test support (Section 5.1).
+For 5+7=12, the network must first find the matching 5 and 7. A [router scratchpad](../GLOSSARY.md#task-formats), written column-by-column working, gives both digits and the step using them the same column label. Four-layer networks were tested with and without hand-built retrieval.
+
+Hiding position signals from the learned stage helped transfer: binary and decimal index-scratchpad settings and decimal direct-answer settings each got whole outputs right in 10/10 runs on 1000 doubled-length pairs per run. Labels alone did not guarantee this. Unmasked stages with supplied retrieval transferred imperfectly; every format trained from scratch failed at doubled length.
+
+The task is partly solved. The [partial formula](../GLOSSARY.md#verifying-a-circuit) keeps in-range answers within the hand-built scaffold, but swapping the other parts' signals between examples was not tested. A [separate subtraction experiment](#51-closed-forms) has two passing tests of the remaining circuit at the best saved states and one failure at the final state, not a full certificate. All output scores supplied correct preceding tokens.
 
 | Fact | Value |
 |---|---|
@@ -21,6 +18,14 @@ the rest of its circuit was not resampled; a separate subtraction final run has 
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
 Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [binary addition](binary-addition.md) for the column step, or [subtraction](subtraction.md) for the borrow rule.
+
+## The circuit at a glance
+
+Figure 3 shows how matching column labels supply one reused local addition stage ([mechanism and verification](#5-mechanism-and-verification)).
+
+<img src="../figures/circuits/router-addition.svg" width="640" alt="Column labels route both digits into one reused addition step. One upward residual stream has separate read/write branches for Find first digit (match column label); Find other digit (match column label); Shared step (digit / carry / label). Decimal example: labelled 5 + 7; given carry 0; Targets: digit 2, carry 1, next label. Task values are illustrative; dashed boxes and branches are not verified.">
+
+*Figure 3. The decimal example illustrates how partly trained router networks in both bases (ten seeds per cell) reuse the hand-built local column step under substitution, a partial form with no complement test, correct earlier tokens supplied and native length transfer not exact in every seed.*
 
 ## 1. Task and data
 
@@ -86,7 +91,7 @@ entry router-addition).
 
 ## 3. Hand-built solution
 
-Every format uses one shared column step per output step (Figure 1). In R, the L0 heads attend by recency, and the L1 heads match the
+Every format uses one shared column step per output step (Table F1). In R, the L0 heads attend by recency, and the L1 heads match the
 operand ids to the line's IDX, with no absolute position. The L2 MLP stage is gated by the op token. It writes the sum s = (a_k + b_k + c)
 mod B (9 / 57 neurons for base 2 / 10), the carry c' = [a_k + b_k > s_k], read from the digit just written (3 neurons), and the
 successor IDX_j to IDX_(j+1) (one neuron per id). Here a_k and b_k are the two digits in column k, c is the incoming carry,
@@ -97,25 +102,24 @@ a derived position; AM adds a lookahead thermometer and is exact for n <= 30. Al
 500 pairs per n, for n <= N+1 and at 2N, except binary AM (exact for n <= 30 only). For subtraction the stage writes s = a - b - c with the borrow [b - a + s >= 1]; a borrow
 is the unit taken from the next column when the current subtraction would otherwise be negative.
 
-```mermaid
-flowchart TD
-    accTitle: Shared column labels route the addition step
-    accDescr: Frozen recency and label-matching heads fetch the two operand digits. Only the stage MLP is trained in PART; it writes a sum digit, outgoing carry and successor column label.
-    T["Line so far:<br/>operand tokens with ids,<br/>ADD s_k CARRY c IDX"] --> L0["L0 heads: recency"]
-    L0 --> L1["L1 heads: match operand ids<br/>to the line's IDX,<br/>fetch a_k and b_k"]
-    L1 --> M["L2 MLP stage,<br/>gated by the op token"]
-    M --> S["sum s =<br/>(a_k + b_k + c) mod B"]
-    M --> C["carry c' =<br/>[a_k + b_k > s_k]"]
-    M --> N["successor<br/>IDX_j to IDX_j+1"]
-    %% Invisible links stack outputs; they are not computational paths.
-    S ~~~ C
-    C ~~~ N
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class M trained
-```
+Table F1 records how shared labels route the two operands to one reused local stage. The operation token chooses whether that stage writes a digit, carry or next label.
 
-*Figure 1. The hand-built router network (format R). The layer-1 heads fetch the operand digits whose id matches the current step id,
-and the layer-2 MLP writes the sum digit, the carry and the next id. The shaded MLP is the stage that PART replaces with a trained MLP.*
+<details>
+<summary>Technical label-matching readers and three local outputs (Table F1)</summary>
+
+*Table F1. The hand-built router network (format R). The layer-1 heads fetch the operand digits whose id matches the current step id, and the layer-2 feed-forward block (MLP) writes the sum digit, the carry and the next id. Only that MLP is trained in PART; the readers stay frozen.*
+
+| Part or query | Information flow and rule |
+|---|---|
+| Line so far | Operand tokens carry ids, with `ADD s_k CARRY c IDX`; IDX names the current column and c the incoming carry. |
+| Layer-0 heads; frozen | Attend by recency to supply the current line's context. |
+| Layer-1 heads; frozen | Match operand ids to IDX and fetch column digits a_k and b_k. |
+| Layer-2 MLP; trained | The op token gates one shared local stage. The outputs below are different queries, not three separate learned layers. |
+| Sum-digit query | Writes s = (a_k + b_k + c) mod B, with B the number base. |
+| Carry query | Uses the digit s_k just written and writes c′ = [a_k + b_k > s_k]. |
+| Next-label query | Writes the successor IDX_j to IDX_(j+1). |
+
+</details>
 
 ## 4. What training finds
 
@@ -196,26 +200,25 @@ bypasses the upstream computation. There is no closed form for TRAIN addition.
 ### 5.2 Discovered circuit
 
 Automatic circuit discovery on the final cell found MLP0 -> MLP1 -> MLP2 -> L3 heads -> MLP3 (+ L3 heads -> out), with 22-32 edges and
-faithfulness .95-.98 on all 3 (Figure 2).
+faithfulness .95-.98 on all 3 (Table F2).
 
-```mermaid
-flowchart TD
-    accTitle: Separate trained subtraction-final component path
-    accDescr: Trained MLPs feed trained last-layer heads and a final digit table, with an additional direct head-to-output path. This is the separate subtraction final, not an addition circuit. The formula is partial: two best-snapshot complements pass, while one tested final complement fails, and table keys are supplied externally.
-    M0["MLP0"] --> M1["MLP1"]
-    M1 --> M2["MLP2"]
-    M2 --> H3["L3 heads"]
-    H3 --> M3["MLP3: table of a_k, b_k, borrow"]
-    M3 --> O["output digit"]
-    H3 --> O
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class M0,M1,M2,H3,M3 trained
-```
+Table F2 retains the separately scoped subtraction circuit and its mixed snapshot controls. It is not a mechanism for the wholly trained addition networks.
 
-*Figure 2. The circuit discovered in the subtraction final cell (TRAIN AL, base 10), 22-32 edges, faithfulness .95-.98. MLP3 is replaced
-by a table of (a_k, b_k, borrow), partial: the complement resample is accepted on two best snapshots (.902 / .950) and fails on one final
-snapshot (.127), where the L3 heads also write the answer. All displayed MLPs and L3 heads are trained and shaded; the output node is
-not a trained component.*
+<details>
+<summary>Technical separate subtraction path and failed final control (Table F2)</summary>
+
+*Table F2. The circuit discovered in the subtraction final cell (TRAIN AL, base 10), 22-32 edges, faithfulness .95-.98. MLP3 is replaced by a table of (a_k, b_k, borrow), partial: the complement resample is accepted on two best snapshots (.902 / .950) and fails on one final snapshot (.127), where the L3 heads also write the answer. All listed feed-forward blocks (MLPs) and layer-3 heads are trained; the output is not a trained component.*
+
+| Part or separate test | Route and scope |
+|---|---|
+| Early feed-forward blocks; trained | MLP0 feeds MLP1, then MLP2, then layer-3 heads in the discovered component path. |
+| Layer-3 heads; trained | Feed MLP3 and also write directly to the output. The direct path matters in the tested final snapshot. |
+| Final feed-forward block MLP3; trained | Its replacement is a table keyed on externally supplied a_k, b_k and borrow labels; it is not a recovered internal key computation. |
+| Digit output | Receives both the MLP3 write and the direct layer-3-head contribution. |
+| Mixed complement results | Best .902 / .950 pass in two tested snapshots; final .127 fails in one. Partial status does not become whole-network verification. |
+| Task boundary | These 22-32 edges and faithfulness .95-.98 describe the separate base-10 subtraction final, not a TRAIN-addition formula. |
+
+</details>
 
 ### 5.3 Relation to the hand-built network and to published work
 

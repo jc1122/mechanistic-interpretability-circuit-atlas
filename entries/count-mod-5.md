@@ -1,11 +1,8 @@
 # Count mod 5
 
-Count how often a letter occurs in a line, then give the remainder after division by 5. Only a small feed-forward network was
-trained; a frozen, hand-built transformer supplied the count in several encodings. All 30 networks (10 seeds at each of three
-training fractions) reached held-out accuracy ≥ .99 and learned a count-to-remainder lookup that largely ignores line length.
-A two-cosine formula describes that lookup, but equal-amplitude cosines simply mark which counts share a remainder, so this fit
-does not establish an internal trigonometric mechanism. The task is solved at that criterion; the closed form is partial, supported
-by substitution on all 1080 count/length cells, with no resample test of the circuitry outside the claimed mechanism.
+Seven a's in a line leave a remainder of 2 after division by 5, however many b's surround them. A fixed hand-built transformer supplied the count in several representations, and only a small output-processing network learned to turn it into a remainder. All 30 networks, 10 independent runs at each of three training fractions, reached held-out accuracy ≥ .99 by looking up the count's remainder and largely ignoring line length.
+
+A formula using two cosine waves describes that lookup, but here the waves simply group counts with the same remainder; the fit does not show that the network internally uses trigonometry. The task is solved at that criterion and the formula is [partial](../GLOSSARY.md#verifying-a-circuit): replacement works on all 1080 count/length combinations, including training inputs, without a test changing activity outside the proposed circuit.
 
 | Fact | Value |
 |---|---|
@@ -17,6 +14,14 @@ by substitution on all 1080 count/length cells, with no resample test of the cir
 | Status | Solved (frozen-feature MLP, 30/30 with held-out accuracy ≥ .99); last run 2026-11-04 |
 | Weights | [Hugging Face: count-mod-5](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/count-mod-5) (hand-built base in `_shared/m2`) |
 | Reproduce | [Commands](#24-reproduction), run from `code/` |
+
+## The circuit at a glance
+
+<img src="../figures/circuits/count-mod-5.svg" width="640" alt="The frozen transformer head counts seven a tokens using the reciprocal signal one eighth. Its residual stream ends before two external frozen count indicators: count 2 is off and count 7 is on. Both feed nearly the same learned remainder-2 pattern in the feed-forward block. The task answer is 2; this is a partial lookup account, not a claim of identical individual neurons.">
+
+*Figure S1. Frozen counting matches the hand-built reference, while all 30 trained feed-forward blocks (MLPs; 10 seeds at each fraction .4/.6/.8) group counts such as 2 and 7 into nearly the same remainder pattern; this partial fit uses all 1080 cells, including training cells, with complement resampling and transfer to unseen counts untested.*
+
+Figure S1 shows count indicators 2 and 7 converging on the learned remainder-2 group: seven a’s turn on the count-7 indicator, while the count-2 indicator stays off; the transformer and feature menu stay frozen.
 
 ## 1. Task and data
 
@@ -101,7 +106,7 @@ are published on Hugging Face at
 
 ## 3. Hand-built solution
 
-The hand-built network counts with a single attention head and decodes the count with step functions (Figure 1).
+The hand-built network counts with a single attention head and decodes the count with step functions (Table F1).
 
 The count is computed by layer 4, head 1 of m2. Its query is the question letter, supplied by an earlier has-letter head. Every key
 token equal to that letter, and the newline that ends the counted line, scores 300, plus a recency term of 3 per position of the
@@ -113,40 +118,22 @@ The menu decodes X with pairs of GELU steps, `step(z; c, s) = (gelu(s(z − c) +
 [c ≥ k] = step(−X; −m_k, 32/g_k), where m_k = (1/k + 1/(k+1))/2 is the midpoint and g_k = 1/k − 1/(k+1) the gap between neighbouring
 values of X. The one-hot unit is the difference of neighbouring thermometer units. The decoder is exact on all cells.
 
-In Figure 1, the frozen matching head writes reciprocal count X, and a position scalar supplies length L. Step decoders form count indicators; these, the scalar count, length codes and distractors enter the sole trained MLP to score remainders. The diagram separates the frozen encodings from the learned readout.
+Table F1 records the fixed feature menu alongside the worked circuit above. The frozen matching head writes reciprocal count X, and a position scalar supplies length L. Step decoders form count indicators; these, the scalar count, length codes and distractors enter the sole trained MLP to score remainders. The table separates the frozen encodings from the learned readout.
 
-```mermaid
-%%{init: {"themeVariables": {"fontSize": "24px"}, "flowchart": {"nodeSpacing": 20, "rankSpacing": 40, "padding": 10}}}%%
-flowchart TD
-    accTitle: Hand-built counting and frozen count encodings
-    accDescr: A frozen matching head writes the reciprocal count and a position scalar supplies length. Step decoders construct one-hot and thermometer features; these and distractors enter the sole trained MLP, which scores the remainders.
-    P["Prompt:<br/>COUNT a:<br/>line of a's<br/>and b's"] --> H["m2 layer 4<br/>head 1:<br/>uniform<br/>attention<br/>over the c<br/>matches and<br/>the newline"]
-    H --> X["X = 1/(c+1)"]
-    P --> R["m2 position<br/>scalar R,<br/>gives L"]
-    X --> D["Menu decode:<br/>GELU step<br/>ladder at<br/>the<br/>midpoints<br/>m_k"]
-    D --> OU["one-hot of c<br/>(ou)"]
-    D --> TU["thermometer<br/>of c (tu)"]
-    X --> SU["scalar X<br/>(su)"]
-    R --> LB["scalar,<br/>one-hot and<br/>thermometer<br/>of L (sv,<br/>ov, tv)"]
-    OU --> M["TRAINED:<br/>MLP, 256<br/>ReLU units"]
-    TU --> M
-    SU --> M
-    LB --> M
-    DS["distractors:<br/>brackets,<br/>copy<br/>pointer,<br/>last letter"] --> M
-    M --> Y["5 logits: c<br/>mod 5"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class M trained
-    %% Invisible links constrain vertical layout only, not computation.
-    X ~~~ R
-    R ~~~ D
-    OU ~~~ TU
-    TU ~~~ SU
-    SU ~~~ LB
-    LB ~~~ DS
-```
+<details>
+<summary>Technical supplied count/length menu and trained readout (Table F1)</summary>
 
-*Figure 1. The hand-built network and the trained stage. Frozen parts, set by formula, compute the count c through layer 4, head 1
-of m2 and re-encode it, together with the line length L, in the 326-wide menu; the shaded MLP is the only trained part.*
+*Table F1. The hand-built network and the trained stage. Frozen parts, set by formula, compute count c through layer 4, head 1 of m2 and re-encode it, together with line length L, in the 326-wide menu; the menu-reading MLP is the only trained part.*
+
+| Component or feature route | Input, operation and output |
+|---|---|
+| Fixed count head | Read COUNT a: and the line of a's and b's. m2 layer 4, head 1 attends uniformly over the c matches and the newline, giving X = 1/(c+1). |
+| Fixed length route | m2 position scalar R gives line length L. |
+| Fixed count decoder | A GELU step ladder at midpoints m_k reads X to form one-hot count indicators (ou) and thermometer count flags (tu). The scalar X route is su. |
+| Fixed length codes and distractors | Scalar, one-hot and thermometer codes of L are sv, ov and tv. Brackets, copy pointer and last letter are distractors. All enter the menu alongside count codes. |
+| Trained menu-reading MLP | 256 ReLU units read the supplied menu and write 5 scores (logits) for c mod 5. |
+
+</details>
 
 ## 4. What training finds
 
@@ -197,32 +184,25 @@ values from other inputs. The two amplitudes are nearly equal
 (A ≈ B, for example 6.77 and 6.68). With A = B the profile is a delta: 2 at c ≡ r and −1/2 elsewhere, in units of A. This fit describes a flat lookup and does not by itself establish an internal
 [Fourier mechanism](../GLOSSARY.md#analysis-measures), in which numbers are represented by angles.
 
-The weights show how the lookup is wired (Figure 2; numbers in Appendix A). The largest first-layer weights sit on the one-hot of c
+The weights show how the lookup is wired (Table F2; numbers in Appendix A). The largest first-layer weights sit on the one-hot of c
 (block ou), so each count value is mapped by its own column to the hidden pattern of its residue class, and the logits take nearly the
 same value for c and c + 5 (14.25 and 13.40 for c = 0 and 5 in Table A1). The L blocks receive small weights whose effect the network
 averages out, since setting L to its mean keeps .995–1.000.
 
-In Figure 2, count indicators feed the trained input weights and a hidden remainder pattern before the output scores. Length inputs have small effects that can be replaced by their mean. The equal-amplitude cosine profile describes an ideal lookup, not identical native scores or a trigonometric mechanism. Status remains partial, with complement untested.
+Table F2 records remainder pooling and distinguishes the ideal profile from native scores. Count indicators feed the trained input weights and a hidden remainder pattern before the output scores. Length inputs have small effects that can be replaced by their mean. The equal-amplitude cosine profile describes an ideal lookup, not identical native scores or a trigonometric mechanism. Status remains partial, with complement untested.
 
-```mermaid
-flowchart TD
-    accTitle: Learned count-to-remainder lookup
-    accDescr: Count indicators feed trained input weights and a hidden remainder pattern before the output logits. Length inputs have small effects that can be replaced by their mean. The equal-amplitude cosine profile is an ideal lookup description, not identical native logits or proof of trigonometric computation. Status is partial, with complement untested.
-    OU["one-hot of c (ou),<br/>largest W1 column<br/>norm"] --> W["W1 columns: c and<br/>c + 5 map to<br/>nearly the same<br/>hidden pattern"]
-    TU["thermometer of c<br/>(tu), redundant<br/>copy"] --> W
-    W --> H["hidden pattern of<br/>residue class r =<br/>c mod 5"]
-    H --> Y["logits: 2A at r =<br/>c mod 5, -A/2<br/>elsewhere"]
-    L["L blocks (sv, ov,<br/>tv), small weights"] -.->|"mean replacement keeps accuracy"| H
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class W,H,Y trained
-    %% Invisible links constrain vertical layout only, not computation.
-    OU ~~~ TU
-    W ~~~ L
-```
+<details>
+<summary>Technical learned pooling and ideal-versus-native scores (Table F2)</summary>
 
-*Figure 2. The trained readout pools counts by remainder. The equal-height delta is the ideal A = B output profile; learned logits
-are nearly flat rather than identical. Shading marks the trained MLP's input weights, hidden pattern and output weights. Status:
-partial, supported by substitution, with the complement not tested.*
+*Table F2. The trained readout pools counts by remainder. The equal-height delta is the ideal A = B output profile; learned logits are nearly flat rather than identical. The MLP's input weights, hidden pattern and output weights are trained. Status: partial, supported by substitution, with the complement not tested. The equal-amplitude cosine description does not prove trigonometric computation.*
+
+| Trained readout part | Supplied input and recorded behaviour |
+|---|---|
+| Input weights W1 | One-hot count indicators ou have the largest W1 column norm; thermometer flags tu give a redundant copy. Columns for c and c + 5 map to nearly the same hidden pattern. |
+| Hidden response | Represents residue class r = c mod 5. Length blocks sv, ov and tv have small weights; replacing their effects by the mean keeps accuracy. |
+| Ideal output profile | Scores are 2A at r = c mod 5 and −A/2 elsewhere in the ideal A = B profile. Native scores are nearly flat, not identical. |
+
+</details>
 
 The two controls change the frozen encodings. A random frozen base of the same shape reached .24–.40 test accuracy; its
 residual stream holds c linearly (ridge R² 1.000) but carries no residue feature. A menu with only the scalars reached .29–.34 against

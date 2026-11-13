@@ -1,13 +1,10 @@
 # Binary long division and long-hand square root
 
-Long division and long-hand square root both build an answer by comparing a running remainder with a trial value, then subtracting
-when the comparison succeeds. Three-layer transformers were tested on binary versions of these tasks, with either a direct answer or
-a written record of each step. With hand-built retrieval frozen, division scratchpad training reached held-out whole-output exact
-match 1.0 in 10/10 seeds at both ranges. From-scratch answer-only division reached exact match ≥ .99 in 10/10 wider-range seeds on 30,720 held-out pairs per seed despite
-failing at the smaller range; the wider runs also used 16× as many training examples, so they do not isolate data size as the cause.
-The combined task is partly solved, with no fully trained network exact over its whole input domain, and the scratchpad formula has
-partial status: substituting hand-built compare-and-subtract can repair native errors, but no test resampled everything outside the
-claimed circuit ([verification glossary](../GLOSSARY.md#verifying-a-circuit)).
+Dividing 7 by 2 gives quotient 3 and remainder 1. A long-division step compares the divisor with the running remainder and subtracts if it fits; long-hand square root uses similar steps. Three-layer networks learned binary versions, answering directly or writing working on a [scratchpad](../GLOSSARY.md#task-formats).
+
+Answer-only division failed at the smaller range but reached whole-output exact match ≥ .99 in 10/10 wider-range runs on 30,720 held-out pairs per run. Those runs also used 16× as many training examples; changed ranges and output lengths prevent attributing the improvement to data size alone.
+
+The combined task is partly solved: no fully trained network was exact over its whole domain. With hand-built retrieval, the compare-and-subtract [formula remains partial](../GLOSSARY.md#verifying-a-circuit). Replacement matches division on every reachable input, but repairs square-root errors, including some before the last step. Matching whole-domain tests that swap the other parts' signals between examples are not established. All output scores supplied correct preceding tokens.
 
 | Fact | Value |
 |---|---|
@@ -21,6 +18,14 @@ claimed circuit ([verification glossary](../GLOSSARY.md#verifying-a-circuit)).
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
 Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [output-order base conversion](output-order-base-conversion.md) for digit-order effects, or [quadratic roots](quadratic-roots.md) for a supplied-program executor.
+
+## The circuit at a glance
+
+Figure S1 shows the two frozen reader groups meeting at the same learned step, illustrated at the last remainder-bit query of 7 / 2.
+
+<a href="../figures/circuits/long-division-square-root.svg"><img src="../figures/circuits/long-division-square-root.svg" width="640" alt="Parallel frozen reader groups write working/trial and decision/prefix values to one residual stream, then a shared learned block writes the next bit. At the last remainder query of 7/2, working 3, trial 2, given decision 1 and prefix value 0 target bit 1. The arithmetic is not complement-verified."></a>
+
+*Figure S1 shows frozen readers supplying a shared learned step in the division and square-root scratchpad cells with one learned feed-forward block on frozen readers at both tested ranges, matching the hand-built scaffold while retaining native token/step offsets; the compare/subtract replacement is Partial, can repair errors and has no complement test in this teacher-forced setting ([evidence](#52-circuit-probes)).*
 
 ## 1. Task and data
 
@@ -97,7 +102,7 @@ shape, fp32 test accuracy, recorded accuracy, sha256). Each file was reloaded bi
 The hand-built networks are exact on all inputs at both ranges (fp32, margin 10), in all 8 cells (2 operations × 2 formats × 2
 ranges). The scratchpad step needs 14–34 neurons, while answer only needs tables of compares. A scratchpad shrinks the circuit: division needs 14 against 186 neurons and square root 20 against 46 (8-bit).
 
-In format B (Figure 1), layer-1 heads write four registers: X = 2·rem + next bit (square root: 4·rem + 2 bits), the working value;
+In format B (Table F1), layer-1 heads write four registers: X = 2·rem + next bit (square root: 4·rem + 2 bits), the working value;
 TT = D (square root: 4p + 1, where p is the root so far), the threshold; B, the step's own bit; and W, the remainder bits already
 written. One MLP serves all steps: bit = [X ≥ TT], and the remainder bits are steps of X − B·TT − W. Sizes are 4 heads + 14 neurons
 for 8-bit division, 4 + 20 for 8-bit square root, and 7 + 18 and 7 + 34 at the wide range.
@@ -107,21 +112,22 @@ In format A at 8 bits, the layer-1 MLP holds all thresholds: division uses 255 c
 prefix already written. A division quotient bit is [N − d(Wq + 2^j) ≥ 0] gated by the one-hot of D (4 + 525); square root uses one
 step [N − SQ − T ≥ 0] for all outputs (4 + 3).
 
-```mermaid
-flowchart TD
-    accTitle: Hand-built compare-and-subtract scratchpad
-    accDescr: Frozen heads provide the working remainder, trial threshold, current bit and written remainder prefix. The marked compare MLP is the only trained stage in PART.
-    P["Prompt and scratchpad<br/>so far"] --> H["layer-1 heads"]
-    H --> REG["Registers read together:<br/>X = 2 rem + next bit;<br/>sqrt: 4 rem + 2 bits<br/>TT = D; sqrt: 4p + 1<br/>B = own bit<br/>W = remainder bits<br/>already written"]
-    REG --> M["compare MLP,<br/>shared by all steps"]
-    M --> OUT["Outputs:<br/>bit = X >= TT<br/>remainder bits:<br/>steps of X - B TT - W"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class M trained
-```
+Table F1 records the four inputs read together by the reused step. Division and square root use different working values and thresholds, not a different learned block for every output.
 
-*Figure 1. The hand-built scratchpad step (format B), shared by division and square root. Frozen heads write the registers X, TT, B
-and W; one MLP compares and subtracts. The shaded MLP (layer 1 at 8 bits, layer 2 at the wide range) is the part that PART replaces
-with a trained stage.*
+<details>
+<summary>Technical shared compare/subtract inputs and outputs (Table F1)</summary>
+
+*Table F1. The hand-built scratchpad step (format B), shared by division and square root. Frozen heads write the registers X, TT, B and W; one feed-forward block (MLP) compares and subtracts. That MLP (layer 1 at 8 bits, layer 2 at the wide range) is the part that PART replaces with a trained stage.*
+
+| Part or value | Role in the shared step |
+|---|---|
+| Prompt and scratchpad so far | Feed the frozen layer-1 readers in the 8-bit design. |
+| Working value X; frozen read | Division: 2·rem + next bit. Square root: 4·rem + 2 bits, where rem is the previous remainder. |
+| Trial threshold TT; frozen read | Division: divisor D. Square root: 4p + 1, where p is the root written so far. |
+| Decision B and prefix W; frozen reads | B is the step's own decision bit; W is the value of remainder bits already written. They are read together with X and TT, not sequential learned stages. |
+| Shared compare MLP; trained in PART | Writes bit = [X ≥ TT]; remainder-bit thresholds read X − B·TT − W. The same block serves all steps. |
+
+</details>
 
 ## 4. What training finds
 
@@ -138,7 +144,7 @@ lengths; it is not a measured necessary factor.
 |---|---|---|
 | division B PART, 8-bit and wide | 10/10 exact | 90% test by step 250–500 |
 | square root B PART, 8-bit (annealed) | .91–1.0 (2/10 = 1.0) | all errors at the last step |
-| square root B PART, wide | .985–.992 | all errors at the last step (largest x, T) |
+| square root B PART, wide | .985–.992 | errors concentrate at the last step, but some occur only earlier (Section 4.1) |
 | A PART, 8-bit | ≤ .16 | Q exact 4 %, r0 = n0 ⊕ b0 at chance |
 | A PART, wide, constant lr | ≤ .006 | |
 | square root A PART, wide, annealed | .12–.29 | rises only as lr → 0 |
@@ -166,8 +172,13 @@ retained at their recorded precision. The two width packs are not extra independ
 
 The PART B stage is one per-step circuit shared by all steps. The step Jaccard, the overlap between the neuron sets used at different steps, is
 .985 for 8-bit division (7.9 of 8 steps per neuron), .98 for wide division (11.9/12) and .87 for square root (6.5/7). The stage reads
-the hand-built heads and uses 600–700 neurons, against HAND's 14–34. In square root B every error falls at the last step, where x and T
-are largest.
+the hand-built heads and uses 600–700 neurons, against HAND's 14–34.
+
+For the wide annealed PART square-root stage, errors concentrate at the last step but are not exclusive to it. Enumeration of all
+16,384 inputs per seed found 202, 178, 183, 200, 144, 208, 186, 203, 190 and 223 erroneous inputs in seeds 0–9, respectively. These
+include 30, 26, 28, 25, 22, 32, 38, 32, 43 and 52 inputs with errors only before the last step. For example, seed 0 at N=1148–1150
+and seeds 1/9 at N=1020–1022 err at the step 6 remainder query (of 7 steps), near the 32 remainder-bit threshold. These examples do
+not imply that every earlier exception has the same query.
 
 ### 4.2 Answer only, partly trained
 
@@ -207,6 +218,13 @@ Agreement with the networks on all (step, x, T) grid states is .989 for division
 reaches (test 1.0). Format A has no closed form. The acceptance rests on substitution; a resample ablation of the complement of the
 PART stage was not reported, so the status is partial.
 
+For all twenty archived division B seeds, replacing the learned stage with HAND's stage preserves every decision on every reachable
+input: 3840 inputs per seed at the small range and 61,440 per seed at the wide range. Wide annealed square-root substitutions instead
+repair 144–223 native errors per seed across all 16,384 radicands, the numbers whose square roots are requested. The mathematical
+stage gets every answer right, but does not reproduce these networks' original errors. This does not revoke the separately verified
+state/token/query-dependent neural forms. Matching exhaustive tests resampling the remaining circuit are not established here.
+Other archived square-root candidate cells remain separate; they are not silently counted as accepted discoveries.
+
 ### 5.2 Circuit probes
 
 Circuit probes were run on 2026-11-06 (Table 4). Their historical label “verified” meant a causal intervention plus substitution on
@@ -228,28 +246,27 @@ seed 3).
 
 In PART, X = 2r + next bit (division) or 4r + next pair (square root), T = D or 4p + 1, b = [X ≥ T] and r′ = X − bT; remainder bit k
 is [X − bT − W ≥ 2^k], where p is the written root and W the written remainder prefix. Native units of the form
-`a_j = ReLU(α_j X + β_j T + γ_j b + δ_j W + η_{j,token} + κ_{j,query})` substitute for all 1024 neurons with drop 0 (Figure 2), but
+`a_j = ReLU(α_j X + β_j T + γ_j b + δ_j W + η_{j,token} + κ_{j,query})` substitute for all 1024 neurons with drop 0 (Table F2), but
 they keep learned step-dependent offsets: averaging the query intercepts across steps leaves .841 (division) / .164 (square root), and
 snapping the normals to (1, −1, −1) gives .404 / .813.
 
-```mermaid
-flowchart TD
-    accTitle: Learned compare-and-subtract neuron banks
-    accDescr: Trained native units retain token and step offsets and feed working-value and threshold banks. Hand-built substitution can repair errors; the formula is partial and the complement was not tested.
-    R["frozen heads: X, T, b, W"] --> U["1024 native units:<br/>ReLU of a linear form<br/>in X, T, b, W,<br/>plus token and query offsets"]
-    U --> XW["48-unit X - W bank:<br/>remainder thresholds"]
-    U --> TB["90- and 223-unit banks<br/>reading the trial T"]
-    XW --> O["bit b = X >= T;<br/>remainder bit k =<br/>X - bT - W >= 2^k"]
-    TB --> O
-    %% Invisible link stacks parallel banks; it is not a computational path.
-    XW ~~~ TB
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class U,XW,TB trained
-```
+Table F2 records subgroups within the same learned stage, not additional layers in sequence. Retaining token and query offsets is necessary to describe its native responses.
 
-*Figure 2. The scratchpad stage that PART training finds. Shaded nodes are trained units, grouped into banks reading X − W and T;
-the native formulas retain token- and step-dependent offsets. Status is partial: hand-built compare-and-subtract substitutes exactly
-on reachable inputs, sometimes repairing native errors; the PART complement was not tested.*
+<details>
+<summary>Technical native neuron banks and substitution limits (Table F2)</summary>
+
+*Table F2. The scratchpad stage that PART training finds. Trained units form banks reading X − W and T; the native formulas retain token- and step-dependent offsets. Status is partial: hand-built compare-and-subtract substitutes exactly on reachable inputs, sometimes repairing native errors; the PART complement was not tested.*
+
+| Part or test | Input, response and scope |
+|---|---|
+| Frozen heads | Supply X, trial T, decision b and written prefix W together. |
+| 1024 native trained units | Each has response ReLU(α_j X + β_j T + γ_j b + δ_j W + η_{j,token} + κ_{j,query}). Token and step/query offsets remain in the fitted neural form. |
+| 48-unit X − W bank | A subgroup reading the working value minus the written prefix for remainder thresholds. |
+| 90- and 223-unit trial-reading banks | Subgroups reading T in division and square root. These banks are parts of the same stage, not successive processing layers. |
+| Mathematical decision target | Bit b = [X ≥ T]; remainder bit k = [X − bT − W ≥ 2^k]. Exact hand-built substitution on reachable inputs can repair native square-root errors. |
+| Acceptance limit | Partial substitution support is not a native-algorithm or complement certificate. Native token/query offsets must not be replaced silently by a step-independent arithmetic claim. |
+
+</details>
 
 For TRAIN only a behavioural control exists: `c = −w·x + K(2s − 1)`, with s = [m ≥ −.5] and w = unembed('1') − unembed('0'), where the
 margin m is computed externally from the operands and the tokens already written (division A: N − D(P + 2^j) at quotient queries,

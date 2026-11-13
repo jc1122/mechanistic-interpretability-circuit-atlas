@@ -1,50 +1,55 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="540" height="1233.0" viewBox="0 0 360 822" role="img" aria-labelledby="title desc">
-<title id="title">Held-out answers improved after the training set fitted</title>
-<desc id="desc">Held-out accuracy on each seed&#x27;s fixed split of 3481 pairs; training fraction .4. Ten seeds, eight recorded checkpoints; lines only join recorded observations. Training accuracy reached 99% by step 500, but final held-out accuracy did not. Seeds 5 and 8 are highlighted for readability, not separate experimental arms. Seed 0: 0k steps .02, 1k steps .00, 20k steps .02, 40k steps .22, 60k steps .59, 100k steps .80, 200k steps .92, 300k steps .95; Seed 1: 0k steps .02, 1k steps .00, 20k steps .02, 40k steps .27, 60k steps .62, 100k steps .83, 200k steps .91, 300k steps .94; Seed 2: 0k steps .02, 1k steps .00, 20k steps .01, 40k steps .24, 60k steps .60, 100k steps .83, 200k steps .91, 300k steps .92; Seed 3: 0k steps .02, 1k steps .00, 20k steps .04, 40k steps .31, 60k steps .60, 100k steps .82, 200k steps .92, 300k steps .93; Seed 4: 0k steps .02, 1k steps .00, 20k steps .01, 40k steps .23, 60k steps .50, 100k steps .80, 200k steps .91, 300k steps .94; Seed 5: 0k steps .02, 1k steps .00, 20k steps .01, 40k steps .17, 60k steps .41, 100k steps .69, 200k steps .87, 300k steps .91; Seed 6: 0k steps .02, 1k steps .00, 20k steps .01, 40k steps .30, 60k steps .60, 100k steps .82, 200k steps .92, 300k steps .94; Seed 7: 0k steps .02, 1k steps .00, 20k steps .01, 40k steps .27, 60k steps .55, 100k steps .84, 200k steps .90, 300k steps .93; Seed 8: 0k steps .02, 1k steps .00, 20k steps .01, 40k steps .23, 60k steps .55, 100k steps .87, 200k steps .96, 300k steps .97; Seed 9: 0k steps .02, 1k steps .00, 20k steps .01, 40k steps .27, 60k steps .62, 100k steps .88, 200k steps .95, 300k steps .96.</desc>
-<metadata>CC BY 4.0. Compact redraw; recorded values unchanged. Original figure metadata retained.</metadata>
-<style>text{font-family:system-ui,sans-serif}.fg{fill:#172b3a}.bg{fill:#ffffff}.panel{fill:#f0f4f8;stroke:#63758b;stroke-width:1.5}.trained{fill:#fff0ba;stroke:#63758b;stroke-width:1.5}.ink{fill:#172b3a}.grid{stroke:#7d8c98}.track{fill:#e1e6eb}.blue{fill:#176b9b}.amber{fill:#a05a00}.grey{fill:#697681}.light{fill:#e1e6eb;stroke:#63758b}.blue-line{stroke:#176b9b}.amber-line{stroke:#a05a00}.grey-line{stroke:#697681}
-@media(prefers-color-scheme:dark){.fg{fill:#f0f6fc}.bg{fill:#161b22}.panel{fill:#263746;stroke:#9bacc0}.trained{stroke:#e3b341}.grid{stroke:#8b949e}.track{fill:#303c49}.blue{fill:#58a6ff}.amber{fill:#e3b341}.grey{fill:#a0adba}.light{fill:#303c49;stroke:#9bacc0}.blue-line{stroke:#58a6ff}.amber-line{stroke:#e3b341}.grey-line{stroke:#a0adba}}</style>
-<rect width="360" height="822" rx="8" class="bg"/>
-<text x="20" y="24" font-size="18" class="fg" font-weight="600" text-anchor="start">Modular addition: recorded</text>
-<text x="20" y="50" font-size="18" class="fg" font-weight="600" text-anchor="start">checkpoints</text>
-<text x="20" y="85" font-size="16" class="fg" font-weight="400" text-anchor="start">Mod 59; 10 seeds; 3481 possible</text>
-<text x="20" y="108" font-size="16" class="fg" font-weight="400" text-anchor="start">input pairs; fixed split per seed;</text>
-<text x="20" y="131" font-size="16" class="fg" font-weight="400" text-anchor="start">training fraction .4.</text>
-<text x="20" y="175" font-size="16" class="fg" font-weight="400" text-anchor="start">Accuracy</text>
-<path d="M52,393 L322,393" class="grid" fill="none" stroke-width="2"/>
-<text x="43" y="398" font-size="16" class="fg" font-weight="400" text-anchor="end">0</text>
-<path d="M52,290.5 L322,290.5" class="grid" fill="none" stroke-width="2"/>
-<text x="43" y="295.5" font-size="16" class="fg" font-weight="400" text-anchor="end">.50</text>
-<path d="M52,188 L322,188" class="grid" fill="none" stroke-width="2"/>
-<text x="43" y="193" font-size="16" class="fg" font-weight="400" text-anchor="end">1.00</text>
-<text x="52.0" y="420" font-size="16" class="fg" font-weight="400" text-anchor="middle">0k</text>
-<text x="142.0" y="420" font-size="16" class="fg" font-weight="400" text-anchor="middle">100k</text>
-<text x="232.0" y="420" font-size="16" class="fg" font-weight="400" text-anchor="middle">200k</text>
-<text x="322.0" y="420" font-size="16" class="fg" font-weight="400" text-anchor="middle">300k</text>
-<polyline data-seed="0" data-field="test_acc" points="52.0,388.9 52.9,393.0 70.0,388.9 88.0,347.9 106.0,272.05 142.0,229.0 232.0,204.4 322.0,198.25" class="grey-line" fill="none" stroke-width="1"/>
-<polyline data-seed="1" data-field="test_acc" points="52.0,388.9 52.9,393.0 70.0,388.9 88.0,337.65 106.0,265.9 142.0,222.85 232.0,206.45 322.0,200.3" class="grey-line" fill="none" stroke-width="1"/>
-<polyline data-seed="2" data-field="test_acc" points="52.0,388.9 52.9,393.0 70.0,390.95 88.0,343.8 106.0,270.0 142.0,222.85 232.0,206.45 322.0,204.4" class="grey-line" fill="none" stroke-width="1"/>
-<polyline data-seed="3" data-field="test_acc" points="52.0,388.9 52.9,393.0 70.0,384.8 88.0,329.45 106.0,270.0 142.0,224.9 232.0,204.4 322.0,202.35" class="grey-line" fill="none" stroke-width="1"/>
-<polyline data-seed="4" data-field="test_acc" points="52.0,388.9 52.9,393.0 70.0,390.95 88.0,345.85 106.0,290.5 142.0,229.0 232.0,206.45 322.0,200.3" class="grey-line" fill="none" stroke-width="1"/>
-<polyline data-seed="6" data-field="test_acc" points="52.0,388.9 52.9,393.0 70.0,390.95 88.0,331.5 106.0,270.0 142.0,224.9 232.0,204.4 322.0,200.3" class="grey-line" fill="none" stroke-width="1"/>
-<polyline data-seed="7" data-field="test_acc" points="52.0,388.9 52.9,393.0 70.0,390.95 88.0,337.65 106.0,280.25 142.0,220.8 232.0,208.5 322.0,202.35" class="grey-line" fill="none" stroke-width="1"/>
-<polyline data-seed="9" data-field="test_acc" points="52.0,388.9 52.9,393.0 70.0,390.95 88.0,337.65 106.0,265.9 142.0,212.6 232.0,198.25 322.0,196.20000000000002" class="grey-line" fill="none" stroke-width="1"/>
-<polyline data-seed="5" data-field="test_acc" points="52.0,388.9 52.9,393.0 70.0,390.95 88.0,358.15 106.0,308.95 142.0,251.55 232.0,214.65 322.0,206.45" class="blue-line" fill="none" stroke-width="2.5" stroke-dasharray="7 4"/>
-<polyline data-seed="8" data-field="test_acc" points="52.0,388.9 52.9,393.0 70.0,390.95 88.0,345.85 106.0,280.25 142.0,214.65 232.0,196.20000000000002 322.0,194.15" class="amber-line" fill="none" stroke-width="2.5" stroke-dasharray="2 4"/>
-<text x="20" y="450" font-size="16" class="fg" font-weight="400" text-anchor="start">Training updates (k = thousands)</text>
-<path d="M20,477 L55,477" class="blue-line" fill="none" stroke-width="2.5" stroke-dasharray="7 4"/>
-<text x="66" y="482" font-size="16" class="fg" font-weight="400" text-anchor="start">Test: seed 5</text>
-<path d="M20,504 L55,504" class="amber-line" fill="none" stroke-width="2.5" stroke-dasharray="2 4"/>
-<text x="66" y="509" font-size="16" class="fg" font-weight="400" text-anchor="start">Test: seed 8</text>
-<path d="M20,531 L55,531" class="grey-line" fill="none" stroke-width="2.5"/>
-<text x="66" y="536" font-size="16" class="fg" font-weight="400" text-anchor="start">Test: other seeds</text>
-<text x="20" y="572" font-size="16" class="fg" font-weight="400" text-anchor="start">Eight checkpoints per seed. Lines</text>
-<text x="20" y="595" font-size="16" class="fg" font-weight="400" text-anchor="start">only join recorded observations;</text>
-<text x="20" y="618" font-size="16" class="fg" font-weight="400" text-anchor="start">no continuous learning-curve log.</text>
-<text x="20" y="650" font-size="16" class="fg" font-weight="400" text-anchor="start">Training accuracy reached 99% by</text>
-<text x="20" y="673" font-size="16" class="fg" font-weight="400" text-anchor="start">step 500; final held-out accuracy</text>
-<text x="20" y="696" font-size="16" class="fg" font-weight="400" text-anchor="start">did not.</text>
-<text x="20" y="728" font-size="16" class="fg" font-weight="400" text-anchor="start">The entry appendix retains every</text>
-<text x="20" y="751" font-size="16" class="fg" font-weight="400" text-anchor="start">plotted value. Highlights are for</text>
-<text x="20" y="774" font-size="16" class="fg" font-weight="400" text-anchor="start">readability, not separate arms.</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="693.3333333333334" viewBox="0 0 360 390" role="img" aria-labelledby="title desc">
+<title id="title">Unseen sums improve long after memorisation</title>
+<desc id="desc">Unseen sums improve long after memorisation. Unseen sums improve long after memorisation. Held-out accuracy on each seed&#x27;s fixed split of 3481 pairs; training fraction .4. Ten seeds, eight recorded checkpoints; lines only join recorded observations. Training accuracy reached 99% by step 500, but final held-out accuracy did not. Seeds 5 and 8 are highlighted for readability, not separate experimental arms. Seed 0: 0k steps .02, 1k steps .00, 20k steps .02, 40k steps .22, 60k steps .59, 100k steps .80, 200k steps .92, 300k steps .95; Seed 1: 0k steps .02, 1k steps .00, 20k steps .02, 40k steps .27, 60k steps .62, 100k steps .83, 200k steps .91, 300k steps .94; Seed 2: 0k steps .02, 1k steps .00, 20k steps .01, 40k steps .24, 60k steps .60, 100k steps .83, 200k steps .91, 300k steps .92; Seed 3: 0k steps .02, 1k steps .00, 20k steps .04, 40k steps .31, 60k steps .60, 100k steps .82, 200k steps .92, 300k steps .93; Seed 4: 0k steps .02, 1k steps .00, 20k steps .01, 40k steps .23, 60k steps .50, 100k steps .80, 200k steps .91, 300k steps .94; Seed 5: 0k steps .02, 1k steps .00, 20k steps .01, 40k steps .17, 60k steps .41, 100k steps .69, 200k steps .87, 300k steps .91; Seed 6: 0k steps .02, 1k steps .00, 20k steps .01, 40k steps .30, 60k steps .60, 100k steps .82, 200k steps .92, 300k steps .94; Seed 7: 0k steps .02, 1k steps .00, 20k steps .01, 40k steps .27, 60k steps .55, 100k steps .84, 200k steps .90, 300k steps .93; Seed 8: 0k steps .02, 1k steps .00, 20k steps .01, 40k steps .23, 60k steps .55, 100k steps .87, 200k steps .96, 300k steps .97; Seed 9: 0k steps .02, 1k steps .00, 20k steps .01, 40k steps .27, 60k steps .62, 100k steps .88, 200k steps .95, 300k steps .96.</desc>
+<ns0:metadata xmlns:ns0="http://www.w3.org/2000/svg">CC BY 4.0. Compact redraw; recorded values unchanged. Original figure metadata retained.</ns0:metadata>
+
+<ns0:metadata xmlns:ns0="http://www.w3.org/2000/svg">CC BY 4.0. Message-led redraw; recorded values unchanged. Original metadata retained.</ns0:metadata>
+
+<metadata>CC BY 4.0. Compact redraw; evidence unchanged. Original descriptions and metadata retained.</metadata>
+<style>text{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#182b3a}.bg{fill:#fff}.panel{fill:#f3f6f9;stroke:#697b8c}.rule{stroke:#697b8c;fill:none}.blue{fill:#086a9e}.orange{fill:#a65308}.muted{fill:#485d70}.track{fill:#dde5ec}.blue-line{stroke:#086a9e;fill:none}.orange-line{stroke:#a65308;fill:none}.quiet-line{stroke:#697b8c;fill:none}.trained{fill:#fff0ba;stroke:#876518}.dark-ink{fill:#182b3a}.blue-tint{fill:#e9f4fc;stroke:#086a9e}.open{fill:#fff;stroke:#697b8c;stroke-width:1.5}.white{fill:#fff}
+@media(prefers-color-scheme:dark){text{fill:#edf3fa}.bg{fill:#101820}.panel{fill:#1c2a37;stroke:#6f8295}.rule{stroke:#a6b5c5}.blue{fill:#66c5ff}.orange{fill:#ffbe79}.muted{fill:#bfccda}.track{fill:#344555}.blue-line{stroke:#66c5ff}.orange-line{stroke:#ffbe79}.quiet-line{stroke:#a6b5c5}.blue-tint{fill:#172f41;stroke:#66c5ff}.open{fill:#101820;stroke:#a6b5c5}.dark-ink{fill:#182b3a}.white{fill:#101820}.trained{stroke:#e5b74e}}</style>
+<rect width="360" height="390" rx="8" class="bg"/>
+<text x="18" y="29" font-size="21" font-weight="650" class="" text-anchor="start">Unseen sums improve long</text>
+<text x="18" y="59" font-size="21" font-weight="650" class="" text-anchor="start">after memorisation</text>
+<rect x="18" y="79" width="145" height="46" rx="7" class="panel"/>
+<text x="90.5" y="99" font-size="14" font-weight="650" class="" text-anchor="middle">Number menu</text>
+<text x="90.5" y="119" font-size="14" font-weight="400" class="" text-anchor="middle">fixed input codes</text>
+<rect x="209" y="79" width="133" height="46" rx="7" class="trained"/>
+<text x="275.5" y="99" font-size="14" font-weight="650" class="dark-ink" text-anchor="middle">Remainder MLP</text>
+<text x="275.5" y="119" font-size="14" font-weight="400" class="dark-ink" text-anchor="middle">trained</text>
+<path d="M163,102 L209,102" class="rule" stroke-width="1.5"/>
+<path d="M203,98 L209,102" class="rule" stroke-width="1.5"/>
+<path d="M203,106 L209,102" class="rule" stroke-width="1.5"/>
+<text x="186" y="82" font-size="14" font-weight="400" class="muted" text-anchor="middle">codes</text>
+<text x="18" y="151" font-size="14" font-weight="400" class="muted" text-anchor="start">10 seeds; fraction .4; modulo 59</text>
+<text x="18" y="175" font-size="14" font-weight="400" class="" text-anchor="start">Train ≥99% by 500; test stays below 99%</text>
+<path d="M50,315.0 L265,315.0" class="rule" stroke-width="1"/>
+<text x="41" y="320.0" font-size="14" font-weight="400" class="muted" text-anchor="end">0</text>
+<path d="M50,260.5 L265,260.5" class="rule" stroke-width="1"/>
+<text x="41" y="265.5" font-size="14" font-weight="400" class="muted" text-anchor="end">.50</text>
+<path d="M50,206.0 L265,206.0" class="rule" stroke-width="1"/>
+<text x="41" y="211.0" font-size="14" font-weight="400" class="muted" text-anchor="end">1.00</text>
+<polyline data-seed="0" data-field="test_acc" points="50.0,312.82 50.71666666666667,315.0 64.33333333333333,312.82 78.66666666666667,291.02 93.0,250.69 121.66666666666667,227.8 193.33333333333334,214.72 265.0,211.45" class="quiet-line" fill="none" stroke-width="1"/>
+<polyline data-seed="1" data-field="test_acc" points="50.0,312.82 50.71666666666667,315.0 64.33333333333333,312.82 78.66666666666667,285.57 93.0,247.42000000000002 121.66666666666667,224.53 193.33333333333334,215.81 265.0,212.54000000000002" class="quiet-line" fill="none" stroke-width="1"/>
+<polyline data-seed="2" data-field="test_acc" points="50.0,312.82 50.71666666666667,315.0 64.33333333333333,313.91 78.66666666666667,288.84 93.0,249.60000000000002 121.66666666666667,224.53 193.33333333333334,215.81 265.0,214.72" class="quiet-line" fill="none" stroke-width="1"/>
+<polyline data-seed="3" data-field="test_acc" points="50.0,312.82 50.71666666666667,315.0 64.33333333333333,310.64 78.66666666666667,281.21 93.0,249.60000000000002 121.66666666666667,225.62 193.33333333333334,214.72 265.0,213.63" class="quiet-line" fill="none" stroke-width="1"/>
+<polyline data-seed="4" data-field="test_acc" points="50.0,312.82 50.71666666666667,315.0 64.33333333333333,313.91 78.66666666666667,289.93 93.0,260.5 121.66666666666667,227.8 193.33333333333334,215.81 265.0,212.54000000000002" class="quiet-line" fill="none" stroke-width="1"/>
+<polyline data-seed="6" data-field="test_acc" points="50.0,312.82 50.71666666666667,315.0 64.33333333333333,313.91 78.66666666666667,282.3 93.0,249.60000000000002 121.66666666666667,225.62 193.33333333333334,214.72 265.0,212.54000000000002" class="quiet-line" fill="none" stroke-width="1"/>
+<polyline data-seed="7" data-field="test_acc" points="50.0,312.82 50.71666666666667,315.0 64.33333333333333,313.91 78.66666666666667,285.57 93.0,255.05 121.66666666666667,223.44 193.33333333333334,216.89999999999998 265.0,213.63" class="quiet-line" fill="none" stroke-width="1"/>
+<polyline data-seed="9" data-field="test_acc" points="50.0,312.82 50.71666666666667,315.0 64.33333333333333,313.91 78.66666666666667,285.57 93.0,247.42000000000002 121.66666666666667,219.07999999999998 193.33333333333334,211.45 265.0,210.36" class="quiet-line" fill="none" stroke-width="1"/>
+<polyline data-seed="5" data-field="test_acc" points="50.0,312.82 50.71666666666667,315.0 64.33333333333333,313.91 78.66666666666667,296.47 93.0,270.31 121.66666666666667,239.79000000000002 193.33333333333334,220.17000000000002 265.0,215.81" class="orange-line" fill="none" stroke-width="2.3" stroke-dasharray="6 4"/>
+<polyline data-seed="8" data-field="test_acc" points="50.0,312.82 50.71666666666667,315.0 64.33333333333333,313.91 78.66666666666667,289.93 93.0,255.05 121.66666666666667,220.17000000000002 193.33333333333334,210.36 265.0,209.26999999999998" class="blue-line" fill="none" stroke-width="2.3" stroke-dasharray="2 4"/>
+<text x="278" y="198" font-size="14" font-weight="650" class="blue" text-anchor="start">Seed 8</text>
+<text x="278" y="220" font-size="14" font-weight="650" class="blue" text-anchor="start">.97</text>
+<path d="M278,230 L330,230" class="blue-line" stroke-width="2.3" stroke-dasharray="2 4"/>
+<polyline  points="265,215.81 272,215.81 272,247 276,247" class="orange-line" fill="none" stroke-width="1" stroke-dasharray="6 4"/>
+<text x="278" y="250" font-size="14" font-weight="650" class="orange" text-anchor="start">Seed 5</text>
+<text x="278" y="272" font-size="14" font-weight="650" class="orange" text-anchor="start">.91</text>
+<path d="M278,284 L330,284" class="orange-line" stroke-width="2.3" stroke-dasharray="6 4"/>
+<text x="50.0" y="334" font-size="14" font-weight="400" class="muted" text-anchor="middle">0</text>
+<text x="121.66666666666667" y="334" font-size="14" font-weight="400" class="muted" text-anchor="middle">100k</text>
+<text x="193.33333333333334" y="334" font-size="14" font-weight="400" class="muted" text-anchor="middle">200k</text>
+<text x="265.0" y="334" font-size="14" font-weight="400" class="muted" text-anchor="middle">300k</text>
+<text x="180" y="358" font-size="14" font-weight="400" class="muted" text-anchor="middle">Training updates (k = thousands)</text>
+<text x="180" y="382" font-size="14" font-weight="400" class="muted" text-anchor="middle">All seeds shown; fitted form not verified.</text>
 </svg>

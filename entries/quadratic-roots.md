@@ -1,6 +1,10 @@
 # Quadratic roots
 
-The quadratic formula combines squaring, subtraction, a square root and division; this task asks for specified integer versions of those results and a root-type flag. Every trained end-to-end answer or arithmetic-trace cell failed, including the completed ten-seed answer-only follow-up. A scaffolded alternative supplied the program and register addresses, leaving one Boolean NAND update to learn, which returns 0 only when both input bits are 1. The task is partly solved: with frozen routing the executor solved in 10/10 seeds after 500 steps, while whole-network training at twice the width solved 0/10. Its formula is Verified by one-neuron substitution (1,792/1,792 held-out packets per seed) and complement resampling (exact 1.0 in 10/10); this is a local rule inside supplied computation, not a learned quadratic solver.
+The quadratic x²−3x+2 reaches zero at its roots, 1 and 2. This task requested integer versions of the formula's results and a label for the kind of roots. Every end-to-end answer or written-arithmetic experiment failed, including the completed ten-run answer-only follow-up.
+
+A different approach supplied the program, storage addresses and routing. The network only learned a [NAND](../GLOSSARY.md#standard-machine-learning-terms) update, which returns 0 only when both input bits are 1. With that help, 10/10 runs learned the local rule after 500 steps. Training the whole network at twice the width succeeded in 0/10 runs: it never learned to fetch the addressed bits.
+
+The task is partly solved. The local [formula is verified](../GLOSSARY.md#verifying-a-circuit): a one-neuron replacement kept 1,792/1,792 held-out packets right per run, and swapping the other parts' signals between examples also passed in every run. This verifies a local rule within supplied computation, not a learned quadratic solver.
 
 | Fact | Value |
 |---|---|
@@ -14,6 +18,14 @@ The quadratic formula combines squaring, subtraction, a square root and division
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
 Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [composed arithmetic registers](compose-arithmetic-registers.md) for another supplied program, or [long division and square root](long-division-square-root.md) for arithmetic substeps.
+
+## The circuit at a glance
+
+Figure 3 shows the supplied-program executor, not a learned quadratic solver ([mechanism and verification](#5-mechanism-and-verification)).
+
+<img src="../figures/circuits/quadratic-roots.svg" width="640" alt="Supplied addresses feed a learned local NAND vote. One upward residual stream has separate read/write branches for Read first bit (pointer, then value); Read other bit (pointer, then value); Vote together (trained neurons). Input: supplied program; two addressed bits are 1; New register bit: 0. Task values are illustrative; dashed boxes and branches are not verified.">
+
+*Figure 3. The ten final partly trained executor seeds match the hand-built local NAND decision through a collective neuron group, verified by substitution and complement resampling on sampled checks, with program, addressing and state copying supplied rather than a learned quadratic solver.*
 
 ## 1. Task and data
 
@@ -93,7 +105,7 @@ per failed condition. V is the current arithmetic value, W is the value of highe
 of the written |D| in layer 1; T puts all rules in layer 1 on token values. Compact T moves the bit thresholds into query-position
 weights, which shrinks the arithmetic to 62 neurons for every n, against roughly 6R for answer-only A.
 
-The executor (Figure 1) uses address codes Cⱼ(a) = 2·bitⱼ(a) − 1. Layer-0 heads find the A and B pointer tokens, and layer-1 heads
+The executor (Table F1) uses address codes Cⱼ(a) = 2·bitⱼ(a) − 1. Layer-0 heads find the A and B pointer tokens, and layer-1 heads
 fetch registers a and b by binary address match, where a wrong code bit costs 40 logits. One neuron, AND = ReLU(a + b − 1), writes Y,
 and the readout (other −10, bit0 10·Y, bit1 5) emits the complement, NAND. The executor is exact at n 3–8 with margin 5. Table 2 gives
 the sizes.
@@ -108,21 +120,22 @@ the sizes.
 Used = ablation minima (heads + neurons, frame head included, frame neurons excluded) on 200–300 rows. HAND A, S, T and S_exec are
 exact at n 3–5; the source also reports A/S exact on all pairs through n 6. T is not exact at n 6, and that cell is closed. This HAND design failed in both fp32 and fp64 and was not repaired; it is not a trained-network failure or a precision-only effect.
 
-```mermaid
-flowchart TD
-    accTitle: Supplied-program register fetch and NAND update
-    accDescr: Frozen heads find the two supplied addresses and fetch their register bits. Only the final local MLP is trained in PART; an AND neuron and fixed complementary readout implement NAND inside a supplied program.
-    P["packet: shuffled register bank, source addresses A and B"] --> L0["layer-0 heads: find the A and B pointer tokens"]
-    L0 --> L1["layer-1 heads: fetch registers a and b by binary address match"]
-    L1 --> M["layer-1 MLP: one neuron AND = ReLU(a + b - 1), writes Y"]
-    M --> R["readout: other -10, bit0 10 Y, bit1 5"]
-    R --> Y["new bit = NAND(a, b)"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class M trained
-```
+Table F1 records the local executor inside the supplied program. Addressing and register retrieval are frozen; the learned part is a bit operation, not an end-to-end quadratic solver.
 
-*Figure 1. The hand-built register executor (format S_exec). Frozen heads locate and fetch the two addressed registers; one AND neuron
-and a fixed readout write their NAND. The shaded layer-1 MLP is the part that PART trains.*
+<details>
+<summary>Technical supplied addresses and local NAND executor (Table F1)</summary>
+
+*Table F1. The hand-built register executor (format S_exec). Frozen heads locate and fetch the two addressed registers; one AND neuron and a fixed readout write their NAND. The layer-1 feed-forward block (MLP) is the part that PART trains.*
+
+| Part and training status | Input, rule and destination |
+|---|---|
+| Supplied packet | Contains a shuffled register bank and source addresses A and B from the supplied program. |
+| Layer-0 heads; frozen | Find the A and B pointer tokens. |
+| Layer-1 heads; frozen | Fetch register bits a and b by binary address match. |
+| Layer-1 MLP; trained in PART | The reference uses one AND neuron, Y = ReLU(a + b − 1), active only when both input bits are 1. |
+| Fixed readout; frozen | Scores other tokens −10, bit 0 as 10Y and bit 1 as 5; this writes NAND(a, b), which is 0 only for two 1 inputs. |
+
+</details>
 
 ## 4. What training finds
 
@@ -185,19 +198,22 @@ The substitution certifies the decision on the tested distribution, not logit eq
 
 The later 512-packet substitution plus n 6/7/8 rollout check also has native_min 1.0 and substituted_min 1.0 in 20/20 best/final snapshots, which are byte-identical pairs of 10 networks. The native bank's collective decision is NAND-equivalent; an individual native hinge need not compute AND.
 
-```mermaid
-flowchart TD
-    accTitle: Collective NAND decision in the trained executor bank
-    accDescr: Frozen addressed registers feed a trained bank of additive hinges and a frozen readout. The bank-level NAND decision is verified on the measured substitution and complement checks. This local rule does not verify learned routing or an end-to-end quadratic solver.
-    L1["frozen layer-1 heads: fetched a and b"] --> B["trained bank: 28-37 of 128 hinges with additive operand responses"]
-    B --> S["bank-level sum: Y and O"]
-    S --> R["frozen readout: logits -10 O, 10 Y, 5 O"]
-    R --> Y["NAND(a, b)"]
-    classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class B trained
-```
+Table F2 records the collective native decision and the smaller replacement that preserves it on the measured checks. An individual trained neuron need not be an AND gate.
 
-*Figure 2. The executor stage is Verified on the measured checks in 10/10 seeds: one-neuron substitution preserves 1,792/1,792 packets per seed and the 9-edge complement keeps 1.0. Only the shaded bank is trained. The native decision is collective; the individual hinges can respond to either single operand, unlike HAND's replacement AND neuron. This verifies a local rule with the program and routing supplied, not an end-to-end quadratic solver.*
+<details>
+<summary>Technical collective neuron bank and sampled local verification (Table F2)</summary>
+
+*Table F2. The executor stage is Verified on the measured checks in 10/10 seeds: one-neuron substitution preserves 1,792/1,792 packets per seed and the 9-edge complement keeps 1.0. Only the bank is trained. The native decision is collective; the individual hinges can respond to either single operand, unlike HAND's replacement AND neuron. This verifies a local rule with the program and routing supplied, not an end-to-end quadratic solver.*
+
+| Part or check | Response and scope |
+|---|---|
+| Layer-1 addressed readers; frozen | Supply fetched bits a and b to the learned bank. |
+| Learned bank; trained | Uses 28–37 of 128 hinges, threshold-response neurons with additive operand contributions. Individual hinges can respond to a single operand. |
+| Bank-level sum | Combines responses into Y and O channels; the NAND decision belongs to this collective, not one native AND neuron. |
+| Readout; frozen | Scores other tokens −10O, bit 0 as 10Y and bit 1 as 5O, producing NAND(a, b). |
+| Sampled local checks | One-neuron replacement preserves 1,792/1,792 packets per seed; the 9-edge complement keeps 1.0 in 10/10 seeds. This does not verify learned program generation, addressing or a complete quadratic solver. |
+
+</details>
 
 ### 5.2 Parent cells
 

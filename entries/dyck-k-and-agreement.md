@@ -1,12 +1,8 @@
 # Dyck-k and subject–verb agreement
 
-Matching brackets requires remembering which bracket type is open; choosing a verb's singular or plural form requires finding its
-grammatical subject. Three-layer transformers were tested on both tasks, with and without a scratchpad that recorded the current
-bracket or subject state ([glossary](../GLOSSARY.md#task-formats)). The final two-bracket-type scratchpad cell is solved in range, with
-10/10 seeds reaching held-out whole-output exact match 1.0; substituting a pointer to the state written before the matching opener
-kept .90–1.0 in 8/10 final snapshots. This is only a partial closed form: resampling its needed partner head left .17/.06 exact match
-in two tested seeds, and the partner's computation remains unidentified. Agreement without a scratchpad exposed a different
-shortcut, copying the first noun, which is valid because this generated grammar always places the main subject first.
+`[()]` nests correctly but `[(])` does not: counting brackets is not enough, because their types must match. Three-layer transformers learned this task and a related memory task, choosing a verb's singular or plural form, with or without written intermediate bracket or subject states, a [scratchpad](../GLOSSARY.md#task-formats). The final two-bracket-type scratchpad experiment is solved in range, with 10/10 runs at whole-output accuracy 1.0 on 2048 held-out words per run when correct earlier tokens were supplied; replacing one component with a pointer to the written state just before the matching opener, recording what was still open then, kept .90–1.0 accuracy in 8/10 final saved networks.
+
+That formula is [partial](../GLOSSARY.md#verifying-a-circuit): it still needs a partner attention head, a component that reads earlier positions, whose computation is unidentified, and replacing that partner's activity with values from other inputs left only .17/.06 exact match in two tested runs. The verb task without written working exposed a different shortcut, copying the first noun, which works because this generated grammar always puts the main subject first.
 
 ## At a glance
 
@@ -20,6 +16,14 @@ shortcut, copying the first noun, which is valid because this generated grammar 
 | Status | Solved (Dyck-2 scratchpad final TRAIN 10/10 exact; other cells include failures); last run and interpretation 2026-11-11. |
 | Weights | [Hugging Face: dyck-k-and-agreement](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/dyck-k-and-agreement), published revision `0aba437e2661`. |
 | Reproduce | Not available yet: training code for this task is not yet in `code/`. |
+
+## The circuit at a glance
+
+<img src="../figures/circuits/dyck-k-and-agreement.svg" width="640" alt="Removing the most recent opening bracket is called a pop. In the tested pointer override, a reference-supplied match identifies that opener so its preceding written state can be read. This unverified pointer and an unidentified needed partner meet at the layer-2 block. At the closing square bracket in ([]), the target top is the round opener. Correct earlier tokens are supplied; native addressing is unverified.">
+
+*Figure S1. For the final Dyck-2 scratchpad networks trained from scratch (8/10 seeds), the tested pop pointer models removal of the most recent opening bracket by reading its preceding state using a reference-supplied matching-opener override, unlike the hand-built depth match; the account remains partial because the needed partner head is unidentified, both tested partner scrubs fail and native address computation is not verified.*
+
+Figure S1 shows the tested pre-opener-state pointer and unidentified partner converging on the next stack-state write; the pointer’s matched-opener address is supplied by the reference override, not proved to be computed natively.
 
 ## 1. Task and data
 
@@ -75,20 +79,22 @@ OUTY = ReLU(DEP_0 - 4 NV + G EQ - G)
 
 `DEAD` marks an invalid prefix; `GC/GE` are the opener-type and empty-stack state readouts. `EQ` indicates the answer query `=`. In agreement, L1H0 reads the latest preposition (`p`) to form a PP flag; L2H0 is the state head and penalises PP nouns by `-2 BETA`. Constants are BETA `1e4`, EPS `20`, G `2000`, K `4` and U `20`.
 
-In Figure 1, count and depth codes feed matching-opener and checking heads, then violation flags, an any-violation sum and the stack-state readout. Dyck PART trains only the match/check attention stage. The separate agreement task instead trains its later state head; all other weights stay frozen.
+Table F1 records the fixed depth-match route and separate agreement alternative. Count and depth codes feed matching-opener and checking heads, then violation flags, an any-violation sum and the stack-state readout. Dyck PART trains only the match/check attention stage. The separate agreement task instead trains its later state head; all other weights stay frozen.
 
-```mermaid
-flowchart TD
-    accTitle: Hand-built typed-bracket depth and violation route
-    accDescr: A count and depth code feeds matching-opener and checking heads, then violation flags, an any-violation sum and the state readout. Only the match and check attention stage is trained in Dyck PART; the agreement task instead trains its separate later state head.
-  A["L0H0 count and MLP0 depth DEP, opener depth ODEP"] --> B["L1H0 latest matching opener; L1H1 check MT"]
-  B --> C["MLP1 closer-type violation V"]
-  C --> D["L2H0 any-violation sum NV"]
-  D --> E["MLP2 stack state, DEAD and answer"]
-  classDef trained fill:gold,stroke:darkgoldenrod,color:black
-  class B trained
-```
-*Figure 1. The hand-built Dyck network. Layer-1 match/check attention is trained in Dyck PART. Agreement uses a PP-exclusion head and instead trains layer-2 state-head attention; the other weights stay fixed.*
+<details>
+<summary>Technical depth-match reference and agreement alternative (Table F1)</summary>
+
+*Table F1. The hand-built Dyck network. Layer-1 match/check attention is trained in Dyck PART. Agreement uses a PP-exclusion head and instead trains layer-2 state-head attention; the other weights stay fixed.*
+
+| Component or alternative | Input and operation |
+|---|---|
+| Fixed layer 0, head 0 (L0H0) and MLP0 | Count symbols and form depth DEP and opener depth ODEP. |
+| Dyck layer-1 attention, trained in PART | Head 0 (L1H0) reads the latest matching opener; head 1 (L1H1) checks matched type MT. |
+| Fixed MLP1 and layer 2, head 0 (L2H0) | Mark closer-type violation V and sum any violations as NV. |
+| Fixed MLP2 | Use the violation/depth information to write stack state, DEAD (invalid prefix) and the answer. |
+| Separate agreement route | Exclude nouns in prepositional phrases (PP); train layer-2 state-head attention rather than Dyck's layer-1 match/check stage. |
+
+</details>
 
 Both formats and both variants were exact on the recorded checks: 113180 Dyck-2 inputs, 83286 Dyck-3 inputs and 62762 agreement inputs. [Yao et al. (2021)](#references) provide the depth-match construction being tested.
 
@@ -140,22 +146,20 @@ With the partner head resampled, the compact final complement results were .17 /
 
 Thus B-pop remains partial: substitution supports one head, but the joint claim fails complement resampling. B-dense and A-count have no accepted closed form. [Sharma et al. (2026)](#references), cited previously as “Sharma & Raval”, provide the comparison with routing to the stack top and with the distinction between decodability and causal use; this pointer reads the state before the opener instead.
 
-In Figure 2, the proposed pointer copies the state before a valid closer's matching opener. A needed partner head also feeds MLP2, but its computation is unidentified. Both heads and the MLP were trained. Status remains partial: pointer substitution supports only the named seeds, partner resampling fails, and native address computation is not proved.
+Table F2 records the proposed pointer and unresolved partner shown above. The proposed pointer copies the state before a valid closer's matching opener. A needed partner head also feeds MLP2, but its computation is unidentified. Both heads and the MLP were trained. Status remains partial: pointer substitution supports only the named seeds, partner resampling fails, and native address computation is not proved.
 
-```mermaid
-flowchart TD
-    accTitle: Partial pre-opener-state pointer with unidentified partner
-    accDescr: At a valid closer, the proposed pointer copies the state written before its matching opener. A needed partner head also feeds the final state MLP, but its computation is unidentified. All marked heads and MLP are trained. Status is partial: pointer substitution passes only the named seeds and partner resampling fails; native address computation is not proved.
-  A["Alive closer t and<br/>matched opener j"] --> B["Pointer head reads<br/>state S before<br/>opener j"]
-  B --> D["MLP2 state and<br/>answer"]
-  C["Partner L2 head:<br/>needed,<br/>computation<br/>unidentified"] --> D
-  D --> E["Scratchpad top or<br/>membership answer"]
-  classDef trained fill:gold,stroke:darkgoldenrod,color:black
-  class B,C,D trained
-```
-*Figure 2. The B-pop description in final Dyck-2 TRAIN. The shaded heads and MLP2 are trained. Closed-form status is partial: pointer
-substitution keeps .90–1.0 in 8/10 final seeds, but resampling the needed partner leaves .17/.06 in the two tested seeds. No two-head
-form is accepted. The matched-opener relation describes the tested override, not a proved native address computation.*
+<details>
+<summary>Technical pointer override and unidentified needed partner (Table F2)</summary>
+
+*Table F2. The B-pop description in final Dyck-2 TRAIN. The heads and MLP2 are trained. Closed-form status is partial: pointer substitution keeps .90–1.0 in 8/10 final seeds, but resampling the needed partner leaves .17/.06 in the two tested seeds. No two-head form is accepted. The matched-opener relation describes the tested override, not a proved native address computation.*
+
+| Trained component or override input | Recorded role and limit |
+|---|---|
+| Tested pointer override | At an alive closer t with matched opener j, read state S before opener j. The match relation supplies the override; it is not a recovered native address calculation. |
+| Partner layer-2 head | Also feeds MLP2 and is needed, but its computation is unidentified. Resampling this partner fails the joint claim. |
+| MLP2 | Reads the pointer and partner outputs to write the scratchpad top or membership answer. No accepted two-head formula follows. |
+
+</details>
 
 B-HANDa follows [Yao et al. (2021)](#references) within the scaffold. From scratch, no analysed net was shown to use that depth-match head. The limited length transfer is consistent with [Bhattamishra et al. (2020)](#references), who report in-range fitting and longer-length failures for Transformers on formal languages.
 
