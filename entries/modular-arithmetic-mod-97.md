@@ -1,22 +1,20 @@
 # Modular arithmetic mod 97 in six number formats
 
-This entry asks how small transformers trained from scratch compute a + b, a·b or x² modulo 97, and how the answer depends on how the
-numbers are written: as one token per residue, in binary, decimal or hexadecimal, or with a decimal scratchpad. Seventeen hand-built
-networks, every weight set by formula, are exact on all 9409 inputs and serve as references. Token multiplication, trained on 90% of
-the pairs, embeds the residues as circles in discrete-log order in 10/10 seeds (multi-frequency K-high clock in 8, ramp-like K-low
-clock in 2), and 6/10 seeds reach test ≥ .99; token addition is a Fourier clock in 10/10. No network on a binary, decimal or
-hexadecimal format carries a circular code, and binary multiplication and hexadecimal squaring memorise (test .013–.077). The task is
-partly solved (token multiplication 6/10 seeds ≥ .99 at fraction .9, 0/10 at .3; digit multiplication memorises). The closed form is
-partial and output-level only: substituted for the network output, it keeps the accuracy on all 9216 nonzero pairs of each of the 8
-token-multiplication seeds that score ≥ .98, but it uses the true discrete log, and the complement was not tested.
+Writing numbers differently changed how these transformers learned the same arithmetic: addition, multiplication and squaring,
+keeping the remainder after division by 97. With one token per number and 90% of pairs in training, all 10 multiplication seeds
+placed nonzero numbers on circular codes ordered by their exponents as powers of 5, yet only 6/10 reached held-out accuracy ≥ .99.
+The measured binary, decimal and hexadecimal networks carried no circular code; digit multiplication remained limited by
+memorisation in the studied cells. A fitted output rule supplied the true exponent of each input, so its success did not recover
+that computation inside the trained network. The task is partly solved; the closed form is partial and output-level only, supported
+by substitution on all 9216 nonzero pairs for 8 eligible seeds with native held-out accuracy ≥ .98, with no resample-complement certificate.
 
 | Fact | Value |
 |---|---|
 | Task | Compute a + b, a·b (a, b in 0..96) or x² mod 97, with the numbers written in one of six formats |
 | Input → output example | a = 96, b = 2, addition: (96 + 2) mod 97 = 1 |
-| Model | GPT-NeoX, 4 layers × 4 heads, d_model 256, MLP 512 ReLU, no LayerNorm, no positional encoding; all weights trained from scratch |
-| Rungs and seeds | HAND: 17 networks, exact on all 9409 inputs; TRAIN: 10 seeds in each of 6 final cells, after 3-seed rounds |
-| Closed form status | Partial (output-level only: a clock in d = log a + log b − log c keeps the accuracy on all 9216 nonzero pairs in each of the 8 token-multiplication seeds that score ≥ .98; uses the true discrete log; complement not tested) |
+| Model | 4-layer transformer, 4 heads per layer, width 256, feed-forward width 512 with ReLU; no LayerNorm or positional encoding; all weights trained |
+| Rungs and seeds | Hand-built: 17 networks, exact on all 9409 inputs; from scratch: 10 seeds in each of 6 final cells, after 3-seed rounds |
+| Closed form status | Partial (output readout only: substitution accuracy 1.0 on all 9216 nonzero pairs, including training pairs, for 8 seeds with native test ≥ .98; true discrete logarithms supplied externally; internal circuit and complement unverified) |
 | Status | Partly solved (token multiplication 6/10 ≥ .99 at fraction .9, 0/10 at .3; token addition 10/10 ≥ .99; digit multiplication memorises); last run 2026-11-08 |
 | Weights | [Hugging Face: modular-arithmetic-formats](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/modular-arithmetic-formats) (earlier round: [modular-arithmetic-mod-97](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/modular-arithmetic-mod-97)) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
@@ -25,7 +23,10 @@ token-multiplication seeds that score ≥ .98, but it uses the true discrete log
 
 Three operations were studied: a + b and a·b with a, b in 0..96, and x² with x in 0..9408, each mod 97. Every operation has 9409 inputs,
 all of which were used. The answer is r = S mod 97, where S is the exact sum, product or square, and an output is correct only on exact
-match. Table 1 lists the six number formats.
+match. For example, with a = 96 and b = 2, addition gives (96 + 2) mod 97 = 1. The residue is the remainder; a discrete logarithm of
+a nonzero residue is its exponent as a power of a chosen generator, here 5
+([glossary](../GLOSSARY.md#analysis-measures)). A clock is a circular number code. These terms describe representations, not success
+criteria: Table 2 separately counts exact outputs and those with held-out accuracy ≥ .99. Table 1 lists the six number formats.
 
 *Table 1. Number formats.*
 
@@ -35,7 +36,7 @@ match. Table 1 lists the six number formats.
 | `b2l` / `b2m` | binary, least / most significant bit first |
 | `b10` | decimal digits |
 | `b16` | hexadecimal digits |
-| `s10` | decimal [scratchpad](../GLOSSARY.md#task-formats): S `;` S div 97 `;` r |
+| `s10` | decimal [scratchpad](../GLOSSARY.md#task-formats), writing intermediate results: S `;` S div 97 `;` r |
 
 The split was drawn per seed at train fraction .3 (2823 training inputs) or .9 (8468 training, 941 test inputs). In the cell names,
 x3 means three times the data, that is, fraction .9 instead of .3; "mul", "add" and "sq" are multiplication, addition and squaring.
@@ -48,8 +49,10 @@ were run: HAND (every weight set by formula) and TRAIN (all weights trained from
 
 ### 2.1 Architecture
 
-The trained networks are GPT-NeoX-shaped with 4 layers x 4 heads (d_head 64), d_model 256, MLP 512 ReLU, no LayerNorm, no positional
-encoding (NoPE) and an untied readout. The vocabulary has 103 tokens: BOS, 97 residues or digits, and `+ * ^ = ;`. All parameters are
+The trained networks follow the [GPT-NeoX decoder layout](../GLOSSARY.md#standard-machine-learning-terms), with 4 layers x 4
+attention heads (readers of earlier positions), each of width d_head 64. The residual stream, the running vector each layer updates,
+has width d_model 256. Each feed-forward block (MLP) has 512 ReLU units, which set negative inputs to zero. There is no LayerNorm, no positional encoding (NoPE), and
+the readout weights are separate from the input embedding. The vocabulary has 103 tokens: BOS, 97 residues or digits, and `+ * ^ = ;`. All parameters are
 trained. The hand-built networks are 8 layers x 8 heads with d_model 512 and the same vocabulary, with every weight set by formula.
 In probe locations, L0 is the embedding.
 
@@ -67,10 +70,10 @@ cell), add tok x3, add b16, add s10, mul b2l and sq b16.
 
 ### 2.4 Reproduction
 
-Reproduction is not available yet, because the training code for this task is not yet in `code/`; the weights, held-out splits and recorded
+Reproduce: not available yet: training code for this task is not yet in `code/`; the weights, held-out splits and recorded
 accuracies are on Hugging Face at
 [huggingface.co/jc1122/circuit-atlas-nets/tree/main/modular-arithmetic-formats](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/modular-arithmetic-formats)
-(earlier round: huggingface.co/jc1122/circuit-atlas-nets/tree/main/modular-arithmetic-mod-97).
+(earlier round: [model archive](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/modular-arithmetic-mod-97)).
 
 ### 2.5 Archive
 
@@ -128,8 +131,12 @@ Table 2 summarises the final cells. Exact match is on held-out inputs; "≥ .99"
 | add s10 | 7 / 9 | .988-1 | q-transfer route (3/3 measured) |
 | mul b2l, sq b16 | 0 / 0 | .013-.077 | memorised (failed); 3-seed rounds: mul b10/b16 memorise at every data/wd |
 
+The rounded .990 lower bound for hexadecimal addition and .988 for the decimal scratchpad hide threshold failures: the source
+records .9898 for seed 1 and .9875 for seed 7, respectively. Both are below .99, which is why each row has 9/10 at that threshold.
+These more precise extrema and the legacy rounded ranges are retained separately.
+
 Key: exact / ≥ .99 = numbers of seeds (so 4 / 6 in the first row is 4 seeds exact and 6 seeds with test ≥ .99, as in the 6/10 above); K-high and K-low = the two clock types as labelled in the run records, a multi-frequency clock and a ramp-like clock; DAS = [distributed alignment
-search](../GLOSSARY.md#analysis-measures); r-only, S+r = which of the HAND variables the network reads at layer 4; q-transfer = a route
+search](../GLOSSARY.md#analysis-measures), testing variable swaps in learned rotated directions; r-only, S+r = which of the HAND variables the network reads at layer 4; q-transfer = a route
 through the quotient q; data/wd = training fraction and weight decay.
 
 Token formats are the only ones in which a network carries a circular code of a or r. Token multiplication at fraction .9 embeds
@@ -147,36 +154,46 @@ Per-cell diagnostics (used heads, probes, effective rank, attention divergence) 
 
 ## 5. Mechanism and verification
 
-For token multiplication (both circuit types) the closed form is a clock in the difference of discrete logs:
+For token multiplication, the partial output-only closed form fits cosine and sine waves to differences of externally supplied true
+discrete logs. It is a sufficient output readout, not a recovered internal circuit or a complement-verified mechanism:
 
 logit(c) = Σ_{k ∈ K} α_k cos(2πk d/96) + β_k sin(2πk d/96),  d = (log5 a + log5 b − log5 c) mod 96, c ≠ 0,
 
 with answer 0 iff a or b = 0. K is the set of the top-m frequencies of the network's mean logit against d, and α, β are fitted on the
-training rows. Substituted for the network output, it keeps the accuracy on all 9216 nonzero pairs for every seed that scores ≥ .98 (8
-seeds), with the smallest m per seed s4 1, s5 1, s2 2, s8 2, s9 3, and s0/s1/s3 6. Its agreement with the network equals the network's
-accuracy (≥ .99 on the six seeds that reach ≥ .99). Seed 6 (.838) agrees on .837, and seed 7 has no fit. For token addition the same form on
+training rows. Substitution gives task accuracy 1.0 on all 9216 nonzero pairs, including training pairs, for every seed whose native
+held-out score is ≥ .98 (8 seeds). The smallest m per final seed is s4 1, s5 1, s2 2, s8 2, s9 3, and s0/s1/s3 6. Its agreement with
+the network equals the network's
+accuracy (≥ .99 on the six seeds that reach ≥ .99). Seed 6 (.838) agrees on .837 despite formula task accuracy 1.0 at m = 4: it idealises the task rather than explaining that seed's
+errors. Seed 7 has no passing fit (m = 6 gives task accuracy .508 and agreement .31). For token addition the same form on
 Z_97 with d = (a + b − c) mod 97 is proposed; its substitution was not yet measured.
 
 The closed form is output-level only: it uses the true discrete log, not a variable read from the network. Internally, replacing MLP3
 by a lookup T[ls] on the summed log ls keeps accuracy in seeds 0, 2, 4, 5, 6 and 9. No [resample ablation of the
-complement](../GLOSSARY.md#verifying-a-circuit) was reported, so the status is partial.
+complement](../GLOSSARY.md#verifying-a-circuit) was reported, so the status is partial. A complement test would replace the circuitry
+outside a proposed mechanism with its values on other inputs. The externally supplied logarithms and the trained network's internal
+path must remain distinct (Figure 2).
 
 ```mermaid
 flowchart TD
-    T["tokens a and b"] --> E["embeddings: circles in discrete-log order"]
-    E --> K["K-high: many frequencies, 8 seeds; K-low: ramp-like, 2 seeds"]
-    K --> M3["MLP3: lookup T on the summed log ls, in 6 seeds"]
-    M3 --> O["output clock in d = log a + log b - log c"]
-    O --> R["answer c; 0 iff a or b = 0"]
+    T["tokens a and b"] --> E["Learned embeddings: circles in discrete-log order"]
+    E --> N["Trained transformer: no complete internal closed form"]
+    N --> L["Native output scores"]
+    T --> Q["Externally supplied TRUE discrete logs, not recovered from activations"]
+    Q --> D["d = log a + log b - log c mod 96"]
+    D --> O["Fitted cosine and sine output readout"]
+    L -.->|"fit and compare"| O
+    O --> R["Surrogate answer c; zero-input rule handled separately"]
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class E,K,M3,O trained
+    class E,N,L trained
 ```
 
-*Figure 2. The circuit training finds in token multiplication. The embeddings place the residues on circles in discrete-log order and
-the output is a clock in the difference of logs; the closed form is output-level only and partial, with the complement not tested.*
+*Figure 2. The trained network and its separate output surrogate. Shading marks the trained embeddings, transformer and native
+readout; the unshaded true-log step is supplied externally. Status: partial, output readout only, with no recovered internal circuit
+or complement test. Substitution accuracy 1.0 on all 9216 nonzero pairs in 8 eligible seeds does not establish faithfulness to the
+failed seeds' errors.*
 
-Relation to the hand-built design and to published work. The hand-built token multiplier and the trained networks share the
-isomorphism Z_97* ≅ Z_96 but not the code: the hand-built network uses a ramp and a lookup, the trained networks use circles. The
+The hand-built token multiplier and the trained networks share the
+isomorphism Z_97* ≅ Z_96, meaning that nonzero residues under multiplication correspond to exponents added modulo 96, but not the code: the hand-built network uses a ramp and a lookup, the trained networks use circles. The
 trained code is the clock of [Nanda et al. (2023)](#references) and [Zhong et al. (2023)](#references) moved by the discrete log; the
 clock solution of modular arithmetic was also derived analytically by [Gromov (2023)](#references). Digit formats never form circles;
 the solved digit networks read r out as a categorical code at layer 4.
@@ -184,7 +201,9 @@ the solved digit networks read r out as a categorical code at layer 4.
 ## 6. Limitations and open questions
 
 The Fourier label was checked on all 17 hand-built networks (token addition F, the other 16 L, as recorded). The closed form is
-output-level with the oracle log. The seeds differ in their weights (loss barrier, LMC, 12–19). The run-1 networks for add b16 and add
+output-level with the oracle log, meaning that true logarithms are supplied rather than read from the network. It is not an
+accepted full internal mechanism; there is no complement certificate. The seeds differ in their weights (loss barrier, LMC, 12–19): linear mode connectivity (LMC) measures the rise in loss when
+interpolating between two seeds' weights ([glossary](../GLOSSARY.md#analysis-measures)). The run-1 networks for add b16 and add
 s10 were lost (only their logged numbers remain); the final-run networks exist. Neuron counts and an alignment of TRAIN with HAND
 (`align`) were not measured, and the substitution of the addition closed form is open.
 
@@ -192,8 +211,9 @@ s10 were lost (only their logged numbers remain); the final-run networks exist. 
 
 The prediction was recorded before training: token addition would be Fourier, token multiplication Fourier in log coordinates, the
 digit formats would carry no p-periodic code, and s10 would beat b10. It held, except that fraction .3 was below the grokking data
-threshold for token addition (3/10) and token multiplication (0/10); three times the data (fraction .9) fixed both. That
-representational priors control the delay of grokking was studied by [Howe (2026)](#references).
+threshold for token addition (3/10) and token multiplication (0/10). Three times the data (fraction .9) improved both: addition
+reached held-out accuracy ≥ .99 in 10/10 seeds, while multiplication reached it in 6/10, not every seed. That representational
+priors control the delay of grokking was studied by [Howe (2026)](#references).
 
 ## Appendix A. Weights excerpt and reading
 
@@ -210,8 +230,10 @@ Table A1 gives the clock frequencies K and the amplitudes √(α² + β²) per s
 | s9 | 6, 2, 9 | 28.8, 9.9, 9.3 |
 | s1 | 6, 4, 8, 2, 10, 1 | 52.4 ... 7.4 |
 
-The top log-order frequencies of the embeddings are computed by `excerpts.py modp` (DFT over the residues sorted by log_5, power
-share). Reading: each seed rotates log a and log b on a few circles and reads cos(k(la + lb − lc)).
+These parameters belong to a partial output readout using true logarithms, not a verified internal mechanism. The top log-order
+frequencies of the embeddings are computed by `excerpts.py modp` (DFT over the residues sorted by log_5, power
+share). A discrete Fourier transform (DFT) measures how much of a vector follows each sine and cosine frequency
+([glossary](../GLOSSARY.md#analysis-measures)). The fitted output for each seed rotates log a and log b on a few circles and reads cos(k(la + lb − lc)).
 
 ## Appendix B. Detailed evidence
 

@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="407" viewBox="0 0 760 407" role="img" aria-labelledby="title desc">
+<title id="title">More search steps did not mean a larger map</title>
+<desc id="desc">Final scratchpads; 10 seeds per cell; 16 mazes per sampled distance; teacher-forced. Intervals copy the source-reported distance-average or grid-size ranges across seeds. New square tokens on 8x8 grids were untrained. Greedy checks covered only distance 2. PART: partial verification coverage (complement in 3 seeds). No TRAIN form accepted. Values: 6x6, distance 11-16: PART: frozen routing 1.0, TRAIN: all weights learned .66–1.0; 6x6, distance 17-20: PART: frozen routing 1.0, TRAIN: all weights learned .41–.78; 8x8, distance 0-10: PART: frozen routing 1.0, TRAIN: all weights learned 0–.09.</desc>
+<rect width="100%" height="100%" fill="white"/>
+<g font-family="system-ui, sans-serif" fill="#1d2630">
+<text x="24" y="32" font-size="21" font-weight="600">More search steps did not mean a larger map</text>
+<text x="24" y="58" font-size="13">Final scratchpads; 10 seeds per cell; 16 mazes per sampled distance; teacher-forced.</text>
+<circle cx="29" cy="81" r="4" fill="#175a96"/>
+<text x="41" y="85" font-size="13">PART: frozen routing</text>
+<circle cx="360" cy="81" r="4" fill="#a53b13"/>
+<text x="372" y="85" font-size="13">TRAIN: all weights learned</text>
+<path d="M242.0 108 V250" stroke="#e0e5ea"/>
+<text x="242.0" y="270" text-anchor="middle" font-size="12">0</text>
+<path d="M331.5 108 V250" stroke="#e0e5ea"/>
+<text x="331.5" y="270" text-anchor="middle" font-size="12">.25</text>
+<path d="M421.0 108 V250" stroke="#e0e5ea"/>
+<text x="421.0" y="270" text-anchor="middle" font-size="12">.50</text>
+<path d="M510.5 108 V250" stroke="#e0e5ea"/>
+<text x="510.5" y="270" text-anchor="middle" font-size="12">.75</text>
+<path d="M600.0 108 V250" stroke="#e0e5ea"/>
+<text x="600.0" y="270" text-anchor="middle" font-size="12">1.00</text>
+<text x="24" y="129" font-size="13">6x6, distance 11-16</text>
+<path d="M600.0 118 H600.0" stroke="#175a96" stroke-width="3"/>
+<circle cx="600.0" cy="118" r="3" fill="#175a96"/>
+<circle cx="600.0" cy="118" r="3" fill="#175a96"/>
+<text x="616" y="122" fill="#175a96" font-size="12">1.0</text>
+<path d="M478.28 134 H600.0" stroke="#a53b13" stroke-width="3"/>
+<circle cx="478.28" cy="134" r="3" fill="#a53b13"/>
+<circle cx="600.0" cy="134" r="3" fill="#a53b13"/>
+<text x="616" y="138" fill="#a53b13" font-size="12">.66–1.0</text>
+<text x="24" y="176" font-size="13">6x6, distance 17-20</text>
+<path d="M600.0 165 H600.0" stroke="#175a96" stroke-width="3"/>
+<circle cx="600.0" cy="165" r="3" fill="#175a96"/>
+<circle cx="600.0" cy="165" r="3" fill="#175a96"/>
+<text x="616" y="169" fill="#175a96" font-size="12">1.0</text>
+<path d="M388.78 181 H521.24" stroke="#a53b13" stroke-width="3"/>
+<circle cx="388.78" cy="181" r="3" fill="#a53b13"/>
+<circle cx="521.24" cy="181" r="3" fill="#a53b13"/>
+<text x="616" y="185" fill="#a53b13" font-size="12">.41–.78</text>
+<text x="24" y="223" font-size="13">8x8, distance 0-10</text>
+<path d="M600.0 212 H600.0" stroke="#175a96" stroke-width="3"/>
+<circle cx="600.0" cy="212" r="3" fill="#175a96"/>
+<circle cx="600.0" cy="212" r="3" fill="#175a96"/>
+<text x="616" y="216" fill="#175a96" font-size="12">1.0</text>
+<path d="M242.0 228 H274.22" stroke="#a53b13" stroke-width="3"/>
+<circle cx="242.0" cy="228" r="3" fill="#a53b13"/>
+<circle cx="274.22" cy="228" r="3" fill="#a53b13"/>
+<text x="616" y="232" fill="#a53b13" font-size="12">0–.09</text>
+<text x="421.0" y="295" text-anchor="middle" font-size="13">Whole-output exact accuracy</text>
+<text x="24" y="325" font-size="12">Intervals copy the source-reported distance-average or grid-size ranges across seeds.</text>
+<text x="24" y="344" font-size="12">New square tokens on 8x8 grids were untrained. Greedy checks covered only distance 2.</text>
+<text x="24" y="363" font-size="12">PART: partial verification coverage (complement in 3 seeds). No TRAIN form accepted.</text>
+</g>
+</svg>

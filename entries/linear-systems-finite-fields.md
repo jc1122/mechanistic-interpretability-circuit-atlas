@@ -1,33 +1,24 @@
 # Linear systems over F₅ and F₇
 
-This entry studies how small transformers solve an invertible linear system Ax = b over the integers mod 5 or mod 7 (dimension 2 or
-3) by Gauss-Jordan elimination, writing one residue per token. Hand-built networks are exact in two trace formats, one that writes each
-updated matrix and one that also writes the microsteps of each update. When only the update MLP was trained on frozen hand-built
-routing, it bypassed the hand-built subtractor in the update-trace format (solved 3/3 only at F₅m3) and kept the hand-built split in the
-microstep format (4/6 solved). Trained from scratch, the microstep format solved every screen (3/3) and the F₅m2 final (10/10) through a
-distributed late lookup that matches no hand-built circuit; the update trace solved only at m = 2 after a budget retry, and answer
-only never solved. The task is partly solved (microsteps from scratch 10/10 at F₅m2; answer only 0/3 in every screen). The closed form
-is partial: a decision surrogate for the update-trace stage scores 1024/1024 in all 24 snapshots, and from scratch the last MLP is an
-operand table in 3/3 tested seeds, but the complement resample (.00-.30) fails the circuit check.
+These transformers solved small linear systems with arithmetic that wraps modulo 5 or 7. Writing each intermediate multiplication and subtraction made the detailed-trace format learnable: all 10/10 final seeds reached whole-output exact 1.0 on 2000 held-out systems, while answer-only training solved none of its screening cells. Training completed the arithmetic in a late, distributed lookup rather than following the hand-built network's layer-by-layer decomposition. The task is partly solved, and the final lookup is Sufficient readout only: substitution with reference-computed operand keys gives 1.0 in 3/3 tested seeds, but complement resampling on 128 systems per seed fails (.00–.30 for the claimed circuit, .79–.89 for discovered circuits, below .90). A separate replacement for the partly trained update stage is Partial and repairs failed networks; it does not explain their native errors.
 
 | Fact | Value |
 |---|---|
-| Task | Solve an invertible system Ax = b over F₅ or F₇ (m = 2 or 3) by Gauss-Jordan elimination, one residue per token |
+| Task | Solve an invertible system Ax = b using arithmetic modulo 5 or 7 (F₅ or F₇), dimension m = 2 or 3, one residue per token |
 | Input → output example | In words, over F₅: A with rows (1, 2) and (0, 1), b = (3, 1) → x = (1, 1) |
 | Model | GPT-NeoX, 5 layers, ReLU, no LayerNorm, no positional encoding; PART trains only the layer-3 MLP of the frozen hand-built network |
 | Rungs and seeds | HAND T and S exact; three-seed screens of PART T/S and TRAIN T/S/A in four cells (T TRAIN retries 60k or double width); ten-seed final F₅m2 S TRAIN (10/10) |
-| Closed form status | Partial (T PART surrogate 1024/1024 in all 24 snapshots, accepted; S PART three-map form 1024/1024 in 8 snapshots, not accepted; S TRAIN MLP4 operand table 1.0 in 3/3 tested seeds, but complement resample .00-.30 (claimed) and .79-.89 (discovered), below .90, fails the circuit check) |
+| Closed form status | Sufficient readout only (final S TRAIN: reference-keyed MLP4 table 1.0 in 3/3 tested seeds on 2000 held-out systems; complement on 128 systems per seed .00–.30 claimed / .79–.89 discovered, below .90). T PART repair surrogate: Partial, 1024/1024 in all 24 snapshots, complement untested. S PART candidate: 1024/1024 in 8 snapshots, shuffle missing, not accepted. |
 | Status | Partly solved (F₅m2 S TRAIN 10/10, transfer to m = 3 0.0 in 10/10; answer only 0/3 in every screen); last run 2026-11-08 |
-| Weights | [Hugging Face: linear-systems-finite-fields](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/linear-systems-finite-fields) (158 nets) |
+| Weights | [Hugging Face: linear-systems-finite-fields](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/linear-systems-finite-fields) (weights and held-out evidence archive; 158 nets) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
 ## 1. Task and data
 
-The network solves an invertible system Ax = b over F₅ or F₇ of dimension m = 2 or 3 by Gauss-Jordan elimination with the first unused
-nonzero pivot, one residue per token. Three formats were studied (Table 1). In format S the network also writes the microstates of
-each update: the inverse d⁻¹ of the pivot, the normalised value pb·d⁻¹ (pb is the pivot-row entry), the product k·(pb·d⁻¹) (k is the
+The network solves an invertible system Ax = b over F₅ or F₇ of dimension m = 2 or 3. These finite fields use integers with addition and multiplication wrapping modulo the named prime; for example, over F₅, rows (1, 2) and (0, 1) with b = (3, 1) give x = (1, 1). Gauss–Jordan elimination normalises one pivot row at a time and subtracts its contribution from other rows, here choosing the first unused nonzero pivot and writing one residue per token. Three formats were studied (Table 1). In format S the network also writes the microstates of
+each update: the inverse d⁻¹ of the pivot entry d, the normalised value pb·d⁻¹ (pb is the pivot-row entry), the product k·(pb·d⁻¹) (k is the
 row's entry in the pivot column), and the updated entry old − product, or the normalised value on the pivot row. These written
-intermediate steps make T and S [scratchpad](../GLOSSARY.md#task-formats) formats.
+intermediate steps make T and S scratchpad formats, outputs with working before the answer ([glossary](../GLOSSARY.md#task-formats)). A microstep is one of these intermediate arithmetic operations, rather than a complete matrix update.
 
 *Table 1. Output formats and output lengths in tokens.*
 
@@ -39,7 +30,7 @@ intermediate steps make T and S [scratchpad](../GLOSSARY.md#task-formats) format
 
 Fresh systems were drawn every batch. A seed-specific matrix hash (mod 5 = 0) selects the held-out matrices, all of whose right-hand
 sides are excluded from training; there are 2,000 held-out systems per seed. Exact match means the whole
-[teacher-forced](../GLOSSARY.md#task-formats) continuation is correct. Cells are named by field and dimension, for example F₅m2 for
+teacher-forced continuation is correct: each token receives the correct earlier tokens ([glossary](../GLOSSARY.md#task-formats)). Cells are named by field and dimension, for example F₅m2 for
 F₅ with m = 2.
 
 ## 2. Model
@@ -49,7 +40,7 @@ weight set by formula), PART (frozen hand-built parts with one trained stage) an
 
 ### 2.1 Architecture
 
-All networks are GPT-NeoX with 5 layers, ReLU, no LayerNorm, no positional encoding (position is built from BOS attention, as in HAND)
+All networks use the GPT-NeoX decoder layout with attention heads reading earlier positions and feed-forward MLP blocks transforming each position's running vector ([glossary](../GLOSSARY.md#standard-machine-learning-terms)). They have 5 layers, ReLU, no LayerNorm, no positional encoding (position is built from BOS attention, as in HAND)
 and an untied read-out. T and A use d_model 96, 6 heads of 16, MLP 128, vocabulary 16 and context 128 (width retry: d_model 192,
 heads of 32, MLP 256). S uses d_model 176, 11 heads of 16, MLP 223, vocabulary 37 and context 256.
 
@@ -82,7 +73,7 @@ T/A).
 
 ### 2.4 Reproduction
 
-Training code for this task is not yet in `code/`; the weights, held-out splits and recorded
+Reproduce: not available yet: training code for this task is not yet in `code/`; the weights, held-out splits and recorded
 accuracies are on Hugging Face at
 [huggingface.co/jc1122/circuit-atlas-nets/tree/main/linear-systems-finite-fields](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/linear-systems-finite-fields).
 
@@ -102,10 +93,10 @@ and the last layer subtracts or routes (Figure 1). Layer 0 builds a position R =
 layer 1 derives block, row and column and grammar gates; layer 2 fetches operands with scores −24‖key − query‖²; layer 3 picks the
 pivot by coordinate match plus 120[nz] − 120[used] − 20r.
 
-In T, the arithmetic is a scalar discrete-log lookup g^(log k + log pb + log d⁻¹) (zero handled separately) onto the circle
+In T, a discrete logarithm is an exponent of a fixed field generator g, turning multiplication of nonzero residues into addition of exponents. The arithmetic is a scalar discrete-log lookup g^(log k + log pb + log d⁻¹) (zero handled separately) onto the circle
 (cos 2πt/p, −sin 2πt/p), and layer 4 subtracts by paired ReLUs on |⟨(e(old) + e(−t))/2, e(c/2)⟩|, the "pizza" subtraction of
-[Zhong et al. (2023)](#references). S instead writes categorical candidates ReLU(e_a + e_b − 1), mapped to e_(ab mod p) or
-e_(a−b mod p), and a frozen typed router emits the right candidate or the pivot-row copy. The formula-nonzero size is T 14 heads +
+[Zhong et al. (2023)](#references), a trigonometric readout from the sum of two number-circle vectors ([glossary](../GLOSSARY.md#analysis-measures)). S instead uses one-hot residue indicators e_a and e_b (one active coordinate per value) to write categorical candidates ReLU(e_a + e_b − 1), mapped to e_(ab mod p) or
+e_(a−b mod p), and a frozen typed router selects the candidate belonging to the current microstep or copies the pivot row. The formula-nonzero size is T 14 heads +
 195/211 neurons and S 15 + 400/482 (F₅/F₇). HAND is exact on all 12,000/98,784 m = 2 systems, on exhaustive local arithmetic, on
 stratified m = 3 fixtures and in greedy rollouts (m = 3 not exhausted).
 
@@ -132,6 +123,8 @@ trained stage.*
 
 ## 4. What training finds
 
+The final run was analysed on 2026-11-08.
+
 *Table 3. Seeds with best held-out exact ≥ .99 in the screens (initial run, then each retry).*
 
 | Cell | PART T | PART S | TRAIN T | TRAIN S | TRAIN A |
@@ -141,7 +134,7 @@ trained stage.*
 | F₇m2 | 0/3 | 2/3 | 0/3 → 2/3 (60k) → 0/3 (width 2) | 3/3 | 0/3 → 0/3 |
 | F₇m3 | 0/3 | run lost | 0/3 → 0/3 | 3/3 (stop 22.5k) | 0/3 → 0/3 |
 
-From scratch, S solved every screen (3/3 in all four cells) and the F₅m2 ten-seed final (10/10); T solved only after a budget retry at
+From scratch, S solved every screen (3/3 in all four cells) and the F₅m2 ten-seed final (10/10), with best and final exact 1.0 on 2000 held-out systems per seed; T solved only after a budget retry at
 m = 2 (F₅ 3/3, F₇ 2/3; a further width retry at F₇m2 0/3), and A never. Transfer from m = 2 to m = 3 is 0.0 in 10/10.
 
 The learning curves are as follows. In the F₅m2 S TRAIN final, onset (test > .01) came at 3.5–4.5k and the first exact at 8.0–11.5k
@@ -180,32 +173,30 @@ Discovered circuits (188–548 of 1,616 edges) match HAND in no seed (edge Jacca
 
 ## 5. Mechanism and verification
 
-### 5.1 T PART: decision surrogate (accepted)
+### 5.1 T PART: partial decision surrogate and repair
 
 Let n = pb·d⁻¹ and t = k·n, with f = n on the pivot row and old − t elsewhere (mod p). The whole MLP3 is replaced by
 m̂₃(x) = ι_R θ[g(x)], keeping MLP4. Here g = (equal, f) at value slots and otherwise a prefix-derived grammar category; θ is the mean
 native response in that category (fit on 1,024 fresh train-partition systems); and R is the 16 token-score coordinates plus OC, OS,
-PC, PS, TB, EQ (22). On 1,024 fresh held-matrix systems per snapshot, all 24 best/final snapshots of the four T PART cells score
+PC, PS, TB, EQ (22). The map ι_R writes the table response only into R. OC/OS are the old entry's circle coordinates, PC/PS the product's circle coordinates, TB flags a value slot and EQ a pivot-row match. On 1,024 fresh held-matrix systems per snapshot, all 24 best/final snapshots of the four T PART cells score
 1024/1024 (bar ≥ .99 × native), with 484/506/616/638 scalars (F₅m2/F₅m3/F₇m2/F₇m3) against 24,800. Independently re-run with new fit
-and test salts on the F₅m3/F₇m2 snapshots, 12/12 pass. The solved F₅m3 native scores 1022–1024, so the surrogate is a decision surrogate (it
-reproduces the network's output decisions on reachable inputs, not its continuous response), and on failed cells a repair, not an explanation of their errors. Controls: zero MLP3 and shifted arithmetic give 0/1024;
-zero MLP4 keeps native accuracy. No resample ablation of the complement was reported for this stage.
+and test salts on the F₅m3/F₇m2 snapshots, 12/12 pass. The solved F₅m3 native scores 1022–1024, so the replacement is a decision surrogate, reproducing the correct output decisions on reachable inputs without matching continuous responses ([glossary](../GLOSSARY.md#verifying-a-circuit)). It also repairs native errors, including in failed cells, so it is not a faithful explanation of those errors. Controls: zero MLP3 and shifted arithmetic give 0/1024;
+zero MLP4 keeps native accuracy. No resample ablation of the complement was reported for this stage. Its status is Partial, supported by substitution only; the source's accepted label applies to this limited decision-surrogate claim.
 
 ### 5.2 S PART: candidate (not accepted)
 
-MLP3 is replaced by a three-map form that sends I_a to NORMAL_(a·pb), N_a to PROD_(a·k) and M_b to DIFF_(old − b), with MLP4 kept. It scores
+The written tokens I_a, N_a and M_b label an inverse a, a normalised pivot value a and a product b. MLP3 is replaced by a three-map form that sends I_a to NORMAL_(a·pb), N_a to PROD_(a·k) and M_b to DIFF_(old − b), with MLP4 kept. It scores
 1024/1024 with token agreement 1 in all 8 snapshots of the 4 solved seeds, and zero MLP3/MLP4 give 0, but the substitute-shuffle control
 is missing, so it is not accepted.
 
-### 5.3 S TRAIN final: last-layer operand table (not accepted as a circuit)
+### 5.3 S TRAIN final: sufficient readout only
 
 MLP4 at microstep q is approximated by θ₄[phase, operands], where θ₄ is the fit-mean MLP4 output (2,048 training systems) keyed on
-phase 1: d; 2: (d⁻¹, pb); 3: (pb·d⁻¹, k); 4: (equal-row, old, product, normalised); 91 cells. Substituted, it gives exact 1.0 in
-seeds 0, 3 and 9 (native 1.0); a shuffled key gives 0 and zero gives 0. MLP3 is not an operand table (.01/.34/.15); a joint MLP3+MLP4
+phase 1: d; 2: (d⁻¹, pb); 3: (pb·d⁻¹, k); 4: (equal-row, old, product, normalised); 91 cells. Phase and operand keys are computed by the reference elimination algorithm from each input system, not decoded from the trained network. Substitution therefore tests a reference-keyed readout, not an internally recovered operand computation. On 2000 held-out systems per seed it gives exact 1.0 in seeds 0, 3 and 9 (native 1.0); a shuffled key gives 0 and zero gives 0. MLP3 is not an operand table (.01/.34/.15); a joint MLP3+MLP4
 table holds in seeds 3 and 9 (1.0/.9995), not in seed 0 (.14). The
 [resample ablation of the complement](../GLOSSARY.md#verifying-a-circuit), which replaces everything outside a circuit with its
-values on other inputs, gives .00–.30 for the claimed circuit and .79–.89 for the discovered ones, both under .90, so the net outside
-MLP4 has no closed form here and no whole-net closed form passes the circuit check. An earlier phase-conditioned additive MLP4
+values on other inputs, uses 128 systems per seed in all 10 final seeds. It gives .00–.30 for the claimed circuit and .79–.89 for the discovered ones, both under .90, so the net outside
+MLP4 has no closed form here and no whole-net closed form passes the circuit check. The operand table is Sufficient readout only, despite its successful local substitution. An earlier phase-conditioned additive MLP4
 formula on the screen nets was rejected (2/18 numerical passes, none on solved snapshots).
 
 ```mermaid
@@ -213,7 +204,7 @@ flowchart TD
     subgraph TR["S TRAIN final, 10/10 seeds"]
         E["embedding"] --> M02["MLP0 to MLP2"]
         M02 --> H34["11 to 20 needed heads, mostly L3 and L4"]
-        H34 --> M4["MLP4: operand table keyed on phase and operands"]
+        H34 --> M4["MLP4: late write tested by a reference-keyed table"]
         H34 -.->|"L3 heads to MLP3 nearly unused"| M3T["MLP3"]
         M4 --> O["residue token, every microstate at the last layer"]
     end
@@ -222,16 +213,15 @@ flowchart TD
         M3P --> OP["residue token"]
         M3P -.->|"MLP4 subtractor bypassed, ablation costs 0"| M4P["frozen MLP4"]
     end
+    classDef trained fill:gold,stroke:darkgoldenrod,color:black
+    class E,M02,H34,M4,M3T,M3P trained
 ```
 
-*Figure 2. The circuits that training finds. From scratch (S TRAIN), a distributed late lookup with MLP4 as an operand table
-(substitution 1.0 in 3/3 tested seeds; complement resample .00-.30 fails the circuit check). In T PART, the trained MLP3 bypasses the
-frozen subtractor (decision surrogate accepted; complement not tested).*
+*Figure 2. S TRAIN's late operand table is Sufficient readout only: reference-keyed substitution gives 1.0 on 2000 systems in 3/3 tested seeds, but complement .00–.30 / .79–.89 on 128 systems per seed fails the .90 circuit check. The native computational nodes in that panel are trained; the substitution keys are supplied by the reference algorithm, not decoded network state. In T PART only MLP3 is shaded and trained; its Partial decision surrogate repairs errors and bypasses the frozen subtractor, with complement untested.*
 
 ### 5.4 Relation to the hand-built network and to published work
 
-S PART keeps HAND's factorisation and T PART bypasses it. TRAIN computes every microstate at the last layer, with MLP4 as an operand
-table, instead of HAND's layer-3 lookup followed by the layer-4 router. S beats answer only in the completed screens, but its larger
+S PART keeps HAND's factorisation and T PART bypasses it. TRAIN makes the arithmetic variables causally available at the last residual. MLP4 admits a reference-keyed operand-table replacement, Sufficient readout only because the complement test fails; this does not recover the network's own operand extraction. HAND instead uses a layer-3 lookup followed by the layer-4 router. S beats answer only in the completed screens, but its larger
 width, longer output and one smaller batch prevent a causal conclusion about the format alone. HAND's subtraction is the "pizza"
 construction of [Zhong et al. (2023)](#references); the written microstates follow scratchpad computation
 ([Nye et al., 2021](#references)). With p = 5 only two Fourier frequencies exist, and no Fourier structure is claimed.
@@ -243,7 +233,7 @@ established: a TRAIN arithmetic formula or circuit closed form, an S PART formul
 generalisation (from m2 to m3: T PART 0/3 per field, S TRAIN 0/10). Circuit discovery picks one of many valid subgraphs
 ([Bayat Makou et al., 2026](#references)), and an edge-level claim of a core shared across seeds is untested. Mean tables can overstate
 a component's role ([Li & Janson, 2024](#references)). Lost: the initial F₅m2 A/T TRAIN nets and F₇m3 S PART. Pending: diagnostics of
-the F₇m2 T width retry, and public code.
+the F₇m2 T width retry, and public code. The later diagnostic rerun found no memorisation or stall alert in 7/7 final seeds with checkpoint dynamics. Seeds 0–2 have no step checkpoints; the log-only dynamics pass and geometry/weight-decay probes are missing. Seed 2's best-snapshot diagnostics were deliberately omitted because its best and final steps coincide. These gaps are not evidence of a complete dynamics census.
 
 ## 7. Prediction record
 
@@ -266,7 +256,7 @@ embedding and a number circle, > .5 in 1/8 embeddings); training may move the ar
 
 The fitted category means θ[g = (nonpivot, 0), Y₀] for seeds 0/1/2 are F₅m3 .0641, .0609, .0422 and F₇m2 .0351, .0409, .0396.
 
-Reading: neuron 61 favours comma over semicolon and value contexts; neuron 97 mixes zero-operand flags with old-state information and
+TS flags a separator, TSEMI a semicolon and TB a value slot. KZ/PZ/OZ flag zero values of k, pb and old. Neuron 61 favours comma over semicolon and value contexts; neuron 97 mixes zero-operand flags with old-state information and
 writes residue scores directly. Neither is an isolated arithmetic gate. Where HAND writes product-circle coordinates for MLP4's paired
 subtraction, the trained stage writes answer scores itself, and deleting MLP4 costs nothing (the causal bypass evidence). In the final
 S TRAIN nets all 223 neurons are live in every MLP (no sparse lookup, unlike HAND's 70 live MLP3 neurons with input weights 1.0), and
@@ -295,11 +285,11 @@ difference .76–.94, k .72–.84 and inverse .69–.97; pivot .61–.91 (L4/L5)
 
 - Bayat Makou, A., Niu, J., Dutta, S., & Gurevych, I. (2026). Many circuits, one mechanism: Input variation and evaluation granularity
   in circuit discovery. *Transactions on Machine Learning Research (2026)*. https://doi.org/10.48550/arxiv.2606.06267 (circuit
-  equivalence classes)
+  equivalence classes); https://arxiv.org/abs/2606.06267
 - Li, M., & Janson, L. (2024). Optimal ablation for interpretability. *arXiv preprint*. https://doi.org/10.48550/arxiv.2409.09951
-  (ablation baselines)
+  (ablation baselines); https://arxiv.org/abs/2409.09951
 - Nye, M., Andreassen, A. J., Gur-Ari, G., et al. (2021). Show your work: Scratchpads for intermediate computation with language
   models. *arXiv preprint*. https://arxiv.org/abs/2112.00114 (scratchpad computation)
 - Zhong, Z., Liu, Z., Tegmark, M., & Andreas, J. (2023). The clock and the pizza: Two stories in mechanistic explanation of neural
   networks. *Advances in Neural Information Processing Systems 36 (NeurIPS 2023)*. https://arxiv.org/abs/2306.17844 (the "pizza"
-  modular-arithmetic circuit)
+  modular-arithmetic circuit); https://doi.org/10.52202/075280-1186

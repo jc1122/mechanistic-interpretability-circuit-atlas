@@ -1,6 +1,6 @@
 # Integer matrix-vector product
 
-A matrix-vector product takes a weighted sum of a vector for each matrix row. With a scratchpad that writes the intermediate accumulator, 8/10 networks trained from scratch reached final exact match 1.0 on 2,000 held-out inputs per seed; answer-only training reached 1/3 after a 4x budget. The successful scratchpad networks use accumulator, carry and next-bit variables only at the last layer, with dense wiring unlike the hand-built reference. The task is partly solved: the partly trained formula passes substitution, with complement evidence on two tested seeds only, while every tested from-scratch formula fails substitution.
+Matrix-vector multiplication forms each answer by adding the products in one matrix row. A five-layer transformer that wrote partial row sums on a scratchpad reached final whole-output exact match 1.0 in 8/10 seeds on 2,000 held-out inputs per seed; answer-only training reached 1/3 after the budget grew from 30k to 120k steps across three rounds. The scratchpad models used current-bit and carry information at the final layer, yet substituting the tested arithmetic formula on linearly decoded values failed in every seed. The task is partly solved, with a partial formula for the frozen-scaffold model (substitution 3/3, complement evidence on two tested seeds only) and no accepted from-scratch form. Every final scratchpad model scored exact match 0 at matrix sizes m=2 and m=4 on 256 inputs per size.
 
 ## At a glance
 
@@ -19,7 +19,7 @@ HAND sets every weight by formula, PART trains one stage on frozen HAND parts, a
 
 ## 1. Task and data
 
-y = Mv, square m=3, entries 0..7, each y_i as nine LSB-first bits (published bound <= 196). The identity matrix leaves the vector unchanged. The scalar accumulator range is 0..147 at m=3 and 0..196 at m=4; the published <= 196 bound covers the size tests, rather than being the tight m=3 bound. Fresh inputs are drawn every batch; each seed has a disjoint 2,000-input test set.
+The task is y = Mv, where M is a square matrix, v is a vector and m=3 is the row and column count. Entries are 0..7, and each y_i is written as nine least-significant-bit-first (LSB-first) bits: the units bit comes before the twos bit. The previously published bound is <= 196. The identity matrix leaves the vector unchanged. The scalar accumulator range is 0..147 at m=3 and 0..196 at m=4; the published <= 196 bound covers the size tests, rather than being the tight m=3 bound. Fresh inputs are drawn every batch; each seed has a disjoint 2,000-input test set.
 
 *Table 1. Output formats. LSB-first means the least significant bit is written first.*
 
@@ -49,7 +49,9 @@ PART re-initialises the last MLP and uses fp32; TRAIN uses a TF32 flag with fp32
 | Cell | Steps | Batch | Examples per seed / stop |
 |---|---|---|---|
 | T TRAIN final | 30k | 256 | 7.68M |
-| A TRAIN run 3 | 120k planned | 128 | Plateau stop 93k |
+| A TRAIN run 1 | 30k | 128 | Budget completed; 0/3 exact |
+| A TRAIN run 2 | 60k | 128 | Budget completed; 0/3 exact |
+| A TRAIN run 3 | 120k planned | 128 | Plateau stop 93k; 1/3 exact |
 | A PART | 30k | Not stated here | Closed after the failed screen |
 
 ### 2.4 Reproduction
@@ -62,7 +64,7 @@ Revision `b9c5bae` contains `hand_A`, `hand_T`, TRAIN best + final snapshots of 
 
 ## 3. Hand-built solution
 
-A fetch head copies an operand to the position that uses it; a binary staircase alternates thresholds to extract a bit ([hand-built machinery](../GLOSSARY.md#hand-built-machinery)). HAND-a first forms products and then a row sum. HAND-b instead updates a bitwise accumulator after each shifted product.
+An accumulator is the running row sum. A carry transfers an overflow from one bit position into the next. A fetch head copies an operand to the position that uses it; a binary staircase alternates thresholds to extract a bit ([hand-built machinery](../GLOSSARY.md#hand-built-machinery)). HAND-a first forms products and then a row sum. HAND-b instead updates a bitwise accumulator after each shifted product.
 
 
 HAND-a uses vector-bit fetch heads and gated products relu(M_ij + 8 bit(v_j,b) - 8). Uniform row attention takes their mean; rescaling by m gives the row sum, and a binary staircase reads its bits. It uses 6 heads and 769 neurons.
@@ -92,12 +94,12 @@ T TRAIN reached final exact match 1.0 in 8/10 seeds (seed 7 .9995, seed 9 .815);
 |---|---|---|---|---|
 | PART T | 3/3 | 1 / 1 | <= 1,000 | T1 frozen HAND-b routing + carry/parity voter bank (3/3) |
 | PART A | 0/3 | .078-.12 / .078-.11 | none (22.5k) | none: staircase readout of bits 0-3 missing |
-| TRAIN T (final) | 8/10 | 1 x9, .815 / 1 x8, .9995, .815 | median 17.5k (11.5k-29k) | T2 family (8/10): s0, s3, s4 three stitch-distinct types (1 each), 5 untested; s9 unsolved |
-| TRAIN A (r3) | 1/3 | .9585/1/.9995 | s1 78.5k (gradual) | A1 exact products + 2-d nonlinear row-sum code (1/3; s2 .9995 same) |
+| TRAIN T (final) | 8/10 | 1 x9, .815 / 1 x8, .9995, .815 | median 17.5k among terminal-exact seeds; 11.5k-29k among ever-exact seeds | T2 family (8/10): s0, s3, s4 three stitch-distinct types (1 each), 5 untested; s9 unsolved |
+| TRAIN A (r3) | 1/3 | best .9585/1/.9995; final .9555/1/.999 | s1 78.5k (gradual) | A1 exact products + 2-d nonlinear row-sum code (1/3; s2 best .9995 same) |
 
 ### Diagnostic summary
 
-Probe R² measures linear decodability, DAS tests variables through a learned rotation, and interchange flip swaps a variable between inputs ([analysis measures](../GLOSSARY.md#analysis-measures)). L5 is the residual after the last layer, not a sixth transformer layer. Effective rank (r90) counts directions needed for 90% of variance or matrix energy; attention JS measures divergence from HAND. A discovered circuit's faith is held-out accuracy under complement resampling; edge Jaccard measures overlap with HAND's connections. Stitching tests whether representations can be mapped between seeds without losing accuracy; a zero score does not itself prove different algorithms.
+Probe R² measures how well a linear readout recovers a named variable. A ridge decoder is such a readout fitted with a penalty on large coefficients; its errors can accumulate over a long trace. Distributed alignment search (DAS) learns a rotation in which to swap variables between inputs, and interchange flip measures whether that swap changes the output as the task rule predicts ([analysis measures](../GLOSSARY.md#analysis-measures)). L5 is the residual after the last layer, not a sixth transformer layer. Effective rank (r90) counts directions needed for 90% of variance or matrix energy; attention JS measures divergence from HAND. A discovered circuit's faith is held-out accuracy under complement resampling; edge Jaccard measures overlap with HAND's connections. Stitching tests whether representations can be mapped between seeds without losing accuracy; a zero score does not itself prove different algorithms.
 
 *Table 4. Published diagnostics. Compact s labels mean seed; r means run; OV is an attention value/output map. Used heads and whole MLPs were ablated; individual used neurons were not.*
 | cell (seeds) | used heads; MLPs | best probe R² (L5 unless noted) | eff. rank (OV r90; MLP4 in r90) vs HAND | attn JS to HAND | best / final |
@@ -115,11 +117,11 @@ A closed form must survive substitution and complement resampling to count as ve
 
 ### T1: partly trained carry/parity bank
 
-The replacement is c=[x'+b·a'-s'>=1], y=(x+b·a+c) mod 2. Substituting it for MLP4 gives exact 1.0 on 2,000 saved m3 inputs per seed (3/3); causal scrubbing gives 100%. The published entry calls it accepted. The source reports that scrub on both tested seeds; the generic complement diagnostic was not run. This supports the resample side for those two seeds, not a third-seed certificate.
+The replacement is `c=[x'+b·a'-s'>=1], y=(x+b·a+c) mod 2`: reconstruct the incoming carry c, then take the next bit y as parity, whether the sum is odd. Substituting it for MLP4 gives exact 1.0 on 2,000 saved m3 inputs per seed (3/3); causal scrubbing, which replaces other activations with fresh donor values, gives 100% on two tested seeds. The published entry calls it accepted. The generic complement diagnostic was not run, and the source summary does not give the donor-scrub row count. This supports the resample side for those two seeds, not a third-seed certificate; the population status stays partial.
 
 ### T2: from-scratch scratchpad family
 
-The same formula on ridge-decoded x,x',a,a',b,s' at L5 gives exact 0-.006. Operand bits a/a'/b decode at .69-.95, near the majority rate. The discovered-circuit complement gives .932 in seed 3 (passes) and .839 in seed 4 (fails). The formula is not accepted.
+The same formula on ridge-decoded x,x',a,a',b,s' at L5 gives exact 0-.006 on 500 scored rows per seed (1000 saved, 500 fit and 500 scored). Operand bits a/a'/b decode at .69-.95, near the majority rate. The discovered-circuit complement gives .932 in seed 3 (passes) and .839 in seed 4 (fails). The formula is not accepted.
 
 ### A1: answer-only circuit
 
@@ -139,16 +141,16 @@ flowchart TD
 
 ### Relation to published work
 
-Scratchpad PART learns a redundant bank of HAND-b's local carry/parity variables. In TRAIN the fetch is spread over L3–L4, and the last MLP has rank 35–46 where HAND uses a 32-neuron table. The answer-only circuit recovers HAND-a's products without its aggregation code.
+Scratchpad PART learns a redundant bank of HAND-b's local carry/parity variables. In TRAIN the fetch is spread over L3–L4, and the last MLP has 35–46 directions at 90% input-matrix energy, rather than HAND's 32 active neurons. Effective rank is a weight-concentration measure, not a count of used neurons. The answer-only circuit recovers HAND-a's products without its aggregation code.
 
-[Charton (2021)](#references) trains real-valued matvec transformers with tolerance scoring; [Getu (2021)](#references) bounds and trains ReLU matvec approximators; [Ma et al. (2025)](#references) construct matvec transformer operators. [Sworna et al. (2016)](#references) and [Babu (2022)](#references) describe learned lookup-table matrix products. These are related tasks or constructions, not replications of this bitwise held-out exact-match test.
+[Charton (2021)](#references) trains real-valued matvec transformers with tolerance scoring; [Getu (2021)](#references) bounds and trains ReLU matvec approximators; [Ma et al. (2025)](#references) construct matvec transformer operators. [Sworna et al. (2016)](#references) and [Babu (2022)](#references) describe learned lookup-table matrix products. A lookup table lists a result for each discrete input combination. These are related tasks or constructions, not replications of this bitwise held-out exact-match test.
 
 [Giannou et al. (2023)](#references) construct softmax-based matrix products; [Mereghetti and Palano (2000)](#references) and [Parekh et al. (2018)](#references) analyse threshold-circuit variants. [Telgarsky (2016)](#references) supplies the depth/threshold comparison, not a claim that these five layers are necessary. For adjacent empirical work, [Bai et al. (2025)](#references) report long-range dependency failures in scalar multiplication and [Nye et al. (2021)](#references) study scratchpad supervision.
 ## 6. Limitations and open questions
 
 Final run only for T TRAIN (wd .1, one hardware setup, TF32 flag); other cells 3 seeds. Length: T TRAIN m=2 and m=4 exact 0 in all 10 seeds (token acc .42-.88);
 lower/high-bit value slices of m3 .98-1 (s9 .32 high-bit). Teacher-forced metrics; not exhaustive at m=4 (8^20 inputs). Individual used neurons not
-ablated. Failing linear decoders do not show a variable is absent ([Geiger et al., 2021](#references)); a DAS-aligned substitution was not run.
+ablated. Failing linear decoders do not show a variable is absent ([Geiger et al., 2021](#references)); a DAS-aligned substitution was not run. Seed 9's carry is accessible under DAS, so its incomplete low-bit computation is not evidence of a missing carry representation. Seed 7's 64 diagnostic traces were all exact despite its one error on the 2,000-input final test: that error has not been localised. The legacy weight-decay sweep was not run, so all reported grok rates here are at wd .1. PART weights remain unarchived. The logged stall alerts in seeds 2, 6 and 9 had no supplied checkpoint inspection; error-containing diagnostics for seed 7 and stitching for the other solved seeds remain missing.
 ## 7. Prediction record
 
 Committed: PART T 10/10 and A >= 8/10 by 10k; TRAIN T >= 7/10, A <= 3/10 by 30k; no TRAIN seed > .5 at m=4. Held: T PART (3/3 by 1k), T TRAIN (9/10 >= .99, 8/10 exact by 30k), A TRAIN <= 3/10 at 30k (0/3), m=4 (0 in all 10 T seeds). Missed: A PART (0/3). Held-out-value arm not run.
@@ -169,21 +171,23 @@ In TRAIN (archived final nets, L4 direct bit vote), the top 5 of 640 neurons car
 | Discovered-circuit complements | 64 rows, 3 draws | Seed 3 .932 passes; seed 4 .839 fails |
 | Size and value tests | 256 rows per axis | At m=2 and m=4, exact 0 in all 10 seeds |
 
-The published summary describes “three 2x budget retries (30k -> 120k)”. The training record instead identifies run 3 as retry 2: run 1 used 30k, run 2 used 60k and run 3 used 120k. We retain both descriptions here; the headline uses the recorded 4x final budget, not a recomputed retry count.
+The published summary describes “three 2x budget retries (30k -> 120k)”. The training record instead identifies run 3 as retry 2: run 1 used 30k, run 2 used 60k and run 3 used 120k. This is two budget doublings across three rounds, not three retries; the old wording is retained here as a correction record. The final budget was 4x the first.
+
+First-exact timing also has two cohorts: median 17.5k among the eight terminal-exact seeds, versus median 21k and range 11.5k-29k among the nine seeds that were ever exact. Seed 7's late regression explains why those cohorts differ.
 
 The diagnostic table and narrative retain their original ranges, including 83-283 edges in the narrative versus 83-238 in the source's circuit-type table. Neither is a certified minimum. Linear-decoder failure does not demonstrate variable absence; a DAS-aligned substitution was not run.
 
 ## References
 
-- Babu (2022). LUT-based matrix multiplication using neural networks. https://doi.org/10.1201/9781003269182-15 (book chapter; learned lookup tables).
+- Babu, H. M. H. (2022). LUT-based matrix multiplication using neural networks. *VLSI Circuits and Embedded Systems*. https://doi.org/10.1201/9781003269182-15 (book chapter; learned lookup tables).
 - Bai, X., Pres, I., Deng, Y., et al. (2025). Why can't transformers learn multiplication? Reverse-engineering reveals long-range dependency pitfalls. *arXiv preprint*. https://arxiv.org/abs/2510.00184 (scalar-multiplication comparison).
 - Charton, F. (2021). Linear algebra with transformers. *arXiv preprint*. https://arxiv.org/abs/2112.01898 (real-valued matvec with tolerance scoring).
-- Geiger, Lu, Icard, & Potts (2021). Causal abstractions of neural networks. https://arxiv.org/abs/2106.02997 (arXiv preprint; decodability versus causal representation).
-- Getu (2021). Error bounds for a matrix-vector product approximation. https://arxiv.org/abs/2111.12963 (arXiv preprint; ReLU matvec approximators).
-- Giannou et al. (2023). Looped transformers as programmable computers. https://arxiv.org/abs/2301.13196 (arXiv preprint; matrix-product construction).
-- Ma, Gao, & Ng (2025). NLAFormer. https://arxiv.org/abs/2508.19557 (arXiv preprint; transformer matvec operators).
-- Mereghetti & Palano (2000). Threshold circuits for iterated matrix product and powering. https://doi.org/10.1051/ita:2000105 (journal article; threshold-circuit construction).
+- Geiger, A., Lu, H., Icard, T., & Potts, C. (2021). Causal abstractions of neural networks. *arXiv preprint*. https://arxiv.org/abs/2106.02997 (arXiv preprint; decodability versus causal representation).
+- Getu, T. M. (2021). Error bounds for a matrix-vector product approximation with deep ReLU neural networks. *arXiv preprint*. https://arxiv.org/abs/2111.12963 (arXiv preprint; ReLU matvec approximators).
+- Giannou, A., Rajput, S., Sohn, J.-y., Lee, K., Lee, J. D., & Papailiopoulos, D. (2023). Looped transformers as programmable computers. *arXiv preprint*. https://arxiv.org/abs/2301.13196 (arXiv preprint; matrix-product construction).
+- Ma, Z., Gao, Y., & Ng, M. K. (2025). NLAFormer: Transformers learn numerical linear algebra operations. *arXiv preprint*. https://arxiv.org/abs/2508.19557 (arXiv preprint; transformer matvec operators).
+- Mereghetti, C., & Palano, B. (2000). Threshold circuits for iterated matrix product and powering. *RAIRO - Theoretical Informatics and Applications*. https://doi.org/10.1051/ita:2000105 (journal article; threshold-circuit construction).
 - Nye, M., Andreassen, A. J., Gur-Ari, G., et al. (2021). Show your work: Scratchpads for intermediate computation with language models. *arXiv preprint*. https://arxiv.org/abs/2112.00114 (scratchpad supervision).
-- Parekh et al. (2018). Constant-depth and subcubic-size threshold circuits for matrix multiplication. https://doi.org/10.1145/3210377.3210410 (conference paper; threshold-circuit comparison).
-- Sworna, Ul Haque, & Babu (2016). A LUT-based matrix multiplication using neural networks. https://doi.org/10.1109/ISCAS.2016.7538964 (conference paper; learned lookup tables).
-- Telgarsky (2016). Benefits of depth in neural networks. https://arxiv.org/abs/1602.04485 (arXiv preprint; depth/threshold context).
+- Parekh, O., Phillips, C. A., James, C. D., & Aimone, J. B. (2018). Constant-depth and subcubic-size threshold circuits for matrix multiplication. *Symposium on Parallelism in Algorithms and Architectures*. https://doi.org/10.1145/3210377.3210410 (conference paper; threshold-circuit comparison).
+- Sworna, Z. T., Ul Haque, M., & Babu, H. M. H. (2016). A LUT-based matrix multiplication using neural networks. *IEEE International Symposium on Circuits and Systems (ISCAS)*. https://doi.org/10.1109/ISCAS.2016.7538964 (conference paper; learned lookup tables).
+- Telgarsky, M. (2016). Benefits of depth in neural networks. *arXiv preprint*. https://arxiv.org/abs/1602.04485 (arXiv preprint; depth/threshold context).

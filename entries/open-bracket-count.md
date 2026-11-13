@@ -1,21 +1,20 @@
 # Open-bracket count
 
-This entry asks how a small network counts the opening brackets in a line of up to 45 brackets. A frozen transformer whose every
-weight was set by formula supplies the depth ratio b/(L+1), where b is the final depth, and the line length L, re-encoded in three
-ways; only a one-layer MLP on top was trained, and no hand-built reader for the count itself was given. With 80% of the cells in
-training, 10/10 networks grokked into a low-frequency trigonometric sum (frequencies k = 1–3 of 92, a clock) plus a small parity
-channel and reached test .78–.88; with 40% or 60% all 20 networks memorised. The task is partly solved (fraction .8: clock sum in 10/10 networks,
-none reaches 90%; fractions .4 and .6: memorisation in 20/20). The closed form is partial: it is supported by substitution (accuracy
-.91–.93, agreement .88–.92, where the networks score .96–.98 on all cells), and the complement was not tested.
+Count the opening brackets in a line, even though its prompt asks about bracket validity. A frozen, hand-built transformer supplies
+the length and final depth (opening minus closing brackets); only the small feed-forward network combining those features was
+trained. With 80% of the 1080 depth/length cells used for training, all 10 seeds showed delayed improvement, but final held-out
+accuracy was .78–.88 and none reached .90. Their responses suggest a clock-like sum of broad trigonometric features, helped by a
+smaller channel that distinguishes odd from even answers. The task remains unsolved at the .90 held-out criterion; the fitted
+cosine rule is a partial output approximation evaluated on all cells, including training cells, with no resample-complement test.
 
 | Fact | Value |
 |---|---|
 | Task | Count the `(` in a line of up to 45 brackets (46 possible answers) |
 | Input → output example | `(()` → `2` |
-| Model | Frozen hand-built 6-layer transformer and a frozen 416-wide menu of encodings; trained: one MLP layer, 256 ReLU units, 46 outputs |
-| Rungs and seeds | Hand-built network supplies b/(L+1) and L (no hand-built count reader); MLP trained on frozen hand-built parts, 10 seeds × train fractions .4/.6/.8 (30 networks), 200,000 steps each; 18 control runs |
-| Closed form status | Partial: per-neuron cosine sum, accuracy .91–.93, agreement .88–.92 (networks .96–.98 on all cells; supported by substitution; complement not tested) |
-| Status | Partly solved (fraction .8: clock sum in 10/10 networks, none reaches 90%; fractions .4 and .6: memorisation in 20/20); last run 2026-11-04 |
+| Model | Frozen hand-built 6-layer transformer and 416-wide feature menu; trained: one feed-forward block (MLP), 256 hidden units, 46 outputs |
+| Rungs and seeds | Hand-built base supplies b/(L+1) and L, not the answer; trained MLP, 10 seeds × training fractions .4/.6/.8 (30 networks), 200,000 steps each; 18 control runs; no from-scratch cell |
+| Closed form status | Partial (10/10 at fraction .8: cosine-rule task accuracy .91–.93 and agreement .88–.92 on all 1080 cells, including training; native networks .96–.98; complement not tested) |
+| Status | Unsolved (fraction .8, 0/10 with held-out accuracy ≥ .90; fractions .4 and .6, memorisation in 20/20); last run 2026-11-04 |
 | Weights | [Hugging Face: open-bracket-count](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/open-bracket-count) (hand-built base in `_shared/m2`) |
 | Reproduce | [Commands](#24-reproduction), run from `code/` |
 
@@ -25,12 +24,17 @@ Each prompt holds a fixed one-shot example followed by the query line:
 `VALID_BRACKETS: ()\nANSWER: YES\nVALID_BRACKETS: <line>\nANSWER: `. The answer is the number of `(`, which is (L + b)/2, where b is the
 final depth (#`(` − #`)`) and L the length; there are 46 classes. The data cover every cell with L = 1..45 and b = −L..L in steps of
 2, which gives 1080 cells with one shuffled line each. The split into training and test data is over cells, with train fractions .4,
-.6 and .8. Accuracy is the share of held-out cells answered correctly; some figures are also given on all cells.
+.6 and .8. Accuracy is the share of held-out cells whose single count answer is correct. For example, the line `(()` has count `2`; the
+`VALID_BRACKETS` wording is inherited from the frozen base and does not change the counting label. No seed reached the .90 held-out
+criterion. Formula substitutions in Section 5 instead score all 1080 cells, including those used for training.
 
 ## 2. Model
 
 The shared architecture, optimiser and instrumentation are described in [METHODS.md](../METHODS.md); this section gives only what is
-specific to the task.
+specific to the task. The [rungs](../GLOSSARY.md#the-three-rungs) distinguish a network set entirely by formula (HAND), a trained stage
+on frozen hand-built features (PART), and training from scratch (TRAIN). This experiment used HAND and PART only. An MLP is a
+feed-forward block, and ReLU is the activation that sets negative values to zero
+([glossary](../GLOSSARY.md#standard-machine-learning-terms)).
 
 ### 2.1 Frozen hand-built network
 
@@ -44,9 +48,10 @@ which gives L (Section 3).
 ### 2.2 Frozen menu and trained part
 
 The [menu](../GLOSSARY.md#hand-built-machinery) is a frozen layer, defined by formula, that places three encodings of each integer at
-the answer position: the raw scalar (here BAL for b and R for L), a one-hot code and a thermometer code (a vector whose k-th unit is [n ≥ k]), together with
-distractor features. Here the two integers are u = b, the depth from the bracket head's b/(L+1), and v = L. Each block is centred and
-divided by its rms row norm. Table 1 lists the blocks of the 416-wide input.
+the answer position: a scalar (one number, here BAL for b and R for L), a one-hot code (one indicator per possible value), and a
+thermometer code (indicators of the thresholds crossed, with k-th unit [n ≥ k]), together with distractor features. Here the two integers are u = b, the depth from the bracket head's b/(L+1), and v = L. Each block is centred and
+divided by its root-mean-square (rms) row norm, a scale measure
+([glossary](../GLOSSARY.md#standard-machine-learning-terms)). Table 1 lists the blocks of the 416-wide input.
 
 *Table 1. Input blocks of the frozen menu (index ranges of the 416-wide input).*
 
@@ -58,12 +63,16 @@ divided by its rms row norm. Table 1 lists the blocks of the 416-wide input.
 | ov | 93–138 | one-hot L = 0..45 |
 | tu | 139–228 | [b ≥ k], k = −44..45 |
 | tv | 229–273 | [L ≥ k] |
-| count, neg (distractors) | 274, 275 | constant here, so 0 |
+| count (distractor) | 274 | constant here, so 0 |
+| neg (distractor) | 275 | live prefix-negativity feature ANY; not constant |
 | copy pointer (distractor) | 276–345 | |
 | last letter (distractor) | 346–415 | |
 
 The trained stage is one MLP, `logits = W2 ReLU(W1 x + b1) + b2`, with W1 [256, 416], b1 [256], W2 [46, 256] and b2 [46], which is
-118,574 parameters.
+118,574 parameters. The logits are output scores; the largest score selects the count answer. ANY is the base's signal that a
+bracket prefix has negative depth, a different property from the final count.
+Its effect is small rather than identically zero: for seed 0 at fraction .8, held-out accuracy is 0.7824074029922485 and becomes
+0.7546296119689941 when neg is ablated. These are the unrounded recorded values, not the ten-seed ranges below.
 
 ### 2.3 Training
 
@@ -82,8 +91,11 @@ python run.py atlas --task open_count --kind scalar --seeds 0 1 2
 python run.py table out/open_count_*.json
 ```
 
-The headline numbers of each network are in the output keys `final` (test accuracy), `t50` (the first evaluation with test accuracy
-≥ 50%), `form_clock` / `form_clock_agree` (substitution accuracy and agreement) and `clock_k_top` (the dominant frequencies).
+Each command writes one JSON file per network. Its top-level `final.test_acc` is held-out accuracy; the nested `row` object
+holds `row.final`, `row.t50` (the first evaluation with test accuracy ≥ 50%), `row.form_clock` / `row.form_clock_agree`
+(substitution task accuracy and agreement) and `row.clock_k_top` (the dominant frequencies). The table command reads `row`
+objects but does not print the clock fields; those remain in the individual JSON files. Both control commands default to training
+fraction .4; repeat each with `--frac 0.6` and `--frac 0.8` for the other fractions.
 
 ### 2.5 Archive
 
@@ -132,10 +144,13 @@ only trained part.*
 
 ## 4. What training finds
 
-This is the only task in this set of menu tasks that [groks](../GLOSSARY.md#counting-results) (test accuracy rises long after training accuracy is
-perfect), and only with 80% of the cells in training. Train accuracy was 100% at step 500 in every run (Table 2).
+Within the three frozen-menu tasks compared together (count modulo 5, compare counts, and opening-bracket count), this was the only
+case of [grokking](../GLOSSARY.md#counting-results), delayed test improvement after training accuracy becomes perfect. It occurred
+only with 80% of the cells in training. Train accuracy was 100% at step 500 in every run (Table 2); Figure 3 shows one recorded
+learning curve.
 
-*Table 2. Results per train fraction (ranges over 10 seeds).*
+*Table 2. Held-out accuracy per training fraction (ranges over 10 seeds; 0/10 reach .90 at each fraction). The legacy rounded ranges
+are retained; the source gives .037–.109 for fraction .6 and .778–.880 for fraction .8.*
 
 | Fraction | Train 100% step | Test 50% step | Final test | Circuit type |
 |---|---|---|---|---|
@@ -147,7 +162,8 @@ At fraction .4 the wrong answers are neighbouring cells' answers. At fraction .8
 at 20.5k–28.5k and then stayed flat at .78–.88 from about 150k steps, while the weight norm fell from 80 to 73. None reaches 90%.
 
 The circuit types are a low-frequency clock sum in 10/10 networks at fraction .8 and memorisation in 20/20 at .4 and .6. At fraction .8
-all three encodings are used together, the one-hot as the main input; the distractors have no effect.
+all three encodings are used together, with the one-hot as the main input. Distractor ablations have small effects; the live neg
+feature must not be described as constant or causally inert.
 
 The controls are summarised in Table 3. The random base is better than the menu at fractions .4 and .6; its residual stream holds b and
 L linearly (ridge R² 1.000). A menu holding only the scalars reached .35–.56.
@@ -160,20 +176,33 @@ L linearly (ridge R² 1.000). A menu holding only the scalars reached .35–.56.
 
 ## 5. Mechanism and verification
 
-Each hidden neuron n was fitted with the closed form
+At fraction .8, each hidden neuron's pre-activation, the value before ReLU clips negative inputs, was fitted with the closed form
 
 pre_n = c_n + a_n cos(ω_n b/2 + φ_n) + a′_n cos(ω_n L/2 + ψ_n),  ω_n = 2πk_n/92,
 
-with k_n ∈ 1..45 chosen per neuron (most often 1–3) and the trained output weights kept. Substituted for the network, it reaches
-accuracy .91–.93 (the networks score .96–.98 on all cells) and agrees with the network on .88–.92 of cells. The pre-activation separates
-into a b part plus an L part (substitution .95–.98) but is not linear: a straight-line form scores .09–.11. The low-k wavelengths (31–92)
+where c_n is an offset, a_n and a′_n are amplitudes, φ_n and ψ_n are phase offsets, and k_n ∈ 1..45 chooses a frequency for each neuron
+(most often 1–3). The trained output weights were kept. For all 10 seeds, substitution gives task accuracy .91–.93 against native
+.96–.98, and agreement with the native answers is .88–.92. These are all-cell scores, not the held-out .78–.88 in Table 2. Table 4
+retains the source's more precise all-cell ranges alongside the old rounded values. The pre-activation separates into a b part plus
+an L part (substitution .95–.98) but is not linear: a straight-line form scores .09–.11. The low-k wavelengths (31–92)
 exceed half the domain, so those cosines do not alias. The closed form is supported by substitution; no [resample ablation of the
-complement](../GLOSSARY.md#verifying-a-circuit) was reported, so the status is partial.
+complement](../GLOSSARY.md#verifying-a-circuit) was reported, so the status is partial. Such a test would replace the circuitry
+outside the proposed mechanism with its values on other inputs.
 
-The networks combine two channels (Figure 2; numbers in Appendix A). The low-k neurons are smooth, broad bumps over b and L (their
+*Table 4. Substitutions on all 1080 cells, including training cells, for 10 seeds at fraction .8. Task accuracy is correctness against
+the count labels; agreement is equality with the native network's answer. The precise and legacy rounded ranges are copied separately.*
+
+| Readout | Task accuracy, source | Legacy rounded range | Native agreement |
+|---|---|---|---|
+| Native network | .956–.976 | .96–.98 | |
+| Separate b and L contributions | .954–.975 | .95–.98 | |
+| One cosine per neuron, trained output weights | .906–.932 | .91–.93 | .88–.92 |
+| Straight-line replacement | .09–.11 | .09–.11 | |
+
+The networks combine two channels (Figure 2; numbers in Appendix A). The low-k (low-frequency) neurons are smooth, broad bumps over b and L (their
 single-cosine R² is only .15–.47, so "one cosine per neuron" is a coarse description); with output columns that vary slowly over the 46
 classes, their sum locates the answer (L + b)/2. Without the parity neurons the networks still score .92–.96 on all cells. A parity
-channel, found in the archived weights of 10/10 networks at fraction .8, resolves the remaining ambiguity between neighbouring answers:
+(odd/even) channel, found in the archived weights of 10/10 networks at fraction .8, resolves the remaining ambiguity between neighbouring answers:
 7–10 neurons whose output column alternates with the class parity. They use the Nyquist frequency, the highest frequency the grid can
 carry (one sign change per step): (−1)^((L+b)/2) = cos(π(L+b)/2) = cos(πL/2)cos(πb/2) − sin(πL/2)sin(πb/2) is a product of Nyquist
 terms that the ReLU forms, and their alternating output column adds ± the parity to every class. Removing them lowers the all-cell
@@ -181,7 +210,7 @@ accuracy by .01–.05; the networks get the parity of the answer right on .98–
 
 ```mermaid
 flowchart TD
-    IN["menu codes of b and L, one-hot main input"] --> LK["low-k neurons, k = 1 to 3 of 92: broad bumps over b and L"]
+    IN["menu codes of b and L, one-hot main input"] --> LK["Mostly low-frequency neurons: broad bumps over b and L"]
     IN --> PN["7 to 10 parity neurons: Nyquist terms cos and sin of pi b/2 and pi L/2"]
     LK --> SUM["slowly varying output columns: sum locates (L + b)/2"]
     PN --> PAR["alternating output column: adds the parity of the answer"]
@@ -192,20 +221,24 @@ flowchart TD
 ```
 
 *Figure 2. The circuit training finds at fraction .8. Low-frequency neurons form a trigonometric sum that locates the answer, and a
-small set of parity neurons adds the parity of the answer; the cosine-sum closed form is supported by substitution, with the complement
-not tested.*
+small set of parity neurons adds the parity of the answer. Shading marks the trained hidden neurons. The cosine-sum description is
+partial: a coarse substitution on all cells, with the complement not tested.*
 
-Relation to the hand-built design and to published work. The nearest hand-built design forms the sum linearly and reads it with step
-staircases; the trained stage never forms the sum linearly and builds a trigonometric sum instead. This is a Gromov-style clock
+The nearest hand-built design forms the sum linearly and reads it with step
+staircases. The failed straight-line substitution does not support that linear readout for the trained stage; its fitted
+responses are trigonometric. This is a Gromov-style clock
 ([Gromov, 2023](#references)) on a non-modular domain. Modular addition (x + y mod 59, [modular-addition-mlp](modular-addition-mlp.md))
-used 22–27 frequencies; this non-modular task uses only k = 1–3. Bracket and automaton tasks in transformers were studied as bounded
+used 22–27 frequencies; here k = 1–3 were the three most common frequencies in every seed, not the only frequencies present. Bracket and automaton tasks in transformers were studied as bounded
 Dyck languages by [Yao et al. (2021)](#references), as shortcuts to automata by [Liu et al. (2022)](#references), and for the
 difference between decodable and causally used depth by [Sharma et al. (2026)](#references).
 
 ## 6. Limitations and open questions
 
-It is open whether a 90% clock is reachable with more data or a lower weight decay; more steps do not help, since accuracy and weight
-norm are flat after about 150k steps.
+It is open whether a 90% clock is reachable with more data or a lower weight decay. The recorded accuracy and weight norm were flat
+after about 150k steps, so extending the same training was not supported as a remedy by these curves. None of the 10 seeds at
+fraction .8 reached .90 held-out accuracy. The higher native and formula scores in Section 5 include training cells and do not
+remove that failure. One cosine per neuron remains a coarse fit (R² .15–.47), and no complement test establishes the fitted rule as
+the learned mechanism. The frozen transformer supplies no running maximum depth, so that alternative bracket task was not tested.
 
 ## 7. Prediction record
 
@@ -232,8 +265,17 @@ The parity neurons of seed 0 include neuron 58, whose output column over classes
 −.75, .73. The pre-activations of the parity neurons are fitted by cos/sin(πb/2), cos/sin(πL/2) and their products with median R²
 .96–.99. Removing them lowers the all-cell accuracy of seed 0 from .956 to .934.
 
-Reading. The low-k neurons carry the coarse location of the answer through output columns that vary slowly over the classes; the
+The low-k neurons carry the coarse location of the answer through output columns that vary slowly over the classes; the
 parity neurons, whose output column alternates in sign from class to class (neuron 58), separate neighbouring answers.
+
+## Appendix B. Detailed evidence
+
+![Training accuracy rises before held-out accuracy in seed 0 at training fraction .8](../figures/qa1-open-count-learning.svg)
+
+*Figure 3. Recorded training and held-out accuracy for seed 0 at fraction .8, joined without smoothing or averaging. Training is
+perfect at step 500, while held-out performance improves later and remains below .90 through 200,000 steps. This is one seed, not
+the ten-seed range. Formula scores on all 1080 cells are a separate, training-inclusive test; the partial cosine description has no
+resample-complement certificate.*
 
 ## References
 

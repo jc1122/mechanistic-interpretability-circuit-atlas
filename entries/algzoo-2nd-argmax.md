@@ -1,6 +1,6 @@
 # Second-argmax in ARC's AlgZoo
 
-These recurrent networks read a list of numbers and return the position of the second largest. We analysed 280 frozen networks trained by ARC; no networks were trained in this study. The 2026-11-13 snapshot counts 132 proven, 33 read and 115 unexplained under the study's registered tests, with 15 of the proven forms passing optimal ablation only, not resampling. The result is partly solved and the population-level closed-form status is partial: matching a network's decisions on sampled inputs does not establish an exact recurrent algorithm.
+The task is to find the position of the second-largest number in a list: with two numbers this means choosing the smaller, and with three it means finding the middle one. This study inspected 280 frozen recurrent networks, which update a small memory after each number, from ARC's AlgZoo; no networks were trained here. In the dated 2026-11-13 iteration-12 snapshot, 117 networks had passed registered substitution and resampling tests, while 15 more had optimal-ablation-only certificates that failed resampling, 33 had readings without a certificate and 115 remained unexplained. Interpretation is partly solved and the closed-form status is partial: these sampled tests describe particular fixed-length networks, including their mistakes, rather than proving exact task algorithms or longer-length generalisation.
 
 ## At a glance
 
@@ -10,7 +10,7 @@ These recurrent networks read a list of numbers and return the position of the s
 | Input → output example | Values 1, 3, 2 → position 2 |
 | Model | Bias-free, one-layer ReLU recurrent network, widths 2, 3, 4, 5, 6, 8, 16, 32 |
 | Rungs and seeds | External TRAIN: five original seeds in each of 56 width/length cells; 280 final nets; nine HAND references; no PART or KD |
-| Closed form status | Partial: 117 resample proofs + 15 flagged optimal-ablation-only proofs = 132 proven; 33 read, 115 unexplained; sampled, domain-qualified certificates |
+| Closed form status | Partial (117 resample-tested + 15 flagged optimal-only = 132 certificates among 280 networks; optimal-only forms fail resampling; sampled domains and control flags apply) |
 | Status | Partly solved (interpretation snapshot, not a task-accuracy seed count); analysis snapshot 2026-11-13, Sol iteration 12; later analysis excluded |
 | Weights | [Hugging Face: algzoo-2nd-argmax](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/algzoo-2nd-argmax), hand-built archive revision `1a04d29`; ARC nets linked, not re-uploaded |
 | Reproduce | Not available yet: analysis code for this task is not yet in `code/`; see [archive](#25-archive) |
@@ -20,7 +20,7 @@ HAND denotes formula-set weights and TRAIN denotes training from scratch ([rungs
 ## Limitations (read first)
 
 - The 15 optimal-ablation-only proofs fail resampling. Optimal ablation replaces a discarded component with a chosen constant; it is weaker than keeping accuracy when that component receives independent donor values. Two width-16 proofs sit exactly at the size bar. The T8 width-32 seed-3 table alone agrees only .891/.896 and needs constants.
-- Eight proofs use activation-level complements, rather than recovered recurrent identities. Three have a codimension-one control instead of a size-matched control. Thin passes and oversized tables remain read.
+- Eight proofs use activation-level complements, replacing hidden activity rather than establishing an identity for the recurrence. Three have a codimension-one control, which keeps all but one linear direction, instead of a size-matched control. Thin passes and oversized tables remain read.
 - A formula may explain a weak network, including its wrong answers, rather than solve second-argmax. Exact final-kernel complements can preserve the native output algebraically; the joint test then repeats standalone substitution and is not independent mechanism evidence. Checked auxiliary boxes prove native contrast/ideal factoring algebra, not approximate classifier equivalence. The binary ridge additionally has complete native regions and a rational sign lemma.
 - Failed tests remain failed: five empty-unit failures, the width-2 T5 seed-0 specificity failure, old floating-projector and quotient failures, the auxiliary expression-size failure, the separate width-4 seed-4 omission, and both shared-veto attempts. Later accepted successors have separately registered tests and fresh rows; they do not repair those failures retrospectively.
 - The literal h3 T3 seed-0 final-cut circuit is only a rank2/rank1 reduction. The width-3 T4/T5/T6 seed-4 envelopes explain weak nets with activation-residual complements and rank-2 rather than rank-3 random controls. Modest recurrent-scalar savings are not full low-dimensional algorithms.
@@ -28,10 +28,10 @@ HAND denotes formula-set weights and TRAIN denotes training from scratch ([rungs
 
 ## 1. Task and data
 
-Given T independent standard-Gaussian scalars, the label is the zero-based position of the second largest; T∈{2,3,4,5,6,8,10}. Values 1, 3, 2 have label 2. T denotes input length and h denotes recurrent width; a label such as h3 T3 seed 1 specifies all three. ARC supplied 56 width/length cells, with five original seeds in each. Task accuracy is the fraction of correct labels; formula agreement is the fraction matching the native network, which may itself be wrong.
+Given T independent standard-Gaussian scalars (single numbers drawn from a normal distribution with mean 0 and variance 1), the label is the zero-based position of the second largest; T∈{2,3,4,5,6,8,10}. Values 1, 3, 2 have label 2. T denotes input length and h denotes recurrent width; a label such as h3 T3 seed 1 specifies all three. There are 56 width/length cells, each with five original seeds, for 280 networks. Task accuracy is the fraction of correct labels; formula agreement is the fraction matching the native network, the original frozen ARC model, which may itself be wrong.
 
-### Snapshot accounting
-**132 proven / 33 read / 115 unexplained.** Proven = 117 resample proofs and 15 optimal-ablation-only proofs. Resample-only accounting: 117 proven / 43 read / 120 unexplained. The publishing audit demoted h3 T10 seed2 and h6 T2 seed3 for empty old complements; the latter is now restored ONLY by its new one-ridge/native-kernel proof. Fresh-row replication passes all 28 frozen tables and every currently counted Sol form. The unit batch's serialization-only replay finishes 80/86: five empty-unit failures and one new specificity failure. Width 2, T5, seed 0 leaves proven for read (random-control accuracy drop .0344<.05). All three proper older binary-subspace certificates also replicate on two fresh row sets and sign strata; failed unit tests remain failed.
+The interpretation snapshot is frozen at iteration 12; later research is excluded. Table 1 separates the evidence categories, and Appendix B retains the full accounting history, registered additions and failed tests. A later passing test never changes the recorded outcome of an earlier failed one.
+
 ### How to read the mechanisms
 
 For a list of two inputs, second-largest means the smaller value. For three, it means the middle value. Short-list networks often reduce this to a comparison or an angle between input differences. Longer-list forms may keep only a recent window, a running maximum or a table of thresholds; a form can reproduce a weak network's wrong answers as well as its correct ones. The mechanism partition is in Section 4; the complete registered-addition and failed-test record is in [Appendix B](#appendix-b-reading-the-detailed-evidence).
@@ -74,7 +74,7 @@ flowchart TD
 
 ## 4. What training finds
 
-The following is a disjoint partition of all 280 nets; “read” is not certified.
+The following is a disjoint partition of all 280 nets; “read” is not certified. The shorter tasks are more fully described, but interpretation coverage is not task accuracy. All 40 binary models are accounted for, including the weak and constant predictors in Table 1.
 
 *Table 1. A disjoint partition of all 280 final networks at the iteration-12 snapshot. Proven includes the separately flagged optimal-only forms.*
 
@@ -113,12 +113,20 @@ flowchart TD
 
 *Figure 2. Families identified in ARC-trained networks; both family nodes are marked as trained. Status: partial, with 15 optimal-only and eight activation-level proofs flagged; sampled agreement and exact final-kernel algebra are not global recurrent identities.*
 
+![Interpretation coverage by input length and recurrent width; labels are network counts.](../figures/qa1-argmax-coverage.svg)
+
+*Figure 3. The iteration-12 partition of 280 fixed-length networks. Each bar spans its own group, not a common number of models. Status: partial; the 15 optimal-only certificates fail resampling, and resample-tested forms retain their activation-level and control flags. Counts describe sampled, domain-qualified evidence, not exact task algorithms or longer-length generalisation.*
+
 ### Binary decisions (T2)
 
- The exact first state is I⁺x0⁺+(−I)⁺(−x0)⁺, so each final neuron is one ramp in x1. For h6 seed3, all contrast gains are positive: answer1 iff −x1−tau(−x0)⁺>0, tau=439424844068038381/439424838562480128; ties0. The decision is an arc lookup of atan2(x1,x0). All 40 tables agree with their nets on all 65,536 held-out rows. Two-sided rays are within .038° of the comparison boundary; one-sided nets forget positive x0 and are right on approximately 7/8 of the plane.
+With two inputs the second-largest value is the smaller one, so a correct model chooses position 1 when the second value is below the first. The accounted-for population nevertheless includes two constant predictors and three one-sided weak solutions, alongside the 35 two-sided comparators. An arc table assigns an answer to each angular sector in the two-input plane; it describes what a model predicts, not necessarily the correct comparison. The notation v⁺ means max(v,0), applied to each entry for a vector or matrix, and atan2(y,x) is the angle of the point (x,y).
+
+The exact first state is I⁺x0⁺+(−I)⁺(−x0)⁺, so each final neuron is one ramp in x1. For h6 seed3, all contrast gains are positive: answer1 iff −x1−tau(−x0)⁺>0, tau=439424844068038381/439424838562480128; ties0. The decision is an arc lookup of atan2(x1,x0). All 40 tables agree with their nets on all 65,536 held-out rows. Two-sided rays are within .038° of the comparison boundary; one-sided nets forget positive x0 and are right on approximately 7/8 of the plane.
 ### Angle maps (T3, 25 accurate nets)
 
- Project onto e_a=(1,−1,0)/√2 and e_b=(1,1,−2)/√6; answer by each net's own arc table of atan2(x·e_b,x·e_a). Agreement .9928–.9998. Five with an empty unit complement are instead proven by a per-neuron two-entry threshold table and a nonempty function-space complement, replicated on fresh rows.
+For three inputs, only their differences matter to the correct middle-value choice: shifting every number by the same amount leaves its position unchanged. The following projection removes that shared shift; each model's angular lookup table supplies its own decisions.
+
+Project onto e_a=(1,−1,0)/√2 and e_b=(1,1,−2)/√6; answer by each net's own arc table of atan2(x·e_b,x·e_a). Agreement .9928–.9998. Five with an empty unit complement are instead proven by a per-neuron two-entry threshold table and a nonempty function-space complement, replicated on fresh rows.
 ### Interval and veto (T3, width 3, seed 1)
 
 A veto suppresses the answer within a silent interval. Here p(u)=u⁺=max(u,0), and dist measures distance outside an interval.
@@ -136,7 +144,7 @@ A clamp limits a value between thresholds. A gauge rescales hidden coordinates w
  All scalars below are weight-derived in positive gauge M: input neurons have unit-magnitude input, memory neurons unit principal drive. Seed3: g=−M00, a=−M00−M02, l=(M20+M22)/2, ell=1+M12, j=−M01, s=−M11, k=−M21, epsilon=I1. Put p=u⁺, n=(−u)⁺, A=(−v−an−j epsilon p)⁺, C=(−v+2ln−k epsilon p)⁺, E=(epsilon v+ell n−s epsilon p)⁺, K=C−A; F=((−w−aC+gK−jE)⁺,(epsilon w+ell C−K−sE)⁺,(−w+2lC−lK−kE)⁺). Seed4: a=−M00−M01,b=−M02,c=M10+M11,d=M12,e=M20+M21,f=M22,alpha=−(M00+M11)/2,t=M21; lo=−cp−dn, hi=ap+bn, A=(v−hi)⁺, K=min((v−lo)⁺,hi−lo), C=(ep+fn−v)⁺; F=((w−aA+(alpha−a)K−bC)⁺,(w+cA−alpha K+dC)⁺,(−w+eA+tK+fC)⁺). Keep the native readout. Their exact final decision/kernel tests pass, not the earlier floating-projector tests; neither is an all-input approximate/native equality theorem.
 ### Wide short networks
 
-A signed capped ramp is a difference of ReLU ramps; unlike an unsigned clamp, it can be negative. The full population-fan equations retain those differences.
+A signed capped ramp is a difference of ReLU ramps; unlike an unsigned clamp, it can be negative. A population fan combines a common rising response, a common falling response and bounded differences between individual neurons. The full equations retain those differences.
 
  A final neuron compares the last input with a threshold indexed by the earlier top positions. With m1≥m2≥m3, p1,p2 their positions, the top-two table is `relu(s(x_last−m3)+g[p1](m1−m2)+g[{p1,p2}](m2−m3)+a)`. Four-to-six inputs need 6/10/15 table numbers per neuron; optimal-only proofs add one fitted constant. Other accepted forms sort a zero with the prefix (15 numbers at T4), watch one position in three cases (7), or use an additive pair table (14 at T8). These are fitted behavioural tables, not recovered recurrent identities. Separately, width4 T4 seeds1/2/4 have a weight-derived two-stage clamp: order neurons as rising A/B and falling C/D; a_i=M_iA+M_iB,b_i=M_iB except b_A=0,c_i=M_iC+M_iD,d_i=M_iC. For (u,v,w,z), prefix ramps have thresholds ta=−a_Au⁺−c_A(−u)⁺,tb=−a_Bu⁺−c_B(−u)⁺,tc=a_Cu⁺+c_C(−u)⁺,td=a_Du⁺+c_D(−u)⁺. Put A1=(v−ta)⁺,D1=(td−v)⁺,Kr1=(v−tb)⁺−A1,Kf1=(tc−v)⁺−D1,r_i=a_iA1+b_iKr1+c_iD1+d_iKf1. Then A2=(w+r_A)⁺,D2=(r_D−w)⁺,Kr2=(w+r_B)⁺−A2,Kf2=(r_C−w)⁺−D2,F_i=(s_i z+a_iA2+b_iKr2+c_iD2+d_iKf2)⁺,s=(1,1,−1,−1),with the native readout. Both differences are signed capped ramps. This preserves the first prefix and omits only one later rising-contrast coupling;15vs16 scalars,not a full low-dimensional algorithm. Width4 T4 seed0 uses the same paired form in native order with b2=0 instead of bA=0, removing M21=.0102879 into M20. Seed3 uses S_i=Σ_(j∈{0,2,3})M_ij,R_i=M_i1,C0_i=M_i0 except C0_2=0,C3_i=M_i3; at each cut the common fall is neuron2, the rise is1 and the signed falling differences are0−2 and3−2. The only transfer is M20=.268892 into M22, preserving both first-input rays; its full two-stage input formula and 15vs16 scalar reduction pass independently. Width5 T4 seeds1/2/4 use rising/falling populations with reference pairs(3,2),(0,3),(1,3),respectively: population sums a_i,c_i drive two common amplitudes,while three signed bounded differences carry every other prefix ramp. At each of two cuts the drive is a_i A+c_i D+Σ_j d_ij K_j;final F_i=(s_i z+a_i A2+c_i D2+Σ_j d_ij K2_j)⁺. Only the registered transfers M14->M13,M31->M33,M14->M11,respectively,are omitted from the differential paths;24vs25 scalars. The references fix thresholds from u⁺,(−u)⁺,then the first-cut drives fix the second-cut thresholds;both initial rays are preserved exactly. All three full input forms pass their own tests,not an extrapolation to seeds0/3.
 ### Maximum and envelope networks
@@ -178,6 +186,10 @@ Written before opening the zoo weights, not before ARC's training: universal bin
 
 Tables 1 and 2 distinguish mechanism-certificate counts from task accuracy. In the detailed tests, substitution is formula-only evaluation, a joint intervention applies substitution and complement resampling together, and specificity asks whether a size- or rank-matched random circuit also works. Rank is the number of independent linear directions ([analysis measures](../GLOSSARY.md#analysis-measures)); final rank2/rank1 and rank3/rank2 labels describe kept/discarded directions, not a minimal recurrent state. All snapshot counts exclude analysis after Sol iteration 12.
 
+### Snapshot accounting
+
+The recorded partition is 132 proven / 33 read / 115 unexplained. Proven = 117 resample proofs and 15 optimal-ablation-only proofs. Resample-only accounting: 117 proven / 43 read / 120 unexplained. The publishing audit demoted h3 T10 seed2 and h6 T2 seed3 for empty old complements; the latter is now restored only by its new one-ridge/native-kernel proof. Fresh-row replication passes all 28 frozen tables and every currently counted Sol form. The unit batch's serialisation-only replay finishes 80/86: five empty-unit failures and one new specificity failure. Width 2, T5, seed 0 leaves proven for read (random-control accuracy drop .0344<.05). All three proper older binary-subspace certificates also replicate on two fresh row sets and sign strata; failed unit tests remain failed.
+
 ### Registered additions and retained failures
 
 Width5 T4 seeds1/2/4 pass two-stage signed population fans, agreement .9259–.9802 across both main sets and independent fresh replications; twenty-four recurrent scalars replace twenty-five, with one fixed balanced differential coupling removed. The remaining width4 T4 seeds0/3 pass distinct two-stage paired-clamp/falling-fan forms, agreement .943–.998 on main sets and fresh replications; all five width4 T4 seeds are now proven under their own tests, not one identical mechanism. Each new form removes one balanced differential coupling, fifteen versus sixteen scalars.
@@ -198,17 +210,33 @@ Earlier Sol proofs: width-3 T4/T5/T6 seed 4, running maximum plus inhibitory env
 
 ## References
 
-The source study checked the listed pages/READMEs and DOI metadata. Its acceptance tests do not establish ARC's sampling-efficiency or surprise-accounting standard.
+The earlier analysis read the public pages and READMEs below and checked the scholarly DOI metadata with scite. This is source
+credit, not a claim that those sources certify these networks or that our tests establish ARC's sampling-efficiency or
+surprise-accounting standard.
 
-- ARC. (n.d.). AlgZoo. https://github.com/alignment-research-center/alg-zoo (MIT-0 code/models; original frozen networks).
-- ARC. (n.d.). AlgZoo: Uninterpreted models with fewer than 1,500 parameters. https://www.alignment.org/blog/algzoo-uninterpreted-models-with-fewer-than-1-500-parameters (blog; prior binary reading, approximate T3 symmetries and partial T10 example).
-- Chu et al. (2018). Exact and consistent interpretation for piecewise linear neural networks. https://doi.org/10.1145/3219819.3220063 (ACM conference paper; affine-region constraints).
-- DraggonZ. (October 2026). AlgZoo interpretation. https://github.com/DraggonZ/algzoo-interp-public (code; hand-written h16 T10 copies with partial fidelity).
-- Durstewitz (2017). A state space approach for piecewise-linear recurrent neural networks. https://doi.org/10.1371/journal.pcbi.1005542 (journal article; region-by-region dynamics).
-- Dutta, Safran, & Valiant (2026). https://doi.org/10.48550/arxiv.2602.07219 (arXiv preprint; shallow rank-value approximators, not recurrent-index interpretation).
-- Geiger, A., Wu, Z., Potts, C., Icard, T., & Goodman, N. D. (2023). Finding alignments between interpretable causal variables and distributed neural representations. *arXiv preprint*. https://doi.org/10.48550/arxiv.2303.02536 (distributed causal variables and intervention tests).
-- Leeuwenhoek. (November 2026). https://github.com/Xabilimon1/leeuwenhoek (code; argmedian h4 T3 comparison/memory pairs and exact paths).
-- Li, M., & Janson, L. (2024). Optimal ablation for interpretability. *arXiv preprint*. https://doi.org/10.48550/arxiv.2409.09951 (constant replacement, distinct from resampling).
-- Mogar. (n.d.). AlgZoo interpretation. https://github.com/mogar/algzoo_interp (code; h4 T3 and h32 T10 codes; position-only surrogate does not reproduce native errors).
-- mrsirrisrm. (n.d.). https://gist.github.com/mrsirrisrm/d6850ff8647d1ed2f67cc92d5bce3ed0 (code gist; top-two impulse lookup, not arbitrary Gaussian lists).
-- Snider. (2026-10-26). https://www.lesswrong.com/posts/sAhFp6gYoyw3xeCaF (forum post; fitted population-level accuracy estimators, not deductive circuit forms).
+- Alignment Research Center (n.d.). AlgZoo: Uninterpreted models with fewer than 1,500 parameters. *ARC blog*.
+  https://www.alignment.org/blog/algzoo-uninterpreted-models-with-fewer-than-1-500-parameters (published binary and partial T3/T10 readings)
+- Alignment Research Center (n.d.). AlgZoo. *GitHub software and model repository; MIT-0*.
+  https://github.com/alignment-research-center/alg-zoo (the frozen networks analysed here)
+- Chu, L., Hu, X., Hu, J., Wang, L., & Pei, J. (2018). Exact and consistent interpretation for piecewise linear neural networks.
+  *ACM SIGKDD International Conference on Knowledge Discovery & Data Mining* (conference paper).
+  https://doi.org/10.1145/3219819.3220063 (region-wise interpretation, not these recurrent-network certificates)
+- DraggonZ (2026, October). algzoo-interp-public. *GitHub software repository*.
+  https://github.com/DraggonZ/algzoo-interp-public (hand-written copies of a separate ARC example, with partial fidelity)
+- Durstewitz, D. (2017). A state space approach for piecewise-linear recurrent neural networks for identifying computational
+  dynamics from neural measurements. *PLOS Computational Biology* (journal article).
+  https://doi.org/10.1371/journal.pcbi.1005542 (piecewise-linear recurrent dynamics)
+- Dutta, A., Safran, I., & Valiant, P. (2026). The median is easier than it looks: Approximation with a constant-depth, linear-width
+  ReLU network. *arXiv preprint*. https://doi.org/10.48550/arxiv.2602.07219 (rank-value approximation, not a learned recurrent index circuit)
+- Geiger, A., Wu, Z., Potts, C., Icard, T., & Goodman, N. D. (2023). Finding alignments between interpretable causal variables and
+  distributed neural representations. *arXiv preprint*. https://doi.org/10.48550/arxiv.2303.02536 (intervention-based causal descriptions)
+- Li, M., & Janson, L. (2024). Optimal ablation for interpretability. *arXiv preprint*.
+  https://doi.org/10.48550/arxiv.2409.09951 (input-independent ablation constants, distinct from resampling)
+- mogar (n.d.). algzoo_interp. *GitHub software repository*. https://github.com/mogar/algzoo_interp
+  (event/value/clock/position readings and a task-only surrogate for a separate example)
+- mrsirrisrm (n.d.). AlgZoo interpretation code. *GitHub code gist*.
+  https://gist.github.com/mrsirrisrm/d6850ff8647d1ed2f67cc92d5bce3ed0 (activation and matrix-product lookups for two top impulses)
+- Snider (2026, October 26). [Forum post on AlgZoo population accuracy]. *LessWrong forum post*.
+  https://www.lesswrong.com/posts/sAhFp6gYoyw3xeCaF (population accuracy estimators, not deductive forms of these networks)
+- Xabilimon1 (2026, November). Leeuwenhoek. *GitHub software repository*. https://github.com/Xabilimon1/leeuwenhoek
+  (rise/fall and memory-pair readings; separate h4 T3 argmedian paths)

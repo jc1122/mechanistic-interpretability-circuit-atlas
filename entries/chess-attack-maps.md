@@ -1,23 +1,31 @@
 # Chess attack maps
 
-These networks were trained to mark every square attacked by a chosen colour on a chessboard. Writing the attack rays as a [scratchpad](../GLOSSARY.md#task-formats), an intermediate list before the final map, helped where predicting the map alone failed. On the recorded training-test draw of 2048 held-out full boards per seed, 7/10 fully trained networks reached exact match 1.0 and 10/10 reached ≥ .998; the shipped archive uses a different board draw. The task is partly solved: training found a counting block followed by contextual pointers and feed-forward ray steps, but its proposed closed form was rejected by substitution and complement resampling.
+An attack map marks every chessboard square threatened by pieces of a chosen colour, including squares occupied by friendly pieces.
+Four-layer transformers learned this task more often when they first wrote each piece's attacks along a ray, a straight line of board
+squares, in a scratchpad before the final map ([glossary](../GLOSSARY.md#task-formats)). On the recorded draw of 2048 held-out full boards
+per seed, 7/10 from-scratch networks reached whole-output exact match 1.0, reported to three decimals, and 10/10 reached ≥ .998. The
+task is partly solved: only 1/10 reached recorded 1.0 on sparse slider boards, and no tested answer-only cell reached 1.0. The proposed
+closed form was rejected by substitution and by resampling outside the claimed circuit; the shipped archive uses a different test
+board draw from the headline results.
 
 ## At a glance
 
 | Fact | Value |
 |---|---|
-| Task | Mark the 64 squares attacked by the requested colour, including friendly-occupied squares. |
+| Task | Mark the 64 squares attacked by the requested colour, including friendly-occupied squares. Exact means every scored output token. |
 | Input → output example | A white knight alone on a1 attacks b3 and c2; only those squares are marked for White. |
 | Model | Fully trained four-layer decoder; full boards use width 256, sparse slider boards width 512. |
-| Rungs and seeds | HAND reference; PART retrains attention and MLP stages; screening 3–10 seeds per cell; final TRAIN 10 seeds each for full boards and sparse slider boards. |
-| Closed form status | Rejected (uniform-head substitution 0/13; proposed-circuit complement 0 on three tested seeds). |
-| Status | Partly solved (recorded-test full-board hint TRAIN 7/10 exact, 10/10 ≥ .998; slider hint TRAIN 1/10 exact, 3/10 ≥ .99); last run analysis 2026-11-09; archive check 2026-11-10. |
+| Rungs and seeds | HAND fixes weights; PART retrains attention and MLP stages; TRAIN learns all weights ([rungs](../GLOSSARY.md#the-three-rungs)). Screening 3–10 seeds per cell; final TRAIN 10 seeds each for full boards and sparse slider boards. |
+| Closed form status | Rejected (uniform-head replacement leaves exact match 0 in all 13 tested snapshots; resampling outside the proposed circuit leaves 0 on three tested seeds). |
+| Status | Partly solved (recorded-test full-board hint TRAIN 7/10 at 1.0, 10/10 ≥ .998; slider hint TRAIN 1/10 at 1.0, 3/10 ≥ .99; 2048 boards/seed, scores to three decimals); last run analysis 2026-11-09; archive check 2026-11-10. |
 | Weights | [Hugging Face: chess-attack-maps](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/chess-attack-maps), published revision `3919dc14f8ab`; recorded and archived test draws differ. |
 | Reproduce | Not available yet: training code for this task is not yet in `code/`. |
 
 ## 1. Task and data
 
-The label is a 64-bit attack map for colour `c`, checked against [Fiekas (n.d.)](#references), the python-chess software documentation. Attacks include friendly-occupied squares. For example, a white knight alone on a1 attacks b3 and c2; those are the only marked squares when White is requested.
+The label is a 64-bit attack map for colour `c`, checked against [Fiekas (n.d.)](#references), the python-chess software documentation.
+A bit marks whether that square is attacked, including friendly-occupied squares. Scoring is teacher-forced: each next output token is
+predicted after the correct preceding tokens ([glossary](../GLOSSARY.md#task-formats)); it is not a free-running ray walk. For example, a white knight alone on a1 attacks b3 and c2; those are the only marked squares when White is requested.
 
 *Table 1. Board distributions and output formats. Exact match means every scored output token is correct.*
 
@@ -74,7 +82,8 @@ The published archive at revision `3919dc14f8ab` contains HAND-H C2/C3, TRAIN be
 
 ## 3. Hand-built solution
 
-For map-only output, L0 constructs square and colour coordinates. Each L1 ray head finds the nearest occupied square in its direction; leaper and pawn heads read fixed offsets. A colour-gated OR then marks the attacked squares. With ray relation `Rel`, occupancy indicator `occupied`, ray-scale constants `G` and `A`, and square coordinates `q,k`, the attention score is:
+For map-only output, L0 constructs square and colour coordinates. Each L1 ray head finds the nearest occupied square in its direction;
+leaper heads for knights and kings, and pawn heads, read fixed offsets. A colour-gated OR then marks the attacked squares. With ray relation `Rel`, occupancy indicator `occupied`, ray-scale constants `G` and `A`, and square coordinates `q,k`, the attention score is:
 
 ```text
 Rel(q,k) + G*occupied(k)
@@ -113,7 +122,7 @@ Exactness checks covered C1's 768 cases; A C2 5000 random and 5000 out-of-distri
 | A/S/T TRAIN C1/C2/C3; width retry w2 | 0 / 0 | C1 .04–.39; C2 .09–.32; C3 0–.08 | none | Blocker R² ≤ .38; C1 memorises. |
 | A TRAIN C3, 6 layers, width 512 (5) | 0 / 1 | .63–.997 | ~54.5k | Depth and budget help, without an exact solve. |
 | H PART C1/C2/C3 (10 each) | 0 / 0 | C1 .01–.02; C2 .10; C3 0 | none | Map read missing. |
-| H TRAIN C2 final, width 512 (10) | 1 / 3 | seed 14 1.0/1.0; seed 13 .992/.990; seed 17 .999/.997; seed 18 .938/.937; six failures summarised as .11–.12 | 47.5–56.5k | Colour gate at token 0. |
+| H TRAIN C2 final, width 512 (10) | 1 / 3 | seed 14 1.0/1.0; seed 13 .992/.990; seed 17 .999/.997; seed 18 .938/.937; six failures summarised as .11–.12 | 47.5–56.5k | First-piece colour choice at token 0. |
 | H TRAIN C3 final, width 256 (10) | 7 / 10 | .999–1.0; .998–1.0 | 47.75–52.5k | T1 in 10/10. |
 
 The C2 .11–.12 shorthand is the earlier compact account, not an assertion that every final lies in that interval: the final source table gives .104–.111 for the failed group, and seed 18 is .937. No A/S/T cell solved. The six-layer A seed at .997 is a near-solve, not evidence that answer-only prediction is impossible at any depth.
@@ -140,7 +149,9 @@ The proposed closed form replaced L0 attention by a uniform causal mean and L3 p
 |---|---|---|---|---|---|---|---|---|---|---|
 | Exact | .30 | .97 | .41 | 1.0 | .68 | 0 | .88 | .34 | .07 | 1.0 |
 
-C2 seed 13 gave .93 and seed 14 .16. Complement resampling kept L0, L3 and the MLPs but resampled L1–L2 heads; C3 seeds 12 and 15 and C2 seed 14 all fell to exact 0 (zero and mean controls also 0). The discovered circuits' complements gave .55–.89 across 14 nets, all below .90, with circuit-resampled and random-same-size controls 0. These failures leave the proposed form rejected, even in seeds whose pointer substitution alone passed.
+C2 seed 13 gave .93 and seed 14 .16. Thus pointer substitutions covered 12 high-performing seeds, while the uniform-head test's 13
+also includes failed C2 seed 15 (native exact .125); neither denominator is the 14-seed circuit classification. Complement resampling
+kept L0, L3 and the MLPs but resampled L1–L2 heads; C3 seeds 12 and 15 and C2 seed 14 all fell to exact 0 (zero and mean controls also 0). The discovered circuits' complements gave .55–.89 across 14 nets, all below .90, with circuit-resampled and random-same-size controls 0. These failures leave the proposed form rejected, even in seeds whose pointer substitution alone passed.
 
 At the four sites with an exact or near-exact sparse-dictionary splice, replacing the residual by reconstructed sparse features, no feature tracked a HAND variable above the relevant basis baseline: colour correlation ≤ .22 and map-bit correlation ≤ .35. The compact account calls these four splices exact; the source includes a .97 splice. No feature-level closed form was available to substitute. This is the distinction between reconstruction and feature recovery discussed by [Korznikov et al. (2026)](#references).
 
@@ -156,7 +167,16 @@ flowchart TD
 ```
 *Figure 2. T1 in the fully trained H networks. All shown heads and MLPs are trained. Closed-form status: rejected; near-uniform and dominant-key descriptions fail substitution or complement resampling and do not identify a faithful circuit.*
 
-The trained layout differs from HAND-H: the latter steps in L2 and uses one map head; TRAIN adds the L0 count block, requires middle heads, points at L3 and steps in MLPs one to two layers later. The earlier comparison compressed this to “cur, g, y decodable at R² ≥ .93”; Appendix B preserves the actual variable-specific ranges, including direction .80–.94. In C3 at four layers, hint TRAIN reached ≥ .99 in 10/10 versus 0/10 for answer only; exact hint solves were 7/10.
+![Recorded chess attack-map outcomes: 7/10 full-board seeds and 1/10 slider seeds at 1.0; different archive draw](../figures/chess-attack-maps-outcomes.svg)
+
+*Figure 3. Final hint-scratchpad TRAIN outcomes on 2048 boards per seed, with scores reported to three decimals. Filled dots mark the
+recorded whole-output 1.0 criterion; dot order does not identify seeds. Full-board 10/10 ≥ .998 and slider 3/10 ≥ .99 use different
+thresholds. These are recorded-test results, not scores on the shipped draw. Closed-form status is rejected.*
+
+The trained layout differs from HAND-H: the latter steps in L2 and uses one map head; TRAIN adds the L0 count block, requires middle
+heads, points at L3 and steps in MLPs one to two layers later. In the final C3 diagnostics, current square `cur` has linear-probe
+R² .93–.94, direction `g` .80–.94 and map bit `y` .92–.97 (Appendix B). Only `y` has a well-powered causal interchange test; the
+small-n tests for `cur` and `g` do not establish their causal use. In C3 at four layers, hint TRAIN reached ≥ .99 in 10/10 versus 0/10 for answer only; exact hint solves were 7/10.
 
 [Wies et al. (2022)](#references) motivate local sub-task supervision. [Toshniwal et al. (2022)](#references) provide the comparison with chess language models that track board state more readily than complete legal-move sets. [Trockman and Kolter (2023)](#references) motivated the unsuccessful same-token-prior initialisation retry. Sparse-pattern repetition in [Zucchet et al. (2025)](#references) and coverage sensitivity in [Ootani (2026)](#references) suggest a possible explanation for C2's 3/10 ≥ .99, not a controlled proof of that cause. [Bali et al. (2026)](#references), previously misattributed as Stanley et al., contextualise the variable middle-layer head sets.
 
@@ -164,7 +184,10 @@ The trained layout differs from HAND-H: the latter steps in L2 and uses one map 
 
 The final run used weight decay .1 only, without a sweep, and did not log machine or device identity. Diagnostics used 32 boards. Interchange for `cur` and `g` had fewer than 30 flipping queries and gives no verdict; colour had `nf = 0`, meaning untested, not unused ([interchange](../GLOSSARY.md#analysis-measures)). Neuron counts and HAND effective rank were not measured. HAND-free discovery was read on all C3 10/10 and C2 10/10 seeds. Only one HAND was built. The accepted reference tests do not prove all-real exactness for the trained networks, and no trained closed form passed the two-part rule.
 
-The manifest's `acc_test_fp32` is fp32 accuracy on the shipped C2/C3 test files, a different 2048-board draw from `recorded_test`. The training tests were drawn on the training GPU and are not reproducible on other devices from the seed alone. Weights were bit-identical; the recorded check found agreement between three GPU forward paths, so the archive gap was attributed to the board draw rather than precision. This does not make the two tests interchangeable or clear the failed manifest flags.
+The manifest's `acc_test_fp32` is fp32 accuracy on the shipped C2/C3 test files, a different 2048-board draw from `recorded_test`. The training tests were drawn on the training GPU and were not shown reproducible on another device from the seed alone. Device-dependent
+random-number generation was suggested as the cause of the draw difference, not proven. Weights were bit-identical; the recorded check
+found agreement between three GPU forward paths apart from a one-board TF32 difference for C2 final seed 10, so the archive gap was
+attributed to the board draw rather than precision. This does not make the two tests interchangeable: the three `archive_roundtrip_ok = false` accuracy flags remain false.
 
 *Table 5. Exceptions beyond archive tolerance. Tolerance was one board for best and three for final; the other 11 TRAIN nets were within two boards. Each score is on 2048 boards; recorded precision is preserved.*
 

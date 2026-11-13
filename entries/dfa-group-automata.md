@@ -1,12 +1,6 @@
 # Group automata (parity, Z3, S3)
 
-This entry studies how small transformers track a state after each symbol: parity (Z2), counting modulo 3 (Z3), or composing the six
-permutations of three objects (S3). A scratchpad writes the state after every symbol; all three tasks reached exact held-out match
-in 10/10 seeds, both with one trained stage on frozen hand-built parts and from scratch. The final S3 run also solved 10/10, using a
-chain of MLPs, the feed-forward blocks between attention stages ([glossary](../GLOSSARY.md#standard-machine-learning-terms)),
-rather than the hand-built network's (HAND) single previous-state head. The task is partly solved: answer-only failures and poor length transfer
-remain. The closed form is partial: final-run S3 transition-table substitution passes in 10/10 and the discovered-circuit complement
-passes in 8/8 tested seeds, while the older failed joint scrubs and the sufficient-readout caveats for other cells still apply.
+A finite-state machine updates its current label, or state, after each input symbol. These six-layer transformers tracked odd/even counts, counts modulo 3, or the six rearrangements of three objects, either giving the final state or writing each intermediate state on a scratchpad. All 10 seeds in the final permutation scratchpad run reached whole-output exact match 1.0 on 2k held-out words, yet the learned computation used a chain of feed-forward blocks rather than the formula-set network's single state-fetch head and update table. The task is partly solved and the closed-form status is partial: final-run table substitution passed in 10/10 seeds and complement resampling passed in all 8 measured discovered circuits, leaving 2 without that certificate; older failed joint scrubs remain failed. At 128 symbols every final trained seed scored 0 on 1000 random words, while the frozen-scaffold scratchpad models were exact at that length.
 
 | Fact | Value |
 |---|---|
@@ -19,9 +13,13 @@ passes in 8/8 tested seeds, while the older failed joint scrubs and the sufficie
 | Weights | [Hugging Face: dfa-group-automata](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/dfa-group-automata), revision `ababc8276281`; final archive note: 217 networks; earlier archive: 219 |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
+HAND sets every weight by formula, PART trains one stage on those frozen parts and TRAIN learns all weights ([rungs](../GLOSSARY.md#the-three-rungs)). An MLP is the feed-forward block between attention stages ([glossary](../GLOSSARY.md#standard-machine-learning-terms)). A scratchpad writes intermediate results as output tokens, not hidden memory ([task formats](../GLOSSARY.md#task-formats)). Complement resampling replaces everything outside a proposed circuit using values from other inputs ([verification](../GLOSSARY.md#verifying-a-circuit)).
+
 ## 1. Task and data
 
-A word s_1..s_n is a sequence of group elements: parity (Z2, 2 symbols), a Z3 counter (3 symbols) or S3 (the 6 permutations of 3
+Parity records whether a count is odd or even. A permutation rearranges three objects; composing permutations means applying one rearrangement after another. Unlike adding counts, changing their order can change the final rearrangement. A transition table lists the next state for each current-state/symbol pair.
+
+The identity is the state that leaves a symbol unchanged when combined with it; an abelian group is one in which order does not change the product. A word s_1..s_n is a sequence of group elements: parity (Z2, 2 symbols), a Z3 counter (3 symbols) or S3 (the 6 permutations of 3
 objects). The automaton starts at q_0 = identity and updates q_t = q_{t-1} · s_t; the task is the state after the word. Two formats were
 studied (Table 1); in the scratchpad format the network writes intermediate results before the answer
 ([glossary](../GLOSSARY.md#task-formats)).
@@ -35,8 +33,7 @@ studied (Table 1); in the scratchpad format the network writes intermediate resu
 
 For parity, the five-symbol word with values 1 0 1 1 0 has state 1, because three symbols have value 1.
 
-The word length n is uniform in 1..16. Each seed has 20k unique training words and 2k disjoint test words, and an output is correct
-only on exact match of every answer token. Format B is teacher-forced: each token is scored given the correct previous tokens
+The word length n is uniform in 1..16. Run 1 used 20k unique training words per seed; later data retries used fresh words each batch, excluding test words, as detailed in Table 2. Each seed has 2k disjoint test words, and an output is correct only on exact match of every answer token. Format B is teacher-forced: each token is scored given the correct previous tokens
 ([glossary](../GLOSSARY.md#task-formats)). Length generalisation was tested on 1000 random words at n = 32, 64 and 128. For the
 answer-only abelian cells, S denotes the sum of the symbol values, so that the answer is S mod G with G = 2 or 3.
 
@@ -95,7 +92,7 @@ weights, not two independent networks.
 ## 3. Hand-built solution
 
 Layer 0 is a position stage with BOS as attention sink (a position that heads can attend to when nothing else is relevant): it computes P = 1/(j+1) at position j, and hinges give R = j/256. The later
-layers differ by format (Figure 1).
+layers differ by format (Figure 1). G is the group size, QP holds the copied previous-state code, and a one-hot code gives each state its own coordinate ([glossary](../GLOSSARY.md#standard-machine-learning-terms)).
 
 Scratchpad (B). A layer-1 recency head, with score 100·[state token] + 20 j, copies the previous state q_{t-1} into a block QP. The
 layer-1 MLP has G² neurons relu(QP_a + TOK_b − 1), each writing OUT[a·b], where TOK_b is the one-hot of the current symbol. This is one
@@ -155,7 +152,7 @@ PART (all groups, masked or not) was exact on 10/10 seeds by step 500. It keeps 
 the stage is a (q_prev, symbol) table, exact at n = 128.
 
 TRAIN grokked at steps 500–2500 (10/10 per group); grokking means that test accuracy rises after training accuracy
-([glossary](../GLOSSARY.md#counting-results)). The late MLPs are the δ table (substitution 1.0: parity MLP5, Z3 MLP3–5, 10/10). The fetch
+([glossary](../GLOSSARY.md#counting-results)). The late MLPs are the transition (δ) table (substitution 1.0: parity MLP5, Z3 MLP3–5, 10/10). The fetch
 of the previous state differs from HAND: parity spreads it over sharp heads in layers 2–5 (a single HAND-like head in 1/10), and Z3 has
 one sharp head (mass .85–.95) in 7/10. Length generalisation is poor: n = 32 gives .05–.99, n = 64 ≤ .14, and token accuracy breaks at
 t = 24–48.
@@ -165,7 +162,7 @@ t = 24–48.
 PART reached 10/10 by step 1000 and reproduces the hand-built composition tables, exact to n = 31, the hand-built depth bound. The block states ST1..ST4 are decodable at accuracy 1.0 in layers 2..5 (the HAND layers), and at n =
 32 PART scores .18, equal to HAND's .18 (HAND is exact only for n ≤ 31).
 
-TRAIN run 1 (20k static words) memorised and learned only the sign of the permutation (right sign in 8/10 seeds). TRAIN run 2 (fresh
+A permutation's sign records whether an odd or even number of swaps produces it; sign alone does not identify the full rearrangement. TRAIN run 1 (20k static words) memorised and learned only the sign of the permutation (right sign in 8/10 seeds). TRAIN run 2 (fresh
 words) has sign accuracy 1.0 (10/10) and is exact up to n ≈ 9–13; its best test accuracy is .70–.9995 (2/10 ≥ .99), still rising at the
 budget. ST2..ST4 are at chance under the linear probes: no linearly decoded doubling was found, but a different code was not ruled out.
 
@@ -190,13 +187,13 @@ TRAIN run 1 (20k static words): parity counts S but has no S mod 2 (test .50–.
 1.00 at L4). Here 9/10 counts exact seeds; the source audit records seed 7 .9975000619888306, so 10/10 meet ≥ .99, despite the
 older .998–1 rounded range. TRAIN run 2 (fresh words): parity and Z3 10/10 (grok at 13–21k and 3.5–18k steps). S is decodable at L1–L2 and q at 1.00
 from L2–L3, and the MLPs are functions of S. These networks use HAND's variables (interchange in Section 5) in a different code (no
-orthogonal map to HAND's residual, CKA .11–.23), but the residue staircase covers only the trained S (parity at n = 32 at chance; Z3 at
+orthogonal map to HAND's residual, CKA .11–.23), where centred kernel alignment (CKA) compares representation geometry rather than causal use ([glossary](../GLOSSARY.md#analysis-measures)), but the residue staircase covers only the trained S (parity at n = 32 at chance; Z3 at
 n = 32 ≥ .95 in 3/10).
 
 ### 4.4 Causal evidence
 
 The failed abelian PART stages use S (interchange flip .92–1; [glossary](../GLOSSARY.md#analysis-measures)) and carry q, which DAS
-(distributed alignment search) recovers (.85–1) although it is only about half linearly readable (.48–.79). The miss is therefore the
+(distributed alignment search, which learns rotated directions for swapping a variable between inputs) recovers (.85–1) although it is only about half linearly readable (.48–.79). The miss is therefore the
 large-S read-out, not the count. Deleting the S/q subspace drops every parity A PART and parity TRAIN run 2 network to chance
 (.46–.52), and keeping only that subspace leaves accuracy unchanged. Parity TRAIN run 1 has S but no answer-controlling variable (all
 flips at chance). Solved TRAIN networks use HAND's variables in their own basis (residual alignment fit R² < 0), and a high CKA does not
@@ -205,8 +202,7 @@ code carries them was not tested.
 
 ### 4.5 Final S3 scratchpad run
 
-The final run solved 10/10 at the joint stop, step 3500, with first exact at 1500–2000. Every seed uses a serial MLP0–5 chain, with
-late transition tables and seed-dependent fetch heads; none of the 8 discovered circuits matches HAND. There are two subtypes:
+The final run solved 10/10 at the joint stop, step 3500, with first exact at 1500–2000. Every seed uses a serial MLP chain, with MLP0–4 needed in all seeds and MLP5 needed in only one subtype. Late transition tables and seed-dependent fetch heads carry the update; none of the 8 discovered circuits matches HAND. There are two subtypes:
 state q completes by probe layer 4–5 with MLP5 idle (6/10), or q completes in MLP5 (4/10). The discovered circuits have 31–96 edges
 with held-out faith .94–.96, where faith is exact match after resampling outside the kept circuit
 ([glossary](../GLOSSARY.md#analysis-measures)). Final length scores are n 32 .02–1.0 (≥ .9 in 2/10), n 64 ≤ .18 and n 128 0.
@@ -237,12 +233,10 @@ circuit. The upstream state-fetch formula is unverified. This does not reverse t
 
 ### 5.1 Final-run closed form and acceptance
 
-For final S3 B TRAIN, MLP_l(x_t) = T_l[q_{t-1}, s_t] for l = 3, 4, 5: each late MLP is replaced by a 36-entry table in previous
-state and symbol, with the entries fitted on separate rows. Substitution retains exact 1.0 in 10/10 seeds. Zero, mean, shuffle and
-swap controls were run per layer. Zero/mean at layer 3 are ≤ .25 and shuffle is 0; zero/mean at MLP5 keep 1.0 in the 6/10 subtype
+For final S3 B TRAIN, `MLP_l(x_t) = T_l[q_{t-1}, s_t]` for l = 3, 4, 5: each late MLP is separately replaced by a 36-entry table in previous state and symbol, with the entries fitted on a disjoint half of a batch of 16-symbol words and scored on the held-out half. Substitution retains whole-output exact 1.0 in 10/10 seeds at each of these layers. The saved control rows omit the batch and half-split row counts; this evaluation is not the 2k-word training test. Zero, mean, shuffle and swap controls were run per layer. Zero/mean at layer 3 are ≤ .25 and shuffle is 0; zero/mean at MLP5 keep 1.0 in the 6/10 subtype
 where it is idle, so MLP3–4 provide the informative checks.
 
-Resampling outside the discovered edges keeps .942–.963 in 8/8 seeds (0–2 and 4–8), summarised as .94–.96 in discovery and
+The discovered-edge diagnostic files each record a 1000-word batch. Discovery reports faith on its held-out portion; the separate complement checks report resampling of the kept edge claim on the diagnostic batch, not the 2k-word training test. Resampling outside the discovered edges keeps .942–.963 in 8/8 seeds (0–2 and 4–8), summarised as .94–.96 in discovery and
 .94–1.0 in the compact acceptance section. The larger node claims in seeds 0, 1 and 2 keep .993, 1.0 and .972. Circuit-resampled
 and random same-size controls are 0, and the full/base and empty/source self-tests pass. Both acceptance shares exceed .90, so
 acceptance covers 8/10 seeds. Seeds 3 and 9 have no discovered circuit; seed 9's narrower head-union claim keeps .716 and fails.
@@ -337,8 +331,7 @@ intermediate computation were introduced by [Nye et al. (2021)](#references).
 
 The earlier probes, ablation, activation patching, interchange and DAS used best snapshots, leaving their final snapshots unchecked.
 The earlier article's last run was dated 2026-11-05; its audit followed on 2026-11-07. The later final S3 pack has substitution and
-complement coverage as scoped in Section 5.1; this does not supply final checks for other cells. Neuron counts were not measured. The scratchpad is teacher-forced. The width is d 256 throughout; the one d 512 step (answer-only S3 TRAIN)
-ended without saved networks (out of memory at 40k, disk full at 27.5k of 80k), so size against solved is untested. Each cell has 10
+complement coverage as scoped in Section 5.1; this does not supply final checks for other cells. Final-run used-neuron counts were not measured; the earlier sufficient upper bounds remain in Section 5.3. The scratchpad is teacher-forced. The diagnosed networks have width d 256. Two attempts at the same d 512 size step (answer-only S3 TRAIN) ended without saved networks (out of memory at 40k, disk full at 27.5k of 80k), so size against solved is untested. Each cell has 10
 seeds, and length was evaluated on random words. The masked and unmasked PART pairs control for the position shortcut. The abelian PART
 run 3 retry rules out coverage; a structured (hinge) initialisation of the stage was not tried.
 
@@ -379,14 +372,14 @@ These are final-run outcomes, distinct from the earlier 1–2/10 length-transfer
 ## Appendix A. Weights excerpt and reading
 
 In the B PART (masked) layer-1 stage, 65–85% of the input-weight energy (squared norm of dense_h_to_4h columns) sits on the QP and
-symbol dimensions. The neurons are group characters rather than HAND's AND gates. Parity seed 0 neuron 116 reads QP (−.77, .22) and the
+symbol dimensions. The source describes the neurons as group characters, patterns of values over group elements, rather than HAND's AND gates, which activate for one state-symbol pair. Parity seed 0 neuron 116 reads QP (−.77, .22) and the
 symbol (.73, −.26), a ± pattern that fires on (q, s) of unequal parity, which is XOR. S3 seed 0 neuron 106 reads QP and the symbols with
 the permutation-sign pattern (+ − − + + −). The values are dense_h_to_4h rows of `part_<group>_mask_B_s0`, restricted to the QP and
 symbol blocks. The probes of Section 5.3 support pair dependence but not a unique group-character role.
 
 ## Appendix B. Detailed evidence
 
-Table B1 gives medians over seeds. The probe is the best layer, one-hot accuracy, with R² for S and position t; r90 = principal
+Table B1 gives medians over seeds. Residual label L0 means the input and L6 means after all six transformer blocks. The probe is the best layer, one-hot accuracy, with R² for S and position t; r90 = principal
 components for 90% of the last residual's variance; attention divergence to HAND is ≈ 0 throughout because HAND's unused heads are
 uniform; patch = activation patching on a shuffled batch, the component with the largest accuracy drop; uses = interchange flip, then
 DAS flip of the HAND variable at its best layer, ranges over 167 seeds; "untested" = no answer-fixing pairs, not unused. Terms are
@@ -447,13 +440,11 @@ Table B1 are one-hot accuracies, while the .63 and .94 figures here are R², not
 
 - Abbe, E., & Sandon, C. (2023). Polynomial-time universality and limitations of deep learning. *Communications on Pure and Applied
   Mathematics, 76*. https://doi.org/10.1002/cpa.22121 (fresh-sample SGD on parities)
-- Buda et al. (2018). *Neural Networks* (journal article). https://doi.org/10.1016/j.neunet.2018.07.011 (rare-class oversampling;
-  the tail-balanced retry)
+- Buda, M., Maki, A., & Mazurowski, M. A. (2018). A systematic study of the class imbalance problem in convolutional neural networks. *Neural Networks*. https://doi.org/10.1016/j.neunet.2018.07.011 (journal article; rare-class oversampling in a different task, context for the tail-balanced retry)
 - Hong, Q., Siegel, J. W., Tan, Q., & Xu, J. (2022). On the activation function dependence of the spectral bias of neural networks.
   *arXiv preprint*. https://doi.org/10.48550/arxiv.2208.04924 (spectral bias of ReLU networks)
 - Liu, B., Ash, J. T., Goel, S., Krishnamurthy, A., & Zhang, C. (2022). Transformers learn shortcuts to automata. *arXiv preprint*.
   https://doi.org/10.48550/arxiv.2210.10749 (logarithmic-depth shortcuts to automata)
 - Nye, M., Andreassen, A. J., Gur-Ari, G., et al. (2021). Show your work: Scratchpads for intermediate computation with language
   models. *arXiv preprint*. https://doi.org/10.48550/arxiv.2112.00114 (scratchpads)
-- Parodi et al. (2026). *arXiv preprint*. https://doi.org/10.48550/arxiv.2604.14433 (signal carried by heads that appear idle under
-  individual mean ablation)
+- Parodi, F., Matelsky, J., & Segado, M. (2026). Zero-ablation overstates register content dependence in DINO vision transformers. *arXiv preprint*. https://doi.org/10.48550/arxiv.2604.14433 (arXiv preprint; ablation baselines in vision transformers, a methods comparison rather than a DFA result)

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 385" role="img" aria-labelledby="title desc">
+<title id="title">Median formula size versus network size</title>
+<desc id="desc">Width 16 at length 10: 274 independent form coefficients versus 288 network parameters. Width 32 at length 10: 1056 versus 1088. These forms are not compression claims. Finite-sample fidelity is not all-domain exactness. Source: atlas entry (research report), https://github.com/jc1122/mechanistic-interpretability-circuit-atlas/blob/main/entries/algzoo-median.md.</desc>
+<rect width="100%" height="100%" fill="white"/>
+<g font-family="system-ui, -apple-system, sans-serif">
+<text x="28" y="35" font-size="23" fill="#0f172a" font-weight="bold">An identified formula need not be short</text>
+<text x="28" y="66" font-size="16" fill="#0f172a" font-weight="normal">Independent form coefficients versus network parameters</text>
+<text x="28" y="94" font-size="14" fill="#64748b" font-weight="normal">Length 10; source-classified approximation families</text>
+<text x="28" y="148" font-size="17" fill="#0f172a" font-weight="bold">Width 16</text>
+<rect x="150" y="130" width="115.846" height="23" rx="3" fill="#2563eb"/>
+<text x="625" y="148" font-size="16" fill="#0f172a" font-weight="normal">274 coefficients</text>
+<rect x="150" y="160" width="121.765" height="23" rx="3" fill="#64748b"/>
+<text x="625" y="178" font-size="16" fill="#0f172a" font-weight="normal">288 parameters</text>
+<text x="28" y="236" font-size="17" fill="#0f172a" font-weight="bold">Width 32</text>
+<rect x="150" y="218" width="446.471" height="23" rx="3" fill="#2563eb"/>
+<text x="625" y="236" font-size="16" fill="#0f172a" font-weight="normal">1056 coefficients</text>
+<rect x="150" y="248" width="460.000" height="23" rx="3" fill="#64748b"/>
+<text x="625" y="266" font-size="16" fill="#0f172a" font-weight="normal">1088 parameters</text>
+<text x="28" y="329" font-size="16" fill="#0f172a" font-weight="normal">Formulas explain the networks, including their median errors.</text>
+<text x="28" y="355" font-size="14" fill="#64748b" font-weight="normal">Sampled tests only. Fixed signs and offsets are listed in the entry.</text>
+</g>
+</svg>

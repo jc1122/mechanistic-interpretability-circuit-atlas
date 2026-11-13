@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" role="img" aria-labelledby="title description">
+<title id="title">Polynomial multiplication: learning the sum with product gates fixed</title>
+<desc id="description">The answer-only split-sum screening arm froze the hand-built signed-product gates and trained the output weights. Three of three seeds reached .998-.999 whole-output exact match on 1000 held-out pairs per seed; none reached 1.0. This is a distinct arm, not the ordinary partly trained cell or a verified learned mechanism.</desc>
+<style>text{font-family:system-ui,sans-serif} .box{stroke:#63758b;stroke-width:2}</style>
+<rect width="900" height="400" rx="16" fill="#f7f9fc"/>
+<text x="30" y="42" font-size="25" fill="#172b4d" font-weight="600">Separate the products from the sum</text>
+<text x="30" y="73" font-size="18" fill="#172b4d" font-weight="normal">Answer-only multiplication: the split-sum screening arm</text>
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#63758b"/></marker></defs>
+<rect x="30" y="116" width="260" height="105" rx="10" fill="#ffffff" class="box"/>
+<text x="46" y="153" font-size="19" fill="#172b4d" font-weight="600">Operand coefficients</text>
+<text x="46" y="190" font-size="17" fill="#172b4d" font-weight="normal">input</text>
+<rect x="320" y="116" width="260" height="105" rx="10" fill="#e5ecf5" class="box"/>
+<text x="336" y="153" font-size="19" fill="#172b4d" font-weight="600">Signed-product gates</text>
+<text x="336" y="190" font-size="17" fill="#172b4d" font-weight="normal">hand-built and frozen</text>
+<rect x="610" y="116" width="260" height="105" rx="10" fill="#fff0ba" class="box"/>
+<text x="626" y="153" font-size="19" fill="#172b4d" font-weight="600">Sum / output weights</text>
+<text x="626" y="190" font-size="17" fill="#172b4d" font-weight="normal">trained</text>
+<line x1="290" y1="169" x2="316" y2="169" stroke="#63758b" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="580" y1="169" x2="606" y2="169" stroke="#63758b" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="30" y="272" font-size="22" fill="#172b4d" font-weight="600">3/3 screening seeds: .998-.999 whole-output exact match</text>
+<text x="30" y="305" font-size="18" fill="#172b4d" font-weight="normal">1000 held-out pairs per seed</text>
+<text x="30" y="338" font-size="18" fill="#172b4d" font-weight="normal">No seed reached whole-output exact match 1.0</text>
+<text x="30" y="372" font-size="17" fill="#172b4d" font-weight="normal">A separate arm; no verified learned multiplication mechanism.</text>
+</svg>

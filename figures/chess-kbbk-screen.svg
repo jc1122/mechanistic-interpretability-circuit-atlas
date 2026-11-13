@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="388" viewBox="0 0 760 388" role="img" aria-labelledby="title desc">
+<title id="title">A candidate list did not solve the move task</title>
+<desc id="desc">Width 384; best teacher-forced accuracy on a fixed 2,048-position held-out screen. Each point is one trained network. Whole output includes all scratchpad tokens. Free play was not evaluated. The wider run was truncated and is not shown here. Values: Seed 0: Answer only .627, Candidate-list scratchpad .410; Seed 1: Answer only .590, Candidate-list scratchpad .394; Seed 2: Answer only .582, Candidate-list scratchpad .407.</desc>
+<rect width="100%" height="100%" fill="white"/>
+<g font-family="system-ui, sans-serif" fill="#1d2630">
+<text x="24" y="32" font-size="21" font-weight="600">A candidate list did not solve the move task</text>
+<text x="24" y="58" font-size="13">Width 384; best teacher-forced accuracy on a fixed 2,048-position held-out screen.</text>
+<circle cx="29" cy="81" r="4" fill="#175a96"/>
+<text x="41" y="85" font-size="13">Answer only</text>
+<circle cx="360" cy="81" r="4" fill="#a53b13"/>
+<text x="372" y="85" font-size="13">Candidate-list scratchpad</text>
+<path d="M242.0 108 V250" stroke="#e0e5ea"/>
+<text x="242.0" y="270" text-anchor="middle" font-size="12">0</text>
+<path d="M331.5 108 V250" stroke="#e0e5ea"/>
+<text x="331.5" y="270" text-anchor="middle" font-size="12">.25</text>
+<path d="M421.0 108 V250" stroke="#e0e5ea"/>
+<text x="421.0" y="270" text-anchor="middle" font-size="12">.50</text>
+<path d="M510.5 108 V250" stroke="#e0e5ea"/>
+<text x="510.5" y="270" text-anchor="middle" font-size="12">.75</text>
+<path d="M600.0 108 V250" stroke="#e0e5ea"/>
+<text x="600.0" y="270" text-anchor="middle" font-size="12">1.00</text>
+<text x="24" y="129" font-size="13">Seed 0</text>
+<path d="M466.466 118 H466.466" stroke="#175a96" stroke-width="3"/>
+<circle cx="466.466" cy="118" r="3" fill="#175a96"/>
+<circle cx="466.466" cy="118" r="3" fill="#175a96"/>
+<text x="616" y="122" fill="#175a96" font-size="12">.627</text>
+<path d="M388.78 134 H388.78" stroke="#a53b13" stroke-width="3"/>
+<circle cx="388.78" cy="134" r="3" fill="#a53b13"/>
+<circle cx="388.78" cy="134" r="3" fill="#a53b13"/>
+<text x="616" y="138" fill="#a53b13" font-size="12">.410</text>
+<text x="24" y="176" font-size="13">Seed 1</text>
+<path d="M453.22 165 H453.22" stroke="#175a96" stroke-width="3"/>
+<circle cx="453.22" cy="165" r="3" fill="#175a96"/>
+<circle cx="453.22" cy="165" r="3" fill="#175a96"/>
+<text x="616" y="169" fill="#175a96" font-size="12">.590</text>
+<path d="M383.052 181 H383.052" stroke="#a53b13" stroke-width="3"/>
+<circle cx="383.052" cy="181" r="3" fill="#a53b13"/>
+<circle cx="383.052" cy="181" r="3" fill="#a53b13"/>
+<text x="616" y="185" fill="#a53b13" font-size="12">.394</text>
+<text x="24" y="223" font-size="13">Seed 2</text>
+<path d="M450.356 212 H450.356" stroke="#175a96" stroke-width="3"/>
+<circle cx="450.356" cy="212" r="3" fill="#175a96"/>
+<circle cx="450.356" cy="212" r="3" fill="#175a96"/>
+<text x="616" y="216" fill="#175a96" font-size="12">.582</text>
+<path d="M387.706 228 H387.706" stroke="#a53b13" stroke-width="3"/>
+<circle cx="387.706" cy="228" r="3" fill="#a53b13"/>
+<circle cx="387.706" cy="228" r="3" fill="#a53b13"/>
+<text x="616" y="232" fill="#a53b13" font-size="12">.407</text>
+<text x="421.0" y="295" text-anchor="middle" font-size="13">Whole-output exact accuracy</text>
+<text x="24" y="325" font-size="12">Each point is one trained network. Whole output includes all scratchpad tokens.</text>
+<text x="24" y="344" font-size="12">Free play was not evaluated. The wider run was truncated and is not shown here.</text>
+</g>
+</svg>

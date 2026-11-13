@@ -1,12 +1,11 @@
 # Compare two counts
 
-This entry asks how a small network decides which of two letters is more frequent in a line. A frozen transformer whose every weight
-was set by formula counts the letter a in a line of a's and b's and re-encodes the count c and the line length L in three ways; only a
-one-layer MLP on top was trained to answer `a`, `b` or `=` (a tie). All 30 trained networks (10 seeds at each of three train
-fractions) learned a linear comparator in c and L with a slope ratio of −.56 to −.64, where the exact rule is −.50, and memorised the
-`=` class: none of the 30 answered a single held-out `=` cell correctly. The task is partly solved (greater and less are learned, test
-.91–.96; `=` never generalises, 0 correct test cells in 30/30). The closed form, a linear rule, is partial: it is supported by
-substitution (accuracy .93–.96, agreement .92–.94), and the complement was not tested.
+Given a shuffled list of a's and b's, the model must name the more frequent letter or report a tie. A fixed hand-built transformer
+supplied several encodings of the count and list length to one trained feed-forward block. All 30 networks (ten seeds at each of
+three training fractions) learned an approximate comparison, scoring .91–.96 on held-out count/length combinations, yet every network
+got every held-out tie wrong. A random frozen base and a scalar-only input both gave better test accuracy than the richer hand-built
+feature menu. The task is partly solved, with equality unsolved; the fitted two-way comparator is only a partial description, because
+it never returns a tie and the rest of its circuit was not resampled.
 
 | Fact | Value |
 |---|---|
@@ -14,14 +13,16 @@ substitution (accuracy .93–.96, agreement .92–.94), and the complement was n
 | Input → output example | A line of 20 letters with 12 a's and 8 b's → `a` |
 | Model | Frozen hand-built 6-layer transformer and a frozen menu of encodings; trained: one MLP layer, 256 ReLU units, 3 outputs |
 | Rungs and seeds | Hand-built network, exact on all cells; MLP trained on frozen hand-built parts, 10 seeds × train fractions .4/.6/.8 (30 networks), 200,000 steps each; 18 control runs |
-| Closed form status | Partial: linear rule answer = a if αc + βL + γ > 0 else b, accuracy .93–.96, agreement .92–.94; the exact variable 2c − L scores lower, .90–.94 (supported by substitution; complement not tested; never outputs `=`) |
+| Closed form status | Partial (approximate two-way comparator: substituted accuracy .93–.96, agreement .92–.94 over all 1080 cells, not an independent formula-fit split; never outputs a tie; complement not tested) |
 | Status | Partly solved (greater/less learned, test .91–.96; `=` 0 correct test cells in 30/30); last run 2026-11-04 |
 | Weights | [Hugging Face: compare-counts](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/compare-counts) (hand-built base in `_shared/m2`) |
 | Reproduce | [Commands](#24-reproduction), run from `code/` |
 
 ## 1. Task and data
 
-The prompts are the same as in [count mod 5](count-mod-5.md): a one-shot example followed by a shuffled line of c a's and L − c b's.
+The prompt has a `COUNT a:` header and a shuffled list of a's and b's, preceded by one solved example, as in
+[count mod 5](count-mod-5.md). Let c be the number of a's and L the total number of letters, so the b count is L − c. For example,
+a line of 20 letters with 12 a's and 8 b's should answer `a`.
 The answer is `a` if c > L − c, `b` if c < L − c and `=` if 2c = L, so there are 3 classes; as labels, class 0 if 2c > L, 1 if
 2c < L and 2 (`=`) if 2c = L. The data cover every cell (c, L) with L = 1..45, which gives 1080 cells with one prompt each, of which 22
 are `=`. The trained stage must therefore compare c with L/2. The split into training and test data is over cells, with train fractions
@@ -45,8 +46,9 @@ through a position scalar, and, in its layer 5 MLP, a hand-built comparator (Sec
 
 The [menu](../GLOSSARY.md#hand-built-machinery) is a frozen layer, defined by formula with no learned parameters, that places three
 encodings of each integer at the answer position: the raw scalar, a one-hot code and a thermometer code (a vector whose k-th unit is
-[n ≥ k]), together with distractor features. It is computed from m2's count X = 1/(c+1) and position scalar R, which gives L. Each
-block is centred and divided by its rms row norm. Table 1 lists the blocks of the 326-wide input.
+[n ≥ k]), together with distractor features. It is computed from m2's count X = 1/(c+1) and position scalar R, which gives L. A one-hot code has one unit per possible value; a thermometer code has one unit per threshold
+([glossary](../GLOSSARY.md#standard-machine-learning-terms)). Each block is centred and divided by its rms row norm, the root mean
+square of the row's entries. Table 1 lists the blocks of the 326-wide input.
 
 *Table 1. Input blocks of the frozen menu (index ranges of the 326-wide input).*
 
@@ -142,19 +144,21 @@ shaded MLP is the only trained part.*
 ## 4. What training finds
 
 Test accuracy reached its plateau at the first evaluation (step 500) and never improved: .91–.94 at fraction .4 to .92–.96 at
-fraction .8 (Table 2). This is neither [grokking](../GLOSSARY.md#counting-results) nor a clean failure, and the weight norm stays flat.
+fraction .8 (Table 2). There was no [grokking](../GLOSSARY.md#counting-results), a delayed rise of test accuracy after training
+accuracy: accuracy was already at its plateau, and the weight norm stayed flat.
 
 *Table 2. Results per cell. Test accuracy is the range over seeds.*
 
 | Cell | Seeds | Plateau step | Final test | Correct `=` test cells |
 |---|---|---|---|---|
 | MLP on the frozen hand-built menu, fraction .4 | 10 | 500 | .91–.94 | 0 in every network |
+| MLP on the frozen hand-built menu, fraction .6 | 10 | 500 | .921–.947 (source precision) | 0 in every network |
 | MLP on the frozen hand-built menu, fraction .8 | 10 | 500 | .92–.96 | 0 in every network |
 | Control: random frozen base | 3 per fraction | | .99–1.000 | |
 | Control: scalar-only menu | 3 per fraction | | .97–.99 | .17–.44 |
 
-All 30 networks fall into one [circuit type](../GLOSSARY.md#counting-results) (30/30): a linear comparator with a tilted boundary, and
-`=` memorised. The a − b logit difference is 83–87% linear in (c, L), with an L/c slope ratio (β/α in Section 5) of −.56 to −.64 where the exact rule is
+All 30 networks fall into one [circuit type](../GLOSSARY.md#counting-results), a grouping by mechanism (30/30): an approximate linear
+comparator with a tilted boundary and `=` memorised. This is a classification count, not 30 solved tasks. The a − b logit difference is 83–87% linear in (c, L), with an L/c slope ratio (β/α in Section 5) of −.56 to −.64 where the exact rule is
 −.50; the errors sit at |2c − L| ≤ 2. The `=` class never generalises: 0 correct `=` test cells in 30/30.
 
 At fraction .4 the thermometer code of c is the main input: ablating it lowers test accuracy to .59, while the one-hot and the scalar
@@ -167,13 +171,14 @@ Each network was fitted with the closed form
 answer = a if αc + βL + γ > 0 else b (never `=`),
 
 with α, β and γ fitted per network. Substituted for the network, it reaches accuracy .93–.96 (the networks score .95–.96) and agrees
-with the network on .92–.94 of cells. A form built on the exact variable 2c − L scores lower (.90–.94), so the networks do not use
-2c − L. The closed form is supported by substitution; no [resample ablation of the
+with the network on .92–.94 of cells. The fit and substitution screen covered all 1080 count/length cells, not an independently
+held-out formula-fit split. A form built on the exact variable 2c − L scores lower (.90–.94), so that variable alone does not
+reproduce the measured decisions as well; this does not prove it is absent internally. The closed form is supported by substitution; no [resample ablation of the
 complement](../GLOSSARY.md#verifying-a-circuit) was reported, so the status is partial.
 
 The weights show the tilt (Figure 2; numbers in Appendix A). The a − b difference is a tilted line, β/α ≈ −.6 instead of the exact
-−.5, so the boundary drifts away from 2c = L as L grows. The `=` logit is large only on the 22 × fraction training cells with 2c = L and
-very negative on the held-out ones (margin over the best other class +13.7 on training cells and −15.5 on test cells for seed 0): it
+−.5, so the boundary drifts away from 2c = L as L grows. Of the 22 equality cells in the full domain, the `=` logit is large only on
+those assigned to the training split and very negative on the held-out ones (margin over the best other class +13.7 on training cells and −15.5 on test cells for seed 0): it
 is a per-cell lookup on the one-hot codes, not a function of 2c − L.
 
 ```mermaid
@@ -187,31 +192,35 @@ flowchart TD
     class D,EQ trained
 ```
 
-*Figure 2. The circuit training finds. The trained MLP computes the a − b difference as a tilted linear function of c and L and gives
-`=` its own logit, which is a lookup over the training cells; the linear rule is supported by substitution, with the complement not
-tested.*
+*Figure 2. The circuit type found in 30/30 networks. The trained MLP's a − b difference is approximated by a tilted linear function
+of c and L, while `=` has a separate score memorised over training cells. Both trained score computations are shaded. The linear
+rule is partial: supported by substitution, with the complement not tested, and never an equality-aware exact comparator.*
 
 The hand-built comparator makes `=` the default output and subtracts two steps on the difference (greater, less), so equality is
 "neither" and is exact on unseen cells. The trained stage instead gives `=` its own logit. On one-hot or thermometer codes, equality is a
-non-linear (XOR-like) feature, so the trained stage can only memorise it; the hand-built unit avoids this by never giving `=` a positive
-detector.
+non-linear (XOR-like) feature, and these 30 runs memorised it. This is observed training behaviour, not a representational
+impossibility: the hand-built comparator itself implements exact equality by making it the default.
 
 Both controls did better than the hand-built menu: a random frozen base scored .99–1.0 against .91–.96 for the menu
 networks. A random frozen base reached .99–1.000; its residual stream encodes c,
 L and 2c − L linearly (ridge R² 1.000), so a few ReLUs give an exact comparator, `=` included. A menu with only the scalars reached
-.97–.99 and got .17–.44 of the `=` test cells right, also better than the full menu. Counting and histogram tasks in small
+.97–.99 and got .17–.44 of the `=` test cells right across all three training fractions, also better than the full menu. The older
+source summary gave .25–.44; the full control record includes fraction .4 with a separately recorded .167 result. The broader
+.17–.44 display includes all three fractions; these summaries are not silently interchanged. Counting and histogram tasks in small
 transformers were studied by [Behrens et al. (2024)](#references), and the length generalisation of formal-language tasks such as
 counting by [Delétang et al. (2022)](#references).
 
 ## 6. Limitations and open questions
 
 One hypothesis, untested, is that exact one-hot codes make `=` and the boundary cells memorisable at a lower weight norm than learning
-the line 2c − L. No test on lines longer than 45 letters was reported.
+the line 2c − L. No test on lines longer than 45 letters was reported. The comparator is an approximate fit over the full cell domain,
+not a separately validated formula for the network; no complement resample was reported.
 
 ## 7. Prediction record
 
 No prediction was recorded before these runs; the entry predates the prediction record. A retrospective prediction, labelled as such,
-is that the hand-built comparator (`compare_answer`) makes `=` learnable only as the default "neither greater nor less". The trained
+is that the hand-built comparator's default "neither greater nor less" output (`compare_answer`) might favour equality transfer.
+This is not a claim that it is the only learnable design. The trained
 stage gives `=` its own logit instead and never generalises it (0 correct `=` test cells in 30/30), so the hand-built design did not
 predict the trained circuit.
 
@@ -249,6 +258,21 @@ norm per input block for seed 0 was tu 7.3, ov 7.0, ou 6.4, tv 4.1, sv 2.5, su 2
 
 Reading. β/α ≈ −.6 instead of −.5 tilts the boundary, so the errors sit at |2c − L| ≤ 2. At c = 10, L = 20 (a held-out `=` cell) the
 `=` logit is the lowest of the three.
+
+## Appendix B. Detailed evidence
+
+*Table B1. Source-precision final accuracies, ten seeds per training fraction. Each score is a share of held-out count/length cells.*
+
+| Train fraction | Final test | Test a/b cells only | Correct held-out ties |
+|---|---|---|---|
+| .4 | .910–.941 | .926–.957 | 0 in every seed |
+| .6 | .921–.947 | .941–.967 | 0 in every seed |
+| .8 | .917–.963 | .943–.977 | 0 in every seed |
+
+Key: these are the source's more precise ranges, retained alongside the earlier rounded .91–.94 / .92–.96 display in Table 2.
+The substituted two-way rule scores .928–.958 and agrees with the network on .916–.935 of all 1080 cells; the corresponding network
+scores .946–.963. Section 5 retains the earlier .93–.96 accuracy, .92–.94 agreement and .95–.96 network display at its original
+precision. None of these scores counts a held-out equality success.
 
 ## References
 

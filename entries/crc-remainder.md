@@ -1,27 +1,30 @@
 # CRC remainder
 
-This entry studies how small transformers divide a bit string by a degree-4 polynomial, using XOR as subtraction, and return its
-4 remainder bits. A scratchpad writes the quotient bit and remainder after each input bit; with this format, training from scratch
-reached exact match on the held-out test in 10/10 final seeds, whereas answer only reached exact match in 2/3 screening seeds.
-Freezing the hand-built routing and training one stage also solved both formats. The task is partly solved because answer-only and
-length-transfer failures remain. The closed form is partial: a scratchpad readout and its discovered circuit pass the acceptance
-checks in 10/10 final seeds, but the earlier trained layers have no formula and the readout alone does not explain the computation.
+This task divides a polynomial of bits by another polynomial and writes its 4 remainder bits, using XOR, addition without carries.
+Small transformers learned it with a scratchpad, a written record of each shift-and-update step: the final from-scratch experiment
+reached held-out whole-output exact match 1.0 in 10/10 seeds at the joint stopping evaluation. The readout and each seed's discovered
+circuit passed substitution and resampling outside the circuit at ≥ .90 of native accuracy, but earlier layers still had no formula
+and the coarse readout table used the emitted bit itself as a key. The overall closed form is therefore partial and the task partly
+solved: answer-only training was exact in 2/3 screening seeds, while the final scratchpad networks scored only 0–.26 at input width 12.
+Learning the local step in range did not ensure reliable repetition at unseen lengths.
 
 | Fact | Value |
 |---|---|
 | Task | Polynomial remainder N mod D over GF(2), with n = 8/9/10 input bits and a monic degree-4 divisor; answer only or a per-bit scratchpad |
 | Input → output example | Answer only: `BOS 10000000 / 10001 =` → `1000` (x^7 mod x^4 + 1 = x^3) |
 | Model | GPT-NeoX-shaped, ReLU, no LayerNorm or positional encoding, d_model 128; answer only 4 layers × 16 heads; scratchpad 3 layers × 4 heads; PART trains only the stage MLP |
-| Rungs and seeds | HAND exact in both formats; PART scratchpad 10 seeds; PART answer only and TRAIN answer only 3 screening seeds each; TRAIN scratchpad 10 final plus 3 screening seeds |
-| Closed form status | Partial (TRAIN scratchpad readout and circuit accepted 10/10 at share ≥ .90; substitution 1.0 in 19/20 snapshots, seed 7 final .969; no upstream formula) |
+| Rungs and seeds | HAND fixes weights; PART trains one stage; TRAIN learns all weights ([rungs](../GLOSSARY.md#the-three-rungs)). HAND exact in both formats; PART scratchpad 10 seeds; PART answer only and TRAIN answer only 3 screening seeds each; TRAIN scratchpad 10 final plus 3 screening seeds |
+| Closed form status | Partial overall (TRAIN scratchpad readout and discovered circuit pass both checks in 10/10 seeds at share ≥ .90; coarse table 1.0 in 19/20 best/final snapshots; fine table seed 7 best .9883, final .9694; coarse key includes emitted bit; no upstream formula) |
 | Status | Partly solved (TRAIN scratchpad final 10/10 exact, answer only 2/3 screening); last run 2026-11-09 |
 | Weights | [Hugging Face: crc-remainder](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/crc-remainder), revision `58be416bb224` |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
 ## 1. Task and data
 
-The target is the GF(2) polynomial remainder N mod D. N has n input bits (n 8/9/10 in training and test), and D is monic of degree 4
-(16–31, with D ∈ {19, 25, 28, 30} withheld from training). The prefix is `BOS N_MSB…N_LSB / D_MSB…D_LSB =`, most significant bit
+Each input bit is a polynomial coefficient: for example, `10001` denotes x^4 + 1. The target is N mod D over GF(2), arithmetic with
+bit coefficients where addition and subtraction are XOR and multiplication of two coefficients is AND. N has n input bits
+(n 8/9/10 in training and test). D is monic, meaning its leading coefficient is 1, and has degree 4 (16–31, with
+D ∈ {19, 25, 28, 30} withheld from training). The prefix is `BOS N_MSB…N_LSB / D_MSB…D_LSB =`, most significant bit
 first. This is algebraic division, not a standardised CRC encoding. For example, `BOS 10000000 / 10001 =` has remainder `1000`, since
 x^7 mod (x^4 + 1) = x^3.
 
@@ -46,7 +49,7 @@ stage on frozen hand-built parts) and TRAIN (all weights trained from scratch; [
 ### 2.1 Architecture
 
 All networks are GPT-NeoX-shaped with ReLU, no LayerNorm, no positional encoding, untied embeddings, vocabulary 7, context 128 and
-d_model 128. Format A uses 4 layers × 16 heads (d_head 8) and MLP 1,024; format T uses 3 layers × 4 heads (d_head 32) and MLP 256.
+d_model 128. Format A uses 4 layers × 16 heads (d_head 8) and MLP 1024; format T uses 3 layers × 4 heads (d_head 32) and MLP 256.
 
 ### 2.2 Frozen parts and trained part
 
@@ -84,7 +87,7 @@ r = ((r ≪ 1) | a) XOR (q·D): it shifts the remainder left, appends input bit 
 At each bit this is `next = shift XOR (divisor_bit AND quotient)`. The stage has 10 neurons, with W_in values ±1 and −2.
 
 The answer-only network A (18 heads + 344 neurons) instead uses parity staircases, paired steps whose alternating output gives a
-sum's parity ([glossary](../GLOSSARY.md#hand-built-machinery)). Its 12 layer-2 heads fetch input bits NB_i and 4 fetch divisor bits.
+sum's parity ([glossary](../GLOSSARY.md#hand-built-machinery)). Its 12 layer-2 heads fetch NB_i, the input bit at power i, and 4 fetch divisor bits.
 MLP3 holds 262 parity-staircase neurons, grouped by divisor D and answer bit j, reading
 S(D, j) = {i: bit j of x^i mod D is 1}; here S is the set of input-bit positions contributing to that remainder bit. Input weights
 are 1 and gates 32. Both formats are exact on 9,568 sequences per format (n ≤ 6 exhaustive, n 7–12 stratified over all D), with margin 30.
@@ -135,8 +138,8 @@ readout (3/3 each); the later native-neuron support test distinguishes PART A's 
 TRAIN T has one distributed scratchpad-step type in 10/10 final and 3/3 screening seeds. Shift, quotient and next remainder are
 causally used at probe layer 3 (interchange .98–1, DAS 1), while layer-2 heads fetch and MLP2 writes the bit. Interchange swaps a
 variable between inputs; DAS tests such swaps through a learned rotation ([glossary](../GLOSSARY.md#analysis-measures)). Discovered
-circuits have 13–71 of 118 edges, HAND edge recall .67–1 and Jaccard .10–.38. The published account calls them a HAND-edge superset;
-recall below 1 means this is not a strict superset in every seed. Seeds 1, 5 and 6 are compact (13–28 edges, at most 2 layer-0/1
+circuits have 13–71 of 118 edges, HAND edge recall .67–1 and Jaccard .10–.38. They have more edges overall and overlap HAND, but do not contain every HAND edge in
+every seed; the source's “superset” shorthand is too strong. Seeds 1, 5 and 6 are compact (13–28 edges, at most 2 layer-0/1
 heads); the wide circuits have 42–71 edges. The path through MLP1, layer-2 heads and MLP2 carries drops .32–.66 and .68–1 in the
 published summary; the detailed path measurement reaches 1.35. The direct MLP1-to-MLP2 drop is ≤ .06.
 
@@ -164,14 +167,17 @@ cosine decay: seed 1 reached 1 at 25k, seed 0 peaked at .992 and ended at .988 o
 PART T seeds 0–2 pass n 1–12. Final TRAIN T reaches ≥ .95 at n 11 in 3/10, but short-input exact is ≤ .26 at n 4 and ≤ .71 at n 6.
 The older TRAIN T screen had n 11 best .84 / .86 / .83 and final .18 / .92 / .57, with n 12 ≈ 0. Older PART A tests reported n 12
 with seen divisors ≈ 1/3 and unseen-D n 10 .09–.10; Table 3 retains the later comparison's .11–.14 and .07–.09 separately. These are
-distinct recorded summaries; their precise evaluation difference was not specified.
+distinct recorded summaries; their precise evaluation difference was not specified. PART A's timing also needs its criterion kept:
+Table 2 reports first exact match 1.0 at 5.5–7k, while Table 3 labels 3.5–5.5k as first test ≥ .99. The source does not establish whether
+the criterion alone explains this difference; these ranges must not be used interchangeably.
 
 ## 5. Mechanism and verification
 
 ### 5.1 Current acceptance and scope
 
 Substitution replaces the last MLP output at every answer query by a table fitted on separate batches. Current tests score
-3 × 512 held-out rows at n 8/9/10. Acceptance requires both substitution and resample ablation of the complement to retain ≥ .90 of
+3 × 512 held-out rows at n 8/9/10; complement checks used 256 n 10 rows and 3 resample draws, not the same evaluation batch.
+Acceptance requires both substitution and resample ablation of the complement to retain ≥ .90 of
 the native network's exact match ([glossary](../GLOSSARY.md#verifying-a-circuit)). The complement test replaces everything outside
 the claimed circuit with activations from other inputs.
 
@@ -181,13 +187,16 @@ the claimed circuit with activations from other inputs.
 |---|---|---|---|---|
 | PART T | MLP2 = W[phase, col, next], next = shift XOR (divisor_bit AND quotient) | 1.0 in 6/6 best/final nets; also with the 35-key HAND-input table | resample 1.0; circuit resampled 0 | accepted on the 3 directly tested seeds |
 | PART A | MLP3 = W[j, next], next = XOR of NB_i over S(D, j) | 1.0 in 6/6 | resample 1.0 | accepted on 3/3 seeds |
-| TRAIN T final | same MLP2 readout, with earlier layers left trained | 1.0 in 19/20 best/final nets; final seed 7 .969 (n 10 drops); same published result with the 35-key input table | complement .915–.994; circuit resampled and random same-size ≤ .003 | accepted readout and circuit, 10/10 at the .90 share |
+| TRAIN T final | same MLP2 readout, with earlier layers left trained | coarse table 1.0 in 19/20 best/final snapshots; fine 35-key table seed 7 best .9883 rather than 1.0; final seed 7 .9694 with either key | complement .915–.994; circuit resampled and random same-size ≤ .003 | verified at the readout/discovered-circuit scope, 10/10 at the .90 share; not a complete upstream formula |
 | TRAIN A | table in answer bit and next remainder | .84 / .69 for solved seeds 1 / 2; failed seed 0 .998 | claimed-component resample .09 / .15 | rejected for the solved seeds |
 
 Complement self-tests pass in every tested network (`full = base`, `empty = source`). The coarse readout key includes the emitted
 bit: it establishes a pure bit code, not how the earlier layers compute next. The HAND-input T key and PART A's native support
 neurons add computational evidence; no formula replaces TRAIN T layers 0–1 or its layer-2 heads. The overall status is therefore
-partial, even though the stated readout and discovered circuit pass in 10/10 final seeds.
+partial, even though the stated readout and discovered circuit pass in 10/10 final seeds. The earlier published display gave seed 7
+final as .969; the acceptance record gives .9694 and locates its loss at n 10 (.9082, displayed as .908 in the source summary). The
+coarse table has 11 keys and the fine table 35, with none unseen in the evaluation; the fine best-snapshot exception cannot be folded
+into the coarse 19/20 exact count.
 
 ```mermaid
 flowchart TD
@@ -201,9 +210,9 @@ flowchart TD
     class M1,H,M2,RA trained
 ```
 
-*Figure 2. The circuits found from scratch. All shaded nodes are trained. The TRAIN T readout and discovered circuit pass the .90
-acceptance share in 10/10 final seeds, but the status is partial: the earlier layers have no formula, and the emitted-bit table alone
-is a readout, not an upstream algorithm. TRAIN A's tested form is rejected.*
+*Figure 2. The circuits found from scratch. All shaded nodes are trained. The TRAIN T readout and discovered circuit pass substitution
+and complement checks at the .90 share in 10/10 seeds. Overall closed-form status is partial: earlier layers have no formula and the
+coarse table uses the emitted bit, so it is a readout rather than an upstream algorithm. TRAIN A's tested form is rejected.*
 
 ### 5.2 Earlier substitution evidence
 

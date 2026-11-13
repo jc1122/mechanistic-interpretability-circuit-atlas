@@ -1,33 +1,37 @@
-# Polynomial integration with reduced fractions (integ)
+# Polynomial integration with reduced fractions
 
-This entry studies how a 4-layer transformer integrates an integer polynomial and writes each integrated coefficient as a reduced
-fraction, either directly (answer only) or after writing every row of a subtractive Euclid algorithm for the gcd (a scratchpad).
-With the scratchpad, networks trained from scratch solved 9/10 seeds in the final cell; the one failure (.875 at the 30k budget) fails
-exactly at numerator emission. A last-stage MLP trained on frozen hand-built parts learned the scratchpad format in 3/3 seeds by
-5,500 steps, and it alone transferred to withheld fractions (1.0); answer-only networks solved in range 3/3 (frozen parts and from
-scratch) but did not transfer (frozen parts 0, from scratch 0–.19). The task is partly solved (scratchpad from scratch, 9/10). The
-closed form is partial: a layer-0 prefix-pooling formula substitutes exactly in 20/20 snapshots, a layer-2 reader passes in seed 0
-and fails in seed 2, no gcd or division form was found, and the complement was not tested.
+Integrating an integer polynomial can produce fractions: each coefficient is divided by its new power, then the fraction must be
+simplified. These four-layer transformers either wrote the reduced answer directly or first wrote the steps of Euclid's algorithm
+for the greatest common divisor. With earlier arithmetic stages frozen, the three-seed scratchpad cell stopped at 5,500 steps,
+against 26,000 for answer only, and was the only tested cell to score 1.0 on withheld fractions. Training the scratchpad model from
+scratch was slower and finished exact in 9/10 final seeds on 256 held-out polynomials per seed, with the remaining seed failing at
+signed-numerator emission. The task is partly solved: prefix pooling has substitution support in 20/20 snapshots across 10 seeds,
+but the explanation is partial, with no recovered gcd/division circuit and no complement test.
 
 | Fact | Value |
 |---|---|
 | Task | Integrate an integer polynomial and write each coefficient as a reduced fraction |
 | Input → output example | Answer only: `BOS M:2 C:4 C:6 =` (4 + 6x) → `J:1 N:4 D:1 J:2 N:3 D:1` (4x + 3x²) |
-| Model | GPT-NeoX-shaped, 4 layers, d_model 64, 4 heads × 16, ReLU MLP 384 (`A`) / 448 (`T`), NoPE, no LayerNorm; PART trains only the L3 MLP |
-| Rungs and seeds | HAND `A` and `T`; screen 3 seeds × {`A`, `T`} × {PART, TRAIN}; final TRAIN `T` 10 seeds |
-| Closed form status | Partial (TRAIN `T` layer-0 prefix pooling exact in 20/20 snapshots on substitution; layer-2 reader passes seed 0, fails seed 2; no gcd/division form; complement not tested) |
-| Status | Partly solved (TRAIN `T` final 9/10); last run 2026-11-08 |
+| Model | 4-layer transformer, width 64, 4 heads × 16; feed-forward width 384 for answer only or 448 with a scratchpad; no positions or LayerNorm; frozen-scaffold runs train only the last feed-forward block |
+| Rungs and seeds | Hand-built checks in both output formats; 3-seed screens per format and training rung; final from-scratch scratchpad cell, 10 seeds |
+| Closed form status | Partial (from-scratch scratchpad prefix pooling keeps predictions in 20/20 snapshots across 10 seeds on 512 fresh polynomials per snapshot; layer-2 reader passes only tested subpieces; no gcd/division form; complement not tested) |
+| Status | Partly solved (from-scratch scratchpad final, 9/10 exact whole outputs on 256 held-out polynomials per seed; seed 4 .875); last run 2026-11-08 |
 | Weights | [Hugging Face: polynomial-integration](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/polynomial-integration) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
 ## 1. Task and data
 
+A polynomial is represented by its integer coefficients in ascending power order. A reduced fraction has numerator (top number)
+and denominator (bottom number) with no common factor above 1. The greatest common divisor, or gcd, is the largest positive integer
+that divides both numbers.
+
 The prompt is `BOS M:m C:c₀ … C:cₘ₋₁ =`, where m is the number of terms and c_j the coefficients, in typed integer tokens. For each
-term j the network writes `J:j N:c/g D:j/g`, with g = gcd(|c_{j−1}|, j); a zero coefficient is written 0/1. For the example
+term j the network writes `J:j N:c/g D:j/g`, where c is that term's original coefficient c_{j−1} and g = gcd(|c_{j−1}|, j); a zero coefficient is written 0/1. For the example
 `BOS M:2 C:4 C:6 =`, which is 4 + 6x, the integral is 4x + 3x²: term 1 is 4/1 and term 2 is 6/2 = 3/1.
 
 Two output formats were studied (Table 1). The [scratchpad](../GLOSSARY.md#task-formats) format writes every row of the
-subtractive Euclid algorithm, which maps (a, b) to (|a − b|, min(a, b)), until b = 0, then the gcd and the fraction.
+subtractive Euclid algorithm, repeatedly replacing the larger value by the difference. Here its update maps (a, b) to
+(|a − b|, min(a, b)) until b = 0, then writes the gcd and the fraction.
 
 *Table 1. Output formats.*
 
@@ -38,7 +42,9 @@ subtractive Euclid algorithm, which maps (a, b) to (|a − b|, min(a, b)), until
 
 Training used 2–4 terms and coefficients c ∈ −9…9 without ±8; the fractions ±2/3 and ±3/4 were withheld. The split is about 80/20 by
 a hash of the whole polynomial, with 256 held-out polynomials per seed. An output counts as correct only on exact match of the whole
-teacher-forced output ([glossary](../GLOSSARY.md#task-formats)).
+teacher-forced output: each token is scored with correct earlier tokens supplied
+([glossary](../GLOSSARY.md#task-formats)). The final success criterion is exact accuracy 1.0, distinct from the ≥ 90% learning-curve
+threshold in Table 2.
 
 ## 2. Model
 
@@ -48,7 +54,9 @@ and TRAIN (all weights trained from scratch).
 
 ### 2.1 Architecture
 
-All networks are GPT-NeoX-shaped with 4 layers, d_model 64, 4 heads × 16, a ReLU MLP of width 384 (`A`) or 448 (`T`), no LayerNorm and
+All networks follow the [GPT-NeoX decoder layout](../GLOSSARY.md#standard-machine-learning-terms), with 4 layers, residual-stream
+width d_model 64, 4 attention heads × 16 dimensions and a feed-forward block (MLP) of width 384 (`A`) or 448 (`T`). ReLU is zero for
+negative inputs; the residual stream is the running vector each layer updates. The networks have no LayerNorm and
 no positional encoding (NoPE), a vocabulary of 130 and context ≤ 218. TRAIN learns all weights (`A` 16 heads + 1,536 neurons, `T`
 16 + 1,792).
 
@@ -60,7 +68,7 @@ PART freezes HAND and re-initialises and trains the L3 MLP, with W_in masked to 
 
 The optimiser was AdamW with learning rate 1e-3, weight decay .1, warmup 1,000, a cosine schedule over 30k steps, gradient clip 1 and
 batches of 16 fresh draws per step. Evaluation ran every 500 steps and checkpoints every 2,500; a run stopped on a 5k plateau after
-22.5k. PART ran in fp32 and TRAIN in TF32, re-scored in fp32. The four run identifiers are listed in Appendix B. Each pack of seeds ran on one GPU; diagnostics and substitutions
+22.5k. PART ran in fp32 and TRAIN in TF32, re-scored in fp32. Each pack of seeds ran on one GPU; diagnostics and substitutions
 ran on CPU.
 
 ### 2.4 Reproduction
@@ -110,7 +118,8 @@ other HAND bricks are not recorded, so they are drawn without layer labels.*
 Table 2 gives every cell. The 3-seed screens solved every cell, and the final T TRAIN cell solved 9/10 (seed 4 .875
 at the 30k budget). The scratchpad cut the stop of PART from 26,000 to 5,500 steps and slowed TRAIN from 14,500 to 27,000.
 
-*Table 2. Results per cell (first evaluation at ≥ 90% held-out exact and first exact, per seed).*
+*Table 2. Results per cell: exact means the whole output on 256 held-out polynomials per seed. Learning thresholds are per seed;
+stops belong to the seed pack. The out-of-distribution columns use best snapshots on 64 polynomials per seed.*
 
 | Cell | Solved | First ≥ 90% test (per seed) | First exact (per seed) | Stop | 5 terms | withheld fractions |
 |---|---|---|---|---|---|---|
@@ -121,6 +130,8 @@ at the 30k budget). The scratchpad cut the stop of PART from 26,000 to 5,500 ste
 
 Key: s0–2 = seeds 0–2; a dash = never reached.
 
+The representation comparisons test similarity, not causal use. An alignment fit tries to map the trained residual to HAND's by
+rotation and scaling; centred kernel alignment (CKA) compares their representation geometry ([glossary](../GLOSSARY.md#analysis-measures)).
 TRAIN networks solve in distribution with a distributed, MLP-heavy code unlike HAND's (an `align` fit of HAND's variables has R² < 0;
 CKA ≤ .27). The Euclid state is used by ≤ 2.5–5k steps, and the signed numerator is the last variable learned (interchange flip at
 5–12.5k; 90% test at 14.5–22k). No memorisation or stall alert was raised in any of 11 trajectories; these alerts are meant to catch the
@@ -128,13 +139,16 @@ memorise-then-generalise pattern of grokking ([Power et al., 2022](#references))
 
 ### 4.1 Out of distribution
 
-On the out-of-distribution sets (best snapshot, 64 per seed), every TRAIN network scores 0 at 5, 6 and 8 terms and on forced ±8. These
-sets introduce new M and J token ids, so they are not a pure length test.
+On the out-of-distribution sets (best snapshot, 64 per seed), every TRAIN network scores 0 at 5, 6 and 8 terms and on forced ±8.
+The longer-polynomial sets introduce new M and J token ids, so they are not a pure length test; the forced-±8 set instead tests
+untrained coefficient tokens.
 
 ### 4.2 The failed seed
 
-Seed 4 of the final cell (best = final = step 30k) reaches exact .875; its numerator token accuracy is .972 and every other role is
-≥ .999. Its numerator interchange is .933 (nf 75, the number of flips tested), DAS .920, and gcd DAS .984. The state is present, and
+Distributed alignment search (DAS) learns rotated directions in which to swap a candidate variable between inputs; a successful swap
+supports use of that variable ([glossary](../GLOSSARY.md#analysis-measures)). Seed 4 of the final cell (best = final = step 30k) reaches exact .875; its numerator token accuracy is .972 and every other role is
+≥ .999. Its numerator interchange is .933 (nf 75 answer-fixing queries tested), DAS .920, and gcd DAS .984. These queries are ones
+where the variable determines the answer token; nf does not count successful flips. The state is present, and
 the selection of the signed numerator at the step from G to N fails.
 
 ### 4.3 Circuit types
@@ -148,40 +162,57 @@ Full diagnostics are in Appendix B.
 
 ### 5.1 Closed forms
 
-The layer-0 attention of T TRAIN is a content-weighted prefix pooling:
+The layer-0 attention of T TRAIN is content-weighted prefix pooling: it averages earlier token values according to their identities
+and counts, without depending on their order. This partial subpiece is supported by substitution, with the complement not tested:
 `P_h(t) = Σ_u N_u e^{S_h[t,u]} v_h[u] / Σ_u N_u e^{S_h[t,u]}`, with S = Q(E_t)·K(E_u)/4, v = OV(E_u) and N_u the count of token u in
-the prefix. Substituted for layer 0 it keeps every prediction in 20/20 snapshots of seeds 0–9 (error ≤ 1.8e-7). The layer-2 G-query
-reader `b_h + u_h[c] + v_h[j]` passes in seed 0 (512/512, and also as a hard fetch `1[k=j+1]`) and for head H1 only in seed 1, and fails
-in seed 2 (≤ 502/512); the bar is ≥ .99 × native on 512 fresh polynomials. No gcd or division form was found. Both forms are supported
+the prefix; Q and K form query/key scores and OV maps token embeddings E to values. Substitution for layer 0 keeps every prediction
+in 20/20 snapshots across seeds 0–9: 6/6 screen snapshots have maximum error ≤ 1.8e-7 and 14/14 later snapshots ≤ 1.5e-7, each tested
+on 512 fresh hash-test polynomials. These are two snapshots per seed, not 20 independent training seeds.
+
+The layer-2 G-query reader, queried when the scratchpad writes its gcd, has formula `b_h + u_h[c] + v_h[j]`: a bias plus a
+coefficient-specific and a term-index-specific contribution. It passes in seed 0 (512/512, and also as a hard fetch `1[k=j+1]`) and
+for head H1 only in seed 1, and fails in seed 2 (≤ 502/512). In later seeds, H0+H1 passes only in seed 7; H1 alone passes in seeds
+5–8. The bar is ≥ .99 × native on 512 fresh polynomials; seed 4's native score on this test is 470/512. No gcd or division form was
+found. Both forms are supported
 by substitution only; no [resample ablation of the complement](../GLOSSARY.md#verifying-a-circuit) was reported, so the status is
-partial.
+partial. The complement would replace circuitry outside a claimed mechanism with its values on other inputs. For PART, the
+trained final-stage response has rank-16/24 whole-path substitution support, but is a finite (c, j, g) lookup, not inferred division.
+A compact mean-code substitute for answer-only TRAIN failed; no closed form was accepted for that cell.
 
 ```mermaid
 flowchart TD
-    P["prompt and scratchpad tokens"] --> L0["layer 0: content-weighted prefix pooling, N_u e^S v / N_u e^S"]
-    L0 --> M["MLP-heavy family: every MLP lesion gives exact 0"]
-    M --> R["layer 2 G-query reader b_h + u_h[c] + v_h[j], seed 0"]
-    R --> Y["written N:c/g D:j/g"]
-    M --> Y
+    P["prompt and scratchpad tokens"] --> L0["L0 attention: prefix pooling, sum(N_u exp(S) v) / sum(N_u exp(S))"]
+    L0 --> M["MLP0 and MLP1: distributed computation"]
+    M --> R["L2 G-query reader b_h + u_h[c] + v_h[j], seed 0"]
+    R --> C["MLP2 and MLP3: no gcd/division closed form"]
+    C --> Y["written N:c/g D:j/g"]
+    classDef trained fill:gold,stroke:darkgoldenrod,color:black
+    class L0,M,R,C,Y trained
 ```
 
-*Figure 2. The circuit family training from scratch finds in format `T` (10/10 seeds). Layer 0 pools the prefix by token counts; the
-coefficient reader of layer 2 passes substitution in seed 0 and fails in seed 2. Both forms are supported by substitution only, with
-the complement not tested; no gcd or division form was found.*
+*Figure 2. Selected attention formulas among the MLPs of the from-scratch scratchpad family (10/10 seeds, including failed seed 4).
+Shading marks trained attention, MLPs and output. This is not a complete causal path; every MLP lesion gives exact 0. Status:
+partial. Prefix pooling keeps predictions in 20/20 snapshots across 10 seeds under substitution; the layer-2 reader passes only
+tested subpieces and fails in seed 2. The complement was not tested, and no gcd/division form was found.*
 
 ### 5.2 Relation to the hand-built network and to published work
 
 HAND `T` uses 6 heads + 769 neurons; T TRAIN uses 12–16 heads and ≤ 1.4–1.6k active neurons with a different code. The scratchpad gives
-the fastest PART and the only cell that transfers (withheld fractions 1.0, 5 terms .59–.88), and a slower TRAIN, 9/10 at 30k. Answer-only `A` TRAIN learns faster (14.5k) but
-never transfers. Transformers were trained on symbolic integration by [Lample & Charton (2019)](#references); writing intermediate
-steps as a scratchpad follows [Nye et al. (2021)](#references).
+the fastest PART and the only cell exact on withheld fractions (1.0; at 5 terms .59–.88), and a slower TRAIN, 9/10 at 30k. Answer-only
+`A` TRAIN learns faster (14.5k), but scores 0 at 5 terms and 0–.19 on withheld fractions in its best snapshots (final 0). This is
+limited transfer, not a claim that every out-of-distribution score is zero. Transformers were trained on symbolic integration by
+[Lample and Charton (2019)](#references); writing intermediate steps as a scratchpad follows [Nye et al. (2021)](#references).
 
 ## 6. Limitations and open questions
 
+Edge attribution estimates the influence of connections; its gate checks those estimates against direct interventions. Jaccard is
+shared edges divided by their combined edge set, while recall is the share of HAND's edges recovered ([glossary](../GLOSSARY.md#analysis-measures)).
 Edge attribution passes its gates only in format `A`: A PART has Jaccard .5 and recall 1 against HAND, A TRAIN Jaccard .2 and recall
 .33. The `T` edges fail the HAND gate, so no wiring claim is made for `T`. Linear-mode-connectivity loss barriers between TRAIN seeds are 3.5–9.4 nats, read as
-separate basins. Neuron counts are upper bounds. The sign subtypes of seeds 3–9 are unassigned, and 8 of 19 trajectories
-lack dynamics.
+separate basins. A loss barrier measures the rise in loss between two networks' weights; nats use natural logarithms. Neuron counts are upper bounds. The sign subtypes of seeds 3–9 are unassigned, and 8 of 19 trajectories
+lack dynamics. The 2,804-polynomial HAND checks per format are not an enumeration of the full 31^8 input space. The higher-degree
+and forced-±8 failures of TRAIN include unseen token identities and cannot establish a pure positional limitation. Substitution of
+prefix pooling or a coefficient reader does not explain the gcd/division computation or supply a complement certificate.
 
 ## 7. Prediction record
 
@@ -222,8 +253,15 @@ variance; MLP3 in/out = r90 of the L3 MLP weights; JS = attention divergence to 
 numerator/denominator R² .999/.915, denominator interchange 1; HAND `T` JS 0. A low TRAIN numerator R² with interchange 1 means the
 numerator is used and coded non-linearly.
 
-Run identifiers: PART `train-37a3d5`, `A` TRAIN `train-36ab3a`, `T` TRAIN `train-b23cca` (seeds 0–2) and `train-2c76ff` (seeds 3–9).
-The prediction file was committed as 0e88b126 in the project repository.
+The screening runs used seeds 0–2 in each cell; the final from-scratch scratchpad run added seeds 3–9. The prediction file was
+committed as 0e88b126 in the project repository.
+
+![Recorded stopping steps for the four three-seed polynomial-integration screening packs](../figures/qa1-integration-stops.svg)
+
+*Figure 3. Recorded pack stopping steps for three screening seeds per cell, after all reached exact saved-test output. Values are
+26000, 5500, 14500 and 27000; these are neither averages nor each seed's first-exact time, and they are separate from the final
+ten-seed result. Only the frozen-scaffold scratchpad cell was exact on withheld fractions (1.0). The learned mechanism remains
+partial: no gcd/division closed form or complement certificate.*
 
 ## References
 

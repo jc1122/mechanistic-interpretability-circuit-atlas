@@ -1,30 +1,23 @@
 # Symbolic differentiation (chain and product rule)
 
-This entry studies how transformers write the unsimplified derivative of a prefix expression built from x^1 to x^8, sin, cos, exp,
-+ and *, either as the expanded derivative (answer only) or as a bottom-up rewrite with one row per source node (a scratchpad).
-Trained from scratch, both formats solved: answer only in 3/3 seeds and the scratchpad in 3/3 screening seeds and 10/10 in the final
-cell. Training only the last emitter MLP on the frozen hand-built parser failed in all 12 seed-runs (.46–.92), because the trained
-stage bypasses the frozen reference interface. No trained network extrapolates to depth 3 or to powers 7–8. The task is solved (from
-scratch: scratchpad 10/10, answer only 3/3; frozen-parser setup 0/12). The closed form is partial: the first layer of every trained
-network is replaced by a rank-4 token-pair table with exact 1.0 kept in 16/16 networks (HAND's uniform average gives `T` 0–.38),
-supported by substitution with the complement not tested, and the rewrite stage behind it has no compact closed form.
+Differentiating a nested expression requires tracking which functions contain which subexpressions. These transformers either wrote the expanded derivative or first stored local derivatives in named registers, intermediate results reused by later steps. Whole-network training solved the register format in 10/10 final seeds, with every output token correct on 256 held-out expressions per seed when the correct preceding tokens were supplied; training only a feed-forward output stage (MLP) on a frozen hand-built parser failed in all 12 seed-runs (.46–.92). The learned first layer could be replaced by weighted token counts in 16/16 tested networks, but the rewrite behind it has no compact closed form: the status is Partial, supported by substitution with the complement untested. The headline final cell is solved, with no trained network transferring to depth 3 or powers 7–8.
 
 | Fact | Value |
 |---|---|
 | Task | Write the unsimplified derivative of a prefix expression over x^1..x^8, sin, cos, exp, + and * |
-| Input → output example | In words: sin of x^2 → the product of cos of x^2 and the derivative of x^2, written out without simplification (exact token layout in the archived `config.json`) |
-| Model | GPT-NeoX-shaped, d_model 384, 2 heads per layer, MLP 384 ReLU, NoPE, no LayerNorm; 15 layers (answer only) or 5 (scratchpad); PART trains one emitter MLP |
+| Input → output example | In words: sin of x^2 gives the product of cos of x^2 and the derivative of x^2, written without simplification. |
+| Model | GPT-NeoX-shaped, d_model 384, 2 heads per layer, MLP 384 ReLU, no positional encoding or LayerNorm; 15 layers (answer only) or 5 (scratchpad); PART trains one emitter MLP |
 | Rungs and seeds | HAND `A` and `T`; TRAIN `A` and `T` 3-seed screens and a 10-seed `T` final; PART `A` and `T` run 1 and a data retry, 3 seeds each |
-| Closed form status | Partial (first-layer rank-4 token-pair table keeps exact 1 in 16/16 TRAIN nets on substitution; complement not tested; no compact form for the rewrite stage) |
+| Closed form status | Partial (first-layer rank-4 token-pair table keeps exact 1 in 16/16 TRAIN nets on 256 held-out expressions per net; complement not tested; no compact form for the rewrite stage) |
 | Status | Solved (TRAIN `T` final 10/10, TRAIN `A` 3/3; PART 0/12); last run 2026-11-08 |
-| Weights | [Hugging Face: chain-rule-differentiation](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/chain-rule-differentiation) (28 nets + 2 HAND) |
+| Weights | [Hugging Face: chain-rule-differentiation](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/chain-rule-differentiation) (weights and held-out evidence archive; 28 nets + 2 HAND) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
 ## 1. Task and data
 
-The network differentiates a prefix expression over x^1..x^8, sin, cos, exp, + and * without simplification. The prompt is BOS, 0–7
+The network differentiates a prefix expression over x^1..x^8, sin, cos, exp, + and * without simplification. Prefix notation places an operator before its arguments. For example, sin of x^2 gives the product of cos of x^2 and the derivative of x^2, written without simplification. The simpler derivative of sin(x) is cos(x), with the chain rule still retaining the derivative of its argument in the unsimplified output. The prompt is BOS, 0–7
 inert pad dots, the source symbols and `=`; the vocabulary has 104 tokens. Two output formats were studied (Table 1). In the
-[scratchpad](../GLOSSARY.md#task-formats) format, source references name original subtrees and derivative references name earlier
+scratchpad format, which writes intermediate steps before the answer ([glossary](../GLOSSARY.md#task-formats)), each register stores one local derivative. Source references name original subtrees and derivative references name earlier
 rows, and expanding the last register gives the answer-only output.
 
 *Table 1. Output formats.*
@@ -36,7 +29,7 @@ rows, and expanding the last register gives the answer-only output.
 
 The training domain is operator depth 0–2, powers 1–6 and padding 0–3; two operator-edge compositions (sin over cos, exp over
 product) are withheld. The split uses the SHA-256 of the canonical expression, 80/20, with 256 held-out expressions per seed. An output counts as
-correct only on exact match of the whole teacher-forced output, including the end token `$`
+correct only on exact match of the whole teacher-forced output, including the end token `$`: each output token is scored with the correct earlier tokens supplied
 ([glossary](../GLOSSARY.md#task-formats)). Extension sets of 128 rows per seed test depth 3, powers 7–8, the withheld compositions and
 padding 4–7.
 
@@ -47,7 +40,7 @@ The shared conventions are described in [METHODS.md](../METHODS.md). The three [
 
 ### 2.1 Architecture
 
-All networks are GPT-NeoX-shaped with 2 heads per layer (d_head 192), d_model 384, MLP 384 ReLU, no LayerNorm, no positional encoding
+All networks are GPT-NeoX-shaped, a left-to-right decoder layout with attention heads that read earlier positions and MLPs that transform each position's running vector ([glossary](../GLOSSARY.md#standard-machine-learning-terms)). They have 2 heads per layer (d_head 192), d_model 384, MLP 384 ReLU, no LayerNorm, no positional encoding
 (causal mask only), an untied read-out, vocabulary 104 and context 289. Format `A` has 15 layers and format `T` 5 layers. TRAIN learns
 every tensor of its format's shape.
 
@@ -85,7 +78,7 @@ Both hand-built networks parse the expression with attention and emit the deriva
 gives the bracket balance, completion counts and a position frame. Depth- and recency-routed heads and child reads give each subtree's
 start, end and children. Format `T` then fetches the completed node and its children's results and emits the local rule (power rule,
 sin/cos/exp, sum, product) as one 16-token row. Format `A` instead propagates derivative lengths and descends an expansion template
-before copying source spans; it uses no lookup table of expressions.
+before copying source spans; it uses no lookup table of expressions. In the formulas below, p is a source position and a is the requested address. OP_i selects the fetched operation, SLOT_j selects a position within a rewrite row, and END marks the end of the rewrite. FOP is the fetched operation code; FP is the fetched node's endpoint, and FE1/FE2 are its children's endpoints.
 
 The bricks are one-hot rows, step thresholds on scalars and attention reads, with address score −24(p−a)², reference gate 64 (a gate of
 1024 displaced one depth-3 product-tree address by > .5) and output gain 30. In the layer-3 emitter of `T`, a text neuron is
@@ -118,9 +111,9 @@ PART re-initialises and trains.*
 
 ## 4. What training finds
 
-The formula-built HAND differentiates every tested expression (`A` 16 heads + 1,963 neurons, `T` 6 + 1,100). Table 2 gives
+The 2026-11-08 analysis found that the formula-built HAND differentiates every tested expression (`A` 16 heads + 1,963 neurons, `T` 6 + 1,100). Table 2 gives
 every trained cell. Trained from scratch, both formats solve, all exact on held-out expressions: `A` 3/3 seeds, `T` 3/3 in the screen
-and 10/10 in the final cell, the 16 TRAIN networks of Section 5.1. PART fails in all 12 seed-runs (.46–.92), also with 5.6x more distinct training expressions.
+and 10/10 in the final cell, the 16 TRAIN networks of Section 5.1. PART solves 0/12 seed-runs (.46–.92), also with 5.6x more distinct training expressions.
 
 *Table 2. Results per cell (ranges over seeds; run 2 = the data retry).*
 
@@ -156,7 +149,7 @@ interchange flips are ≈ 1 only in layers 12–15. HAND as a causal model of th
 All six `T` runs write symbol and reference logits directly and bypass the frozen reference decoder: ablating it leaves exact 1.0 on
 the diagnostic rows. All six `A` runs route through a different frozen head and pair a copied-leaf classifier with a failed pointer
 hand-off. Repairing only the pointer (`PTR4 = PTR3 if MC3 > .5 else 0`) takes `A` seed 1 from .734 to 1.0 (held-out rows); fixing
-`T` seed 0's row headers (`10 − (FP − p)²`) takes it from .852 to .992. The emitter must hit unit-precise addresses on frozen
+`T` seed 0's row headers (`10 − (FP − p)²`) takes it from .852 to .992. PTR3/PTR4 are the source-copy addresses before and after the final hand-off, MC3 flags the source-copy phase, and p in the header repair is the candidate address. The emitter must hit unit-precise addresses on frozen
 thresholds, and more data (run 2) did not supply them. The final snapshot of `T` run 2 seed 0 scores 63/64 at depth 3; its one error is
 a root-product source reference.
 
@@ -168,10 +161,10 @@ not in missing upstream variables. Diagnostics per cell are in Appendix B.
 ### 5.1 First layer of TRAIN: a content-weighted count
 
 In all 16 TRAIN nets (best snapshots), the first-layer attention was replaced by a_ij = softmax_{j≤i} S_r[t_i, t_j], with
-S = (E W_Q + b_Q)(E W_K + b_K)ᵀ/√192 and S_r its rank-r SVD truncation: a 104 × 104 token-pair table per head, computed from the
-weights only, with the values and the rest of the network unchanged. Equivalently, each head returns
+S = (E W_Q + b_Q)(E W_K + b_K)ᵀ/√192 and S_r its rank-r singular-value decomposition (SVD) truncation, retaining only r independent directions: a 104 × 104 token-pair table per head, computed from the
+weights only, with the values and the rest of the network unchanged. E contains token embeddings; W_Q/W_K are the query/key matrices and b_Q/b_K their biases. Equivalently, each head returns
 Σ_u n_u exp(S[t,u]) v(u) / Σ_u n_u exp(S[t,u]), with n_u the count of token u in the causal prefix, which is a content-weighted
-histogram. On 256 held-out rows per net, whole-output exact match goes from native 1 to 1 at rank 4, 8, 16 and with the full table in
+histogram; v(u) is the head's value vector for token u. On 256 held-out rows per net, whole-output exact match goes from native 1 to 1 at rank 4, 8, 16 and with the full table in
 16/16 nets (2·4·104 = 832 numbers per head); rank 2 keeps it in 12/16 and rank 1 in 7/16 (`A` 3/3, `T` 4/13). HAND's uniform average
 (S = 0) gives `T` 0–.38 and `A` .81 / 1 / .93. The front end of `T` is therefore a content-weighted count of rank ≤ 4 and not HAND's
 average, while that of `A` is near-uniform. This is supported by substitution; no
@@ -200,11 +193,13 @@ flowchart TD
     M3 --> M4["MLP4: rewrite read-out, top patching recovery"]
     H["last-layer heads"] --> M4
     M4 --> Y["output token"]
+    classDef trained fill:gold,stroke:darkgoldenrod,color:black
+    class L0,M,M3,M4,H trained
 ```
 
 *Figure 2. The circuit type training from scratch finds in format `T` (10/10 final seeds, 3/3 screens); all five MLPs are needed, and MLP3 to MLP4 is the strongest MLP edge. The first layer is a
-content-weighted prefix count, supported by substitution with the complement not tested; the rewrite read-out in MLP4 has no compact
-closed form.*
+content-weighted prefix count. Its status is Partial, supported by substitution with the complement not tested; the rewrite read-out in MLP4 has no compact
+closed form. All displayed computational nodes are trained in TRAIN; shading denotes those trainable components.*
 
 ### 5.3 PART T stage: a faithful fit of a failing network
 
@@ -238,8 +233,7 @@ seed 1 9 + 941 (native 10 + 1,920, HAND 6 + 1,100), both at 99.2% on the discove
 upper bounds and not minima.
 
 The diagnostic cohort is one fixed shape. Edges, alignment and interpolation were run on part of the networks (interpolation on one
-pair). Probe R², interchange with nf = 0 and ties with a uniform head in attention divergence were not taken as use or absence. Pending:
-ten-seed finals of TRAIN `A` and the PART cells, and public code.
+pair). Probe R² measures linear decodability, not causal use; interchange with nf = 0 has no eligible answer-fixing queries, so it is untested ([glossary](../GLOSSARY.md#analysis-measures)). Neither that result nor ties with a uniform head in attention divergence establish use or absence. Neuron-level ablation and checkpoint dynamics for most seeds were not run. The residual failure of the widened-range PART scratchpad lies outside both diagnostic cohorts and remains undiagnosed. Ten-seed finals of TRAIN `A` and the PART cells were not run; public code is unavailable.
 
 ## 7. Prediction record
 

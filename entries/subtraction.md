@@ -1,27 +1,21 @@
 # Subtraction (base 10 and 2)
 
-This entry studies how small transformers subtract b from a (a ≥ b) for 3-digit decimal and 6-bit binary numbers, in three output
-formats: answer only, with a borrow token, and with signed column differences written first. A stage trained on frozen hand-built
-parts learned a lookup on the column difference a − b − borrow (the borrow is 1 when the next lower column had to take one from this column, else 0) in 10/10 seeds in base 10 formats A and B and base 2 formats A and C,
-9/10 in base 10 C and 8/10 in base 2 B. Networks trained from scratch solved every retried cell 10/10 (base 10 A and C, base 2 A and
-C), and their last MLP uses the same key in 34/40 retry networks, but no network trained from scratch generalises to longer inputs.
-The task is partly solved. The closed forms reproduce the networks, but an audit on 2026-11-07 found that none passes the full bar,
-so they are sufficient readouts and not verified mechanisms.
+Subtraction must decide when a column borrows from the next one, as well as which digit to write. Four-layer transformers were trained on three-digit decimal and six-bit binary problems, either writing just the answer or also writing borrows or column differences. Each of the four retried answer-only/column-difference cells reached test exact match 1.0 in 10/10 independent training runs (seeds, [glossary](../GLOSSARY.md#counting-results)), but whole-network training did not transfer to longer operands. Most local responses could be reproduced by a table indexed by the signed difference after borrowing, with that index supplied from outside the network. The task is partly solved and the formulas are sufficient readouts only ([glossary](../GLOSSARY.md#verifying-a-circuit)): resampling the proposed whole mechanism, using internal states from other inputs with matching claimed arithmetic labels, retained .938 and .933 in the two tested binary borrow-token seeds, below its .99 control bar.
 
 | Fact | Value |
 |---|---|
 | Task | Subtract b from a (a ≥ b), 3-digit decimal or 6-bit binary, written as `a-b=` followed by the difference |
 | Input → output example | Base 10, answer only: 742 − 358 → `384` |
-| Model | GPT-NeoX-shaped, 4 layers × 4 heads, d_model 256, MLP 256 ReLU; the partly trained networks train one MLP (layer 3 in A, layer 2 in B and C) |
-| Rungs and seeds | HAND per base × format (6 cells); PART and TRAIN 10 seeds per cell; failed cells retried once (both runs kept) |
-| Closed form status | Sufficient readout only (f(a − b − borrow) substitution equals network accuracy; per the 2026-11-07 audit no closed form passes the full bar) |
-| Status | Partly solved (retried TRAIN cells 10/10; no TRAIN network generalises to longer inputs); last run 2026-11-05; audit 2026-11-07 |
+| Model | Four-layer transformer, 4 heads per layer, width 256; PART trains one feed-forward block, MLP3 in answer only or MLP2 in the scratchpads |
+| Rungs and seeds | HAND: formula weights in 6 base/format cells; PART: frozen routing plus one learned block; TRAIN: all weights learned; 10 seeds per learned cell, with retries retained |
+| Closed form status | Sufficient readout only (external-label tables; whole-role scrubs .938/.933 in two tested TRAIN seeds; the 2026-11-07 audit's full bar was not passed) |
+| Status | Partly solved (four TRAIN retry cells, each 10/10 at test exact match 1.0; borrow-token cells use a different criterion); last run 2026-11-05; audit 2026-11-07 |
 | Weights | [Hugging Face: subtraction](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/subtraction) (112 networks) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
 ## 1. Task and data
 
-The prompt is `a-b=` and the target is a − b with a ≥ b. In base 10 the operands have 3 digits and each seed draws 20k random
+The prompt is `a-b=` and the target is a − b with a ≥ b. For example, 742 − 358 = 384: the units column needs to borrow before subtracting 8. Write a_i and b_i for operand digits, c for the incoming borrow (0 or 1), d_i for an answer digit and β for the number base. Older formulas below use b for the base, not for an operand digit. In base 10 the operands have 3 digits and each seed draws 20k random
 training pairs and 2k test pairs. In base 2 the operands have 6 bits; of the 2080 pairs with a ≥ b, a train fraction of .6 gives 1248
 training and 832 test pairs. An output counts as correct only on exact match of all output tokens. Length generalisation, accuracy on
 operands longer than any seen in training ([glossary](../GLOSSARY.md#task-formats)), was tested at n + 1 and 2n, that is 4 and 6 digits in base 10 and 7
@@ -44,20 +38,19 @@ and TRAIN (all weights trained from scratch).
 
 ### 2.1 Architecture
 
-All networks are GPT-NeoX-shaped with 4 layers × 4 heads, d_model 256, d_head 64, MLP 256 ReLU, no LayerNorm and no positional
-encoding (NoPE). The vocabulary holds BOS, unk, the 2b − 1 signed values −(b−1)..b−1 for base b, and `- = . c`: 25 tokens in base 10
+All networks are GPT-NeoX-shaped decoders, transformers that use earlier tokens to predict the next one, with 4 layers × 4 attention heads, d_model 256 and d_head 64. Here d_model is the running-state width and d_head each head's vector width; a head reads information from earlier positions. Each MLP, a feed-forward block at one position, has width 256 and uses ReLU, which keeps positive inputs and sets negative inputs to zero. There is no LayerNorm, which would centre and rescale the running state, and no positional encoding (NoPE), meaning no added position vectors. These terms are defined in the [glossary](../GLOSSARY.md#standard-machine-learning-terms). The vocabulary holds BOS, unk, the 2b − 1 signed values −(b−1)..b−1 for base b, and `- = . c`: 25 tokens in base 10
 and 9 in base 2. Layers are numbered from zero. TRAIN trains all 1.6M weights from initialisation.
 
 ### 2.2 Frozen hand-built network and trained part
 
 PART trains the stage MLP only, in layer 3 for format A and in layer 2 for formats B and C (dense_h_to_4h [256, 256] + bias,
 dense_4h_to_h [256, 256] + bias), on top of the frozen hand-built layers. The stage reads the token embedding TOK, the fetched column
-digits X1, X2 and X3, the borrow CY, the phase flags PH and EQS of format C, and the position blocks P, R, R2, T, RP and VT.
+digits X1, X2 and X3, the borrow CY, the phase flags PH and EQS of format C, and the position blocks P, R, R2, T, RP and VT. TOK represents the current token by a one-hot vector, with one coordinate per token. The position blocks encode absolute positions, their powers or cumulative thresholds; their exact scale matters to the mask control, not to the borrowing rule ([number codes](../GLOSSARY.md#standard-machine-learning-terms)).
 
 ### 2.3 Training
 
 The optimiser was AdamW with learning rate 1e-3, weight decay 1, betas (.9, .98) and batch 256, in TF32, with test accuracy evaluated
-every 500 steps and the best-test snapshot kept. PART and TRAIN used 10 seeds per cell. Runs were on consumer GPUs. Table 2 gives the per-run settings. A control repeated
+every 500 steps and the best-test snapshot kept. This reuses the test set for selection; it is not an untouched final test. TF32 is reduced-precision matrix multiplication; fp32 re-scoring uses full precision ([glossary](../GLOSSARY.md#hand-built-machinery)). PART and TRAIN used 10 seeds per cell. The last recorded run was 2026-11-05. Runs were on consumer GPUs. Table 2 gives the per-run settings. A control repeated
 PART with the stage's position inputs held at 0.
 
 *Table 2. Training settings per run.*
@@ -103,7 +96,7 @@ for n = 1..12 in both bases. Table 3 gives their sizes.
 | B | 5; 64/64/3/14 |
 | C | 5; 64/119/43/0 |
 
-For base 2 the record gives only the compact note "L3 6/6/0, L2 4/3/11", without saying which formats these counts belong to.
+For base 2, the compact note “L3 6/6/0, L2 4/3/11” lists formats A/B/C in that order. The source design notes give A 64/114/4/6, B 64/64/3/6 and C 64/119/11/0 neurons in L0/L1/L2/L3, with 6, 5 and 5 heads respectively. These are hand-built counts, not measured TRAIN minima.
 
 ```mermaid
 flowchart TD
@@ -113,7 +106,7 @@ flowchart TD
         A2 --> A3["L3 MLP: one-hot of a_i - b_i - c mod b"]
     end
     subgraph FB["Format B: borrow token"]
-        B1["L2 MLP on z = a_i - b_i - own c + b: digit z mod b, borrow 1 - z >= b"]
+        B1["L2 MLP: digit z mod b and borrow 1 minus indicator of z >= b"]
         B0["L3H0 copies the previous borrow token"]
     end
     subgraph FC["Format C: signed differences"]
@@ -134,7 +127,7 @@ flowchart TD
 
 *Figure 1. The hand-built networks for the three formats. Index heads fetch the column digits; the borrow comes from a chain head that
 finds the first lower column where the digits differ (A, C) or from the previous borrow token (B). The shaded MLPs (layer 3 in A,
-layer 2 in B and C, which in C writes both phases) are the parts that PART replaces with a trained stage.*
+layer 2 in B and C, which in C writes both phases) are the parts that PART replaces with a trained stage. The learned tables are sufficient readouts only: external-label substitutions do not establish how TRAIN computes its difference or borrow, and the stronger audit controls failed.*
 
 ## 4. What training finds
 
@@ -154,11 +147,9 @@ reached .9.
 
 ### 4.1 Partly trained networks
 
-Every PART stage that works computes its digit as a lookup keyed on diff = a_i − b_i − borrow_in, the closed form f(diff), and the
-adder's key a + b + c never substitutes (≤ .01 in base 10, ≤ .88 in base 2), except in binary A, where the two keys coincide. PART
-reads all the HAND heads it needs (attention substitution 1.0). PART A extrapolates to 4 and 6 digits; B and C do not, because their
-trained stage reads absolute position. Holding the stage's position inputs at 0 restores length (B .87–.98 at n + 1); the errors that
-remain at 2n fall on new joint (value, role) inputs. Clamping those inputs to their mean drops accuracy at n = 3 to ~.01, which locates
+Most PART stages admit f(diff), a readout table indexed by diff = a_i − b_i − borrow_in; Table 5 retains the exceptions. The original family counts are 10/10 in base 10 A/B and base 2 A/C, 9/10 in base 10 C and 8/10 in base 2 B. These are sufficient-readout classifications, not verified mechanisms. The adder's key a + b + c gives ≤ .01 in base 10 and ≤ .88 in base 2, except binary A: both keys have the same parity for the answer bit, so that test cannot distinguish addition from subtraction. Borrowing must be checked separately.
+
+PART retains the needed HAND routes, with attention substitution 1.0. A transfers partially to longer operands; B/C depend on absolute position. Holding the stage's position weights at 0 improves B to .87–.98 at n + 1 but only .39–.60 at 2n; C reaches .52–.59 at 2n. This is an incomplete repair. Remaining errors occur on new combinations of value and token role even when each coordinate is within its training range. Clamping those inputs to their mean drops accuracy at n = 3 to ~.01, which locates
 the length failure of PART B and C in the stage's position read.
 
 ### 4.2 Networks trained from scratch
@@ -190,14 +181,15 @@ base 2 run 1 and 34/40 in the retries. Earlier TRAIN MLPs have no closed form.
 | TRAIN retry A | f(diff) 10 (substitution ≥ .99) | f(diff) 6 + f(a, b, c) 2 + unclassified 2 |
 | TRAIN retry C | f(diff) 8 + f(a, b, c) 2 | f(diff) 10 |
 
+The primary result summary instead classifies binary A retry as 6 difference + 3 pair + 1 unclassified. Both records are retained. The raw separate analysis for seed 0 gives native 1.0 and pair substitution `0.9893333315849304`, below the native-minus-.01 bar despite a rounded .99 display. No replacement census or merged total is inferred from rounding. The original 34/40 difference-readout count is unchanged by this pair/unclassified disagreement.
+
 Per-cell diagnostics (probes, participation ratio, attention divergence, patching, interchange and edges) are in Appendix B.
 
 ## 5. Mechanism and verification
 
 ### 5.1 Closed forms
 
-The last MLP was replaced by its mean output given diff = a_i − b_i − c (in phase 1 of format C, given a_i − b_i). Accuracy equalled
-network accuracy: PART .97–1, TRAIN f(diff) networks within ± .01, base 2 C retry 1.00. The digit is (a_i − b_i − c) mod b and the
+The last MLP was replaced by its mean output given diff = a_i − b_i − c (in phase 1 of format C, given a_i − b_i). The original overview reports PART .97–1, TRAIN f(diff) networks within ± .01 and base 2 C retry 1.00. That overview is not a universal accuracy range: decimal B PART separately scored .91–.99 in fp32 versus .995–1.0 in GPU training. Failed and unclassified substitutions remain outside this family claim. The digit is (a_i − b_i − c) mod b and the
 outgoing borrow is [a_i − b_i − c < 0].
 
 These are [sufficient readouts](../GLOSSARY.md#verifying-a-circuit), not verified mechanisms. The audit of 2026-11-07 found that none
@@ -205,12 +197,11 @@ of the closed forms passes the full bar (best and final snapshots, native/zero/s
 component); they
 are keyed on task-derived labels and stay sufficient-readout results.
 
-A fresh check on 2026-11-07 fitted a tent-spline table F_q(z) on z = a_i − b_i − c on 4,000 pairs and evaluated it on 2,000 new pairs,
-with a bar of ≥ .99 × the network's accuracy (Table 6). The TRAIN f(diff) claim is not universal: TRAIN seed 8 fails it, its
+The 2026-11-07 check used a tent-spline table F_q(z), a piecewise-linear table on the signed difference z = a_i − b_i − c. Decimal fits used 4,000 pairs and evaluation used 2,000 new pairs, with a bar of ≥ .99 × the network's accuracy (Table 6). Binary A instead fitted the 1248 training pairs and evaluated the 832 finite-domain nontraining pairs. Only their ordering was fresh; this was not a never-evaluated binary domain. The replacement operated at scored queries only, leaving other positions and components native. The TRAIN f(diff) claim is not universal: TRAIN seed 8 fails it, its
 f(a, b, c) table fails too (.014) and would need 204,800 fitted reals, more than the MLP's 131,584. A decimal B rank-six readout card
 also fails exact.
 
-*Table 6. Fresh check of the tent-spline table. Accuracy cells show the network, then the substituted network.*
+*Table 6. Tent-spline substitutions at scored queries. Decimal evaluation has 2,000 fresh pairs per seed; binary A reuses its 832-pair nontraining domain. Accuracy cells show native, then substituted. These are sufficient readouts only.*
 
 | Stage | Passing seeds | Accuracy |
 |---|---|---|
@@ -231,14 +222,12 @@ defines patching, interchange, DAS and edges.
 
 ### 5.3 Circuit probes
 
-Circuit probes were run on 2026-11-06 on seed-0 best snapshots unless noted (Table 7). **Verified** here means a causal intervention
-plus an accepted substitution fitted and tested on disjoint non-training pairs; **supported** means causal evidence only. Exact is
-teacher-forced whole-output accuracy, ablation numbers are accuracy retained, and layers are zero-based. In the table d = a_i − b_i −
+Circuit probes were run on 2026-11-06 on seed-0 best snapshots unless noted (Table 7). The table records causal interventions plus component substitutions fitted and tested on disjoint non-training pairs. It does not verify a complete mechanism under the atlas acceptance rule. Exact is teacher-forced whole-output accuracy: correct earlier output tokens are supplied, rather than generated by the network ([glossary](../GLOSSARY.md#task-formats)). Ablation numbers are accuracy retained, and layers are zero-based. In the table d = a_i − b_i −
 c_i, q is the index of the output query, and μ[key] is the mean MLP-output vector over the fit set for each value of the key.
 
 *Table 7. Components probed (seed 0 unless noted).*
 
-| Component | Role | Evidence (verified in the probe sense above) |
+| Component | Role | Component evidence, not whole-mechanism verification |
 |---|---|---|
 | Base 10 A PART: L2H0/H1/H2, L3H0 | HAND operand, comparison-column and borrow routes | exact HAND route substitutions 1.000 each; mean ablation 0 / 0 / .602 / .313 |
 | Base 2 B PART: L2H0/H1, L3H0 | operand fetches, borrow relay | hard routes 1.000 each; mean ablation .016 / .031 / .391 |
@@ -250,7 +239,7 @@ In base 2 B PART the trained MLP2 writes the digit straight to the answer logits
 At digit queries m2 = μ[q, d], and the final m3 = μ[q, [d < 0]] (1.000 each). Keeping only the HAND-like registers DIG = d mod 2 and
 MAJ = [d < 0] at digit queries gives .423, so the learned borrow calibration matters. In base 2 B TRAIN, MLP3 is four vectors indexed
 by the phase p = 0 (digit) / 1 (borrow) and v = (1 − p)(d mod 2) + p[d < 0], with no column dependence. These keys use external
-arithmetic labels: they verify a local readout, not how earlier layers compute d.
+arithmetic labels. They are sufficient readouts only: a correct label-conditioned decoder does not explain how earlier layers compute d.
 
 Supported, causal only: TRAIN operand receivers are context-sensitive and do not act as copies. In the base 10 A TRAIN retry, hard
 a/b routing keeps .602 / .273 (mean ablation .117 / .031); in base 2 B TRAIN, hard routing of L3H0/H2 keeps .977 / .984 (mean
@@ -287,7 +276,7 @@ closed form remains a sufficient readout, not a verified mechanism (Section 5.1)
 
 ### 5.4 Relation to the hand-built network and to published work
 
-PART reproduces HAND's diff lookup with a wider stage. TRAIN finds diff lookups without HAND's chain head. In
+Most PART responses admit HAND-like difference tables with a wider stage, but binary B can bypass HAND's digit register and requires its learned borrow calibration. Many TRAIN last-MLP responses admit the same key without a recovered HAND chain head. These are sufficient readouts only; the endogenous computation of that key is unresolved. In
 [decimal-hex-addition](decimal-hex-addition.md) and [binary-addition](binary-addition.md) the trained stages compute f(sum), so the
 column key follows the operation; the position shortcut of formats B and C and its mask control match binary addition. A shared
 skeleton for addition and subtraction with a borrow was described by [Quirke et al. (2024)](#references), and causal mediation analysis
@@ -301,7 +290,7 @@ keys coincide mod 2.
 
 Open questions:
 
-- shuffle-control and final-snapshot substitutions;
+- missing or failed matched shuffle, zero and final-snapshot controls for proposed forms; the existing failures are not treated as unrun tests;
 - complete best and final packs per cell (only the best and worst seeds are archived for TRAIN);
 - neuron-level necessity and training dynamics;
 - the endogenous difference and borrow computation, including the borrow compensation in B PART;
@@ -310,8 +299,7 @@ Open questions:
 ## 7. Prediction record
 
 The prediction was recorded in the hand-built design notes before the runs: "per column (a − b − c) mod b", with the binary digit
-a XOR b XOR borrow, and the open question "does TRAIN reuse the adder shape (f(a + b + c))?". It held: PART and most TRAIN last MLPs
-compute f(diff), and the adder shape is not reused. Nothing was recorded about grokking time or length.
+a XOR b XOR borrow, and the open question "does TRAIN reuse the adder shape (f(a + b + c))?". Difference-readout substitutions supported the prediction in most stages, subject to the 2026-11-07 sufficient-readout audit. Decimal substitutions distinguish the operation-specific keys; binary answer-only parity cannot do so. Nothing was recorded about grokking time or length.
 
 ## Appendix A. Weights excerpt and reading
 
@@ -321,10 +309,9 @@ The numbers are computed from the archived PART base 10 stage tensors: the W_in 
 and .72–.78 in B; in phase 2 of C, (e, c) gives .63–.68. Examples are A s0 n16 (.04, −.39, −.39), A s2 n7 (−.05, .05, .06) and B s2
 n142 (−.20, −.21, −.19) with bias .02.
 
-Reading: the A and B neurons are hinges on the line a − b − c, with b and c weighted equally as in HAND, so the stage is a function of
-diff. B mixes in sum-like neurons (cos .72) that the borrow token disambiguates.
+The alignment statistics support a difference-directed population, not exact equality for every neuron: the displayed cosine ranges are below 1. A hinge is a ReLU response that is zero below a threshold and linear above it ([glossary](../GLOSSARY.md#hand-built-machinery)). B also mixes in sum-like neurons, with cos .72, whose interpretation depends on the borrow token. These weight observations do not lift the sufficient-readout status.
 
-## Appendix B. Diagnostics per cell
+## Appendix B. Detailed evidence
 
 *Table B1. Diagnostics per cell. Each cell lists used heads + MLPs; the best-layer linear-probe R² of a, b (X1/X2 or a_i/b_i), the
 borrow c and diff; the residual participation ratio PR at L4; the attention JS of used heads to the matching HAND head; test best

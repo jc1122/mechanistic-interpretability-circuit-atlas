@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 385" role="img" aria-labelledby="title desc">
+<title id="title">Three learned circuit families in binary elimination</title>
+<desc id="desc">Of 10 final seeds, 6 used a layer 3 head readout, 2 diffuse layer 3, and 2 were complete by layer 2. All had final exact match 1.0 on 2000 held-out systems. Only 2 seeds passed the constant layer-3 substitution, without a reported complement test. Source: atlas entry (research report), https://github.com/jc1122/mechanistic-interpretability-circuit-atlas/blob/main/entries/gf2-elimination.md.</desc>
+<rect width="100%" height="100%" fill="white"/>
+<g font-family="system-ui, -apple-system, sans-serif">
+<text x="28" y="35" font-size="23" fill="#0f172a" font-weight="bold">Same accuracy, different finishing layers</text>
+<text x="28" y="66" font-size="15" fill="#0f172a" font-weight="normal">Final answer-only run: 10/10 seeds, exact on 2000 unseen-matrix systems</text>
+<text x="28" y="92" font-size="14" fill="#64748b" font-weight="normal">Dimension 4; circuit families from the source interpretation</text>
+<text x="28" y="143" font-size="17" fill="#0f172a" font-weight="normal">Layer 3 head readout</text>
+<rect x="265" y="124" width="380.000" height="26" rx="3" fill="#e2e8f0"/>
+<rect x="265" y="124" width="228.000" height="26" rx="3" fill="#2563eb"/>
+<text x="669" y="144" font-size="17" fill="#0f172a" font-weight="bold">6/10</text>
+<text x="28" y="204" font-size="17" fill="#0f172a" font-weight="normal">Diffuse layer 3</text>
+<rect x="265" y="185" width="380.000" height="26" rx="3" fill="#e2e8f0"/>
+<rect x="265" y="185" width="76.000" height="26" rx="3" fill="#2563eb"/>
+<text x="669" y="205" font-size="17" fill="#0f172a" font-weight="bold">2/10</text>
+<text x="28" y="265" font-size="17" fill="#0f172a" font-weight="normal">Complete by layer 2</text>
+<rect x="265" y="246" width="380.000" height="26" rx="3" fill="#e2e8f0"/>
+<rect x="265" y="246" width="76.000" height="26" rx="3" fill="#2563eb"/>
+<text x="669" y="266" font-size="17" fill="#0f172a" font-weight="bold">2/10</text>
+<text x="28" y="333" font-size="15" fill="#0f172a" font-weight="normal">Only the layer-2-complete group kept accuracy with layer-3 attention</text>
+<text x="28" y="357" font-size="15" fill="#0f172a" font-weight="normal">replaced by a per-slot constant. This is not a whole-network formula.</text>
+</g>
+</svg>

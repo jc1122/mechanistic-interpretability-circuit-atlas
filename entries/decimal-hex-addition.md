@@ -1,305 +1,257 @@
 # Decimal and hexadecimal addition
 
-This entry studies how small transformers add two 3-digit numbers in base 10 and base 16, in three output formats: the answer only,
-the answer with a carry token after each digit, and the column sums followed by the answer. When the hand-built parts were frozen and
-only one stage MLP was trained, the stage became a lookup on the column sum s = a + b + c (the two digits plus the carry) in all 60
-networks of the final runs. Networks trained from scratch needed late grokking (test accuracy first reached .9 at up to 37k steps): the first run solved none of the answer-only or
-column-sum cells, and the retry solved 37/40 (base-16 answer only 7/10) without the hand-built carry-lookahead head and without length
-generalisation. The task is partly solved. The closed form status is partial: the trained stage's sum lookup substitutes at the
-network's own accuracy (.95–1.00), which is supported by substitution with the complement not tested, and the earlier layers of the
-networks trained from scratch have no closed form.
+Decimal and hexadecimal addition use the same column rule: add the two digits and the incoming carry, then keep the remainder in that base. Four-layer transformers were tested with answer-only, written-carry and column-sum outputs, either training one block on frozen arithmetic routing or training the whole network from scratch. A column-total readout appeared in 60/60 selected frozen-routing networks; this counts a family of readouts, not exact task successes. Longer training brought 37/40 independent from-scratch runs with answer-only or column-sum outputs (seeds, [glossary](../GLOSSARY.md#counting-results)) to test exact match ≥ .99, without recovering the hand-built head that fetches the carry from lower columns. The task is partly solved: longer inputs still fail, and the formula's status is partial because replacing individual components does not verify the whole from-scratch mechanism, while tests resampling everything outside the claimed circuit (the complement, [glossary](../GLOSSARY.md#verifying-a-circuit)) were not reported for the learned block on frozen routing.
 
 | Fact | Value |
 |---|---|
-| Task | Add two 3-digit numbers in base 10 or base 16 (`a+b=` → a + b), answer only, with carry tokens, or with column sums first |
-| Input → output example | Base 10, in words: 345 + 678 → 1023, written in answer only as the four sum digits 1 0 2 3 |
-| Model | GPT-NeoX-shaped, 4 layers × 4 heads, d_model 256, MLP 256 ReLU, no LayerNorm, no positional encoding; PART trains one stage MLP (layer 3 or 2) |
-| Rungs and seeds | HAND per base × format (6 cells); PART and TRAIN 10 seeds per cell; failed cells retried once (both runs kept) |
-| Closed form status | Partial (PART stage lookup on the column sum, substitution = net accuracy .95–1.00; supported by substitution, complement not tested; none for the earlier TRAIN layers) |
-| Status | Partly solved (from scratch 37/40 after one retry; b16 A 7/10); last run 2026-11-05 |
-| Weights | [Hugging Face: decimal-hex-addition](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/decimal-hex-addition) (42 networks) |
+| Task | Add two three-digit numbers in decimal (base 10) or hexadecimal (base 16) |
+| Input → output example | In decimal, 345 + 678 → 1023; answer-only output is the four digits 1 0 2 3 |
+| Model | Four-layer transformer; one feed-forward block trained on frozen routing, or all weights trained from scratch |
+| Rungs and seeds | HAND: 6 base/format cells; PART and TRAIN: 10 seeds per cell, with failed cells retried once and both runs retained |
+| Closed form status | Partial (PART column-total readouts; substitution evidence only, complement not tested; no whole TRAIN closed form) |
+| Status | Partly solved (TRAIN answer-only/column-sum retry: 37/40 at test exact match ≥ .99); last run 2026-11-05 |
+| Weights | [Hugging Face: decimal-hex-addition](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/decimal-hex-addition) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
 ## 1. Task and data
 
-The prompt is `a+b=` and the target is a + b, where a and b are 3-digit numbers in base 10 (b10) or base 16 (b16). Three output
-formats were studied (Table 1); format B writes a carry token k after each sum digit, and format C, a scratchpad
-([glossary](../GLOSSARY.md#task-formats)), writes the column sums first. Each seed has 20k training pairs and 2k test pairs, drawn at
-random, and an output is correct only on exact match of all output tokens. Length generalisation was tested at 4 and 6 digits.
+The task is ordinary addition with different ways of writing the working. In decimal, 345 + 678 = 1023: the units column writes 3 and carries 1 to the next column. Hexadecimal uses the same rule with base 16. The experiment asks whether providing the carry or column totals changes what a transformer learns.
 
-*Table 1. Output formats (b = base).*
+Each operand has n = 3 digits, written most significant first. The prompt is `BOS a+b=`. Write β for the base, a_i and b_i for the operand digits, c for the incoming carry, s_i for an answer digit and d_i = a_i + b_i for a column total before carrying. The archive labels the bases `b10` and `b16`; formulas in the original records use b for β.
 
-| Format | Output |
-|---|---|
-| `A` (answer only) | s_3..s_0, most significant digit first (MSB first) |
-| `B` (carry tokens) | s_0 k_1 s_1 k_2 s_2 k_3, least significant first (LSB first), k = carry token |
-| `C` (column sums) | column sums d_2..d_0 ∈ 0..2b−2, `=`, then s_3..s_0 |
+*Table 1. The three output formats. MSB-first and LSB-first mean most and least significant digit first.*
+
+| Format | Output | What is supplied by the written working |
+|---|---|---|
+| A: answer only | s_3..s_0, MSB-first | No intermediate tokens |
+| B: carry tokens | s_0 k_1 s_1 k_2 s_2 k_3, LSB-first; k is `c` or `.` | The carry after each digit |
+| C: column sums | d_2..d_0 in 0..2b−2, `=`, then s_3..s_0 | The local sums before carrying |
+
+B and C are scratchpads, outputs that include intermediate working ([glossary](../GLOSSARY.md#task-formats)). Per seed, 20k training pairs and 2k test pairs were sampled at random. Exact match requires every output token to be correct. The primary analysis summary reports fp32 CPU exact match on 1000 test pairs unless marked otherwise; individual later probe banks are identified separately. Length transfer was tested at 4 and 6 digits, called n + 1 and 2n.
 
 ## 2. Model
 
-The shared architecture and instrumentation are described in [METHODS.md](../METHODS.md). The three
-[rungs](../GLOSSARY.md#the-three-rungs) are HAND (every weight set by formula), PART (frozen hand-built parts with one trained stage)
-and TRAIN (all weights trained from scratch).
-
 ### 2.1 Architecture
 
-All networks are GPT-NeoX-shaped with 4 layers × 4 heads, d_model 256, d_head 64, MLP 256 ReLU, no LayerNorm and no positional encoding
-(NoPE). The vocabulary has 25 tokens (b10) or 37 (b16): BOS, unk, the values 0..2b−2 and `+ = . c`. TRAIN trains all 1.6M weights.
-Layers are numbered from zero, so L3 is the last layer.
+All cells used a GPT-NeoX-shaped decoder, a transformer that reads earlier tokens to predict the next one ([glossary](../GLOSSARY.md#standard-machine-learning-terms)). It has 4 layers × 4 attention heads, d_model 256, d_head 64 and MLP width 256. Here d_model is the running-state width and d_head each head's vector width; a head reads information from earlier positions. An MLP is a feed-forward block applied at each position; its ReLU activation keeps positive inputs and sets negative inputs to zero. There is no LayerNorm, which would centre and rescale the running state, and no positional encoding (NoPE), meaning no added position vectors. These terms are defined in the [glossary](../GLOSSARY.md#standard-machine-learning-terms).
+
+The vocabulary has 25 tokens in base 10 and 37 in base 16: BOS, unk, values 0..2b−2 and `+ = . c`. TRAIN updates all 1.6M weights. Layers are zero-based; MLP3 is the final feed-forward block. General methods are in [METHODS.md](../METHODS.md).
 
 ### 2.2 Frozen parts and trained part
 
-PART trains the stage MLP only: layer 3 in format A and layer 2 in formats B and C (dense_h_to_4h [256, 256] + bias, dense_4h_to_h
-[256, 256] + bias). The stage reads TOK (the token one-hot), X1 and X2 (the two column digits), X3 (in C, the column sum d_i), CY (the
-carry), PH and EQS (the phase in C) and T and VT (position thermometers, vectors whose m-th unit is [position ≥ m]).
+The three rungs are HAND, with every weight set by formula; PART, with hand-built routing frozen and one block trained; and TRAIN, with all weights learned from scratch ([glossary](../GLOSSARY.md#the-three-rungs)). PART trains MLP3 in A and MLP2 in B/C. Each block has `dense_h_to_4h [256, 256]` plus bias and `dense_4h_to_h [256, 256]` plus bias.
+
+*Table 2. Named inputs available to the PART block. These are internal channels, not additional labels given to TRAIN.*
+
+| Channel | Meaning |
+|---|---|
+| TOK | Current token represented by a one-hot vector, one coordinate per possible token |
+| X1, X2 | Fetched operand digits |
+| X3 | Written column total d_i in C |
+| CY | Carry channel |
+| PH, EQS | Which phase of C is being written |
+| T, VT | Position thermometers: cumulative indicators of the current position |
+
+A fetch head copies a token from a computed position; a thermometer is a vector whose successive coordinates indicate whether the position has reached each threshold ([glossary](../GLOSSARY.md#hand-built-machinery), [number codes](../GLOSSARY.md#standard-machine-learning-terms)).
 
 ### 2.3 Training
 
-All runs used AdamW with learning rate 1e-3, weight decay 1 and batch 256; accuracy was evaluated every 500 steps and the best-train
-snapshot was kept. Table 2 gives the per-run settings. Analyses ran in fp32 on CPU: mean ablation, probes, PCA/SVD, attention JS and
-length at 4 / 6 digits. Training was on consumer GPUs.
+AdamW used learning rate 1e-3, weight decay 1 and batch 256. Evaluation was every 500 steps, with the best-train snapshot saved. Training used consumer GPUs; analysis used fp32 on CPU. TF32 is reduced-precision matrix multiplication and fp32 is full precision ([glossary](../GLOSSARY.md#hand-built-machinery)).
 
-*Table 2. Training settings per run. Run 1 is also called v2 in the diagnostics.*
+*Table 3. Run settings. The diagnostic label “v2 best” refers to run 1; “v1 final” is an earlier run, not the end of that same training trajectory.*
 
-| Run | Precision | Steps | Optimiser and schedule | Stop |
-|---|---|---|---|---|
-| Run 1 (v2) | TF32 | PART 10k, TRAIN 20k | betas (.9, .98) | 2k plateau after 5k |
-| Retry | PART fp32 | PART 20k, TRAIN 40k | TRAIN: b2 .95, warmup 1000, cosine, clip 1 | TRAIN: 5k plateau (b10 A) or 20k after 20k |
+| Run | Budget | Settings and stopping rule |
+|---|---|---|
+| Earlier v1 | TRAIN 20k | Final weights; no best snapshot in the diagnostic record |
+| Run 1 (v2) | PART 10k; TRAIN 20k | TF32; betas (.9, .98); stop on a 2k plateau after 5k |
+| PART retry | 20k | fp32; warmup, cosine schedule and clip 1 |
+| TRAIN retry | 40k | β2 .95; warmup 1000, cosine schedule, clip 1; b10 A plateau 5k after 20k, other cells plateau 20k |
+
+A warmup/cosine schedule first raises then lowers the learning rate; clipping caps update size ([glossary](../GLOSSARY.md#standard-machine-learning-terms)). Mean ablations replaced components by their mean output; probes tested whether arithmetic variables could be decoded; PCA/SVD measured state and weight dimensions; attention JS compared attention patterns ([glossary](../GLOSSARY.md#analysis-measures)).
 
 ### 2.4 Reproduction
 
-Reproduce: not available yet: training code for this task is not yet in `code/`; the weights, held-out splits and recorded
-accuracies are on Hugging Face at
-[huggingface.co/jc1122/circuit-atlas-nets/tree/main/decimal-hex-addition](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/decimal-hex-addition)
-(42: 6 HAND, 36 PART/TRAIN).
+Reproduce: not available yet: training code for this task is not yet in `code/`; the weights, held-out splits and recorded accuracies are on Hugging Face at [decimal-hex-addition](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/decimal-hex-addition). The public `python run.py` has no addition task.
 
 ### 2.5 Archive
 
-The Hugging Face folder holds the HAND networks, the best and worst learned seed per cell × rung × run (`*_r2` = retry), `config.json`
-and `manifest.json` (sha256). Each network was reloaded in fp32 and checked against its recorded test accuracy.
+The last recorded run was 2026-11-05. The public archive contains 42 networks: 6 HAND and 36 PART/TRAIN, selecting the best and worst learned seed per cell × rung × run. The suffix `*_r2` means retry. It includes lossless safetensors weights, `config.json` and `manifest.json` with sha256 fingerprints. Each network was reloaded in fp32 and checked against its recorded accuracy. This is a weight/data archive, not a public training implementation.
 
 ## 3. Hand-built solution
 
-The hand-built network is the [binary-addition](binary-addition.md) network with base-b tables (Figure 1). L0 and L1 compute positions:
-a uniform head gives 1/(r+1) at position r, a hinge MLP turns it into r, an anchor head finds `+`, and the thermometers T and VT encode
-positions.
+The reference adapts [binary addition](binary-addition.md) to base-b digit tables. It separates fetching the digits, deciding the carry and writing a digit. In A, a lower column with sum b−1 propagates its incoming carry; the nearest lower column with any other sum decides it. A lookahead head can fetch that decision without stepping through every intervening column ([glossary](../GLOSSARY.md#hand-built-machinery)).
 
-Format A. Index heads copy a_i and b_i (score −20(r_j − t)², which peaks at the target position t). The L2 MLP computes EQ = [a + b ≠
-b−1], which marks a column that decides the carry, and GEN = [a + b ≥ b], which marks a column that generates one. The chain head L3H0
-attends to the first lower column with EQ and copies its GEN, which is the carry. The L3 MLP writes the one-hot of (X1 + X2 + CY) mod b.
+L0/L1 construct positions: a uniform head gives 1/(r+1), a hinge MLP recovers position r, an anchor head finds `+`, and T/VT encode positions. A hinge neuron is zero below its threshold and linear above it ([glossary](../GLOSSARY.md#hand-built-machinery)).
 
-Format B. The L2 MLP computes DIG = s mod b and MAJ = [s ≥ b]; L3H0 copies the previous MAJ into the carry slot.
+*Table 4. Arithmetic weights and routes by format. Brackets denote a true/false indicator.*
 
-Format C. A chain head attends to the first d_j ≠ b−1; the L2 MLP computes d = a + b in the first phase, then (d + c) mod b (gate M = 4b).
-
-The networks are exact for n = 1..12 with margin 30.
+| Format | Hand-built computation |
+|---|---|
+| A | Index heads fetch a_i and b_i with score −20(r_j − t)². The L2 MLP writes EQ = [a + b ≠ b−1] and GEN = [a + b ≥ b]. L3H0 fetches GEN from the first lower column with EQ. MLP3 writes a one-hot answer for (X1 + X2 + CY) mod b. |
+| B | MLP2 writes DIG = s mod b and MAJ = [s ≥ b], where s is the digits plus the written incoming carry. L3H0 copies the previous MAJ to the carry-output slot. |
+| C | A chain head finds the first d_j ≠ b−1 and copies [d_j ≥ b]. MLP2 writes d = a + b in phase 1, then (d + c) mod b in phase 2, with gate M = 4b. |
 
 ```mermaid
 flowchart TD
-    P["Prompt a+b= and output so far"] --> POS["L0 and L1: positions r, anchor on +, thermometers T and VT"]
-    subgraph FA["Format A: answer only"]
-        A1["index heads copy a_i and b_i"] --> A2["L2 MLP: EQ = [a + b != b-1], GEN = [a + b >= b]"]
-        A2 --> A3["chain head L3H0: first lower column with EQ, copies GEN = carry"]
-        A3 --> A4["L3 MLP: one-hot of (X1 + X2 + CY) mod b"]
-    end
-    subgraph FB["Format B: carry tokens"]
-        B1["L2 MLP: DIG = s mod b, MAJ = [s >= b]"] --> B2["L3H0 copies previous MAJ into the carry slot"]
-    end
-    subgraph FC["Format C: column sums"]
-        C1["chain head: first d_j != b-1"] --> C2["L2 MLP: d = a + b, then (d + c) mod b"]
-    end
-    POS --> A1
-    POS --> B1
-    POS --> C1
+    P["Base-10 or base-16 operands"] --> F["Frozen index heads fetch the current digits"]
+    F --> A["Answer only: L2 MLP writes digit equality and carry conditions"]
+    A --> L["Frozen L3H0 lookahead finds the incoming carry"]
+    L --> AM["MLP3 writes the answer digit"]
+    F --> BM["Carry tokens: MLP2 writes digit and carry"]
+    BM --> R["Frozen L3H0 copies the previous carry output"]
+    F --> CL["Column sums: frozen lookahead finds the incoming carry"]
+    CL --> CM["MLP2 writes local sums, then answer digits"]
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class A4,B1,C2 trained
+    class AM,BM,CM trained
 ```
 
-*Figure 1. The hand-built networks for the three formats. In A a chain head finds the first lower column that decides the carry; in B
-the carry is passed through the written carry token; in C the carry is read from the column sums. The shaded MLPs are the stages that
-PART replaces with a trained MLP.*
+*Figure 1. The hand-built decimal and hexadecimal adders. Gold nodes are the stage blocks trained in PART. The learned column-total readouts have partial status: local substitutions support them, but complement resampling was not reported. This diagram does not establish the whole TRAIN mechanism or equal weights on its native carry input.*
+
+The HAND tests were exact for n = 1..12, with minimum logit margin 30. Coverage was exhaustive for n = 1..2 and sampled at each n = 3..12, with 4000 random pairs per format and length. “Exact” here does not mean every longer pair was enumerated.
 
 ## 4. What training finds
 
-Table 3 gives the results per cell from the training runs; Appendix B gives the full diagnostics, whose test ranges come from the
-diagnostics run and differ slightly in two cells.
+### 4.1 One trained stage on frozen routing
 
-*Table 3. Test exact match per cell (best snapshot; final in parentheses where reported).*
+A column-total readout was reported in 10/10 selected seeds of b10 A/B/C, b16 A, b16 B retry and b16 C retry, giving the reported 60/60 family count. This does not mean all these networks solved the task: some readouts still wrote wrong digits. The first evaluation at test exact match .9 occurred at 0.5–8.5k steps; this is not evidence of a long delay after fitting the training set, called grokking ([glossary](../GLOSSARY.md#counting-results)).
 
-| Cell | PART (fp32) | TRAIN run 1 (v2) | TRAIN retry |
+*Table 5. PART results, 10 seeds per cell. Training-summary and fp32 analysis displays are kept separate where they disagree.*
+
+| Cell | Selected-stage result | Retry or qualification |
+|---|---|---|
+| b10 A | Summary fp32 .99–1.00; primary analysis 1.00 | Column-total readout 10/10 |
+| b10 B | Summary .99–1.00; primary fp32 analysis .97–1.00 | Column-total readout 10/10 |
+| b10 C | .99–1.00 | Column-total readout 10/10 |
+| b16 A | Summary .96–.99; primary analysis .97–.99 | Column-total readout 10/10 |
+| b16 B | Original .13–.98, 8/10 ≥ .5 | Retry .989–1.00 in 8/10; seed 9 .895, seed 7 .644; readout 10/10 |
+| b16 C | Original .87–.91 in the primary table, .85–.91 in diagnostics | Retry .954–.981, also summarised .95–.98; readout 10/10 |
+
+The older entry reports b16 B retry as “8/10 ≥ .99”. The primary result instead gives .989–1.00 in 8/10; the raw separate analysis records seed 0 `full = 0.9886666536331177`. The published ratio is retained as a reporting discrepancy, not an unqualified ≥ .99 success count. No replacement seed count is inferred from rounding.
+
+The original hex failures concerned the digit table despite complete frozen inputs. For b16 C, carry probe R² was 1 and attention JS 0; for the two failed b16 B seeds, the carry token was learned more successfully than the digit. fp32 and 20k steps improved these cells, but did not make every seed exact: b16 C was still rising at 18–20k and b16 B seed 7 remained .644 at its budget.
+
+*Table 6. PART length transfer, 10 seeds per cell, fp32 sampled-pair analysis. A's transfer is partial, not universal exactness.*
+
+| Cell | Four digits (n + 1) | Six digits (2n) |
+|---|---|---|
+| b10 A | .99–1.00 | .98–1.00 |
+| b16 A | .93–.98 | .46–.92 |
+| A, original aggregate display | .93–1.00 | .46–1.00 |
+| B and C, selected runs | ≤ .08 | ≤ .08 |
+
+B/C read absolute-position thermometers that correlate with phase at the single training length. A inherits a length-independent carry route; its digit table transfers more successfully. Canonical-stage length repairs are discussed separately in Section 5, not counted as native transfer.
+
+### 4.2 Whole-network training
+
+Run 1 did not solve any answer-only/column-sum cell in all ten seeds. Some individual seeds scored highly. Errors increased with carry-chain length in A/C: b16 A fell from .56 to 0 at chain length 3, whereas B's chain profile was flat. The longer scheduled retry brought the reported total to 37/40 at ≥ .99. A changed budget, schedule and optimiser settings were used together; this is not an isolated test of any one change.
+
+*Table 7. TRAIN exact match, 10 seeds per cell. Parentheses give the original training-summary final values, not the separate v1 diagnostic finals in Appendix B.*
+
+| Cell | Run 1 best (final where given) | Retry outcome | First retry test ≥ .9 |
 |---|---|---|---|
-| b10 A | .99–1.00 | .09–.94 (.00–.59) | 10/10 ≥ .998 |
-| b10 B | .99–1.00 | .81–.99 (.01–.77) | – |
-| b10 C | .99–1.00 | .14–1.00 | 10/10 ≥ .998 |
-| b16 A | .96–.99 | .00–.84 | 7/10 |
-| b16 B | retry 8/10 ≥ .99 | .88–.99 | – |
-| b16 C | retry .95–.98 | .27–.93 | 10/10 ≥ .998 |
+| b10 A | .09–.94 (.00–.59) | 10/10 ≥ .99; .998–1.00 | 8–19.5k |
+| b10 B | .81–.99 (.01–.77) | Not retried; 10/10 learned ≥ .5, 8/10 diagnostic ≥ .9 | Not applicable |
+| b10 C | .14–1.00 | 10/10 ≥ .99; .999–1.00 | 5.5–18.5k |
+| b16 A | .00–.84 | 7/10 ≥ .99; GPU .035–1.00, fp32 .033–1.00 | 11.5–37k, 9 seeds |
+| b16 B | .88–.99 | Not retried; 10/10 learned ≥ .5, 8/10 diagnostic ≥ .9 | Not applicable |
+| b16 C | .27–.93 | 10/10 ≥ .99; .999–1.00 | 7.5–25.5k |
 
-### 4.1 Stage on frozen parts (PART)
+The old summary describes b10 A, b10 C and b16 C as 10/10 ≥ .998, consistent with the displayed retry ranges. It gives the combined .9 crossing display as 5.5–37k. The b16 A exceptions were reported as seed 5 .93, seed 3 .97 and seed 8 .04. Final equalled best in the retry summary; run 1 had collapsed after earlier peaks, with best/final gaps up to .98. Original stopping included plateaux at 14.5k, 13.5k and 17.5k; some C cells hit 20k while still improving.
 
-Every trained stage that works is a lookup on the column sum s = a + b + c, read as X1 + X2 + CY with equal weights, which is the HAND
-input: f(sum) in 10/10 seeds in b10 A, B and C, b16 A, the b16 C retry and the b16 B retry, all 60 networks of the final runs, with
-substitution equal to the network's accuracy. There was no grokking delay: the first evaluation at which test accuracy reached .9 came
-at 0.5–8.5k steps ([glossary](../GLOSSARY.md#counting-results)). At length n + 1 / 2n, A scores .93–1.00 / .46–1.00, so PART A
-extrapolates to 4 and 6 digits; B and C score ≤ .08.
+The retry networks used 4–16 heads + 590–980 neurons. The original overview calls the final MLP a sum lookup in 6–9/10; the detailed primary census gives b10 A 4, b10 C 6, b16 A 9 and b16 C 6 of 10. These displays are retained rather than silently merged. Other seeds need an operand-pair key. Earlier TRAIN layers have no closed form. The original log summary gives n + 1 = 0 in all retry networks; the separate fp32 analysis gives n + 1 ≤ .04. Neither supports useful native length transfer.
 
-Two cells failed in run 1, PART b16 C and b16 B (2 seeds), missing the digit table although their inputs were complete (carry probe R² 1,
-JS 0). They were under-trained, and fp32 with 20k steps fixed them.
+Carry probe R² and resemblance to a HAND head did not separate successful retries from failures. The reported head matches appeared in only 1–3/10 networks with JS ≥ .34; a linear probe measures decodability, not the use or absence of a variable. A recovered lookahead circuit was not established.
 
-### 4.2 Training from scratch (TRAIN)
+### 4.3 Causal diagnostics
 
-Run 1 (20k steps, 2k-plateau stop) solved none of A and C. Errors grow with the length of the carry chain in A and C (b16 A: .56, falling to 0 at
-carry-chain length 3) and are flat in B. The retry (40k, warmup + cosine + clip) solved b10 A, b10 C and b16 C in 10/10 at ≥ .998 and
-b16 A in 7/10, 37/40 in total, with grokking late: the first evaluation at test .9 came at 5.5–37k steps, and final = best. These
-networks use 4–16 heads + 590–980 neurons, and their last MLP is a sum lookup in 6–9/10 (otherwise a pair lookup). They have no
-HAND-like carry-lookahead head, and at length n + 1 they score ≤ .04.
+Activation patching, which swaps component outputs between inputs, identified the trained stage as the largest-drop PART component in 113/113 solved networks across recorded runs and snapshots. Here the diagnostic “solved” screen means exact ≥ .9, not the retry ≥ .99 criterion. Edge attribution estimated HAND wiring in PART: hand_recall 1.0, Jaccard .78–.80 in A/B and 1.0 in C. These scores are attribution screens, trusted only when their exactness check passed ([glossary](../GLOSSARY.md#analysis-measures)).
 
-Format B, with the carry written as a token, trains in 10/10 at both bases according to the training summary; the diagnostics of run 1
-(Appendix B) count 8 solved networks (exact ≥ .9) in each base, with best test .81–.99 (b10) and .88–.99 (b16).
-
-The failed TRAIN A and C networks of run 1 failed on long carry chains. Neither the carry probe R² nor a match to the chain head (1–3/10
-networks, JS ≥ .34) separates them from the solved retries; the learning curves do.
-
-### 4.3 Causal evidence
-
-In PART the top patching component is the stage MLP in 113/113 solved networks. Edge attribution (EAP-IG,
-[glossary](../GLOSSARY.md#analysis-measures)) shows that PART keeps HAND's wiring (hand_recall 1.0; Jaccard .78-.80 in A and B, with
-extra edges; 1.0 in C). TRAIN wiring differs (Jaccard 0-.13; heads are not aligned, so this flags different wiring and is not a match
-score), and its top patching component is MLP0 or MLP3. No HAND variable fails linear interchange while DAS (distributed alignment
-search) finds it here; the reverse holds for the B digit (interchange .96-1, DAS .07-.83, HAND .07-.20).
+TRAIN edge overlap was 0–.13 and the largest patching drop was usually MLP0 or MLP3. Since heads were not aligned, this flags different wiring rather than a matched-circuit score. Linear interchange swaps a proposed variable; DAS searches a rotation for the same swap ([glossary](../GLOSSARY.md#analysis-measures)). No HAND variable was missed by linear interchange but found by DAS here. The reverse occurred for the B digit: interchange .96–1, DAS .07–.83, and HAND .07–.20.
 
 ## 5. Mechanism and verification
 
-### 5.1 Closed forms
+### 5.1 Partial stage readouts, and a separate repair
 
-The PART stage was replaced by its mean output given s (in C, given the phase and its sum): substitution equals the network's accuracy
-(.95–1.00; retry b16 B seed 7 .69). The sum digit is s mod b and the carry [s ≥ b]. For TRAIN, the last MLP replaced by f(sum) gives
-.88–.99 in B and .50–1.00 in the retry A and C networks (≥ .99 in about half); the earlier layers have no closed form.
+A sum-response readout replaces the learned block by its mean output at each column total. In C it also conditions on phase. The old summary reports substitution equal to native accuracy, .95–1.00, with hex B retry seed 7 .69. That seed is an exception to literal equality: the separate raw analysis gives native `0.643666684627533` and sum replacement `0.6880000233650208`. The family classification does not imply exact response identity or task success. In TRAIN, replacing the last MLP gives .88–.99 in B and .50–1.00 in retry A/C, with ≥ .99 in about half according to the original overview. There is no formula for the preceding TRAIN stack.
 
-Written on the actual internal channels, with the other stage outputs zero, the PART closed forms are (Y is the stage's output over the
-vocabulary, where index v + 2 is the digit v, after BOS and unk): A `Y[(s mod b) + 2] = 1`; B
-`DIG = s mod b`, `MAJ = [s ≥ b]`; C `Y[round(X1 + X2) + 2] = 1` before the phase token and `Y[(round(X3 + CY) mod b) + 2] = 1` after.
-Replacing only the learned stage gives 1.000 in 80/80 PART snapshots (40,960/40,960 pairs), failed seeds included (for those a repair,
-not their mechanism). In b16 B PART it also lifts 4 / 6 digits from .066 / .032 to 1.000, so the length failure is in the learned stage,
-not in the frozen routing. These substitutions support the closed forms; a resample ablation of the complement
-([glossary](../GLOSSARY.md#verifying-a-circuit)) was not reported for PART.
+A canonical arithmetic block is a different intervention. With s = round(X1 + X2 + CY) in A and s = round(X1 + X2 + TOK[c]) in B, its channel formulas are:
 
-The equal weights on X1, X2 and CY hold at the decision level only: in b16 B PART, setting the own-carry weights equal to the operand
-weights drops exact match to .938 (two top neurons) and .303 (all).
+| Format | Canonical replacement, with other stage outputs zero |
+|---|---|
+| A | `Y[(s mod b) + 2] = 1` |
+| B | `DIG = s mod b`; `MAJ = [s ≥ b]` |
+| C before phase token | `Y[round(X1 + X2) + 2] = 1` |
+| C after phase token | `Y[(round(X3 + CY) mod b) + 2] = 1` |
 
-### 5.2 Circuit probes
+Y contains vocabulary output scores; value v has index v + 2 after BOS and unk. The canonical stage scored 1.000 in 80/80 tested PART snapshots, 40,960/40,960 pairs. Failed networks were included: making them correct is a repair, not evidence that they already computed this canonical rule. For one b16 B PART case it also lifted 4 / 6-digit accuracy from .066 / .032 to 1.000, localising that length failure to the trained stage. Complement resampling, which replaces everything outside a proposed circuit by values from other inputs, was not reported for this stage claim ([glossary](../GLOSSARY.md#verifying-a-circuit)). Status remains partial.
 
-Circuit probes were run on best snapshots on 2026-11-06, on fresh pairs disjoint from all stored splits (Table 4). The probe
-records label a component verified after a causal intervention plus a successful component substitution (not a whole-network
-algorithm), and supported with causal evidence only; neither label meets the atlas acceptance rule, so Table 4 writes "causal +
-substitution" for the first. Exact is teacher-forced 3-digit whole-answer exact match unless
-stated, ablation numbers are accuracy retained, and layers are zero-based. s = round(X1 + X2 + CY) (A) or round(X1 + X2 + TOK[c]) (B).
+### 5.2 A written carry need not be an internal bit
 
-*Table 4. Components probed.*
+The b16 B PART retry seed 1 used an analogue carry state: a real-valued channel calibrated to the following digit block. Replacing it by canonical 0/1 values gave only .222 whole-answer exact match. A compact hinge response on the live predecessor subtotal s gave 1.000 on 1,024 fresh pairs:
 
-| Component | Role | Evidence (causal + substitution) |
-|---|---|---|
-| b10 A TRAIN retry seed 1: MLP0 + digit embeddings | position/token table + Fourier k = 1, 2, 3 embeddings | MLP0 mean ablation .001; joint replacement 1024/1024 exact and agreement in both tested seeds (later layers native) |
-| b10 A PART seed 0: L2H0 / L2H1 | fetch b / a | mean ablation .002 / .000; correct-variable substitutions 1.000 / 1.000 |
-| b10 A PART seed 0: L3H0 | first decisive lower-column carry | mean ablation .127; carry-table substitution 1.000, R² = 1 |
-| b10 A PART seed 0: MLP3 (121 neurons) | sum-response digit stage | population ablation .001; sum-response substitution 1.000, drop 0 |
-| b16 B PART retry seed 1: L3H0 | analog carry state, not a Boolean bit | carry-bit means .949; compact hinge substitute 1.000, R² .9964 |
-| b16 B TRAIN seed 4: L3H0 | copies the preceding arithmetic position | joint hard copies .993, agreement 1; bit-only / subtotal-only content .820 / .903 |
-| b16 B TRAIN seed 4: MLP3 (231 neurons) | sum-coded digit lookup | ablation .001; substitution .993 = baseline, agreement .998 (not identity) |
-| b10 C TRAIN retry seed 0: L3H0 | one head reused: b digits, then written column sums | head ablation .000; joint six-query hard substitution 1.000 |
+`MJP = a + b·s + c·ReLU(s − 15) + d·ReLU(s − 16)`.
 
-In b16 B PART the carry is analog: the carry-out value (MAJ in HAND), written MJP, is MJP = a + b·s + c·ReLU(s − 15) + d·ReLU(s − 16) on the live predecessor s, with for example (a, b, c,
-d) = (−2.0873, .1209, .0511, −.1162) at the first carry query. It scores 1.000 on 1,024 pairs, while a canonical 0/1 output gives .222.
-It is not length-general.
+MJP is the native carry-output channel, called MAJ in HAND; a, b, c and d in this equation are fitted coefficients, not the operands, base or carry. At the first carry query they were (−2.0873, .1209, .0511, −.1162). This is a component substitute for one tested seed, not a length-general whole-network algorithm. Using carry-bit means instead gave .949; the hinge fit had R² .9964.
 
-Supported only: b10 A TRAIN uses a distributed stack (MLP0/1/2/3 ablations .001 / .003 / .047 / .007). Scrubbing every component within
-the local-variable classes at once gives .74–.80 (seed 1) and .81–.82 (seed 2); the lower digits stay at 1.000 and every error is in the
-top carry, whose context-dependent read-out is unresolved. b10 C TRAIN's 105-neuron sum population is necessary (.002), but a pure-sum
-model gives .933. The failed b16 A TRAIN has units accuracy .054 although carry interchange/DAS is .976 / .996, so its failure is not a
-carry-only failure.
-
-Sizes are local minima of a search, not verified circuits: b10 A TRAIN seeds 1 / 2 keep 7 heads + 608 / 597 neurons, with independent
-exact .980 / .985 (failing the 99% bar); HAND under the same procedure keeps 3 + 22 (.992).
+Equal operand contribution is also distinct from identical carry weights. In b16 B PART, setting own-carry weights equal to operand weights reduced exact match to .938 for two top neurons and .303 for all neurons. The stronger equal-weight claim is refuted at the weight level.
 
 ```mermaid
 flowchart TD
-    E["digit embeddings: Fourier k = 1, 2, 3"] --> M0["MLP0: position and token table"]
-    M0 --> ST["MLP1, MLP2 and heads: carry spread over several components, no lookahead head"]
-    ST --> M3["last MLP: lookup on the column sum or on the digit pair"]
-    M3 --> Y["sum digit"]
+    S["Native predecessor subtotal s"] --> T["MLP2: calibrated carry response in MJP"]
+    T --> H["Frozen L3H0 relays the carry response"]
+    H --> M["Native downstream MLP2 digit response"]
+    M --> Y["Digit and written carry outputs"]
+    S --> B["Alternative intervention: force a Boolean carry"]
+    B --> F["Whole-answer exact falls to .222"]
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class E,M0,ST,M3 trained
+    class T,M trained
 ```
 
-*Figure 2. The circuit that training from scratch finds in format A (b10 A TRAIN retry, seeds 1 and 2). Fourier-coded digit embeddings
-and an MLP0 table feed a distributed carry stack and a last-MLP lookup. MLP0 with the embeddings is supported by joint substitution;
-scrubbing the whole stack keeps only .74–.82, so the carry read-out is unresolved.*
+*Figure 2. A component substitution in b16 B PART retry seed 1. The hinge replacement scored 1.000 on 1,024 fresh pairs; the Boolean replacement scored .222. Gold marks the trained MLP2's carry and digit responses at successive output positions; L3H0 is frozen. Closed-form status is partial; complement resampling was not reported, and the substitute is not length-general.*
 
-### 5.3 Seed census
+### 5.3 Why the TRAIN algorithm remains unresolved
 
-The census covers 180 snapshots, 131 at ≥ .90, grouped by signatures within .01 exact match and by token agreement. In PART, every solved
-seed uses the frozen lookahead or two-phase routing with a canonical stage; the B carry head is bit-sufficient / subtotal-required in
-b10 8/2 and b16 3/5. Table 5 gives the TRAIN classes. The census's sufficient sum table is stricter than the f(sum) counts of Section
-5.1, hence fewer TRAIN networks pass here.
+The b10 A retry uses a distributed stack: MLP0/1/2/3 mean ablations retained .001 / .003 / .047 / .007. Joint substitution of MLP0 and the periodic digit embeddings gave 1024/1024 exact and agreement in both tested seeds, with later layers native. That local success did not extend to the whole proposed stack. Resampling every component within its claimed local-variable class retained .74–.80 in seed 1 and .81–.82 in seed 2. Lower digits stayed 1.000; every error was in the top carry, whose context-dependent readout remains unresolved. These are separate recorded ranges, not a new combined range.
 
-*Table 5. TRAIN seed census: sum table sufficient / main effects / unresolved.*
+The 105-neuron sum population in b10 C TRAIN was necessary, with ablation .002, but a pure-sum substitute gave .933. The failed b16 A TRAIN case had units accuracy .054 despite carry interchange/DAS .976 / .996. It is not explained by a carry-only failure.
 
-| Cell | Counts |
-|---|---|
-| b10 A | 4/0/6 |
-| b16 A | 3/3/3 |
-| b10 B | 6/0/3 |
-| b16 B | 5/1/2 |
-| b10 C | 3/2/5 |
-| b16 C | 2/0/8 |
+Search-only keep-sets were also insufficient: b10 A TRAIN seeds 1 / 2 retained 7 heads + 608 / 597 neurons, but independent exact match was .980 / .985, below the 99% bar. HAND under the same procedure kept 3 + 22 with .992. These are local search minima, not verified or globally minimal circuits.
 
-The HAND chain carry route appears in 0 A networks.
+### 5.4 Relation to earlier work
 
-### 5.4 Relation to the hand-built network and to published work
+The frozen-routing stage resembles the digit-table part of HAND, with approximately 100–200 hinges; native B can require a calibrated carry response. From-scratch networks acquired useful digit and carry computation without a recovered lookahead head. PART A showed partial length transfer, as in [binary addition](binary-addition.md).
 
-PART computes HAND's algorithm (a sum lookup with ~100–200 hinges); TRAIN finds the digit table and a carry, without the lookahead head.
-As in [binary-addition](binary-addition.md), PART A extrapolates. Per-digit streams and carry heads were described in small addition
-transformers by [Quirke & Barez (2023)](#references), and a shared skeleton for addition and subtraction with a borrow by
-[Quirke et al. (2024)](#references); [Lee et al. (2023)](#references) studied output order and scratchpads in arithmetic. Pre-trained
-language models were reported to use Fourier features or trigonometric representations of numbers ([Zhou et al., 2024](#references);
-[Kantamneni & Tegmark, 2025](#references)) or a bag of heuristics ([Nikankin et al., 2024](#references)).
+[Quirke and Barez (2023)](#references) describe per-digit addition streams and carry heads; [Quirke et al. (2024)](#references) compare addition and subtraction. [Lee et al. (2023)](#references) study arithmetic output order and scratchpads. Fourier-feature accounts in pretrained language models ([Zhou et al., 2024](#references); [Kantamneni & Tegmark, 2025](#references)) and heuristic accounts ([Nikankin et al., 2024](#references)) provide comparisons, not verification of these small networks.
 
 ## 6. Limitations and open questions
 
-Only one training length (n = 3) was used, and length was tested at 4 and 6 digits only. The run-1 PART networks are TF32 (up to .03
-lower in fp32). Probes are linear and taken at scored positions.
+Only one length, n = 3, was trained. Transfer was sampled at 4 and 6 digits only; neither native TRAIN nor all PART formats became length-general. TF32 run-1 PART scores were up to .03 lower when rescored in fp32. Linear probes were evaluated at scored positions and cannot establish the absence of nonlinear arithmetic variables.
 
-Open questions:
+Run-1 best and diagnostic final rows can refer to different training cohorts: v2 best snapshots versus earlier v1 final weights. The .99 boundary for b16 B and the final-MLP type counts also have conflicting source displays, preserved above. Canonical repairs do not identify a failed network's native mechanism. Local substitutions and a few-seed component probes do not establish the complete TRAIN computation; PART complement resampling was not reported. The stricter later census is not interchangeable with the original readout-family count.
 
-- the top-carry state of the A TRAIN networks;
-- compact joint forms for B and C TRAIN;
-- why the failed hex A networks lose the units digit.
+Open questions concern the top carry in TRAIN A, compact joint forms for TRAIN B/C and the failed hex A units digit. The analogue B carry substitute does not generalise in length. Neuron keep-sets failed independent acceptance, so their sizes cannot be presented as verified circuit sizes.
 
 ## 7. Prediction record
 
-The design notes, written before any run, predicted a "mod-b clock or lookup per digit + carry bit". The lookup held (no clock neurons);
-the carry is used everywhere it is needed, but TRAIN builds it without the HAND chain head. Nothing was predicted about grokking time or
-length (not recorded in advance).
+Before training, the design notes predicted a “mod-b clock or lookup per digit + carry bit”. The lookup branch was supported; no clock neurons were found in the learned PART stages. TRAIN used carry information without a recovered HAND chain head, and a native B carry channel need not itself be Boolean. No grokking-time or length prediction was recorded in advance.
 
 ## Appendix A. Weights excerpt and reading
 
-The numbers are computed from the archived files. The HAND A L3 neurons read [X1, X2, CY] = [1, 1, 1] with bias −v (b10 n11–n15: −10..−14),
-which are hinges relu(s − v). The PART A stages, trained from noise, have top neurons that read the same dimensions with equal weights:
-b10 seed 0 n196 [.04, .04, .04] with bias −.03, and b16 seed 7 n114 [−.08, −.08, −.08] with bias .04. The ratio |mean|/rms of the three
-weights has median 1.00 over the 92–122 active neurons of each archived A network, so the stage is f(X1 + X2 + CY). C reads X1 = X2 (the
-phase-1 sum, median .99–1.00); B reads X1 = X2 and the own-carry token with its own weight (median .67–.84).
+These excerpts were computed from archived weights. HAND A L3 neurons read [X1, X2, CY] = [1, 1, 1] with bias −v; b10 n11–n15 have biases −10..−14, making hinges relu(s − v). PART A examples are b10 seed 0 n196 [.04, .04, .04], bias −.03, and b16 seed 7 n114 [−.08, −.08, −.08], bias .04.
 
-TRAIN networks have no shared basis with HAND. Their digit-token embeddings are periodic in the value: the top-2 DFT frequencies (1 and 2
-or 3) hold .71–.97 of their power (run-1 and retry networks alike).
+Across the 92–122 active neurons of each archived A network, the median ratio of the absolute mean to the root-mean-square of these three weights was 1.00. This supports f(X1 + X2 + CY) for those A responses. C's phase-1 operand weights had median alignment .99–1.00; B's ratio was .67–.84 and its own-carry input had a separate weight. The weight-equalising intervention in Section 5 rejects universal equality.
+
+TRAIN has no shared internal basis with HAND. Its digit-token embeddings were periodic in digit value: the top-2 discrete Fourier transform frequencies, 1 and 2 or 3, contained .71–.97 of their power in both original and retry networks. A Fourier transform measures periodic components of a vector ([glossary](../GLOSSARY.md#analysis-measures)); this observation alone is not a complete addition algorithm.
 
 ## Appendix B. Detailed evidence
 
-Table B1 gives, per cell and rung: used heads+MLPs; best-layer probe R² of a, carry-in c and digit; residual participation ratio at L4;
-JS (nats) of used heads to their best HAND head; test best (final), where TRAIN v2 final = run v1. After ‖ come causal results, medians
-over solved networks (exact ≥ .9): patch = the component with the largest patching drop (networks); var inter/DAS = linear interchange /
-DAS flip, best layer (co = carry_out); edges = EAP-IG Jaccard/hand_recall against HAND, over trusted networks (spearman_exact ≥ .8). Terms are defined in the [glossary](../GLOSSARY.md#analysis-measures).
+### B.1 Diagnostics
 
-*Table B1. Diagnostics per cell.*
+Table B1 retains the original compact diagnostics. Each cell first gives used heads+MLPs, best-layer probe R² for operand a, carry-in c and answer digit, residual participation ratio PR at L4, attention divergence JS in nats, and best exact match with final in parentheses. PR measures effective dimension. R² measures linear decodability. JS compares each used head with its closest HAND head, not an aligned causal role. Terms are defined in the [glossary](../GLOSSARY.md#analysis-measures).
+
+After ‖ are causal medians over networks at exact ≥ .9: patch is the component with the largest patching drop, with counts; `inter/DAS` are linear interchange and distributed alignment search flip rates; `co` means carry-out. Edges are attribution Jaccard/hand_recall against HAND, restricted to trusted networks with spearman_exact ≥ .8. A dash means not reported. These scores are not whole-mechanism verification. Diagnostic best means v2; diagnostic final means v1, explaining such pairs as .00–.59 in the training summary versus .00–.93 below.
+
+*Table B1. Diagnostics by base, format and rung. Ten seeds per learned cell; causal subgroup sizes are given inside cells.*
 
 | cell | HAND | PART | PART retry | TRAIN (v2) | TRAIN retry |
 |---|---|---|---|---|---|
@@ -310,17 +262,45 @@ DAS flip, best layer (co = carry_out); edges = EAP-IG Jaccard/hand_recall agains
 | b16 B | 3+2; a .86, c .61, dig 1; PR 3.2; JS .00; 1 ‖ MLP2; dig 1/.07, co 1/1 | 2–3+1–2; a .80–.86, c .62–.66, dig .68–.79; PR 2.1–2.4; JS .00–.16; .12–.98 (.02–.96) ‖ 7 solved: MLP2 7; dig .99/.27, co .77/1; edges .78/1 (7) | 3+2; a .84–.89, c .60–.64, dig .72–.79; PR 2.2–2.5; JS .13–.16; .64–1 (.64–1) ‖ 8 solved: MLP2 8; dig 1/.27, co .79/1; edges .78/1 (8) | 2–16+4; a .46–.94, c .57–.84, dig .81–.96; PR 1.8–3.8; JS .14–.39; .88–.99 (.00–.91) ‖ 8 solved: MLP0 6, MLP3 2; dig .97/.98, co .95/1; edges .13/.38 (8) | – |
 | b16 C | 4+1; a .72, c 1, dig 1; PR 2.5; JS .00; 1 ‖ MLP2; c 1/1, dig 1/.99 | 4+1; a .75–.78, c 1, dig .63–.72; PR 2.6–2.7; JS .00; .85–.91 (.72–.90) ‖ 2 solved: MLP2 2; c .98/1, dig .41/.66; edges 1/1 (2) | 4+1; a .76–.78, c 1, dig .65–.73; PR 2.6–3.2; JS .00; .95–.98 (.95–.98) ‖ MLP2 10/10; c .90/1, dig .61/.64; edges 1/1 (10) | 3–16+4; a .44–.65, c .59–.90, dig .72–.92; PR 2.2–5.8; JS .09–.39; .28–.94 (.00–.82) ‖ 1 solved: MLP2; c .82/.97, dig .99/.99; edges 0/0 (1) | 5–16+4; a .38–.63, c .55–.94, dig .75–.92; PR 3.2–6.1; JS .17–.44; 1 (1) ‖ MLP3 6, MLP0 4; c .93/1, dig 1/1; edges 0/.22 (8) |
 
+### B.2 Component substitutions
+
+Circuit probes used best snapshots on 2026-11-06 and fresh pairs disjoint from stored splits. Exact means teacher-forced three-digit whole-answer exact: the correct earlier output tokens are supplied ([glossary](../GLOSSARY.md#task-formats)). Ablation values are accuracy retained. These are component substitutions plus causal interventions, not the atlas's stronger verification rule.
+
+*Table B2. Selected component evidence. A row concerns the named seed unless a second tested seed is explicitly stated.*
+
+| Component | Role | Evidence |
+|---|---|---|
+| b10 A TRAIN retry seed 1: MLP0 + digit embeddings | Position/token table + Fourier k = 1, 2, 3 embeddings | MLP0 mean ablation .001; joint replacement 1024/1024 exact and agreement in both tested seeds, later layers native |
+| b10 A PART seed 0: L2H0 / L2H1 | Fetch b / a | Mean ablation .002 / .000; correct-variable substitutions 1.000 / 1.000 |
+| b10 A PART seed 0: L3H0 | First decisive lower-column carry | Mean ablation .127; carry-table substitution 1.000, R² = 1 |
+| b10 A PART seed 0: MLP3, 121 neurons | Sum-response digit stage | Population ablation .001; substitution 1.000, drop 0 |
+| b16 B PART retry seed 1: L3H0 | Analogue carry state | Carry-bit means .949; compact hinge substitute 1.000, R² .9964 |
+| b16 B TRAIN seed 4: L3H0 | Copy preceding arithmetic position | Joint hard copies .993, agreement 1; bit-only / subtotal-only content .820 / .903 |
+| b16 B TRAIN seed 4: MLP3, 231 neurons | Sum-coded digit readout | Ablation .001; substitution .993 = baseline, agreement .998, not identity |
+| b10 C TRAIN retry seed 0: L3H0 | Fetch b digits, then written column sums | Head ablation .000; joint six-query hard substitute 1.000 |
+
+### B.3 Stricter snapshot census
+
+This census covered 180 snapshots, 131 at ≥ .90. Signatures required agreement within .01 exact match plus token agreement. Every solved PART seed had frozen lookahead/two-phase routing plus a canonical stage; this is a readout signature, subject to the repair/native distinction above. In B the carry head was bit-sufficient / subtotal-required in b10 8/2 and b16 3/5 tested cases. “Bit-sufficient” means a bit-conditioned response sufficed; “subtotal-required” means the tested bit-only substitute did not.
+
+*Table B3. TRAIN census: sufficient sum table / main effects / unresolved, copied from the stricter census. Counts concern eligible snapshots, not a new ten-seed exact-success criterion.*
+
+| Cell | Counts |
+|---|---|
+| b10 A | 4/0/6 |
+| b16 A | 3/3/3 |
+| b10 B | 6/0/3 |
+| b16 B | 5/1/2 |
+| b10 C | 3/2/5 |
+| b16 C | 2/0/8 |
+
+A sufficient sum table retains decisions using the column total; a main-effects fit uses separate operand contributions. The HAND chain carry route appeared in 0 A networks. This census applies stricter sufficient-table criteria than the earlier TRAIN f(sum) family labels, so the two counts must not be treated as interchangeable.
+
 ## References
 
-- Kantamneni, S., & Tegmark, M. (2025). Language models use trigonometry to do addition. *arXiv preprint*.
-  https://doi.org/10.48550/arxiv.2502.00873 (contrasting mechanism in LLMs)
-- Lee, N., Sreenivasan, K., Lee, J. D., Lee, K., & Papailiopoulos, D. (2023). Teaching arithmetic to small transformers.
-  *arXiv preprint*. https://doi.org/10.48550/arxiv.2307.03381 (output order, scratchpads)
-- Nikankin, Y., Reusch, A., Mueller, A., & Belinkov, Y. (2024). Arithmetic without algorithms: Language models solve math with a bag
-  of heuristics. *arXiv preprint*. https://doi.org/10.48550/arxiv.2410.21272 (contrasting mechanism in LLMs)
-- Quirke, P., & Barez, F. (2023). Understanding addition in transformers. *arXiv preprint*. https://doi.org/10.48550/arxiv.2310.13121
-  (per-digit streams, carry heads)
-- Quirke, P., Neo, C., & Barez, F. (2024). Understanding addition and subtraction in transformers. *arXiv preprint*.
-  https://doi.org/10.48550/arxiv.2402.02619 (shared add/sub skeleton, borrow)
-- Zhou, T., Fu, D., Sharan, V., & Jia, R. (2024). Pre-trained large language models use Fourier features to compute addition.
-  *arXiv preprint*. https://doi.org/10.48550/arxiv.2406.03445 (contrasting mechanism in LLMs)
+- Kantamneni, S., & Tegmark, M. (2025). Language models use trigonometry to do addition. *arXiv preprint*. https://doi.org/10.48550/arxiv.2502.00873 (comparison with number representations in language models)
+- Lee, N., Sreenivasan, K., Lee, J. D., Lee, K., & Papailiopoulos, D. (2023). Teaching arithmetic to small transformers. *arXiv preprint*. https://doi.org/10.48550/arxiv.2307.03381 (output order and scratchpads)
+- Nikankin, Y., Reusch, A., Mueller, A., & Belinkov, Y. (2024). Arithmetic without algorithms: Language models solve math with a bag of heuristics. *arXiv preprint*. https://doi.org/10.48550/arxiv.2410.21272 (comparison with heuristic arithmetic)
+- Quirke, P., & Barez, F. (2023). Understanding addition in transformers. *arXiv preprint*. https://doi.org/10.48550/arxiv.2310.13121 (per-digit streams and carry heads)
+- Quirke, P., Neo, C., & Barez, F. (2024). Understanding addition and subtraction in transformers. *arXiv preprint*. https://doi.org/10.48550/arxiv.2402.02619 (shared arithmetic routing and borrow)
+- Zhou, T., Fu, D., Sharan, V., & Jia, R. (2024). Pre-trained large language models use Fourier features to compute addition. *arXiv preprint*. https://doi.org/10.48550/arxiv.2406.03445 (comparison with Fourier arithmetic)

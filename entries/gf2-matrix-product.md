@@ -1,32 +1,35 @@
-# GF(2) matrix product
+# Binary matrix product over GF(2)
 
-This entry studies how small transformers multiply two 3×3 bit matrices over GF(2), the field with two elements in which products are
-AND and sums are XOR, writing either only the 9 answer bits or a trace of running parities. In the hand-built network each trace token
-is a 3-bit XOR-AND lookup on the previous running parity and the two operand bits, which two attention heads fetch. With the
-hand-built routing frozen, one retrained MLP relearned the lookup in 10/10 seeds within 500 steps; trained from scratch, the trace
-format solved 10/10 (grokking at 3–7.5k steps) and computes the same variables but fetches the operand bits with 2–7 heads one layer
-later, in another code, and answer only also solved 10/10. Nothing generalises to m = 4, 5 (0). The task is solved (10/10 in every
-cell); the closed form is partial, because it covers only the stage trained on frozen parts (substituted 1.0 = native in 20/20,
-zeroed 0, shuffled keys ≤ .002) and there is none for the networks trained from scratch.
+In this version of matrix multiplication, an answer bit is one when an odd number of paired input bits are both one (AND products,
+XOR sums, arithmetic over GF(2)). Four-layer transformers learned direct answers and a scratchpad of running parities
+for 3×3 matrices: all three reported cells reached held-out whole-output exact match 1.0 in 10/10 seeds. With hand-built retrieval
+frozen, the trained stage reduced to a table of the three bits needed for an update; from scratch, the operand bits were fetched one layer later through
+different wiring. The fixed-size task is solved, but the lookup with frozen retrieval is partial: substitution preserved answers,
+while no test resampled everything outside the claimed circuit. No cell transferred to matrix sizes 4 or 5, and the detailed
+matrix-vector interventions reported separately cannot verify this matrix-product mechanism.
 
 | Fact | Value |
 |---|---|
 | Task | Multiply two 3×3 bit matrices over GF(2) (AND for products, XOR for sums); write the 9 answer bits or a trace of running parities |
 | Input → output example | In words: row (1, 1, 0) of A times column (1, 0, 1) of B gives running parities 1, 1, 1, so the entry of C is 1 |
-| Model | GPT-NeoX 4 layers × 12 heads, d_model 384, MLP 256 ReLU, no LayerNorm, NoPE; PART trains only the layer-3 MLP |
-| Rungs and seeds | HAND T; PART T, TRAIN T, TRAIN A, 10 seeds each (no retry needed) |
-| Closed form status | Partial (PART stage only: substituted 1.0 = native in 20/20, zeroed 0, shuffled keys ≤ .002; none for TRAIN) |
-| Status | Solved at m = 3 (10/10 in every cell, 10 seeds per cell; 0 at m = 4, 5); last run 2026-11-05; controls 2026-11-08 |
+| Model | GPT-NeoX 4 layers × 12 heads, d_model 384, MLP 256 ReLU, no LayerNorm, NoPE; the partly trained networks train only the layer-3 MLP |
+| Rungs and seeds | [HAND / PART / TRAIN](../GLOSSARY.md#the-three-rungs): formula-set weights / one trained stage / all weights trained; HAND trace, PART trace, TRAIN trace and direct answer; 10 seeds per trained cell (no retry needed) |
+| Closed form status | Partial (PART stage only: substituted 1.0 = native in 20/20 best/final snapshots, zeroed 0, shuffled keys ≤ .002; complement not reported for this form; none for TRAIN) |
+| Status | Solved at matrix size 3 (10/10 seeds per reported cell at held-out whole-output exact match 1.0; 0 at sizes 4 and 5); last run 2026-11-05; controls 2026-11-08 |
 | Weights | [Hugging Face: gf2-matrix-product](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/gf2-matrix-product) (15 networks) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
 ## 1. Task and data
 
-The target is C = A B over GF(2) with matrix size m = 3. The prompt is `B column-major ; A row-major =`, written as bits with `,` between groups.
+The target is C = A B over GF(2) with matrix size m = 3. Each entry is a bit: multiplication is AND (one only if both inputs are one)
+and addition is XOR (one if the inputs differ). A running parity starts at zero and flips whenever the next bit product is one.
+For example, row (1, 1, 0) times column (1, 0, 1) gives running parities 1, 1, 1 and answer bit 1. The prompt is
+`B column-major ; A row-major =`, written as bits with `,` between groups.
 Two output formats were studied (Table 1). In the trace format, a [scratchpad](../GLOSSARY.md#task-formats) in which the network writes
 intermediate results before the answer, the running parity s_ij = s_i,j−1 ⊕ A_ij B_jk is written per column k (the index j counts from 0), so that s_i2 = C_ik.
 Per seed, 100k training and 2k test pairs (A, B) were drawn disjointly at random from the 2^18 possible pairs; 38% of all pairs were
-seen in training. An output counts as correct only on exact match of all output tokens. Extra evaluations at m = 2, 4, 5 used 500
+seen in training. An output counts as correct only on exact match of all output tokens, scored teacher-forced: each token is given
+the correct previous tokens, not a freely generated trace. Extra evaluations at m = 2, 4, 5 used 500
 random pairs each.
 
 *Table 1. Output formats.*
@@ -80,10 +83,14 @@ separator, which gives the row length; first `;`, which gives the segment length
 clean steps to give the segment SEG, the group G and the offset J, together with their next-token versions SEGN, GN and JN.
 
 In layer 2, head 0 matches (SEG 1, G = GN, J = JN) and returns MA = A_ij; head 1 matches (SEG 0, G = SEGN − 2, J = JN) and returns
-MB = B_jk. Each attribute scores 2·20·[match] − 20. The layer-2 MLP writes separator flags TS, TSEMI and TB = 1 − TS. The layer-3 MLP
+MB = B_jk. Each attribute scores 2·20·[match] − 20. SEG names the segment, G its row group and J the offset; a suffix N names the
+next token's value. The layer-2 MLP writes separator flags TS (a separator), TSEMI (specifically a semicolon) and TB = 1 − TS
+(a bit position). The layer-3 MLP
 has 4 neurons relu(±tok1 ± MA ± MB + 100 TB − (#ones − 1) − 100), where tok1 is the current token (the previous running parity), one
-for each cell with tok1 ⊕ MA·MB = 1, writing Y1 − Y0, plus a Y0 bias neuron and `,` / `;` neurons. The network is exact on all 2^8
-pairs at m = 2, every m = 3 pair, and 2000 random pairs at m = 4, 5.
+for each cell with tok1 ⊕ MA·MB = 1, writing Y1 − Y0, plus a Y0 bias neuron and `,` / `;` neurons. Y0 and Y1 are the output-score
+coordinates for bits zero and one. The original task record checks all 2^8 pairs at m = 2 and 300 random pairs at each of m = 3–5,
+not every m = 3 pair. A later saved reference control checks all 256 m = 2 pairs, 2,048 random m = 3 pairs and 512 random pairs each
+at m = 4 and 5. Earlier public check wording is corrected in Appendix B.
 
 ```mermaid
 flowchart TD
@@ -107,24 +114,27 @@ and the layer-3 MLP looks up the XOR-AND cell. The shaded layer-3 MLP is the par
 
 ## 4. What training finds
 
-Every cell solved 10/10, and the best snapshot equalled the final one in every cell (Table 2).
+Every cell reached held-out whole-output exact match 1.0 in 10/10 seeds, and the best snapshot equalled the final one in every
+cell (Table 2).
 
 *Table 2. Results per cell (10 seeds each). t(.5) and t(.9) are the first steps at which test exact match reached .5 and .9.*
 
 | Cell | Solved | t(.5) | t(.9) | Best step | m = 2 | m = 4, 5 |
 |---|---|---|---|---|---|---|
 | PART T | 10/10, test 1.0 at step 500 | | | | .00–.40 | 0 |
-| TRAIN T | 10/10 | 2.5–5.5k | 3–7k | 4.5–7.5k | 0 | 0 |
+| TRAIN T | 10/10 | 2.5–5.5k | 3–7k | 4.5–7.5k | 0–.05 | 0 |
 | TRAIN A | 10/10 (train .99 at 3.5–9k) | 2.5–8k | 2.5–8.5k | 5–11k | .07–.27 | 0 |
 
 PART solved in 500 steps and forms one circuit type in 10/10 seeds: HAND's layer-2 fetch heads with a new layer-3 lookup. Diagnostics found only L2H0, L2H1 and
-MLP3 used in 10/10 seeds, with attention divergence (JS) 0 to HAND. TRAIN T [groks](../GLOSSARY.md#counting-results) (test accuracy
-rising after training accuracy) at 3–7.5k ([Power et al., 2022](#references)) and computes HAND's variables (the AND and the running
-parity s flip with interchange 1.0 at L4), but it builds a frame in L0–L2 (the position and current-token features that later layers read), fetches the operand bits with 2–7 L3 heads, one layer later
-than HAND, in another code, and computes XOR-AND in MLP2/MLP3 (9/9 diagnosed seeds use 2–7 L3 heads; the operand bits a and b are
-linear only at L4, with R² ≤ .39 at L3 in 8/9). TRAIN A solves 10/10 with no compact HAND counterpart (13 heads + 4 MLPs on seed 0).
+MLP3 used in 10/10 seeds, with attention divergence (JS) 0 to HAND. TRAIN T showed [grokking](../GLOSSARY.md#counting-results), test
+accuracy rising after training accuracy ([Power et al., 2022](#references)): the first evaluation at .9 was 3–7k, and the best step
+was 4.5–7.5k. The older 3–7.5k summary combined those different timing criteria. TRAIN computes HAND's variables (the AND and the
+running parity s flip with interchange 1.0 at L4), but builds a frame in L0–L2 (the position and current-token features later layers
+read), fetches operand bits with 2–7 L3 heads one layer later than HAND, and computes XOR-AND in MLP2/MLP3. The original nine-seed
+diagnostic table found 2–7 L3 heads in 9/9 and operand R² ≤ .39 at L3 in 8/9. This is not exclusively late access: a later census
+reports seed 5's b probe R² .877 at L3. TRAIN A solves 10/10 with no compact HAND counterpart (13 heads + 4 MLPs on seed 0).
 
-There were no failures. Nothing generalises to m = 4, 5 (0 everywhere). PART keeps HAND's frame, yet m = 4 is 0 because the re-learnt
+There were no training-size failures. Nothing generalises to m = 4, 5 (0 everywhere). PART keeps HAND's frame, yet m = 4 is 0 because the re-learnt
 L3 also keys on m = 3 features (the scale of TB/TS); TRAIN learns absolute separator positions (column and group probes). Full
 diagnostics are in Appendix B.
 
@@ -136,9 +146,9 @@ The PART stage was replaced by its mean output per (tok1, MA, MB, TS, TSEMI) key
 the network on 2000 test pairs, 10/10 seeds. The controls of 2026-11-08 used 2,048 fit and 2,000 held-out pairs and the best and final
 snapshot of all 10 seeds (the two snapshots are identical files). Substituted, the table gives 1.0 = native in 20/20. With the stage
 output zeroed accuracy is 0; with the closed form fed shuffled keys it is ≤ .002, with the per-query mean ≤ .016, and with the previous
-bit negated 0. Another seed's table also gives 1.0, so all seeds share one truth table. The closed form was accepted and passes the
-full bar (best and final snapshots, matched zero and shuffle controls; [glossary](../GLOSSARY.md#verifying-a-circuit)). No resample ablation of the complement was reported, so the status is
-partial (supported by substitution; complement not tested).
+bit negated 0. Another seed's table also gives 1.0, so these stages share a truth table. The source accepted the form under its
+substitution/zero/shuffle controls. It does not pass the current atlas verification rule without complement resampling
+([glossary](../GLOSSARY.md#verifying-a-circuit)); the status is partial, supported by substitution with the complement not tested.
 
 For TRAIN there is no shared basis with HAND. The AND and s are linear at L4 (flip 1.0), but the alignment fit on seeds 0 and 1 has
 fit_r2 < 0, the QK/OV comparison has mean_ov ≤ .05 and the edge Jaccard against HAND is .09: TRAIN uses HAND's variables without HAND's
@@ -151,41 +161,29 @@ flowchart TD
     H3 --> X["MLP2 and MLP3: XOR-AND"]
     FR --> X
     X --> Y["running parity s_ij, linear at L4"]
+    classDef trained fill:gold,stroke:darkgoldenrod,color:black
+    class FR,H3,X trained
 ```
 
-*Figure 2. The circuit that training from scratch finds in the trace format (TRAIN T). The operand fetch moves to layer 3 and the
-XOR-AND spreads over MLP2 and MLP3. No closed form exists for it, and its neural macro is unverified.*
+*Figure 2. The circuit type found from scratch in the trace format (TRAIN T). The operand fetch moves to layer 3 and the XOR-AND
+spreads over MLP2 and MLP3; all displayed network components are trained and shaded. No trained matrix-product decoder formula was
+accepted. The entry's partial status covers only the separate PART lookup, whose complement was not tested.*
 
 ### 5.2 Circuit probes
 
-Circuit probes were run on 2026-11-06. In this section **verified** has the circuit-probe meaning, a causal intervention plus an
-accuracy-preserving internal substitution, which is weaker than the atlas acceptance rule; **supported** means causal evidence only.
-Exact is teacher-forced complete-sequence accuracy, and layers are zero-based. The deep probes were run on a matrix-vector variant of
-this task (trace s_i,j = s_i,j−1 ⊕ (M_ij ∧ v_j), matrix size 4, same format and network family); the matrix-product cells of this
-entry were covered by the seed census only.
+The 2026-11-06 matrix-product seed census supports the early two-fetch plus XOR-AND/separator computation in PART (10/10),
+consistent with the partial 24-key readout in Section 5.1. It does not supply a complement test. For trace TRAIN, a Boolean oracle
+table suffices in 6 seeds, a query-dependent one in 3 and richer context in 1; these are ten-seed oracle classifications, not
+verified internal decoders. For answer-only TRAIN, a count-only oracle suffices in 2, a frame- or weight-dependent one in 2 and
+richer context in 6. An oracle key is supplied from the task variables rather than decoded by the trained network.
 
-In the seed census of this entry's cells, T PART uses an early two-fetch plus XOR-AND/separator macro, verified in this sense in 10/10
-seeds (consistent with the 24-key table of Section 5.1). For T TRAIN, a Boolean oracle table suffices in 6 seeds, a query-dependent
-one in 3 and richer context in 1; no neural decoder was verified, so the TRAIN macro is unverified. For A TRAIN, a count-only oracle
-suffices in 2, a frame- or weight-dependent one in 2 and richer context in 6; the internal codes are hypotheses.
-
-The matrix-vector probes (best TRAIN seed 0, replicate seed 8) are in Table B2. Taken together, the TRAIN forms (hard M/v routes, the
-μ[query, prev] head and the MLP3 table, where μ is the training conditional-mean contribution at the replaced boundary) give 100% in
-seeds 0 and 8, also on 2000 fresh instances: a dense decision macro verified in the probe sense, not exact amplitudes or a closed form
-of the early layers. The eight-cell (AND, prev, sep) macro holds in 1/10 TRAIN seeds and the separate-operand macro in 8/10.
-
-It is supported that L0–L2 form a position and current-token frame (dense whole scrub 100 / 99.85–99.90%); the same account fails on
-the pruned circuits (69.2–71.0% seed 0, 88.7–89.8% seed 8), so it is not a complete minimal mechanism. By size, the joint
-mean-ablation local minima at ≥ 99% of native are seed 0 35 heads + 284 neurons and seed 8 33 + 272, against the matrix-vector HAND 6 + 364; on fresh
-instances they give 98.70 / 98.45%, below 99%. Joint substitution on the pruned circuits gives seed 0 54.5% and seed 8 100%.
-
-Size transfer in the matrix-vector variant: count-parity and separator-relative tables restore A PART m = 6, 8 and T PART
-m = 2, 3, 5, 6, 8 from 0 to 1 (repairs). The learned stage keys on absolute separator positions, as Section 4 describes for this entry.
+The detailed size-4 matrix-vector interventions belong to a different experiment. They are retained, with every failed pruning,
+scrubbing and size-transfer test, in Appendix B and cannot verify this entry's matrix-product TRAIN circuit.
 
 ### 5.3 Relation to the hand-built network and to published work
 
-PART computes the same algorithm as HAND (the same truth table as in the matrix-vector trace, with the B fetch in place of the vector
-bit), and its top neurons take HAND's cell-detector form for other cells (Appendix A). TRAIN T computes HAND's variables but moves the
+PART supports the same local truth table as HAND under substitution, with no complement test (partial). Its top neurons take
+HAND's cell-detector form for other cells (Appendix A); this is not evidence of identical weights or a verified whole network. TRAIN T computes HAND's variables but moves the
 fetch to L3 and spreads the AND/XOR over MLP2–MLP3; TRAIN A needs ≥ 13 heads, consistent with a query-dependent partner per output bit.
 Unlike HAND, the trained networks of the matrix-vector probes fetch operands and update in L3, not L2, and add a previous-parity path;
 PART keeps HAND's fetches but uses redundant decision neurons. [Charton (2021)](#references) trained transformers on real-valued matrix
@@ -195,9 +193,11 @@ products; here the field is GF(2) and the trace makes each step a 3-bit lookup. 
 ## 6. Limitations and open questions
 
 Only m = 3 was trained, and 38% of all pairs were seen in training. Probes are linear, diagnostics use 250 pairs, and JS ties on
-uniform heads. Diagnostics are on best snapshots (best = final for every seed); TRAIN T seed 4 and TRAIN A seeds 2–9 were not
-diagnosed. Open questions: the early frame code; the answer-only TRAIN decoders (only 2 A TRAIN best snapshots diagnosed, no finals);
-and the neural macro of matrix-product TRAIN.
+uniform heads. The original Table B1 records nine TRAIN trace best snapshots; its old seed-4-pending label is stale. The task
+directory now contains all ten best trace reports, including seed 4, and a later source-qualified census reports ten best / three
+final trace reports for each of PART and TRAIN. It reports two best / no final answer-only reports; seeds 2–9 remain undiagnosed
+there. These coverage updates do not silently replace the older diagnostic ranges. No complement was reported for the PART form.
+Open questions include the early frame code, answer-only TRAIN decoders and the neural macro of matrix-product TRAIN.
 
 ## 7. Prediction record
 
@@ -217,12 +217,13 @@ pattern of one truth-table cell and votes that cell's answer: (1,0,0) to 1 in 5 
 
 ## Appendix B. Detailed evidence
 
-*Table B1. Diagnostics per cell (250 test pairs, best snapshots).*
+*Table B1. Original diagnostics per cell (250 test pairs, best snapshots). Later coverage is described below; these ranges were not
+recomputed.*
 
 | Cell (diag seeds) | used heads + MLPs | best probe R² (layer); interchange flip | r99 L4 | JS used heads | best / final |
 |---|---|---|---|---|---|
 | PART T (10) | 2 + 1: L2H0, L2H1, MLP3 (10/10) | a, b, prev 1 (L3); and .87–.92, s .92–.96 (L4); flip and 1 (L3), s .81–.92 | 7 (HAND frame) | 0 | 1.0 / 1.0 |
-| TRAIN T (9; s4 pending) | 2–9 + 2–4 | a .85–.99, b .93–.99, and .89–.99, s .93–.99 (L4); flip and, s 1 (L4) | 1–14 | .00–.60 | 1.0 / 1.0 |
+| TRAIN T (9 in this original table) | 2–9 + 2–4 | a .85–.99, b .93–.99, and .89–.99, s .93–.99 (L4); flip and, s 1 (L4) | 1–14 | .00–.60 | 1.0 / 1.0 |
 | TRAIN A (2: s0, s1) | 13–14 + 4 | out .95–.96, cnt .96–.98 (L4); flip out 1, cnt .79 (L4) | 24–28 | — (no HAND) | 1.0 / 1.0 |
 
 Key: s = seed in the first column and the running parity elsewhere; a, b = operand bits; prev = previous parity; and = A_ij ∧ B_jk;
@@ -230,9 +231,38 @@ out, cnt = output bit and count; probes are best-layer R² or accuracy; intercha
 r99 L4 = rank of the layer-4 residual at 99% of the variance; JS = Jensen-Shannon divergence of used heads to the closest HAND head.
 Terms are defined in the [glossary](../GLOSSARY.md#analysis-measures) and [METHODS.md](../METHODS.md).
 
-*Table B2. Circuit probes on the matrix-vector trace, best TRAIN (seed 0, replicate seed 8), and on PART.*
+### Check provenance and diagnostic coverage
 
-| Component | Role | Evidence (verified in the probe sense) |
+The earlier public description claimed every m = 3 HAND pair was checked, alongside all 2^8 m = 2 pairs and 2000 random m = 4, 5
+pairs. The original task record instead gives random 300 checks at m = 3–5; the later saved reference control gives 2,048 random
+m = 3 checks and 512 each at m = 4 and 5. The exhaustive-m = 3 claim was not established by those records. These are HAND/reference
+checks, not trained-net substitution scores.
+
+### Related matrix-vector experiment (not matrix product)
+
+Circuit probes were run on 2026-11-06 on a matrix-vector variant, trace s_i,j = s_i,j−1 ⊕ (M_ij ∧ v_j), at matrix size 4 in the same
+network family. Their historical label “verified” meant a causal intervention plus an accuracy-preserving substitution, weaker than
+the atlas rule; it is described here as substitution-supported, not atlas-verified. “Supported” meant causal evidence only. Exact
+is teacher-forced complete-sequence accuracy, and layers are zero-based. This entry's matrix-product cells had a seed census only.
+
+The matrix-vector probes (best TRAIN seed 0, replicate seed 8) are in Table B2. Taken together, the TRAIN forms (hard M/v routes, the
+μ[query, prev] head and the MLP3 table, where μ is the training conditional-mean contribution at the replaced boundary) give 100%
+in seeds 0 and 8, also on 2000 fresh instances: a dense substitution-supported decision macro, not exact amplitudes or a closed form
+of the early layers. The eight-cell (AND, prev, sep) macro holds in 1/10 TRAIN seeds and the separate-operand macro in 8/10.
+
+It is supported that L0–L2 form a position and current-token frame (dense whole scrub 100 / 99.85–99.90%); the same account fails on
+the pruned circuits (69.2–71.0% seed 0, 88.7–89.8% seed 8), so it is not a complete minimal mechanism. By size, the joint
+mean-ablation local minima at ≥ 99% of native are seed 0 35 heads + 284 neurons and seed 8 33 + 272, against the matrix-vector HAND
+6 + 364; on fresh instances they give 98.70 / 98.45%, below 99%. Joint substitution on the pruned circuits gives seed 0 54.5% and
+seed 8 100%.
+
+Size transfer in the matrix-vector variant: count-parity and separator-relative tables restore A PART m = 6, 8 and T PART
+m = 2, 3, 5, 6, 8 from 0 to 1 (repairs). The learned stage keys on absolute separator positions, as Section 4 describes for the
+matrix-product task. This separate matrix-vector evidence does not verify matrix-product TRAIN.
+
+*Table B2. Circuit probes on the separate matrix-vector trace, best TRAIN (seed 0, replicate seed 8), and on PART.*
+
+| Component | Role | Evidence (substitution-supported, not atlas-verified) |
 |---|---|---|
 | L3H6 / L3H2 | matrix / vector bit transport | donor bit patches flip 64/64 each; hard positional routes separately and jointly 1.0, drop 0 |
 | L3H4 | previous-parity message, conditioned on the query | previous-token donor flips 64/64, M/v donors 0/64; zeroed .012; μ[query, prev] substitution 1.0 |

@@ -1,23 +1,21 @@
 # Binary multiplication
 
-This entry studies how small transformers multiply two 6-bit binary numbers, either writing the product directly (answer only) or
-first writing the running sums of long multiplication (a scratchpad). With the scratchpad, a stage trained on frozen hand-built parts
-learned the step of a binary adder, a lookup on x + b_j·a + carry, in 10/10 seeds, and networks trained from scratch reached exact
-match 1.0 on held-out pairs in 8/10 seeds on the retry. Answer only never trained: the stage on frozen parts could not fit the
-hand-built [parity staircase](../GLOSSARY.md#hand-built-machinery), a layer of paired ReLU steps that turns the partial-product sum into one product bit by stepping up and
-down at alternate thresholds (best held-out exact match .10–.19 in the second run), although its input was linearly present, and
-networks trained from scratch memorised the training pairs (train 1.0, test ≤ .80). The task is partly solved (scratchpad yes, answer
-only no). The closed forms reproduce the networks, but an audit on 2026-11-07 found that none passes the full bar, the audit's
-acceptance rule (Section 5.1), so they are sufficient readouts and not verified mechanisms.
+Four-layer transformers were tested on all 4096 pairs of 6-bit operands, either writing the product directly or writing the running
+sums of long multiplication first, a [scratchpad](../GLOSSARY.md#task-formats). With hand-built retrieval frozen, 10/10 scratchpad seeds
+reached held-out whole-output exact match 1.0; the from-scratch retry reached recorded 1.0 in 8/10 seeds and ≥ .99 in 9/10. No
+answer-only seed reached ≥ .99 in these runs. In one examined scratchpad network, a table of average internal outputs for each
+position and column sum preserved exact match 1.000, while swapping individual outputs with those same labels kept only .584
+(Section 5.3). The task is partly solved, and the formulas are sufficient readouts only: the 2026-11-07 audit accepted none as a
+verified mechanism.
 
 | Fact | Value |
 |---|---|
 | Task | Multiply two 6-bit numbers given as `a*b=`, answer only or with a scratchpad of running sums S_0 .. S_5 |
 | Input → output example | Answer only: a = 5, b = 3 → `000000001111` (15) |
 | Model | GPT-NeoX-shaped, 4 layers × 12 heads, d_model 384, MLP 256 ReLU; the partly trained networks train only the layer-3 MLP |
-| Rungs and seeds | HAND A, B; PART and TRAIN 10 seeds per format; failed cells retried once (both runs kept) |
+| Rungs and seeds | [HAND / PART / TRAIN](../GLOSSARY.md#the-three-rungs): formula-set weights / one trained stage / all weights trained; 10 seeds per trained format, failed cells retried once (both runs kept) |
 | Closed form status | Sufficient readout only (substitution 1.00 in 10/10 frozen-part nets; per the 2026-11-07 audit no closed form passes the full bar) |
-| Status | Partly solved (scratchpad yes, answer only no); last run 2026-11-05; audit 2026-11-07 |
+| Status | Partly solved (scratchpad PART 10/10 at held-out whole-output exact match 1.0; TRAIN retry 8/10 at recorded 1.0, 9/10 at ≥ .99; no answer-only success at ≥ .99); last run 2026-11-05; audit 2026-11-07 |
 | Weights | [Hugging Face: binary-multiplication](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/binary-multiplication) (41 networks) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
@@ -26,7 +24,8 @@ acceptance rule (Section 5.1), so they are sufficient readouts and not verified 
 The prompt is `a*b=` and the target is a·b, where a and b are 6-bit numbers. All 4096 pairs were used, with train fraction .6: 2457
 pairs for training and 1639 for testing per seed. Two output formats were studied (Table 1); the
 [scratchpad](../GLOSSARY.md#task-formats) format writes the intermediate results of long multiplication before the answer. A cell
-counts an output as correct only on exact match of all output tokens. Length generalisation was tested at 7 and 12 bits.
+counts an output as correct only on exact match of all output tokens, scored teacher-forced: each token is given the correct previous
+tokens. For example, 5 × 3 is 15, written `000000001111` in the answer-only format. Length generalisation was tested at 7 and 12 bits.
 
 *Table 1. Output formats.*
 
@@ -91,7 +90,8 @@ two layers compute (Figure 1).
 Format A (exact for n ≤ 6, 14 heads). Twelve [index heads](../GLOSSARY.md#hand-built-machinery), attention heads that each copy the token at one computed position, fetch
 the operand bits a_i and b_j. The L2 MLP has 36 AND neurons, relu(a_i + b_j − 1), each of which outputs 1 only when both bits are 1,
 and their outputs are summed into the low partial-product sum LK_k = Σ_{i+j≤k} a_i b_j 2^{i+j}. The L3 MLP writes the
-product bit p_k = parity(⌊LK_k / 2^k⌋) as a gated staircase of 132 neuron pairs (the parity staircase),
+product bit p_k = parity(⌊LK_k / 2^k⌋) as a gated [parity staircase](../GLOSSARY.md#hand-built-machinery) of 132 neuron pairs, whose
+output steps up and down at alternate thresholds,
 relu(LK_k − m2^k + 1 − M(1−E_k)) − relu(LK_k − m2^k − M(1−E_k)) with M = 2^13, where m numbers the thresholds and E_k gates the pair to output bit k. This handles
 all partial products at once in one threshold layer. The scaled variant writes E_k as 1024 E_k plus a constant dimension 1024, so the
 same staircase has O(1) weights (gate 8, constant coefficient ≤ 12); it is still exact.
@@ -129,7 +129,7 @@ MLPs are the parts that PART replaces with a trained stage.*
 Table 3 summarises every cell. Exact match is on the held-out pairs; "steps to .9" is the first evaluation at which test exact match
 reached .9.
 
-*Table 3. Results per cell (ranges over seeds; run 2 is the retry).*
+*Table 3. Results per cell (10 seeds per trained cell; ranges over seeds; run 2 is the retry).*
 
 | Cell | Test exact match | Steps to .9 | Length 7 | Other |
 |---|---|---|---|---|
@@ -141,16 +141,18 @@ reached .9.
 | B TRAIN run 1 | ≤ .034 | | | |
 | B TRAIN run 2 | 8/10 = 1.0; 9/10 ≥ .99 (seed 1 .9994); seed 2 .755 | 7.5–16.5k | ≤ .002 | 7–30 heads + 569–763 neurons (HAND 7 + 88) |
 
-Key: best = highest held-out exact match during training; final = at the end of training; f(add) = MLP3 replaced by its mean output
-given the adder key (Section 4.1). The diagnostics table (Table B1) gives slightly different ranges for some of these quantities (A PART
-run 2 best .10–.20, A TRAIN run 2 best .66–.79, B TRAIN run 2 7–29 used heads); the record does not say why, and both are kept.
+Key: best = highest held-out exact match in the training log; final = at the end of training; f(add) = MLP3 replaced by its mean
+output given the adder key, a sufficient readout only (Section 4.1). The diagnostics batch (Table B1) gives slightly different ranges
+(A PART run 2 best .10–.20 versus the training log's .10–.19, A TRAIN run 2 best .66–.79, B TRAIN run 2 7–29 used heads). These are
+separate recorded evaluations; their discrepancies are not resolved here.
 
 ### 4.1 Scratchpad (format B)
 
-The trained PART stage is the binary adder's step, a lookup on x + b_j a_{k−j} + carry (substitution 1.00, 10/10). It reuses HAND's
-five fetch heads (the heads that copy b_j, x, x', a and a', Section 3) and carries to 7 bits. Trained from scratch, run 1 never
-started (≤ .034), and run 2 reached exact match 1.0 in 8/10 seeds and ≥ .99 in 9/10 (seed 1 .9994). In run 2 the L3 MLP has a closed
-form in 8/10 seeds, the adder key itself in 5/10. Each circuit-type label names the key on which MLP3 is replaced by its mean output:
+The trained PART stage has a sufficient adder-step readout, a lookup on x + b_j a_{k−j} + carry (substitution 1.00, 10/10), not a
+verified native formula. It reuses HAND's five fetch heads (the heads that copy b_j, x, x', a and a', Section 3) and carries to 7 bits.
+Trained from scratch, run 1 never started (≤ .034), and run 2 reached recorded exact match 1.0 in 8/10 seeds and ≥ .99 in 9/10
+(seed 1 .9994 in the published training summary; .99939 in the audit). In run 2 the L3 MLP has a sufficient mean-table readout in
+8/10 seeds, using the adder key itself in 5/10. Each circuit-type label names the key on which MLP3 is replaced by its mean output:
 f(add) uses the adder key x + b_j a + c, f(6-input table) the six inputs (x, b_j, a, x', a', s') jointly, and f(x, y, c) the addend
 bit x, the second addend bit y = b_j a and the carry c as separate values. By circuit type the seeds split into f(add) 5, f(6-input
 table) 2, f(x, y, c) 1 and none 2. HAND's fetch roles were found for 1–2 of the 5 heads in 7/10 seeds. The failed seed 2 fitted late
@@ -159,7 +161,7 @@ S_5 (token accuracy .88–.94).
 
 ### 4.2 Answer only (format A)
 
-Answer only never trained. PART failed both with HAND's input scale (run 1, .02–.04) and after the input was rescaled to O(1) weights
+No answer-only seed reached the ≥ .99 criterion in these runs. PART failed both with HAND's input scale (run 1, .02–.04) and after the input was rescaled to O(1) weights
 (run 2, best .10–.19): it cannot fit HAND's parity staircase on the low partial-product sum LK_k, although LK_k is linearly present
 (probe R² 1.0 for k ≥ 4; Table B1 gives the mean over all bits, .91–.92). In run 2 MLP3 was used, keyed on the low partial-product sum
 (substitution .17–.51, above the network), and per-bit accuracy was worst on the middle bits p_7..p_4 (.52–.74), with p_11 at .99. The
@@ -182,7 +184,8 @@ in 5/10 seeds, and a 6-input table or (x, y, c) key in 3 more. Format A has no c
 These are [sufficient readouts](../GLOSSARY.md#verifying-a-circuit), not verified mechanisms. The audit of 2026-11-07 found that none
 of the closed forms passes the [full bar](../GLOSSARY.md#verifying-a-circuit) (best and final snapshots; native/zero/shuffle exact controls, that is, exact match of the
 unmodified network next to the same test with the part set to zero and with shuffled values in its place; fewer fitted reals than the
-replaced component); they are keyed on task-derived labels and stay sufficient-readout results.
+replaced component); they are keyed on task-derived labels and stay sufficient-readout results. No complement-resampling result
+establishes these formulas as whole native circuits.
 
 ### 5.2 Wiring
 
@@ -198,8 +201,9 @@ the task, LK_k is partly linear (HAND .48-.57 / DAS .42-.60).
 Circuit probes were run on 2026-11-06 (Table 4). The probes used two labels of their own: a component passed when a causal
 intervention and an accepted substitution held on disjoint non-training pairs (or the full grid), and was supported when only causal
 evidence was found. The first label lacks a resample ablation of the complement, so it does not meet the atlas acceptance rule and
-is not called verified here. Exact is teacher-forced whole-output
-accuracy, ablation numbers are accuracy retained, and layers are zero-based.
+is not called verified here. The B TRAIN test used retry seed 0's best snapshot, 819 non-training fit pairs and 820 disjoint
+non-training evaluation pairs. Exact is teacher-forced whole-output accuracy, ablation numbers are accuracy retained, and layers are
+zero-based.
 
 *Table 4. Components probed in one examined seed per cell.*
 
@@ -211,8 +215,8 @@ accuracy, ablation numbers are accuracy retained, and layers are zero-based.
 In B TRAIN, with x and a the current addend bits, x′, a′ and s′ the preceding-bit inputs and output, and b_j the multiplier bit, the
 carry is c = [x′ + b_j a′ − s′ ≥ 1] and the key is u = x + b_j a + c; MLP3 is replaced by μ[q, u], the mean MLP3 output vector over
 the fit pairs that share the output-query index q (which output token the position writes) and the key u, where the separator has its
-own key (Figure 2). This is the adder step at the readout boundary, as in the f(add) cells of Section 5.1, not HAND's five clean fetch
-heads or 32 truth-table neurons. The head L3H6 (layer 3, head 6) is supported as a soft previous-sum and context retrieval: mean
+own key (Figure 2). This is a sufficient readout only at the adder-step boundary, as in the f(add) cells of Section 5.1. It does not
+establish HAND's five clean fetch heads or 32 truth-table neurons in this trained network. The head L3H6 (layer 3, head 6) is supported as a soft previous-sum and context retrieval: mean
 ablation leaves .031, and a hard previous-sum fetch keeps only .719. MLP3 neurons 182 and 67 (n182, n67) affect the step output but
 are not pure sum units.
 
@@ -224,8 +228,8 @@ alternating thresholds; one hypothesis is misplaced or cancelling hinges.
 
 ```mermaid
 flowchart TD
-    T["scratchpad tokens so far"] --> H6["L3H6: soft previous-sum and context retrieval"]
-    T --> F["inputs of the key: x, a, b_j and x', a', s'"]
+    T["prompt and scratchpad tokens so far"] --> H6["L3H6: soft previous-sum and context retrieval"]
+    T --> F["task-derived key inputs: x, a, b_j and x', a', s'"]
     F --> C["carry c = [x' + b_j a' - s' >= 1]"]
     F --> U["key u = x + b_j a + c"]
     C --> U
@@ -233,19 +237,26 @@ flowchart TD
     U --> M
     M --> S["sum bit s = u mod 2"]
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
-    class M trained
+    class H6,M trained
 ```
 
 *Figure 2. The readout that training finds in format B (TRAIN run 2, seed 0). MLP3 output is reproduced by a mean table on the query q
 and the adder key u; the wiring differs from the hand-built network (Section 5.2), and the table is a sufficient readout, not a
-verified mechanism (Sections 5.1 and 6).*
+verified mechanism (Sections 5.1 and 6). L3H6 and MLP3 are marked as trained; the key calculation is an external test of the readout,
+not a verified internal carry circuit.*
+
+![One best snapshot: mean-table exact match 1.000 versus .5841 for individual same-key donors, on 820 evaluation pairs.](../figures/multiplication-mean-vs-donor.svg)
+
+*Figure 3. One examined TRAIN retry seed (seed 0, best snapshot), with 819 fit and 820 disjoint non-training evaluation pairs. A mean
+table gives 1.000 whole-output exact match; individual same-key donors give .5841 (token accuracy .99336). These more precise source
+scores correspond to the published .584 / .993 display in Section 6. This is sufficient readout only, not a verified native mechanism.*
 
 ### 5.4 Relation to the hand-built network and to published work
 
-PART B and 8/10 TRAIN B run 2 networks compute HAND's step (the 5 f(add) seeds and the 3 whose MLP3 is keyed on the 6-input table or
-on (x, y, c); Section 4.1), an adder column as in
-[binary-addition](binary-addition.md); the AND b_j·a is spread over neurons. Format A has no learnable one-layer analogue of HAND's
-carry-save staircase here; in these runs long multiplication was learned only with the intermediate sums written out. Failures of
+PART B and 8/10 TRAIN B run 2 networks admit sufficient readouts for HAND's step (the 5 f(add) seeds and the 3 whose MLP3 is keyed on
+the 6-input table or on (x, y, c); Section 4.1), not verified mechanisms. The step is an adder column as in
+[binary-addition](binary-addition.md); the AND b_j·a is spread over neurons. No trained answer-only stage recovered HAND's parity
+staircase in these runs; long multiplication reached the criterion only with the intermediate sums written out. Failures of
 transformers on multi-digit multiplication have been reported by [Dziri et al. (2023)](#references); [Bai et al. (2025)](#references)
 reverse-engineered a model that multiplies through implicit chain of thought and analysed why answer-only training fails; [Lee et al.
 (2023)](#references) studied output order and scratchpads in arithmetic.
@@ -254,18 +265,20 @@ reverse-engineered a model that multiplies through implicit chain of thought and
 
 Only n = 6 was trained (length tested at 7 and 12; PART B at 2n is beyond HAND B's exact range). Train = 60% of all pairs, so TRAIN A
 can memorise. Probes are linear. Same-(q, u) individual donors keep only .584 exact (token .993) although the mean table is exact,
-so MLP3 = f(q, u) is a sufficient readout, not an activation-level causal abstraction. A seed census is pending; one seed per cell
+so MLP3 = f(q, u) is a sufficient readout only, not an activation-level causal abstraction. A seed census is pending; one seed per cell
 was examined in the circuit probes.
 
-Open questions: the widened-range (10,000-pair) multiplication ten-seed final is not finished; the failed B retry seed 2 keeps X / X2
-(DAS .99 / 1 at L4), so a missing running sum does not explain its failure; shuffle-control and final-snapshot substitutions are not
-run; the within-key amplitude and context dependence of MLP3; and the native threshold placement of the failed multiplier.
+No completed widened-range (10,000-pair) multiplication ten-seed final is recorded here. The audit found missing paired best/final
+probe packs and matched exact controls; it did not establish that no weights exist. The failed B retry seed 2 keeps X / X2
+(DAS .99 / 1 at L4), so a missing running sum does not explain its failure. Open questions include the uncompleted shuffle-control
+and final-snapshot substitutions, within-key amplitude and context dependence of MLP3, and native threshold placement in the failed
+multiplier.
 
 ## 7. Prediction record
 
 The prediction was recorded in the hand-built design notes before the runs: HAND B's L3 = f(x + y + c), "the scratchpad step IS the
-adder's sum-of-bits function", with the open question "does B learn where A fails?". It held: PART B is f(add) in 10/10, and A fails
-in every setup. No grokking or length prediction was recorded.
+adder's sum-of-bits function", with the open question "does B learn where A fails?". It held at sufficient-readout scope: PART B
+admits f(add) in 10/10, and no A seed met the criterion in the reported setups. No grokking or length prediction was recorded.
 
 ## Appendix A. Weights excerpt and reading
 
@@ -275,12 +288,14 @@ stage W_in norm lies on these 6 dimensions; for example seed 1 neuron n254 is (�
 neuron n81 is (1, .20, −.83, .73, .70, −.71 | −.27). In both, x' and a' enter with equal weight and s' with the opposite sign, which
 is HAND's carry key x' + a' − s' next to x and a, that is, the adder's (x, y, carry) inputs.
 
-## Appendix B. Diagnostics per cell
+## Appendix B. Detailed evidence
+
+### Diagnostics per cell
 
 Diagnostics use the best-layer ridge R²; AB = bit products, LK = low sums (means over bits); residual PR at L4; attention JS of used
 heads; W_in r99 = rank at 99% energy. Terms are defined in the [glossary](../GLOSSARY.md#analysis-measures).
 
-*Table B1. Diagnostics per cell.*
+*Table B1. Diagnostics per cell: 10 reports per cell except PART B (9) and TRAIN B run 1 (2).*
 
 | cell | used heads+MLPs | probes | PR L4 | JS | W_in r99 | test best | patch (nets) | inter/DAS | edges (trusted) |
 |---|---|---|---|---|---|---|---|---|---|

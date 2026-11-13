@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 485" role="img" aria-labelledby="title desc">
+<title id="title">Polynomial integration screening pack stops</title>
+<desc id="desc">Recorded stopping steps: answer-only PART26000, scratchpad PART5500, answer-only TRAIN14500, scratchpad TRAIN27000. Three seeds per screening cell. These are stopping points, not seed means or the final ten-seed results. Only scratchpad PART scores 1.0 on withheld fractions. No full gcd/division mechanism is verified.</desc>
+<metadata>CC BY 4.0</metadata>
+<g font-family="system-ui, sans-serif">
+<rect x="0" y="0" width="900" height="485" fill="white"/>
+<text x="34" y="38" font-size="23" fill="#172b3a" text-anchor="start">Polynomial integration: where the scratchpad helps</text>
+<text x="34" y="69" font-size="15" fill="#172b3a" text-anchor="start">Three-seed screening packs: stopping steps after all seeds reached exact saved-test output</text>
+<text x="34" y="134" font-size="15" fill="#172b3a" text-anchor="start">Frozen scaffold, answer only</text>
+<rect x="335" y="114" width="424.6666666666667" height="30" fill="#697681"/>
+<text x="769.6666666666667" y="135" font-size="15" fill="#172b3a" text-anchor="start">26000</text>
+<text x="34" y="197" font-size="15" fill="#172b3a" text-anchor="start">Frozen scaffold, scratchpad</text>
+<rect x="335" y="177" width="89.83333333333333" height="30" fill="#176b9b"/>
+<text x="434.8333333333333" y="198" font-size="15" fill="#172b3a" text-anchor="start">5500</text>
+<text x="34" y="260" font-size="15" fill="#172b3a" text-anchor="start">From scratch, answer only</text>
+<rect x="335" y="240" width="236.83333333333334" height="30" fill="#697681"/>
+<text x="581.8333333333334" y="261" font-size="15" fill="#172b3a" text-anchor="start">14500</text>
+<text x="34" y="323" font-size="15" fill="#172b3a" text-anchor="start">From scratch, scratchpad</text>
+<rect x="335" y="303" width="441.0" height="30" fill="#176b9b"/>
+<text x="786.0" y="324" font-size="15" fill="#172b3a" text-anchor="start">27000</text>
+<text x="34" y="408" font-size="15" fill="#172b3a" text-anchor="start">These are recorded pack stops, not averages or each seed&#x27;s first-exact step.</text>
+<text x="34" y="435" font-size="15" fill="#172b3a" text-anchor="start">Only scratchpad PART was exact on withheld fractions (1.0); TRAIN was not.</text>
+<text x="34" y="462" font-size="14" fill="#172b3a" text-anchor="start">The learned integration circuit remains partial: no gcd/division closed form or complement certificate.</text>
+</g>
+</svg>

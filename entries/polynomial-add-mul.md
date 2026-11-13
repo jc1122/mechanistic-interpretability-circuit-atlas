@@ -1,32 +1,33 @@
-# Integer polynomial addition and multiplication (convolution)
+# Integer polynomial addition and multiplication
 
-This entry studies how small transformers add and multiply two degree-3 integer polynomials given one token per signed coefficient,
-either writing the result directly (answer only) or first writing a trace of partial results. Addition was learned in all 40/40
-final networks, both by a single MLP trained on frozen hand-built parts and by networks trained from scratch, in both formats; the
-partly trained stage computes the hand-built sum up to one free logit scale per row group. Multiplication was solved in no setup: the
-signed product was never built to unit resolution, and even with the hand-built product gates frozen, 3/3 seeds scored
-.998–.999 exact match. The task is partly solved (addition 40/40; multiplication 0/3 in the screenings, with no final run). The closed
-form is partial: the addition closed form of the partly trained networks keeps exact 1.0 in 40/40 networks when substituted, with the
-complement not tested; from scratch, the trace closed form was rejected and the answer-only decoder is lossy.
+Adding polynomials combines coefficients of the same power; multiplying them requires products of coefficients followed by collecting
+terms of the same power. Small transformers were trained on degree-3 polynomials, writing either the result directly or a trace of
+intermediate calculations. Addition reached held-out whole-output exact match 1.0 in all 40/40 final-run seeds across the two formats
+and both training settings (fixed hand-built parts or from scratch), while no learned multiplication cell reached 1.0. A separate
+multiplication arm froze hand-built product gates and learned only the output sum, reaching .998–.999 in 3/3 screening seeds. The task is partly solved, and the frozen-scaffold addition
+formula is partial: substitution preserved in-range answers, but the rest of the circuit was not resampled and the formula did not
+reproduce the networks' out-of-range errors.
 
 | Fact | Value |
 |---|---|
 | Task | Add or multiply two degree-3 integer polynomials, one token per signed coefficient |
 | Input → output example | Addition, answer only: `BOS 1 2 0 0 + 3 0 1 0 =` → `4 2 1 0` (coefficients a_0 first: (1, 2, 0, 0) + (3, 0, 1, 0) = (4, 2, 1, 0)) |
 | Model | GPT-NeoX-shaped, NoPE, no LayerNorm, d_model 96, 3 layers (answer only) or 4 (trace), MLP 128 ReLU; the partly trained networks train only one stage MLP |
-| Rungs and seeds | HAND for each operation and format (4 networks); addition PART and TRAIN, answer only and trace, 10 seeds each (final run); multiplication 3-seed screenings and arms only |
-| Closed form status | Partial (addition PART: (S, ONE) = κ·HAND, exact 1.0 in 40/40 nets on substitution; complement not tested; TRAIN trace rejected, TRAIN answer-only decoder lossy) |
-| Status | Partly solved (addition 40/40; multiplication 0/3 in the screenings, no final run); last run 2026-11-08 |
+| Rungs and seeds | [HAND / PART / TRAIN](../GLOSSARY.md#the-three-rungs): formula-set weights / one trained stage / all weights trained; HAND for each operation and format (4 networks); addition PART and TRAIN, answer only and trace, 10 seeds each (final run); multiplication 3-seed screenings and arms only |
+| Closed form status | Partial (addition PART scale-ratio form: exact 1.0 on substitution in 40/40 best/final snapshots, seeds 0–9 per format; complement not tested; TRAIN trace rejected, TRAIN answer-only decoder lossy) |
+| Status | Partly solved (addition 40/40 seeds at held-out whole-output exact match 1.0; multiplication split-sum 3/3 at .998–.999, none at 1.0; no multiplication final run); last run 2026-11-08 |
 | Weights | [Hugging Face: polynomial-add-mul](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/polynomial-add-mul) (4 HAND + 55 nets) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
 ## 1. Task and data
 
 The prompt is `BOS a_0..a_3 (+|*) b_0..b_3 =` followed by the answer, with one token per signed integer (vocabulary 3156, |v| ≤ 1575).
-Addition writes c_k = a_k + b_k; multiplication writes c_k = Σ_j a_{k−j} b_j, the convolution of the two coefficient lists. Training
-coefficients range over −9..9 without ±8, which are held out. Fresh pairs were drawn for every batch, and the train/test split is by
+Addition writes c_k = a_k + b_k; multiplication writes c_k = Σ_j a_{k−j} b_j, the convolution: sum all products whose powers add to k.
+For example, `(1, 2, 0, 0) + (3, 0, 1, 0)` gives `(4, 2, 1, 0)`, with the constant coefficient first. Training coefficients range over
+−9..9 without ±8, which are held out. Fresh pairs were drawn for every batch, and the train/test split is by
 input hash mod 97, with 1000 test pairs per seed. An output counts as correct only on exact match of the whole teacher-forced answer
-([glossary](../GLOSSARY.md#task-formats)). Extension sets of 256 sequences test degrees 0–2 and 4–6 and the held-out coefficients ±8.
+([glossary](../GLOSSARY.md#task-formats)): each token is scored given the correct previous tokens. Extension sets of 256 sequences
+test degrees 0–2 and 4–6 and the held-out coefficients ±8.
 
 Two output formats were studied (Table 1). The trace is a [scratchpad](../GLOSSARY.md#task-formats), in which the network writes
 intermediate results before the answer.
@@ -53,7 +54,9 @@ All networks are GPT-NeoX-shaped with no positional encoding (NoPE), no LayerNor
 
 PART freezes the whole HAND network except the stage MLP (layer 2 in format `A`, layer 3 in format `T`), which is re-initialised and
 trained: W_in [128, d], b_in, W_out [d, 128] and b_out. The split-sum arm trains W_out and b_out only, so the hand-built product
-gates stay frozen. The stage reads the residual blocks in Table 2. TRAIN trains all weights from random initialisation.
+gates stay frozen. The stage reads blocks of the residual stream, the running vector at each position
+([glossary](../GLOSSARY.md#standard-machine-learning-terms)), listed in Table 2. S is the score numerator and ONE its scale; the output
+represents the answer as the ratio S/ONE. TRAIN trains all weights from random initialisation.
 
 *Table 2. Residual blocks read by the stage MLP (index ranges, as recorded).*
 
@@ -95,7 +98,9 @@ with signed bit gates a·bit = relu(a + 32 bit − 32) − relu(−a + 32 bit �
 logit(v) = 2vS − v²ONE, whose maximum is at the integer closest to v* = S/ONE.
 
 The sizes in heads and neurons are 4+48 for addition `A`, 4+111 for addition `T`, 16+170 for multiplication `A` and 5+307 for
-multiplication `T`. The networks are exact on 17,676 stratified sequences (degree 0–6, |coefficient| ≤ 15), with minimum margin .9985.
+multiplication `T`. The networks are exact on 17,676 stratified sequences (degree 0–6, |coefficient| ≤ 15), with minimum margin .9985. This is 4,419
+full-polynomial checks per cell, alongside exhaustive scalar primitives (31^2 signed factor pairs), not exhaustive enumeration of
+the 19^8 degree-3 input combinations.
 
 ```mermaid
 flowchart TD
@@ -147,10 +152,11 @@ fixed-fetch sum (10/10). PART `T` is input-dominant (10/10): its sum rows follow
 
 ### 4.2 Multiplication
 
-Multiplication failed in every setup (Table 4). PART reached .004/.003 in format `T` (best/final) although the product was partly
-decodable (product R² .76–.80). TRAIN `T` reached .05–.17, and its 60k arm .993/.322/.996 in its three seeds. Arms with double width,
-a running sum, or split gates solved 0/3. With the hand-built gates frozen and only W_out, b_out trained (split-sum, PART `A`), 3/3
-seeds scored .998–.999.
+No learned multiplication cell reached whole-output exact match 1.0 (Table 4). PART reached .004/.003 in format `T` (best/final)
+although the product was partly decodable (product R² .76–.80). TRAIN `T` reached .05–.17, and its 60k arm .993/.322/.996 in its
+three seeds: 2/3 at ≥ .99, still none at 1.0. Arms with double width, a running sum, or trained split gates solved 0/3. When the
+hand-built product gates stayed frozen and only W_out, b_out were trained (split-sum, PART `A`), 3/3 seeds scored .998–.999. This
+separates the difficulty of building signed products from learning their output sum.
 
 *Table 4. Multiplication screenings, 3 seeds per cell (best/final exact match).*
 
@@ -175,8 +181,9 @@ which the analysis reads as absolute routing by position. On the held-out coeffi
 
 For PART addition, the stage output is (S, ONE) = κ_g·(S, ONE)_HAND, with S_HAND = a + b (in format `T`, a, b or a + b by row) and one
 scale κ per row group (`A` 2.2–4.9; `T` four groups 1.9–7.1); the other dimensions the stage writes are constant within a group.
-Substituted for the stage MLP on 1000 held-out pairs, the closed form keeps exact 1.0 in 40/40 nets (seeds 0–9, best and final);
-the bare HAND stage also scores 40/40. The networks' |S/ONE − HAND S/ONE| is .03–.07 (`A`) and .26–.32 (`T`), under .5, so the
+Substituted for the stage MLP on 1000 held-out pairs, the closed form keeps exact 1.0 on 40/40 best/final snapshots (seeds 0–9 in
+each of the two PART formats, 20 snapshots per format, not 40 independent seeds); the bare HAND stage also scores 40/40. This is a
+partial form, supported by substitution without a complement-resampling test. The networks' |S/ONE − HAND S/ONE| is .03–.07 (`A`) and .26–.32 (`T`), under .5, so the
 read-out picks the same integer. A per-dimension linear fit in (a, b, 1) fails (.001–.057, 0/40), because it misses the ratio S/ONE that the read-out uses.
 The closed form is supported by substitution; no [resample ablation of the complement](../GLOSSARY.md#verifying-a-circuit) was run,
 so its status is partial.
@@ -187,24 +194,37 @@ For TRAIN, a fitted MLP2 decoder in format `A` scores .993–1.0 against the net
 ```mermaid
 flowchart TD
     P["prompt operands a_k, b_k"] -.->|"patching 0"| M
-    W["written trace tokens a_k, b_k"] --> M["TRAIN T network: sum row read from the trace"]
+    W["written trace tokens a_k, b_k"] --> M["TRAIN T: trained attention and MLPs read the trace for the sum row"]
     M --> C["written c_k"]
+    classDef trained fill:gold,stroke:darkgoldenrod,color:black
+    class M trained
 ```
 
 *Figure 2. The circuit type training from scratch finds in format `T` (10/10 seeds): the sum row reads the network's own written
-a_k and b_k (patching .79–.87) and not the prompt operands (0). Its closed form was rejected (.05–.59 against 1.0).*
+a_k and b_k (patching .79–.87) and not the prompt operands (0). The trained retrieval/readout is shaded. This TRAIN closed form was
+rejected (.05–.59 against 1.0); the entry's partial status applies to the separate PART sum, whose complement was not tested.*
 
 ### 5.2 Relation to the hand-built network and to published work
 
-PART addition computes HAND's sum with a free logit scale. TRAIN uses degree-specific routing, and in format `T` it routes through its
-own trace (Figure 2). The multiplication failure is consistent with published reports: exact learned multiplication needs built-in structure
-([Madsen & Johansen, 2020](#references)), MLPs fit products only approximately ([Trask et al., 2018](#references)), and transformers
-trained on multiplication fail on long-range partial-product dependencies ([Bai et al., 2025](#references)).
+PART addition admits HAND's sum with a free logit scale as a partial, substitution-supported form; its complement was not tested.
+TRAIN uses degree-specific routing, and in format `T` it routes through its own trace (Figure 2). The separate split-sum arm (Figure 3)
+shows that accumulation can be learned once the products are supplied. [Madsen and Johansen (2020)](#references) studied structured
+learned arithmetic units, [Trask et al. (2018)](#references) studied approximate product fitting and extrapolation, and
+[Bai et al. (2025)](#references) analysed long-range partial-product dependencies in transformers. These comparisons do not establish
+that the failed cells here are impossible to learn.
+
+![Frozen signed-product gates followed by trained output weights: 3/3 seeds at .998–.999 whole-output exact match.](../figures/polynomial-split-sum.svg)
+
+*Figure 3. The separate answer-only split-sum multiplication arm, with product gates frozen and output weights trained. Its 3/3
+screening seeds reached .998–.999 whole-output exact match on 1000 held-out pairs per seed, none 1.0. No verified learned
+multiplication mechanism is claimed; the entry's partial closed form covers addition only, without a complement test.*
 
 ## 6. Limitations and open questions
 
 κ was fitted on 512 disjoint pairs. Outside the training range the κ form scores 1.0 where the networks fail, so it is not a model of
 their errors. No resample ablation of the complement was run. Multiplication had no final run, only 3-seed screenings and arms.
+HAND full-polynomial checks were stratified rather than exhaustive at degree 3. The two extension evaluations in Section 4.3 and
+Appendix B have different recorded ranges and are kept separately.
 
 ## 7. Prediction record
 
@@ -233,6 +253,22 @@ In the best PART `A` networks, 80–100% of the top-20 S writers read a and b wi
 ±(a + b) ramps duplicated with offsets, each also writing ONE, which sets κ. PART `T` has 0% equal-weight rows: a and b enter with
 opposite signs, in phase-gated rows. In the multiplication split-sum arm, seed 0's W_out[S] on HAND gates 0/1/8/9 is .0765, −.0765,
 −1.2187, 1.2186 (ratio 15.93 ≈ 1 : −16), the two's-complement weight of the sign bit.
+
+## Appendix B. Detailed evidence
+
+The addition substitution evaluation used 20 best/final snapshots per format, 512 disjoint fit pairs and 1000 held-out test pairs.
+Its native extension scores differ from the best-snapshot extension sets in Section 4.3; neither range replaces the other.
+
+*Table B1. Native addition PART extension scores on the substitution evaluation batch, not the Section 4.3 extension batch.*
+
+| Format | Held-out coefficients ±8 | Degree 6 |
+|---|---|---|
+| `A` | .996–1.0 | .27–.92 |
+| `T` | .25–.51 | .55–.88 |
+
+Key: ranges span the best/final snapshots of seeds 0–9 per format. Both the bare HAND stage and the scale-ratio replacement scored
+1.0 on these extension tests, repairing native errors rather than reproducing them. The fitted TRAIN decoder and rejected trace
+formula covered seeds 0–2 only.
 
 ## References
 

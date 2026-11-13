@@ -1,22 +1,21 @@
 # Symbol-level algebra: collection, expansion and linear equations
 
-This entry studies how 3-layer transformers do algebra on structured term atoms (side, power, coefficient): collecting like terms,
-expanding a binomial product and solving a linear equation ax+b=cx+d, either writing the answer directly (answer only) or with a
-scratchpad of intermediate atoms. Every scratchpad operation trained to exact in at least one rung: collect with frozen hand-built
-parts and one trained MLP 10/10, expand from scratch 10/10 at 60k steps (best snapshot; 9/10 final), solve from scratch 10/10.
-Answer-only expand and solve never did (from scratch: expand ≤ .126, solve best .997; with frozen parts 0/3 too). The partly trained
-collect stage keeps the hand-built addition, while networks trained from scratch build a different MLP chain with categorical codes.
-The task is partly solved (scratchpad 10/10 in three cells; answer-only expand and solve 0/3). The closed form is partial: the
-collect closed form substitutes exactly in 13/13 seeds (prediction agreement 1.0), with the complement not tested, and no closed form from scratch was accepted.
+These networks collect coefficients, expand a product of two linear expressions and solve a linear equation using structured term
+tokens that expose each term's side, power and coefficient. From-scratch models that wrote intermediate results before the answer
+(a scratchpad) reached exact answers on 1000 saved test examples per seed in 10/10 best snapshots for expansion and 10/10 for
+solving. Expansion fell to 9/10 exact in final snapshots, and answer-only expansion and solving never reached exactness. Collecting
+terms on a frozen scaffold supported an explicit addition rule under substitution in 13/13 seeds, but that closed form is partial:
+its complement was not tested, and no from-scratch closed form was accepted. Overall the task is partly solved; the final
+from-scratch scratchpad models did not transfer to the untrained coefficient tokens ±8 (exact 0–.008 on 256 out-of-range examples).
 
 | Fact | Value |
 |---|---|
 | Task | Collect like terms, expand (a x+b)(c x+d) or solve ax+b=cx+d on (side, power, coefficient) term atoms |
 | Input → output example | Expand, in words: (2x+1)(3x+4) → 6x² + 11x + 4 |
-| Model | GPT-NeoX-shaped, 3 layers, d_model 64, 4 heads × 16, MLP 256 ReLU, NoPE, no LayerNorm; PART trains only the last MLP |
-| Rungs and seeds | HAND in all 6 cells; PART and TRAIN 3 seeds in all 6 cells (30k; retries 60k); 10-seed finals: PART collect `T`, TRAIN expand `T`, TRAIN solve `T` |
-| Closed form status | Partial (PART collect: S = a + b, exact 1.0 → 1.0 in 13/13 seeds on substitution; complement not tested; no TRAIN closed form accepted) |
-| Status | Partly solved (scratchpad 10/10 in three cells; answer-only expand and solve 0/3); last run 2026-11-08 |
+| Model | 3-layer transformer, width 64, 4 heads × 16, feed-forward width 256; no positions or LayerNorm; frozen-scaffold runs train only the last feed-forward block |
+| Rungs and seeds | Hand-built checks in all 6 cells; frozen-scaffold and from-scratch screens, 3 seeds per cell (30k; retries 60k); 10-seed scratchpad finals: scaffold collection, from-scratch expansion and solving |
+| Closed form status | Partial (frozen-scaffold collection: S = a + b, exact 1.0 → 1.0 in 13/13 seeds on substitution; complement not tested; no from-scratch closed form accepted) |
+| Status | Partly solved (frozen-scaffold collect 10/10 exact; from-scratch scratchpad expand 10/10 best, 9/10 final; solve 10/10 exact on 1000 saved test rows per seed; answer-only expand and solve 0/3); last run 2026-11-08 |
 | Weights | [Hugging Face: symbolic-algebra-atoms](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/symbolic-algebra-atoms) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
@@ -24,9 +23,11 @@ collect closed form substitutes exactly in 13/13 seeds (prediction agreement 1.0
 
 The inputs are structured `(side,power,coefficient)` term atoms. The prompt is `BOS <left terms> ; <right terms> =`, with the terms
 permuted per batch. Three operations were studied: collect like terms, expand `(a x+b)(c x+d)` and solve `ax+b=cx+d`. Outputs are
-integer or reduced-rational atoms; there is no digit arithmetic and no parsing. Each side has two terms, and coefficients range over
+integer or reduced-rational atoms; there is no digit arithmetic and no parsing of ordinary mathematical notation. Collect has one
+term per power per side, not arbitrary lists of duplicate terms. Each training side has two terms, and coefficients range over
 −9…9 without ±8, which are held out. The test set is hash-disjoint (mod 97). An output counts as correct only on exact match of the
-whole teacher-forced output ([glossary](../GLOSSARY.md#task-formats)).
+whole teacher-forced output, meaning that each token is scored with correct earlier tokens supplied
+([glossary](../GLOSSARY.md#task-formats)). Saved-test exactness is accuracy 1.0, a stronger criterion than the ≥ .99 prediction record.
 
 Two output formats were studied for each operation (Table 1); the [scratchpad](../GLOSSARY.md#task-formats) format writes
 intermediate atoms before the answer.
@@ -38,6 +39,11 @@ intermediate atoms before the answer.
 | `A` (answer only) | the result atoms |
 | `T` (scratchpad) | expand: 4 products then 3 coefficients; collect: copy/copy/sum triples; solve: `D N ; solution` |
 
+D and N denote the coefficient difference and constant difference needed to solve the linear equation; DN is their product. A
+categorical code assigns separate internal patterns to different values, rather than a single scalar proportional to the value. For
+example, expanding (2x+1)(3x+4) gives 6x² + 11x + 4. These mathematical expressions explain the operation; the network receives the
+structured atoms, not the typeset notation.
+
 ## 2. Model
 
 The shared conventions are described in [METHODS.md](../METHODS.md). The three [rungs](../GLOSSARY.md#the-three-rungs) are HAND
@@ -45,8 +51,10 @@ The shared conventions are described in [METHODS.md](../METHODS.md). The three [
 
 ### 2.1 Architecture
 
-All networks are GPT-NeoX-shaped with ReLU, no LayerNorm and no positions (NoPE); the vocabulary has 2328 tokens, d_model 64, 4 heads
-× 16, d_mlp 256 and 3 layers (HAND solve `A`: 2). TRAIN learns everything from the HF initialisation.
+All networks follow the [GPT-NeoX decoder layout](../GLOSSARY.md#standard-machine-learning-terms), with ReLU (zero for negative
+inputs), no LayerNorm and no positional encoding (NoPE). The vocabulary has 2328 tokens. The residual stream, the running vector
+each layer updates, has width d_model 64; there are 4 attention heads × 16 dimensions and feed-forward blocks (MLPs) of width
+d_mlp 256. There are 3 layers (HAND solve `A`: 2). TRAIN learns everything from the Hugging Face initialisation.
 
 ### 2.2 Frozen parts and trained part
 
@@ -78,7 +86,8 @@ The hand-built networks fetch each operand atom by matching side and power and t
 (Figure 1). Layer 0 (L0) builds a reciprocal-position frame, L1 places a phase anchor at `=`, and L2 fetches the operands by a squared
 side and power match, with score `−24(side−s)²−24(power−p)²+256·is_term`. Signed ReLU pairs add or subtract; multiplication uses
 bit-gated signed pairs with weights 1, 2, 4, 8, −16 (a signed bit code). In format `T`, expand reuses the written products. Solve
-classifies bounded rationals with the ratio score `2r·DN − r²D²` (plus ALL and NONE classes).
+classifies bounded rationals with the ratio score `2r·DN − r²D²`, where r is a candidate rational answer. ALL and NONE cover equations
+satisfied by every value or by no value, respectively.
 
 *Table 2. HAND sizes (heads + neurons).*
 
@@ -128,19 +137,25 @@ snapshot: seed 3 .998) and TRAIN solve `T` (30k) 10/10.
 
 ### 4.1 Circuit types
 
-Circuit types were clustered by edges, patching, ablation and interchange. PART collect `A` is HAND's scalar add (3/3) and PART collect
+Ablation replaces a component's activity, patching transfers activity between clean and corrupted inputs, and interchange swaps a
+named variable between inputs ([glossary](../GLOSSARY.md#analysis-measures)). Circuit types were clustered by edges, patching, ablation and interchange. PART collect `A` is HAND's scalar add (3/3) and PART collect
 `T` HAND's phase-gated copy/copy/sum (10/10). TRAIN collect `A` is pooled same-power routing (2/2 solved) and TRAIN collect `T`
 written-operand reuse (3/3). TRAIN expand `T` is an MLP-chain categorical product (10/10). TRAIN solve `T` is fetch, then an MLP
 difference code, then L2, then a classifier (10/10); D and N are linearly decodable in 9/10, and seed 4 encodes them non-linearly with
 the same edges and patch profile. The strongest L2 edge head varies by seed (H0–H3), but resample ablation of any single head or MLP
-drops exact match by .01–1 in all 20 nets, so the circuit is the whole network. PART reads the frozen L2H0/H1 fetch heads (patch drop
+drops exact match by .01–1 in all 20 nets, so the claimed circuit is the whole network. Its complement is empty, making a complement test vacuous rather than evidence for a
+compact explanation. PART reads the frozen L2H0/H1 fetch heads (patch drop
 .65–1); the other frozen parts have patch drop 0.
 
 ### 4.2 Failures
 
 PART expand and solve fail on learned MLP precision: the product R² is .9994–.9999 and the quadratics .61–.92, below unit resolution.
-TRAIN expand `A` never fetches the operands (R² ≤ .12 at every layer). TRAIN solve `A` lacks D and N (seed 2) or DN (seed 0). The
-scratchpad supplies the missing intermediate. Full diagnostics are in Appendix B.
+For answer-only TRAIN expansion, linear probes did not recover operand values (R² ≤ .12 at every layer); the source diagnosed
+failed operand fetching. The answer-only solving analysis likewise diagnosed unrecovered D and N in seed 2, or DN in seed 0.
+Those solving diagnoses came from the earlier run: its edge estimates failed their reliability check and no interchange test of
+these variables was reported; diagnostics for the 60k retry remained missing in that audit. Failed linear readouts do not exclude
+a nonlinear code, as the exact scratchpad seed 4 illustrates. Writing intermediate results made the scratchpad cells learnable
+in the tested runs. Full diagnostics are in Appendix B.
 
 ### 4.3 Length and range
 
@@ -165,13 +180,21 @@ half-unit read-out margin. The closed form is supported by substitution; no
 No TRAIN closed form was accepted. In collect `A`, a joint analytic substitute for seed 1 scored 0/1000; the expand and solve `T`
 circuits are stated at component level only. TRAIN expand `T` and solve `T` each form one circuit type in 10/10 seeds: an MLP chain
 (MLP0, MLP1, L2 heads, MLP2) on top of layer-0 and layer-1 fetch heads, with a categorical product code (expand) or a difference code
-(solve) instead of HAND's bit-gated scalars (Figure 2). Every head and MLP is needed under resample ablation.
+(solve) instead of HAND's bit-gated scalars (Figure 2). Every head and MLP is needed under resample ablation, which replaces that
+component's activity with activity from another test input. The claimed circuit therefore contains the whole network: its empty
+complement cannot establish a smaller mechanism.
 
-The causal evidence: in expand `T` the `product` interchange flip is 1.00 at L3 (nf 493–508, the number of flips tested; 10/10), with
-DAS at k16 .79–.98; the written_mean flip is ≤ .005 (seeds 1 and 4), so HAND's reuse of written products is not used. In solve `T` the
+The causal tests swap candidate variables between two inputs; an interchange flip measures how often the answer changes as the
+variable predicts. Here nf counts tested answer-fixing queries, where the variable determines the answer token, rather than
+successful flips. Distributed alignment search (DAS) also tests learned rotated directions
+([glossary](../GLOSSARY.md#analysis-measures)). In expand `T` the `product` interchange flip is 1.00 at L3 (nf 493–508, 10/10), with
+DAS at k16 .79–.98, where k16 denotes the 16-dimensional alignment. The written_mean variable averages the products already written
+on the scratchpad; its interchange flip is ≤ .005 in the tested seeds 1 and 4. This test does not support HAND's written-product
+reuse in those seeds. In solve `T` the
 difference and coefficient flips are 1.00 at L3 (nf 240–253, 10/10), with DAS at k16 .85–.94; internal layers are untested (nf 0).
 Edges pass their check (spearman_exact .87–.96) on all 20 TRAIN finals, with Jaccard .14–.27 against HAND; PART edges equal HAND's
-(Jaccard 1).
+(Jaccard 1). Here spearman_exact is rank agreement between estimated edge importance and direct edge interventions; Jaccard is
+shared edges divided by their combined edge set ([glossary](../GLOSSARY.md#analysis-measures)).
 
 ```mermaid
 flowchart TD
@@ -181,16 +204,21 @@ flowchart TD
     M1 --> H2["L2 heads, strongest edge head varies by seed, H0 to H3"]
     H2 --> M2["MLP2"]
     M2 --> Y["answer atom; expand uses a categorical product code, solve a difference code and a final classifier"]
+    classDef trained fill:gold,stroke:darkgoldenrod,color:black
+    class F,M0,M1,H2,M2,Y trained
 ```
 
-*Figure 2. The circuit type training from scratch finds in expand `T` and solve `T` (10/10 seeds each). Every head and MLP is needed
-under resample ablation; the circuit is stated at component level only, and no closed form was accepted.*
+*Figure 2. The component-level type in from-scratch expansion and solving with a scratchpad (10/10 seeds each). Shading marks the
+trained heads, MLPs and readout. All 12 heads and 3 MLPs matter under single-component resampling; the strongest displayed edge is
+not the only needed head. No TRAIN closed form was accepted. The whole-network complement is empty, not a compact circuit
+certificate; the only substitution-supported closed form is the separate partial PART collect rule.*
 
 ### 5.3 Relation to the hand-built network and to published work
 
 PART keeps HAND's algorithm (the same edges and the same closed form), with distributed hinges in place of HAND's 2-neuron signed
-pair. TRAIN does not use HAND's algorithm: it uses 9–12 heads against 5–6, codes products and differences categorically (no linear
-bits; JS .08–.20) and does not reuse written products. Answer only against scratchpad (TRAIN): expand 0 against 10 of 10, solve 0
+pair. The measured TRAIN paths differ from HAND: they use 9–12 heads against 5–6 under mean ablation, code products and differences
+categorically (no linear bits found; attention divergence JS .08–.20), and the tested written-product-reuse variable has low
+interchange. JS compares trained and HAND attention patterns ([glossary](../GLOSSARY.md#analysis-measures)). Under resample ablation all 12 heads are needed. Answer only against scratchpad (TRAIN): expand 0 against 10 of 10, solve 0
 against 10 of 10, collect 2/3 against 3/3 (answer only is faster). This is consistent with scratchpad results for multi-step
 computation ([Nye et al., 2021](#references)) and with intermediate supervision making composite tasks learnable
 ([Wies et al., 2022](#references)). The circuit analysis follows the methods context of [Nanda et al. (2023)](#references).
@@ -199,7 +227,11 @@ computation ([Nye et al., 2021](#references)) and with intermediate supervision 
 
 Saved-test exact match is on 1000 sampled rows per seed and is not exhaustive. The entry makes no claim of natural-notation parsing,
 learned fraction reduction or unseen coefficient tokens; the ±8 embeddings never train. Probe R² does not show use; an interchange
-flip with nf > 0 is the test of use, and nf 0 means untested.
+flip with nf > 0 is the test of use, and nf 0 means untested. Collect's one-term-per-power-per-side grammar does not test arbitrary
+duplicate-term lists. All 20 TRAIN expansion/solving scratchpad circuits retain the whole network, so their complement is empty;
+this is not a compact mechanistic certificate. No PART collect complement result was reported. Final-network representation
+similarity, loss-barrier and learning-dynamics diagnostics were also missing; the final PART collect pack supplied no nets for the
+planned HAND-free diagnostic backfill, even though later substitution was reported across 13/13 seeds.
 
 ## 7. Prediction record
 
@@ -231,7 +263,7 @@ output weight into S.
 Key: PART rows are the top-3 of 256 by |W_out[S]|·|W_in[a,b]|; s0 = seed 0.
 
 HAND collect `A` computes S = ReLU(a+b) − ReLU(−a−b) = a+b. In HAND collect `T` the phase gate lifts the −1024 bias. In the trained
-PART stages many small hinges read a and b with similar weight and sum to S (equal-weight share of the top 20: `A` .40–.45, `T`
+PART stages many small hinges, ReLU units that activate beyond a threshold, read a and b with similar weight and sum to S (equal-weight share of the top 20: `A` .40–.45, `T`
 .10–.20, where phase-gated copy rows read a or b alone). The network's S stays within .39 of the closed form, so the integer read-out
 picks the same atom.
 

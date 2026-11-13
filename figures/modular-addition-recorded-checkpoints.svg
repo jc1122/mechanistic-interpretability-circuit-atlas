@@ -1,0 +1,133 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="464" viewBox="0 0 760 464" role="img" aria-labelledby="title desc">
+<title id="title">Held-out answers improved after the training set fitted</title>
+<desc id="desc">Held-out accuracy on each seed&#x27;s fixed split of 3481 pairs; training fraction .4. Ten seeds, eight recorded checkpoints; lines only join recorded observations. Training accuracy reached 99% by step 500, but final held-out accuracy did not. Seeds 5 and 8 are highlighted for readability, not separate experimental arms. Seed 0: 0k steps .02, 1k steps .00, 20k steps .02, 40k steps .22, 60k steps .59, 100k steps .80, 200k steps .92, 300k steps .95; Seed 1: 0k steps .02, 1k steps .00, 20k steps .02, 40k steps .27, 60k steps .62, 100k steps .83, 200k steps .91, 300k steps .94; Seed 2: 0k steps .02, 1k steps .00, 20k steps .01, 40k steps .24, 60k steps .60, 100k steps .83, 200k steps .91, 300k steps .92; Seed 3: 0k steps .02, 1k steps .00, 20k steps .04, 40k steps .31, 60k steps .60, 100k steps .82, 200k steps .92, 300k steps .93; Seed 4: 0k steps .02, 1k steps .00, 20k steps .01, 40k steps .23, 60k steps .50, 100k steps .80, 200k steps .91, 300k steps .94; Seed 5: 0k steps .02, 1k steps .00, 20k steps .01, 40k steps .17, 60k steps .41, 100k steps .69, 200k steps .87, 300k steps .91; Seed 6: 0k steps .02, 1k steps .00, 20k steps .01, 40k steps .30, 60k steps .60, 100k steps .82, 200k steps .92, 300k steps .94; Seed 7: 0k steps .02, 1k steps .00, 20k steps .01, 40k steps .27, 60k steps .55, 100k steps .84, 200k steps .90, 300k steps .93; Seed 8: 0k steps .02, 1k steps .00, 20k steps .01, 40k steps .23, 60k steps .55, 100k steps .87, 200k steps .96, 300k steps .97; Seed 9: 0k steps .02, 1k steps .00, 20k steps .01, 40k steps .27, 60k steps .62, 100k steps .88, 200k steps .95, 300k steps .96.</desc>
+<rect width="100%" height="100%" fill="white"/>
+<g font-family="system-ui, sans-serif" fill="#1d2630">
+<text x="24" y="32" font-size="21" font-weight="600">Learning the rule took longer than fitting the examples</text>
+<text x="24" y="57" font-size="13">Modular addition mod 59; 10 seeds; fixed held-out split per seed.</text>
+<text x="62" y="105" font-size="12">Held-out accuracy</text>
+<path d="M24 82 h24" stroke="#175a96" stroke-width="3"/>
+<text x="56" y="86" font-size="13">Seed 5</text>
+<path d="M170 82 h24" stroke="#a53b13" stroke-width="3"/>
+<text x="202" y="86" font-size="13">Seed 8</text>
+<path d="M316 82 h24" stroke="#8d99a6" stroke-width="3"/>
+<text x="348" y="86" font-size="13">Other seeds</text>
+<path d="M62 344.0 H704" stroke="#e0e5ea"/>
+<text x="52" y="348.0" text-anchor="end" font-size="12">0</text>
+<path d="M62 287.0 H704" stroke="#e0e5ea"/>
+<text x="52" y="291.0" text-anchor="end" font-size="12">.25</text>
+<path d="M62 230.0 H704" stroke="#e0e5ea"/>
+<text x="52" y="234.0" text-anchor="end" font-size="12">.50</text>
+<path d="M62 173.0 H704" stroke="#e0e5ea"/>
+<text x="52" y="177.0" text-anchor="end" font-size="12">.75</text>
+<path d="M62 116.0 H704" stroke="#e0e5ea"/>
+<text x="52" y="120.0" text-anchor="end" font-size="12">1.00</text>
+<path d="M62.0 116 V344" stroke="#edf0f3"/>
+<text x="62.0" y="366" text-anchor="middle" font-size="12">0k</text>
+<path d="M169.0 116 V344" stroke="#edf0f3"/>
+<text x="169.0" y="366" text-anchor="middle" font-size="12">50k</text>
+<path d="M276.0 116 V344" stroke="#edf0f3"/>
+<text x="276.0" y="366" text-anchor="middle" font-size="12">100k</text>
+<path d="M383.0 116 V344" stroke="#edf0f3"/>
+<text x="383.0" y="366" text-anchor="middle" font-size="12">150k</text>
+<path d="M490.0 116 V344" stroke="#edf0f3"/>
+<text x="490.0" y="366" text-anchor="middle" font-size="12">200k</text>
+<path d="M597.0 116 V344" stroke="#edf0f3"/>
+<text x="597.0" y="366" text-anchor="middle" font-size="12">250k</text>
+<path d="M704.0 116 V344" stroke="#edf0f3"/>
+<text x="704.0" y="366" text-anchor="middle" font-size="12">300k</text>
+<polyline points="62.0,339.44 64.14,344.0 104.8,339.44 147.6,293.84 190.4,209.48000000000002 276.0,161.6 490.0,134.23999999999998 704.0,127.4" fill="none" stroke="#8d99a6" stroke-width="1.3"/>
+<circle cx="62.0" cy="339.44" r="2.4" fill="#8d99a6"/>
+<circle cx="64.14" cy="344.0" r="2.4" fill="#8d99a6"/>
+<circle cx="104.8" cy="339.44" r="2.4" fill="#8d99a6"/>
+<circle cx="147.6" cy="293.84" r="2.4" fill="#8d99a6"/>
+<circle cx="190.4" cy="209.48000000000002" r="2.4" fill="#8d99a6"/>
+<circle cx="276.0" cy="161.6" r="2.4" fill="#8d99a6"/>
+<circle cx="490.0" cy="134.23999999999998" r="2.4" fill="#8d99a6"/>
+<circle cx="704.0" cy="127.4" r="2.4" fill="#8d99a6"/>
+<polyline points="62.0,339.44 64.14,344.0 104.8,339.44 147.6,282.44 190.4,202.64000000000001 276.0,154.76000000000002 490.0,136.51999999999998 704.0,129.68" fill="none" stroke="#8d99a6" stroke-width="1.3"/>
+<circle cx="62.0" cy="339.44" r="2.4" fill="#8d99a6"/>
+<circle cx="64.14" cy="344.0" r="2.4" fill="#8d99a6"/>
+<circle cx="104.8" cy="339.44" r="2.4" fill="#8d99a6"/>
+<circle cx="147.6" cy="282.44" r="2.4" fill="#8d99a6"/>
+<circle cx="190.4" cy="202.64000000000001" r="2.4" fill="#8d99a6"/>
+<circle cx="276.0" cy="154.76000000000002" r="2.4" fill="#8d99a6"/>
+<circle cx="490.0" cy="136.51999999999998" r="2.4" fill="#8d99a6"/>
+<circle cx="704.0" cy="129.68" r="2.4" fill="#8d99a6"/>
+<polyline points="62.0,339.44 64.14,344.0 104.8,341.72 147.6,289.28 190.4,207.20000000000002 276.0,154.76000000000002 490.0,136.51999999999998 704.0,134.23999999999998" fill="none" stroke="#8d99a6" stroke-width="1.3"/>
+<circle cx="62.0" cy="339.44" r="2.4" fill="#8d99a6"/>
+<circle cx="64.14" cy="344.0" r="2.4" fill="#8d99a6"/>
+<circle cx="104.8" cy="341.72" r="2.4" fill="#8d99a6"/>
+<circle cx="147.6" cy="289.28" r="2.4" fill="#8d99a6"/>
+<circle cx="190.4" cy="207.20000000000002" r="2.4" fill="#8d99a6"/>
+<circle cx="276.0" cy="154.76000000000002" r="2.4" fill="#8d99a6"/>
+<circle cx="490.0" cy="136.51999999999998" r="2.4" fill="#8d99a6"/>
+<circle cx="704.0" cy="134.23999999999998" r="2.4" fill="#8d99a6"/>
+<polyline points="62.0,339.44 64.14,344.0 104.8,334.88 147.6,273.32 190.4,207.20000000000002 276.0,157.04000000000002 490.0,134.23999999999998 704.0,131.95999999999998" fill="none" stroke="#8d99a6" stroke-width="1.3"/>
+<circle cx="62.0" cy="339.44" r="2.4" fill="#8d99a6"/>
+<circle cx="64.14" cy="344.0" r="2.4" fill="#8d99a6"/>
+<circle cx="104.8" cy="334.88" r="2.4" fill="#8d99a6"/>
+<circle cx="147.6" cy="273.32" r="2.4" fill="#8d99a6"/>
+<circle cx="190.4" cy="207.20000000000002" r="2.4" fill="#8d99a6"/>
+<circle cx="276.0" cy="157.04000000000002" r="2.4" fill="#8d99a6"/>
+<circle cx="490.0" cy="134.23999999999998" r="2.4" fill="#8d99a6"/>
+<circle cx="704.0" cy="131.95999999999998" r="2.4" fill="#8d99a6"/>
+<polyline points="62.0,339.44 64.14,344.0 104.8,341.72 147.6,291.56 190.4,230.0 276.0,161.6 490.0,136.51999999999998 704.0,129.68" fill="none" stroke="#8d99a6" stroke-width="1.3"/>
+<circle cx="62.0" cy="339.44" r="2.4" fill="#8d99a6"/>
+<circle cx="64.14" cy="344.0" r="2.4" fill="#8d99a6"/>
+<circle cx="104.8" cy="341.72" r="2.4" fill="#8d99a6"/>
+<circle cx="147.6" cy="291.56" r="2.4" fill="#8d99a6"/>
+<circle cx="190.4" cy="230.0" r="2.4" fill="#8d99a6"/>
+<circle cx="276.0" cy="161.6" r="2.4" fill="#8d99a6"/>
+<circle cx="490.0" cy="136.51999999999998" r="2.4" fill="#8d99a6"/>
+<circle cx="704.0" cy="129.68" r="2.4" fill="#8d99a6"/>
+<polyline points="62.0,339.44 64.14,344.0 104.8,341.72 147.6,275.6 190.4,207.20000000000002 276.0,157.04000000000002 490.0,134.23999999999998 704.0,129.68" fill="none" stroke="#8d99a6" stroke-width="1.3"/>
+<circle cx="62.0" cy="339.44" r="2.4" fill="#8d99a6"/>
+<circle cx="64.14" cy="344.0" r="2.4" fill="#8d99a6"/>
+<circle cx="104.8" cy="341.72" r="2.4" fill="#8d99a6"/>
+<circle cx="147.6" cy="275.6" r="2.4" fill="#8d99a6"/>
+<circle cx="190.4" cy="207.20000000000002" r="2.4" fill="#8d99a6"/>
+<circle cx="276.0" cy="157.04000000000002" r="2.4" fill="#8d99a6"/>
+<circle cx="490.0" cy="134.23999999999998" r="2.4" fill="#8d99a6"/>
+<circle cx="704.0" cy="129.68" r="2.4" fill="#8d99a6"/>
+<polyline points="62.0,339.44 64.14,344.0 104.8,341.72 147.6,282.44 190.4,218.6 276.0,152.48000000000002 490.0,138.79999999999998 704.0,131.95999999999998" fill="none" stroke="#8d99a6" stroke-width="1.3"/>
+<circle cx="62.0" cy="339.44" r="2.4" fill="#8d99a6"/>
+<circle cx="64.14" cy="344.0" r="2.4" fill="#8d99a6"/>
+<circle cx="104.8" cy="341.72" r="2.4" fill="#8d99a6"/>
+<circle cx="147.6" cy="282.44" r="2.4" fill="#8d99a6"/>
+<circle cx="190.4" cy="218.6" r="2.4" fill="#8d99a6"/>
+<circle cx="276.0" cy="152.48000000000002" r="2.4" fill="#8d99a6"/>
+<circle cx="490.0" cy="138.79999999999998" r="2.4" fill="#8d99a6"/>
+<circle cx="704.0" cy="131.95999999999998" r="2.4" fill="#8d99a6"/>
+<polyline points="62.0,339.44 64.14,344.0 104.8,341.72 147.6,282.44 190.4,202.64000000000001 276.0,143.35999999999999 490.0,127.4 704.0,125.12" fill="none" stroke="#8d99a6" stroke-width="1.3"/>
+<circle cx="62.0" cy="339.44" r="2.4" fill="#8d99a6"/>
+<circle cx="64.14" cy="344.0" r="2.4" fill="#8d99a6"/>
+<circle cx="104.8" cy="341.72" r="2.4" fill="#8d99a6"/>
+<circle cx="147.6" cy="282.44" r="2.4" fill="#8d99a6"/>
+<circle cx="190.4" cy="202.64000000000001" r="2.4" fill="#8d99a6"/>
+<circle cx="276.0" cy="143.35999999999999" r="2.4" fill="#8d99a6"/>
+<circle cx="490.0" cy="127.4" r="2.4" fill="#8d99a6"/>
+<circle cx="704.0" cy="125.12" r="2.4" fill="#8d99a6"/>
+<polyline points="62.0,339.44 64.14,344.0 104.8,341.72 147.6,305.24 190.4,250.52 276.0,186.68 490.0,145.64000000000001 704.0,136.51999999999998" fill="none" stroke="#175a96" stroke-width="2.5"/>
+<circle cx="62.0" cy="339.44" r="2.4" fill="#175a96"/>
+<circle cx="64.14" cy="344.0" r="2.4" fill="#175a96"/>
+<circle cx="104.8" cy="341.72" r="2.4" fill="#175a96"/>
+<circle cx="147.6" cy="305.24" r="2.4" fill="#175a96"/>
+<circle cx="190.4" cy="250.52" r="2.4" fill="#175a96"/>
+<circle cx="276.0" cy="186.68" r="2.4" fill="#175a96"/>
+<circle cx="490.0" cy="145.64000000000001" r="2.4" fill="#175a96"/>
+<circle cx="704.0" cy="136.51999999999998" r="2.4" fill="#175a96"/>
+<polyline points="62.0,339.44 64.14,344.0 104.8,341.72 147.6,291.56 190.4,218.6 276.0,145.64000000000001 490.0,125.12 704.0,122.84" fill="none" stroke="#a53b13" stroke-width="2.5"/>
+<circle cx="62.0" cy="339.44" r="2.4" fill="#a53b13"/>
+<circle cx="64.14" cy="344.0" r="2.4" fill="#a53b13"/>
+<circle cx="104.8" cy="341.72" r="2.4" fill="#a53b13"/>
+<circle cx="147.6" cy="291.56" r="2.4" fill="#a53b13"/>
+<circle cx="190.4" cy="218.6" r="2.4" fill="#a53b13"/>
+<circle cx="276.0" cy="145.64000000000001" r="2.4" fill="#a53b13"/>
+<circle cx="490.0" cy="125.12" r="2.4" fill="#a53b13"/>
+<circle cx="704.0" cy="122.84" r="2.4" fill="#a53b13"/>
+<text x="383.0" y="390" text-anchor="middle" font-size="13">Training updates (thousands)</text>
+<text x="24" y="416" font-size="12">Lines join copied checkpoints; they are not continuous learning-curve logs.</text>
+<text x="24" y="436" font-size="12">The source table and every plotted value are retained in the entry appendix.</text>
+</g>
+</svg>

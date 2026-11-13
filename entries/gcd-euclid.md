@@ -1,11 +1,6 @@
-# GCD by subtractive Euclid
+# Greatest common divisor by repeated subtraction
 
-This entry studies how small transformers compute the greatest common divisor of two numbers, either directly or by writing the rows
-of subtractive Euclid's algorithm. With the hand-built computation frozen, the trained last MLP learns a three-rule output router:
-all 10 final trace seeds reach test exact match ≥ .99, and 7/10 are exact. From scratch, 5/10 final trace seeds are exact, using
-seed-specific distributed circuits with no complete closed form. The task is partly solved. The router's closed form is partial at
-the cell level: substitution is exact in 10/10 seeds, but the paired complement test covers only the seven exact seeds; neither trained
-cell reliably transfers to 8-bit operands.
+The greatest common divisor is the largest positive integer that divides both inputs; repeated subtraction finds it by replacing the pair with their absolute difference and their minimum. These four-layer transformers either gave the answer directly or wrote that subtractive-Euclid trace before answering. With the arithmetic and token-fetching stages frozen, 7/10 final seeds produced exact whole traces on 256 held-out tuples, while a three-rule router substituted into all 10 models was exact on all 4096 six-bit pairs. The task is partly solved and the closed-form status is partial: both substitution and complement resampling passed in the 7 exact frozen-scaffold seeds, but 3 trained routers still made held-out errors and no complete form was accepted for the from-scratch models, of which 5/10 were exact. Neither trained cell reliably transferred to eight-bit inputs.
 
 | Fact | Value |
 |---|---|
@@ -13,10 +8,12 @@ cell reliably transfers to 8-bit operands.
 | Input → output example | Answer only: prompt `BOS GCD A:6 B:4 →`, output `R:2 EOS` |
 | Model | GPT-NeoX-shaped, 4 layers × 4 heads, d_model 128, ReLU MLP; PART trains only the layer-3 MLP |
 | Rungs and seeds | GCD PART trace: 3 screening + 10 final seeds; TRAIN trace final: 10 seeds, including 3 from the budget retry; answer-only and side-cell screens: 3 seeds each |
-| Closed form status | Partial (PART substitution exact in 10/10; complement .974–1.0 on seven exact seeds only; no complete TRAIN form) |
-| Status | Partly solved (PART trace 10/10 ≥ .99, 7/10 exact; TRAIN trace 5/10 exact); last run 2026-11-10 |
+| Closed form status | Partial (PART router substitution 1.0 in 10/10 on 4096 six-bit pairs; complement .974–1.0 in 7/7 exact seeds on 128 tuples; no complete TRAIN form) |
+| Status | Partly solved (PART trace 7/10 exact, TRAIN trace 5/10 exact on 256 held-out tuples; both 10/10 ≥ .99); last run 2026-11-10 |
 | Weights | [Hugging Face: gcd-euclid](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/gcd-euclid), published revision `6ca84a561e25` |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
+
+HAND sets every weight by formula; PART trains one stage on frozen HAND parts; TRAIN learns all weights ([rungs](../GLOSSARY.md#the-three-rungs)). A scratchpad is a written sequence of intermediate results ([task formats](../GLOSSARY.md#task-formats)). A router chooses the next token's role and value from supplied arithmetic channels. An MLP is a feed-forward block ([glossary](../GLOSSARY.md#standard-machine-learning-terms)). Complement resampling replaces everything outside a proposed circuit with values from other inputs ([verification](../GLOSSARY.md#verifying-a-circuit)).
 
 ## 1. Task and data
 
@@ -38,7 +35,7 @@ teacher-forced output, including EOS, is right; teacher-forced means each token 
 and the final TRAIN trace used 7 bits. Earlier magnitude checks used 64 tuples at 7 and 8 bits per seed (A PART: 6 and 8 bits). The
 later router substitution uses a separate 256-tuple 8-bit set, not the earlier 64-tuple set.
 
-The historical side tasks are the inverse of v mod a prime p (non-units give 0) and the reduced sum a/b + c/d. The inverse trace adds
+The historical side tasks are the inverse of v mod a prime p (non-units give 0) and the reduced sum a/b + c/d. An inverse multiplies v to 1 modulo p; a non-unit has no such inverse. Reducing a fraction divides numerator and denominator by their greatest common divisor. The inverse trace adds
 coefficient registers U and V; the fraction trace first writes products N, M and O. Inverse used 5 bits for A and 6 for T, with data
 retries at A 6 and T 7; fraction used 3 bits initially. Inverse T also withholds p ∈ {37, 43, 53, 61}. These side cells are not part of
 the current subtractive-Euclid claim.
@@ -88,7 +85,7 @@ The manifest's `acc_test_fp32` and `acc_fresh256` carry the re-scored headline a
 
 The current publication at revision `6ca84a561e25` adds `hand_gcd_T.safetensors`, `part_gcd_T_final10_s{0-9}` (four tensors each) and
 `train_gcd_T_{r3,final}_s*` (full networks), with `config.json` and a manifest recording seed, rung, accuracy and sha256. No new aggregate
-archive count is supplied by the final publication.
+archive count is supplied by the final publication. Safetensors stores numeric weights without executable objects; sha256 fingerprints file contents ([glossary](../GLOSSARY.md#standard-machine-learning-terms)).
 
 The earlier archive inventory (2026-11-06) was 39 networks: 5 HAND, 25 PART and 9 TRAIN, with each run's test and monitor tuples in `test_<run>`.
 Its files were `hand_*`, `part_<op>_<fmt>[_final10]_s<seed>` and `train_gcd_<fmt>_<r1|r2>_s<seed>` (safetensors), with operand bits, best
@@ -173,7 +170,7 @@ screens, the earlier family count is PART A 3/3 and PART T 13/13 (3 screen + 10 
 neuron-by-neuron reconstruction.
 
 TRAIN has a distributed type in all 10 final seeds, with 4–9 heads and all 4 MLPs. The published discovered-circuit summary is 54–84 of
-207 edges, HAND Jaccard ≤ .10, with seed-specific head sets and loss barrier 8.8 between tested seeds. A loss barrier measures whether
+207 edges, HAND Jaccard ≤ .10, with seed-specific head sets and loss barrier 8.8 between tested seeds. Edge Jaccard is shared edges divided by their combined edge set. Representation-alignment fit R² ≤ .53 separates the tested codes without establishing different algorithms. A loss barrier measures whether
 interpolating weights raises loss ([glossary](../GLOSSARY.md#analysis-measures)); it does not establish a different algorithm. The earlier
 three-seed screens had three ≥ .99 seed-runs needing all four MLPs and 5–13 of 16 heads: one run-1 seed depended on layer-1 heads, and
 two run-2 seeds on layer-0 and layer-1 heads. TRAIN A's one ≥ .99 seed used parity and divisible-by-3 features. These are ablation-defined
@@ -189,15 +186,13 @@ these monitors, not an absence of every possible memorisation process.
 ### 4.3 Diagnostics
 
 Euclid variables are linearly decodable in TRAIN, but the tested interchange does not move difference, minimum or next value
-(flip ≤ .04). Interchange replaces a candidate variable between examples to test causal use
+(flip ≤ .04 with 571–1320 answer-fixing pairs under the tested alignment). Interchange replaces a candidate variable between examples to test causal use
 ([glossary](../GLOSSARY.md#analysis-measures)). Low flips do not exclude a nonlinear code; old a/b have larger flips in some seeds.
 Earlier run 1 showed causal use of the probed variables, whereas run 2 had low linear interchange (Appendix B).
 
-*Table 4. Final diagnostics on 128 teacher-forced tuples per network, all exact in this diagnostic bank. Neuron counts are units
-carrying 90% of activation mass in MLP0/1/2/3; PR is residual participation ratio at L4 (HAND 2.1); JS is maximum used-head attention
-divergence to its best HAND match.*
+*Table 4. Final diagnostics on 128 teacher-forced tuples per network, all exact in this diagnostic bank. Concentration counts are the fewest MLP0/1/2/3 neurons covering 90% of squared input/output weight-norm products, not activation mass or ablated neuron counts. PR is residual participation ratio at L4 (HAND 2.1); JS is maximum used-head attention divergence to its best HAND match.*
 
-| Net | Used heads; MLPs | Neurons | Best probe R² (layer): a, b, d, m, next | PR | JS | Interchange | Best / final |
+| Net | Used heads; MLPs | Weight-concentration counts | Best probe R² (layer): a, b, d, m, next | PR | JS | Interchange | Best / final |
 |---|---|---|---|---|---|---|---|
 | PART seeds 0–9 | L2H0, L2H1; M2, M3 | frozen + 176–196 | 1, 1, 1, 1 (L4); .94–.96 (L4) | 1.76–2.12 | 0 | m 1.0 (seed 8, nf 507) | 1.0 or .996 / 7 × 1.0 |
 | TRAIN seed 3 | 9; M0–3 | 273/265/725/703 | .86 (L2), .84 (L2), .92, .87, .90 (L3) | 9.4 | .48 | d, m, next ≤ .04; a .45 | 1.0 / 1.0 |
@@ -206,7 +201,7 @@ divergence to its best HAND match.*
 | TRAIN seed 8 | 8; M0–3 | 171/311/613/706 | .88 (L2), .86 (L2), .86 (L3), .91 (L3), .92 (L4) | 5.8 | .49 | a .40, b .40 | 1.0 / 1.0 |
 | TRAIN seed 9 | 5; M0–3 | 178/440/529/729 | .86, .80, .91, .82 (L3), .91 (L4) | 2.3 | .44 | a .55, b .50 | 1.0 / 1.0 |
 
-Key: d = difference, m = minimum; nf = answer-changing pairs tested, with nf 0 meaning untested. Non-exact TRAIN seeds 0–2, 4 and 5
+Key: d = difference, m = minimum; nf = answer-fixing query pairs under the reference rule, with nf 0 meaning untested. PR measures effective representation dimensionality ([analysis measures](../GLOSSARY.md#analysis-measures)). The source's “activation mass” label is corrected here: the recorded `insp.conc.n90` uses `n_i = ||W_in[i,:]|| ||W_out[:,i]||` and selects neurons covering 90% of `sum_i n_i^2`, a weight-concentration screen. Non-exact TRAIN seeds 0–2, 4 and 5
 have the same type, 4–9 heads/all MLPs and flips ≤ .43 in the compact report. Across final TRAIN, Euclid variables have R² .80–.98;
 that is decodability, not proof of use.
 
@@ -219,12 +214,12 @@ native set, but falls to 93.1% on fresh 7-bit tuples. It is neither a minimum no
 
 The three rules read only frozen OLD, ABS, MIN, ZERO and role channels. After a B token, emit `A:ABS` if ZERO = 0, else `R:OLD_a`;
 after A, emit `B:MIN`; after R, emit EOS. In all 10 final seeds, replacing MLP3 gives 100% on all 4096 6-bit inputs (native
-.9988–.9998) and on 256 sampled 8-bit inputs (native 0%).
+.9988–.9998) and on 256 sampled 8-bit inputs with maximum operand ≥ 128 (native 0%). The six-bit grid includes training inputs. The eight-bit intervention set differs from the trainer's eight-bit set (.05–.17); both sets contain 256 sampled tuples.
 
-Resampling everything outside the claimed 8 edges keeps .974–1.0 exact match against base 1.0 on the seven exact seeds; resampling
+Resampling everything outside the claimed 8 edges keeps .974–1.0 exact match against base 1.0 on 128 diagnostic tuples in each of the seven exact seeds; resampling
 the circuit or random 8 edges gives ≤ .021. Path drops are .70–.88 for the L2-heads-to-MLP2-to-MLP3 route and .16–.31 for the direct
 L2-heads-to-MLP3 route. Both acceptance shares are ≥ .90 on those seven seeds. The closed form is accepted in 7/7 exact seeds, but
-partial at the ten-seed cell level because the other three lack this paired complement check.
+partial at the ten-seed cell level because the other three lack this paired complement check. The full/base and empty/source self-checks passed. Path drops are shares of the clean-to-corrupted effect ([analysis measures](../GLOSSARY.md#analysis-measures)).
 
 Earlier substitution-only checks remain distinct: A seed 0 stays at 100% on all 1024 inputs; T seed 5 rises from 99.95% to 100% on all
 4096 6-bit inputs and from 10.6% to 100% on 226 stratified 8-bit inputs; the three non-exact PART finals become exact on their test
@@ -239,8 +234,7 @@ extend the current GCD acceptance claim.
 
 ### 5.2 TRAIN: partial descriptions and rejected forms
 
-No complete closed form is accepted for final TRAIN. The discovered circuit passes the complement test in only 1/5 exact seeds
-(the compact .83–.94 summary); the HAND old-A rule gives 57.8% exact, and per-component MLP laws give 0/512 on 7-bit networks.
+No complete closed form is accepted for final TRAIN. Among the 5 exact seeds, only seed 9's discovered circuit passes the .90 complement share (.938). The compact .83–.94 range summarises all five, including that pass; Table B3 gives the individual values on 128 diagnostic tuples per seed. A complement pass alone is not a formula certificate. The HAND old-A rule gives 57.8% exact, and per-component MLP laws give 0/512 on 7-bit networks.
 
 The front end of TRAIN T run 2, seed 2, pruned, has a finite token-table description (Figure 2). Head h computes
 T_h(q) = Σ_k softmax_k(Q_h(t_q)·K_h(t_k)/√32) O_h(t_k) with per-token tables Q, K and O; MLP0 neuron j computes
@@ -295,7 +289,7 @@ Interchange tested only compare on most PART seeds, with nf 0; other variables a
 PART's variable-use claim rests on circuit/complement/substitution evidence. The complement paired with the router covers seven exact
 seeds, not ten. TRAIN has no complete accepted form; low probes or interchange do not prove a variable absent. Only weight decay .1
 was run in the final cells; no alternative HAND design was tested. Earlier TRAIN counts are three-seed screens. Per-seed used-neuron
-counts were not measured in those screens; final activation-mass counts are a different measure, not causal minima.
+counts were not measured in those screens; final weight-concentration counts are a different measure, not causal minima. The final log-only dynamics summary is missing because no dynamics log was available. No alternative HAND or knowledge-distillation arm was run.
 
 Inverse T TRAIN (runs 2 and 3: 0/3, best .59–.86) and fraction T TRAIN (run 1 2/3; 4-bit run 2 0/3) are outside this entry's current
 claims; one inverse T TRAIN run lost its networks. The local register-machine variant (inverse PART 3/3 exact; all TRAIN 0/3) is not
@@ -353,6 +347,24 @@ on all 1024 inputs; mean-ablating both leaves 91.7%. The router spreads one rule
 Key: R², JS, interchange flip and patching are defined in the [glossary](../GLOSSARY.md#analysis-measures). Earlier residual
 participation ratio was 1.09–3.91 for HAND and 13.3–13.9 for failed inverse T TRAIN. These are not the final GCD TRAIN PR values.
 
+*Table B2. Earlier compact screen summary, retained beside Table 3's per-cell results. Each A cell has 3 seeds; the TRAIN count is at ≥ .99, not exact 1.0.*
+
+| Cell | Seeds ≥ .99 | Test best / final, compact summary | First .90 / .99 test step (k) | Longer inputs |
+|---|---|---|---|---|
+| A PART / A TRAIN run 2 | 3/3 / 1/3 | 1 / .938–.996 | 1.5–6 / 9–12.5 | 8 bit .31–.56 / .13–.22 |
+
+*Table B3. Discovered-circuit complement tests in the 5 final TRAIN seeds exact on 256 held-out tuples. Each diagnostic test uses 128 tuples with native exact match 1.0; the acceptance share is .90. Passing this test alone does not supply a closed form.*
+
+| Seed | Complement resample exact match | Meets .90 share of native 1.0 |
+|---|---|---|
+| 3 | .893 | No |
+| 6 | .828 | No |
+| 7 | .896 | No |
+| 8 | .844 | No |
+| 9 | .938 | Yes |
+
+The compact .83–.94 range is retained as the older published summary; these per-seed values are copied separately from the final diagnostic record.
+
 ## References
 
 - Charton, F. (2023). Learning the greatest common divisor: Explaining transformer predictions. *International Conference on Learning
@@ -364,5 +376,5 @@ participation ratio was 1.09–3.91 for HAND and 13.3–13.9 for failed inverse 
   models. *arXiv preprint*. https://arxiv.org/abs/2112.00114 (scratchpads)
 - Power, A., Burda, Y., Edwards, H., Babuschkin, I., & Misra, V. (2022). Grokking: Generalization beyond overfitting on small
   algorithmic datasets. *arXiv preprint*. https://arxiv.org/abs/2201.02177 (grokking)
-- Rai, Geva, & Yao. (2026). Data-driven Circuit Discovery for Interpretability of Language Models. *arXiv preprint*.
+- Rai, D., Geva, M., & Yao, Z. (2026). Data-driven circuit discovery for interpretability of language models. *arXiv preprint*.
   https://doi.org/10.48550/arxiv.2605.09129 (possible mixing of row-specific mechanisms in dataset-wide circuit discovery)

@@ -1,23 +1,16 @@
 # Chess mate-in-one selection
 
-This entry studies how a transformer picks the first mating move from a supplied list of checks against a bare black king. A frozen
-hand-built 8-layer network counts the black king's escape squares after each candidate (0–8), gates mate on a zero count and writes
-the first mating slot; only its final MLP was retrained. That trained MLP decodes the hand-built escape count in 3/3 seeds per format
-(answer only and scratchpad). Trained on lists of at most 8 candidates, the networks fail a stress set with up to 16 (52–64% exact); a
-retry with coverage data fixes answer only (608/608). No from-scratch run has finished. The task is partly solved (frozen-parts setting
-3/3 per format; from-scratch training unmeasured). The closed form is partial: 442 fitted scalars replace the answer-only MLP on all 6
-first-run snapshots, while the 7,693-scalar scratchpad form holds only locally and fails the stress set on 2 snapshots; both are
-supported by substitution with the complement not tested.
+A mating move leaves the opposing king no legal reply; this task selects the first mate from a supplied list of checking moves against a bare black king. Training one output stage on a frozen escape-square counter solved both formats in 3/3 seeds, but training on short lists left only 52–64% exact on a 608-sequence longer-list stress set. Later whole-network screens solved answer-only in 3/3 seeds and, after retries, the count-writing format in 3/3 seeds, each at exact 1.0 on 128 held-out sequences. The task remains partly solved: the count-writing TRAIN reference-keyed lookup is Verified in this three-seed screen, while answer-only TRAIN is Sufficient readout only because its complement test fails, and the frozen-network PART formulas remain Partial with complement untested. Longer-list TRAIN transfer is unreported and no ten-seed final result was obtained.
 
 | Fact | Value |
 |---|---|
 | Task | Given a bare black king and K = 1–16 supplied legal checking moves, output the first move that mates, or NONE |
 | Input → output example | In words: if only the second of three supplied checks leaves the king no escape square, the answer is the second |
-| Model | GPT-NeoX-shaped, 8 layers, d_model 480, 24 heads × 20, MLP 640, hand-built and frozen; PART trains only the layer-7 MLP (615,520 parameters) |
-| Rungs and seeds | HAND A and T; PART A and T, 3 seeds each, in run 1 (K ≤ 8) and the coverage retry run 2 (K ≤ 16); TRAIN: no finished run |
-| Closed form status | Partial: A 442 scalars on all 6 run-1 snapshots; T 7,693 scalars only locally (K3/K5), failing stress on 2 snapshots; supported by substitution, complement not tested |
-| Status | Partly solved (PART 3/3 per format; TRAIN unmeasured); last run 2026-11-07 |
-| Weights | [Hugging Face: chess-mate-in-one](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/chess-mate-in-one) |
+| Model | HAND/PART: 8 layers, width 480, 24 heads × 20, MLP 640; PART trains only MLP7 (615,520 parameters). TRAIN: 4 layers, width 384 or 768 after the retry, with all weights trained. |
+| Rungs and seeds | HAND A/T; PART A/T, 3 seeds each in run 1 and coverage run 2; TRAIN A run 1: 3 seeds; T runs 1, 3 and 4: 3 seeds per setting, two weight decays in run 4. No completed ten-seed final. |
+| Closed form status | Verified (T TRAIN run 4 wd .1, 3/3: reference-keyed lookup substitution 1.0 on the 256-row cohort, complement .917/.917/1.0 on 64 rows, meeting .90 × matched native). A TRAIN: Sufficient readout only. PART: Partial; complement untested, T fits local only. |
+| Status | Partly solved (PART 3/3 per format; A TRAIN 3/3, T TRAIN retry 3/3 at exact 1.0 on 128 sequences); last completed screen 2026-11-10. No ten-seed final result. |
+| Weights | [Hugging Face: chess-mate-in-one](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/chess-mate-in-one) (HAND/PART weights and test archive; public follow-up TRAIN weights not confirmed). |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
 ## 1. Task and data
@@ -25,7 +18,7 @@ supported by substitution with the complement not tested.
 Each position has a bare black king (KQK or KRK type, optionally with one extra white piece) and K = 1–16 supplied legal checking
 candidates. The network outputs the first candidate that mates, or NONE, as a 17-way index. This is candidate selection, not move generation. Fresh boards
 are drawn for every batch, with an 80/20 split by board hash. An output counts as correct on exact match of the whole
-[teacher-forced](../GLOSSARY.md#task-formats) continuation. Legality is cross-checked with python-chess ([Fiekas, n.d.](#references)).
+teacher-forced continuation, with the correct earlier output tokens supplied ([glossary](../GLOSSARY.md#task-formats)). Legality is cross-checked with python-chess ([Fiekas, n.d.](#references)).
 
 Natural three-piece lists are short (the enumerated KQK and KRK maxima are 12 and 6 distinct checks), so K 13–16 needs extra pieces.
 Run 1 used K ≤ 8 and 128 test sequences. Run 2 (retry rule: data) used K ≤ 16, a balanced index of the first zero count, exposure to
@@ -37,7 +30,7 @@ selected on the test set, which doubles as monitor, so a K ≤ 16 stress set of 
 | Format | Output |
 |---|---|
 | `A` (answer only) | one 17-way index |
-| `T` ([scratchpad](../GLOSSARY.md#task-formats)) | `from to \| count ;` per candidate (count = black-king escape squares, 0–8), then `! index` |
+| `T` (scratchpad: intermediate working before the answer; [glossary](../GLOSSARY.md#task-formats)) | `from to \| count ;` per candidate (count = black-king escape squares, 0–8), then `! index` |
 
 ## 2. Model
 
@@ -46,9 +39,9 @@ weight set by formula), PART (frozen hand-built parts with one trained stage) an
 
 ### 2.1 Architecture
 
-All networks are GPT-NeoX-shaped with ReLU, no LayerNorm, no positional encoding and untied embeddings, with a vocabulary of 928 tokens
+All networks are GPT-NeoX-shaped decoders with attention heads that read earlier positions and feed-forward MLP blocks ([glossary](../GLOSSARY.md#standard-machine-learning-terms)). They use ReLU, no LayerNorm, no positional encoding and untied embeddings, with a vocabulary of 928 tokens
 and a context of 128. HAND and PART have 8 layers, d_model 480, 24 heads × 20 and MLP width 640; 84 heads and ~1,270–1,290 neurons are
-structurally active. The planned TRAIN network has 4 layers, d_model 384, 8 heads × 48 and MLP width 768.
+structurally active. The initial TRAIN network has 4 layers, d_model 384, 8 heads × 48 and MLP width 768. The run-4 T retry has 4 layers, d_model 768, 8 heads and MLP width 1536.
 
 ### 2.2 Frozen parts and trained part
 
@@ -58,10 +51,12 @@ values.
 
 ### 2.3 Training
 
-The optimiser was AdamW with learning rate 1e-3, weight decay .1, betas (.9, .98), warmup 1,000 steps, a cosine schedule and gradient
+The original PART optimiser was AdamW with learning rate 1e-3, weight decay .1, betas (.9, .98), warmup 1,000 steps, a cosine schedule and gradient
 clip 1. Each step used a batch of 8 fresh boards, in [fp32](../GLOSSARY.md#hand-built-machinery), with a 10k-step budget and a stop
 once all seeds are exact. Test accuracy was evaluated every 500 steps and checkpoints were saved every 2,500. Training ran on GPU
 accelerators, and re-scoring on CPU in fp32; the archived networks re-score to the recorded accuracies.
+
+The later TRAIN screens used TF32 and fresh boards. Run 1 had a 30k budget; T run 3 increased it to 60k, batch 32, and plateau-stopped at 45k. Run 4 changed both width and batch: width 768, MLP 1536, batch 96, budget 60000, minimum 45000, with weight decay .03 and .1. The .1 pack stopped solved at 57000; .03 ended at 60000 without holding exact. Width and data presentations changed together, so this does not isolate width's causal contribution.
 
 ### 2.4 Reproduction
 
@@ -73,14 +68,14 @@ accuracies are on Hugging Face at
 
 The Hugging Face folder holds `hand_{A,T}`; `part_{A,T}_{r1,r2}_{best,final}_s0…2` (the 4 MLP tensors, to be inserted into
 `hand_<fmt>`); `test_<run>` (each run's test sequences and scored-position masks); `config.json`; and `manifest.json` (seed, steps,
-recorded and fp32 re-scored exact match, sha256).
+recorded and fp32 re-scored exact match, sha256). This is the original HAND/PART archive. The later TRAIN evidence is recorded in the task results, but this review did not confirm that those follow-up TRAIN weights were added to the public folder; no downloadable TRAIN replication is claimed.
 
 ## 3. Hand-built solution
 
 The hand-built network plays each candidate on a virtual board and counts the king's escapes (Figure 1). Source and capture terms
 delete the mover's old square, and a virtual destination inserts it. Nearest-live rays and leaper ORs test each square next to the
 black king, with the old king square removed. MLP5 sums the escapes into ESC. The MLP6 gate computes MATE = ReLU(u) − ReLU(u − 1) with
-u = 2·TO − 2·EQS − 4·ESC − 1, where TO and EQS are two binary flags of the hand-built design (their meaning is not documented here); for binary inputs MATE is 1
+u = 2·TO − 2·EQS − 4·ESC − 1. TO marks a candidate destination token; EQS records the retrieved `=` marker, separating the prompt candidates from the answer phase. For binary inputs MATE is 1
 exactly when TO = 1, EQS = 0 and ESC = 0.
 It feeds an earliest-prefix selector head (layer 7 head 0) that writes WIN, the slot of the first mating candidate.
 
@@ -106,7 +101,7 @@ zero count; the selector head writes the first mating slot WIN. The shaded MLP7 
 
 ## 4. What training finds
 
-Table 2 gives every cell. The first exact step is the first evaluation at which test exact match reached 1.
+Table 2 gives every cell through the 2026-11-10 follow-up analysis. The first exact step is the first evaluation at which test exact match reached 1.
 
 *Table 2. Results per cell. Test exact match, given for seeds 0 / 1 / 2; stress = sequences exact of the 608 K ≤ 16 stress set.*
 
@@ -116,9 +111,13 @@ Table 2 gives every cell. The first exact step is the first evaluation at which 
 | PART T run 1 (K ≤ 8) | 3/3 | 1 / 1 / 1 → 1 / 1 / 1 | 2.5k / 2.5k / 4k | 317–328 |
 | PART A run 2 coverage | 3/3 | 1 / 1 / 1 → 1 / 1 / 1 (512) | 6.5k / 8k / 8k | 608 on all 6 snapshots |
 | PART T run 2 coverage | 3/3 | 1 / 1 / 1 → 1 / 1 / 1 (512) | 8–8.5k | not landed |
-| TRAIN A / T | no finished run | | | |
+| TRAIN A run 1 | 3/3 | 1 / 1 / 1 → 1 / 1 / 1 (128) | 14k / 14.5k / 14.5k | not reported |
+| TRAIN T run 1, width 384 | 0/3 | .922 / .961 / .938, best = final (128) | never | not reported |
+| TRAIN T run 3, width 384 | 0/3 | .961 / .953 / .969 → .961 / .938 / .969 (128) | never | not reported |
+| TRAIN T run 4, width 768, wd .1 | 3/3 | 1 / 1 / 1 → 1 / 1 / 1 (128) | 56k / 47k / 51k | not reported |
+| TRAIN T run 4, width 768, wd .03 | 0/3 at final exact stop | .992 / 1.0 / 1.0 → .992 / .992 / .992 (128) | transient exact in two seeds only | not reported |
 
-Key: s = seed.
+Key: s = seed; wd = weight decay. TRAIN follow-up rows come from the completed screens analysed after the original 2026-11-07 entry. The run-4 wd .03 cell is operationally 0/3: two seeds touched test 1.0 but did not retain it, and all final scores were .992.
 
 With every earlier stage frozen, the trained MLP7 reads HAND's escape count ESC and first-mate slot WIN and decodes the index in
 2.5–8.5k steps in both formats. Trained on lists of at most 8 candidates (run 1), the networks are exact on their monitor but only
@@ -131,8 +130,7 @@ indices (Appendix A).
 
 PART A and T both solve 3/3 with similar first exact steps. T keeps more heads causally live (34–43 against 14–17) because its count
 tokens keep the escape stages in use. Coverage makes T's use of the count more uniform (interchange .96–.98 against .85–1.00), and the
-learned output has a lower rank than HAND's (Appendix B). The [grok step](../GLOSSARY.md#counting-results), scratchpad against answer
-only from scratch, TRAIN size and length generalisation are open, because no TRAIN run has finished.
+learned output has a lower rank than HAND's (Appendix B). The [grok step](../GLOSSARY.md#counting-results) and the from-scratch scratchpad versus answer-only comparison were initially unmeasured. The completed screens now show A solving in run 1 while T needed the combined width/data retry; TRAIN longer-list generalisation remains unreported.
 
 ## 5. Mechanism and verification
 
@@ -147,9 +145,8 @@ For A, 442 fitted scalars (a 17-wide basis) replace 615,520 parameters on all 6 
 the stress set. For T, 7,693 fitted scalars keep 256/256 fresh K = 3 sequences on all 6 run-1 snapshots (and 128/128 K3 / K5 whole-path
 for seed 0), but fail stress retention for the final snapshots of seeds 0 and 1, so the T form is accepted locally only. A WIN-only
 selector in T was rejected (interchange flip .82). Controls on T seed 0: zeroing the terminal MLP gives 0 exact, and shuffled inputs
-give token accuracy .467. The run-2 networks have no substitution test yet. No
-[resample ablation of the complement](../GLOSSARY.md#verifying-a-circuit) was run, so both forms are supported by substitution with
-the complement not tested (status partial).
+give token accuracy .467. The run-2 PART networks have no reported completed substitution test. No
+resample ablation of the complement, which scrambles everything outside the claim using other inputs, was reported for these PART forms ([glossary](../GLOSSARY.md#verifying-a-circuit)), so both are supported by substitution only (status Partial).
 
 ### 5.2 Wiring
 
@@ -172,6 +169,34 @@ flowchart TD
 *Figure 2. The decoder training finds. MLP7 reads WIN through HAND's selector route and, in T, ESC directly. The tent closed form keeps
 every prediction for A and holds only locally for T; both are supported by substitution with the complement not tested (partial).*
 
+### 5.3 Whole-network TRAIN follow-up
+
+The count-writing T TRAIN run-4 networks use a late joint count: L3 heads read board tokens and MLP3 forms the count, with a second path through L2 heads and MLP2. The count tokens can be correct while the count is poorly recoverable by a linear probe (R² ≤ .33); this is evidence against a simple linear count code, not evidence that no count is computed. Winner-index interchange flips are 1.0 at the final layer. A TRAIN instead has a distributed answer-only matcher, with winner flips 1.0 at L3/L4 and count R² .16–.63.
+
+At count positions, the last-MLP lookup is μ[ESC]; at the index it is μ[WIN], where WIN is the first zero-escape candidate or NONE. Here μ is the mean native last-MLP output for that reference-key value. These keys are supplied by the task/reference calculation for the substitution, not established as a linearly decoded internal count. The test used a 256-row substitution cohort and 64 complement rows.
+
+*Table 3. Completed TRAIN follow-up verification, seeds 0 / 1 / 2. The acceptance share is .90 × the matched native exact match.*
+
+| Cell | Native on held substitution rows | Lookup substitute | Complement resample | Verdict |
+|---|---|---|---|---|
+| T TRAIN run 4, wd .1 | 1.0 / .992 / 1.0 | 1.0 / 1.0 / 1.0 | .917 / .917 / 1.0 | Verified, 3/3 screened seeds. |
+| A TRAIN run 1 | 1.0 / 1.0 / 1.0 | 1.0 / 1.0 / 1.0 | .63 / .56 / .70 | Sufficient readout only. |
+
+An additive fit on the eight individual escape bits gives .22/.31/.37 in T and is rejected. This lookup is per count value, not a linear sum circuit. The first complement claim, used components plus L3 heads, passed only seed 0; seeds 1/2 gave .651/.524 until the full L2 head family and MLP1 were retained. The final claim passed with full_eq_base true, empty_eq_source 1.0, circuit_resampled 0 and random_same_size .00–.38. A's failed complement claim was not replaced by a verified wider claim.
+
+```mermaid
+flowchart TD
+  A["Board-token embedding"] --> B["L3 head family"]
+  A --> C["L2 heads and MLP2"]
+  B --> D["MLP3: joint count and winner lookup writes"]
+  C --> D
+  D --> E["Count tokens and first-mate index"]
+  classDef trained fill:gold,stroke:darkgoldenrod,color:black
+  class A,B,C,D trained
+```
+
+*Figure 3. Verified local reference-keyed lookup with the widened T TRAIN screen, 3/3 seeds, when the retained L2/L3 head families and earlier MLPs are included. All displayed components are trained. Substitution and complement resampling pass locally; additive escape-bit fits fail, and longer-list transfer is unreported.*
+
 ## 6. Limitations and open questions
 
 Substitutions are on fixed K3 / K5 / stress sets, not on all positions. Seed counts are screening counts (3;
@@ -179,18 +204,18 @@ Substitutions are on fixed K3 / K5 / stress sets, not on all positions. Seed cou
 
 Open questions:
 
-- the TRAIN rung has no finished run (earlier runs were cut by host loss at 7k / 4.5k steps; a relaunch is in training), so
-  scratchpad against answer only from scratch, the grok step and the TRAIN circuits are unmeasured;
-- there is no ten-seed final;
+- earlier TRAIN attempts were interrupted at 7k / 4.5k steps; these infrastructure losses are separate from the completed learning results above;
+- the later ten-seed final was stopped by the owner before the replacement run produced new snapshots, so there is no ten-seed final result and no implied live training;
+- longer-list TRAIN stress results remain unreported, and the run-4 changes confound width with data presentations;
 - the K ≤ 16 stress replay of T coverage run 2 has not landed;
-- the T closed form is accepted only locally (K3/K5), not at K ≤ 16;
+- the PART T run-1 closed form is accepted only locally (K3/K5), not at K ≤ 16;
 - the small margin to the neighbouring index (Appendix A) is a hypothesis for the late-index stress errors, not yet tested;
 - public code is pending.
 
 ## 7. Prediction record
 
 The predictions were recorded before the runs. PART would reach 3/3 ≥ .99 by 2,000 steps: solved, but later (2.5–4k in run 1). TRAIN
-would reach T ≥ 2/3 and A ≤ 1/3: not yet testable; the cut runs were at A .97 and T .49, pointing the other way.
+would reach T ≥ 2/3 and A ≤ 1/3. The cut runs were at A .97 and T .49 and did not settle the prediction. Completed run 1 refuted both TRAIN predictions (T 0/3, A 3/3); T reached 3/3 only after the run-4 retry. The later run-4 prediction of at most 1/6 exact seed/weight-decay rows was also refuted: 3/6 held exact by the stop rule and 5/6 touched it at some evaluation.
 
 ## Appendix A. Weights excerpt and reading
 
@@ -218,7 +243,6 @@ variance; JS = attention divergence to HAND.
 
 ## References
 
-- Fiekas, N. (n.d.). python-chess: a chess library for Python (software). *GitHub*. https://github.com/niklasf/python-chess (legality
-  cross-check)
+- Fiekas, N. (n.d.). python-chess: A chess library for Python [Computer software; GPL-3.0; repository since 2012, PyPI package `chess`; version used not recorded]. *GitHub*. https://github.com/niklasf/python-chess (Legality cross-check.)
 - Zsámboki, P., Levi, B., Smith, D. A. J., et al. (2025). Post-norm can resharpen attention.
-  *arXiv preprint*. https://doi.org/10.48550/arXiv.2510.08341 (softmax over more tokens compresses logit gaps)
+  *arXiv preprint*. https://doi.org/10.48550/arXiv.2510.08341 ; https://arxiv.org/abs/2510.08341 (Softmax over more tokens compresses logit gaps.)

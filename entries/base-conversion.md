@@ -1,23 +1,22 @@
 # Base conversion: hexadecimal, binary and decimal
 
-This entry studies how two-layer transformers convert the numbers x = 0..255 from hexadecimal to binary, from binary to decimal and
-from decimal to binary, writing either the answer only or a scratchpad of intermediate steps. Hand-built networks, every weight set by
-formula, are exact on all 256 inputs in 6/6 cells. Only the most local conversion is learned from scratch: hex to binary groks when
-trained from scratch (answer only: 1/10 seeds at fraction .5, 6/10 at .8; scratchpad: 2/10 and 7/10), and 38 of the 40 trained networks carry
-the hand-built variable, the one-hot of the source hex digit. With frozen hand-built attention, decimal to binary (answer only) learns the hand-built
-remainder threshold in 6/10 seeds, while the carry-type cells, which must carry a value across digits, fail in PART and in TRAIN (0 of
-80 TRAIN nets and 0 of 30 PART nets reach test .99). The task is partly solved. The closed forms are partial: substituting the hex digit
-one-hot is exact in 36 of 40 TRAIN nets and the decimal-to-binary threshold rule holds in PART, but a joint scrub of the nibble-only
-story fails, and the carry-type cells have no closed form.
+Each hexadecimal digit names a block of binary bits, whereas conversion between decimal and binary combines place values across
+digits. Two-layer transformers were tested on every number from 0 to 255, writing either the answer directly or intermediate steps
+first. From-scratch hexadecimal-to-binary training reached held-out whole-output exact match ≥ .99 in 16/40 seeds; substituting a
+fitted digit code gave 1.00 on all 256 inputs in 36/40 networks, including networks whose own answers were wrong, but the fit included
+test inputs. With frozen hand-built attention, decimal-to-binary answer-only training reached the same criterion in 6/10 seeds. The
+task is partly solved and the closed forms are partial: the digit code is a sufficient readout at the tested boundary, while later
+context interventions rule out a complete digit-only routing mechanism; no test resampled everything outside the claimed circuit
+([verification glossary](../GLOSSARY.md#verifying-a-circuit)).
 
 | Fact | Value |
 |---|---|
 | Task | Convert x = 0..255 from hexadecimal to binary, binary to decimal, or decimal to binary |
 | Input → output example | Decimal to binary, answer only: `^255=` → `11111111` (eight 1 bits) |
 | Model | GPT-NeoX, 2 layers × 4 heads, d_model 256, MLP 256 ReLU, no LayerNorm, no positional encoding; PART trains only the layer-1 MLP |
-| Rungs and seeds | HAND exact in 6/6 cells; PART and TRAIN 10 seeds per cell (TRAIN also at .8, 10 seeds) |
-| Closed form status | Partial (hex to binary substitution exact in 36 of 40 TRAIN nets; decimal to binary A threshold rule in PART; a joint scrub of the nibble-only story fails, .556 / .923; none for carry-type cells) |
-| Status | Partly solved (hex to binary groks in TRAIN, 1/10 to 7/10 seeds by cell and fraction; carry-type cells 0 of 80 TRAIN, 0 of 30 PART); last run 2026-11-05; circuit probes 2026-11-06 |
+| Rungs and seeds | HAND (formula-set weights) exact in 6/6 cells; PART (one learned stage) and TRAIN (all weights learned) 10 seeds per cell; TRAIN also at .8, 10 seeds ([rungs](../GLOSSARY.md#the-three-rungs)) |
+| Closed form status | Partial (hex digit-code substitution 1.00 on all 256 inputs in 36/40 TRAIN nets, fit includes test; decimal-to-binary PART threshold rule; no complement test; joint digit-only scrub .556 / .923 fails) |
+| Status | Partly solved (hex-to-binary TRAIN 16/40 and decimal-to-binary answer-only PART 6/10 reach best test ≥ .99; three carry-type cells PART 0/30, TRAIN 0/60); last run 2026-11-05; circuit probes 2026-11-06 |
 | Weights | [Hugging Face: base-conversion](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/base-conversion) (6 HAND, 77 PART/TRAIN) |
 | Reproduce | [Commands](#24-reproduction), run from `code/` |
 
@@ -26,7 +25,8 @@ story fails, and the carry-type cells have no closed form.
 Every cell uses all 256 inputs x = 0..255, one sequence each. Hex to binary is `^h1h0=` followed by 8 bits, binary to decimal is
 `^b7..b0=` followed by 3 digits, and decimal to binary is `^d2d1d0=` followed by 8 bits, where `^` is the start token. Two output
 formats were studied (Table 1); the [scratchpad](../GLOSSARY.md#task-formats) format writes intermediate steps before the answer. An
-output counts as correct only on exact match of all output tokens, [teacher-forced](../GLOSSARY.md#task-formats). The split is over
+output counts as correct only on exact match of all output tokens, with each next token scored after the correct preceding tokens
+([teacher-forcing](../GLOSSARY.md#task-formats)). The split is over
 inputs, with train fraction .5 for every cell; TRAIN was also run at .8 as a data control. The carry-type cells are binary to decimal
 and scratchpad decimal to binary, whose steps carry a value from digit to digit.
 
@@ -38,7 +38,7 @@ and scratchpad decimal to binary, whose steps carry a value from digit to digit.
 | `B` (scratchpad) | hex to binary: each hex digit echoed, then its 4 bits; binary to decimal: Horner doubling v_k = 2 v_(k-1) + b_k, written as 3 digits per step; decimal to binary: halving, remainder bit then quotient, then `=` and the answer |
 
 The vocabulary has 18 tokens, and the sequence lengths are 12 / 14 (hex to binary A / B), 13 / 34 (binary to decimal) and 13 / 46
-(decimal to binary).
+(decimal to binary). For example, decimal-to-binary answer only maps `^255=` to `11111111` (eight 1 bits).
 
 ## 2. Model
 
@@ -67,7 +67,7 @@ and b_in [256], and `dense_4h_to_h`, W_out [256, 256] and b_out [256] (131,584 p
 | TOK | 0-17 | token one-hot |
 | P | 18 | position scalar of the position frame |
 | POS | 19..(18 + L - 1) | position one-hot (L = sequence length) |
-| HAND's layer-1 variable | following | X (16-wide nibble one-hot, hex to binary), F (remainder scalar, binary to decimal and decimal to binary A) or C, X (decimal to binary B) |
+| HAND's layer-1 variable | following | X (16-wide one-hot code of a hex digit, or nibble), F (remainder scalar, binary to decimal and decimal to binary A) or C, X (current digit and higher digit or written bit, decimal to binary B) |
 
 ### 2.3 Training
 
@@ -183,9 +183,11 @@ networks use 7-38 (A) and 51-72 (B) neurons, against HAND's 4 / 7.
 
 Trained from scratch, the networks first memorised, by 2.5-13k steps, and then [grokked](../GLOSSARY.md#counting-results) at
 3k-40.5k steps (16/40 nets). Training was unstable afterwards: the final test fell as low as .02 while the best snapshot was exact.
-38/40 nets are of the nibble one-hot type, meaning that one hex-digit one-hot fit of the residual after layer 1 suffices. The read is
-spread over 2-4 layer-1 heads with fixed attention patterns (2-7 keys, cosine to HAND's pattern .5-.97), after 2-4 layer-0 heads that
-average all positions. In all layers the networks use 4-8 heads + 310-490 neurons, against HAND's 1 + 4 / 7.
+38/40 nets are of the nibble one-hot type, meaning that one hex-digit one-hot fit of the residual after layer 1 suffices as a readout;
+this is not a complete native mechanism. The early screen described 2-4 layer-1 heads with fixed attention patterns (2-7 keys, cosine
+to HAND's pattern .5-.97), after 2-4 layer-0 heads averaging all positions. Later causal probes instead found content-weighted prefix
+summaries and, in scratchpad examples, substantial use of the written digit echo (Section 5.2). In all layers the networks use 4-8
+heads + 310-490 neurons, against HAND's 1 + 4 / 7.
 
 ### 4.2 Decimal to binary, answer only
 
@@ -195,10 +197,10 @@ Trained from scratch, no network reached .99, also not with learning rate 3e-4 a
 
 ### 4.3 Carry-type cells
 
-The carry-type cells fail in PART and in TRAIN (0 of 80 TRAIN nets, and 0 of 30 PART nets, reach test .99). The count of 30 PART nets
-is the three carry-type cells; the count of 80 TRAIN nets matches these three cells plus decimal to binary A, each at fractions .5 and
-.8 (a reading of the count; decimal to binary A also has no TRAIN net at .99, Table 4). Binary to decimal A in PART reads F: substituting F raises exact match from .72-.81 to
-.82-.94 in 8/10. Its errors are off-by-one digits in tens and units, which points to a blurred threshold ladder plus memorising
+The three carry-type cells, binary to decimal in both formats and decimal to binary with a scratchpad, fail the best test ≥ .99
+criterion in PART (0/30 seeds) and TRAIN (0/60 across fractions .5 and .8). The broader non-hex TRAIN group is 0 of 80 nets: it also
+includes decimal to binary A at both fractions, which likewise has no success in Table 4. Binary to decimal A in PART reads F: in the
+substitution-analysis batch, substituting F raises exact match from .72-.81 to .82-.94 in 8/10. Its errors are off-by-one digits in tens and units, which points to a blurred threshold ladder plus memorising
 features, with about 200 neurons against HAND's 18. In binary to decimal B in PART, F alone gives .02, and the read tokens (or the
 current token) are needed (.54-.64). All carry-type TRAIN nets use all 8 heads and both MLPs (420-510 neurons) and have no closed form.
 
@@ -215,8 +217,8 @@ binary B, C and X are present but not linear (PART interchange .47/.63, DAS .98)
 
 For hex to binary, bit_j = bit_j(X) of the read nibble X. Substituting the per-position least-squares fit of the nibble one-hot for the
 residual after layer 1 gives exact 1.00 on all 256 inputs in 36 of 40 TRAIN nets (A .5: 9/10, A .8: 10/10, B .5: 8/10, B .8: 9/10;
-the others .94), above the nets' own accuracy (.85-.99). The trained nets therefore carry HAND's variable, and their errors come from
-extra residual components.
+the others .94), above the nets' own accuracy (.85-.99). This supports a sufficient digit-code readout and can repair native errors;
+it does not establish how the trained heads compute that code or prove that the remaining residual components are irrelevant.
 
 For decimal to binary A in PART, bit_q = [F_q >= theta_q] with theta_q in [.94, 1.06]. The network agrees with its own best-threshold
 rule on .984-1.000 of inputs per answer position; with theta = 1, HAND's rule, the rule is HAND and exact. All errors of the networks
@@ -229,9 +231,9 @@ so neither closed form is verified under the atlas rule, and the carry-type cell
 ### 5.2 Circuit probes
 
 Circuit probes were run on best snapshots on 2026-11-06, for decimal to binary PART on its final snapshot (Table 5). All 256 inputs
-were used, teacher-forced, and fits used training rows only. In the probe records, a component that passed a causal intervention plus an
-accuracy-preserving substitution was labelled verified (a weaker test than the atlas rule), and one with causal evidence only was
-labelled supported. Scores are full / held-out exact, ablation numbers are
+were used, teacher-forced, and fits used training rows only. The probe records used the historical label “verified” for a causal
+intervention plus an accuracy-preserving substitution, a weaker test than the atlas rule; here these are substitution-supported
+components, not atlas-verified circuits. The records labelled causal evidence alone “supported”. Scores are full / held-out exact, ablation numbers are
 accuracy retained, and components are zero-indexed.
 
 *Table 5. Components probed (causal intervention plus substitution).*
@@ -273,9 +275,9 @@ original-driven (echo values unused); hex TRAIN A 7 distributed original + writt
 snapshots, full .965–.992).
 
 Two statements need reconciling with Section 4. Section 4.1 describes the hex TRAIN layer-0 heads as averaging all positions; the
-probes show that the prefix content matters (equalising affinities drops exact to .215 / .324). The θ_q above lie partly outside the
-[.94, 1.06] best-threshold range of Section 5.1; at the low bits F's grid is coarse, so any θ between grid points gives the same
-decisions. The 12 / 16-neuron PART decoders are refitted replacements, not the 7–38 / 51–72 used-neuron counts from ablation.
+probes show that the prefix content matters (equalising affinities drops exact to .215 / .324). The θ_q above are from the later final-snapshot probe, whereas
+[.94, 1.06] in Section 5.1 is the earlier best-agreement threshold summary on the discrete F grid (Appendix A). At the low bits F's
+grid is coarse, so θ values between the same adjacent grid points give the same decisions; the parameter fits need not coincide. The 12 / 16-neuron PART decoders are refitted replacements, not the 7–38 / 51–72 used-neuron counts from ablation.
 
 ```mermaid
 flowchart TD
@@ -290,14 +292,15 @@ flowchart TD
     class L0,M0,H1,H3,M1 trained
 ```
 
-*Figure 2. The circuit training finds in hex to binary, scratchpad, trained from scratch (seed 1). L0 attention, MLP0 and MLP1 are
-jointly substituted with full / held-out / agreement 1/1/1 (causal intervention plus substitution, Table 5); the bits are read mainly from the
-written echo (supported); a joint scrub of the nibble-only story fails, so the circuit is not verified under the atlas rule.*
+*Figure 2. The probed hex-to-binary TRAIN scratchpad circuit (seed 1). The shaded L0 attention, MLP0, L1H1, L1H3 and MLP1 are trained.
+L0 attention, MLP0 and MLP1 are jointly substituted with full / held-out / agreement 1/1/1 (Table 5); the bits mainly use the written
+echo. Status is partial: the digit-code readout is sufficient, but a joint digit-only scrub fails and no complement test was reported.*
 
 ### 5.3 Relation to the hand-built network and to published work
 
-Where the conversion is learned, the algorithm is the same: hex to binary is a per-digit lookup in HAND, PART and TRAIN, and decimal to
-binary A in PART is HAND's remainder threshold. The trained nets are 50-100x larger than HAND (4-8 heads and 310-490 neurons against 1
+The sufficient readouts resemble HAND: hex to binary admits a per-digit lookup in PART and TRAIN, and decimal to binary A in PART
+admits a remainder threshold. Their status remains partial, with no complement test; TRAIN's native content- and echo-dependent
+routing is not reduced to a digit-only circuit. The trained nets are 50-100x larger than HAND (4-8 heads and 310-490 neurons against 1
 head and 4-7 neurons), and TRAIN spreads the digit read over several heads. HAND's answer-only mixture heads (place-value weights,
 written digits subtracted) were not found by training: no trained net solved a carry-type cell from scratch. Scratchpads for
 intermediate computation were introduced by [Nye et al. (2021)](#references), and output order and scratchpads in arithmetic were
@@ -319,8 +322,9 @@ that no seed reached .99, not that none can.
 The prediction was recorded in the design notes before any PART or TRAIN run (committed 2026-11-04 23:24; the first training run
 finished after 23:44). It was to look in the trained nets for weighted-mixture attention heads (place-value weights) versus a
 per-digit lookup, and for thresholds on a scalar remainder (answer-only formats) versus doubling and halving tables (scratchpad
-formats). It held in two places: hex to binary is a per-digit lookup on the read nibble (PART and TRAIN), and decimal to binary A in
-PART is a remainder threshold. The mixture-head prediction was not testable, because no carry-type cell was learned from scratch. No
+formats). It held at the readout level in two places: a per-digit lookup suffices for hex to binary (PART and TRAIN), and a remainder
+threshold describes decimal to binary A in PART. These are partial forms, not complete verified circuits: the fit included test
+inputs, the digit-only joint scrub failed, and no complement test was reported. The mixture-head prediction was not testable, because no carry-type cell was learned from scratch. No
 prediction about grokking, network size or which cells would fail was recorded; the failure of the carry-type cells and the 50-100x
 size gap are post-hoc observations.
 

@@ -1,16 +1,22 @@
 # Dyck-k and subject–verb agreement
 
-Small transformers were trained to recognise nested brackets and choose a main verb's singular or plural form. Agreement networks could copy the first noun, which is always the main subject in this dataset; bracket networks instead built a distributed state computation. The final two-bracket scratchpad cell reached exact match 1.0 in 10/10 seeds on 2048 held-out words per seed, so that cell is solved. Its closed-form status is partial: a pointer to the state before the matching opener substitutes successfully in 8/10, but removing its partner head destroys accuracy, and that partner's computation remains unidentified.
+Matching brackets requires remembering which bracket type is open; choosing a verb's singular or plural form requires finding its
+grammatical subject. Three-layer transformers were tested on both tasks, with and without a scratchpad that recorded the current
+bracket or subject state ([glossary](../GLOSSARY.md#task-formats)). The final two-bracket-type scratchpad cell is solved in range, with
+10/10 seeds reaching held-out whole-output exact match 1.0; substituting a pointer to the state written before the matching opener
+kept .90–1.0 in 8/10 final snapshots. This is only a partial closed form: resampling its needed partner head left .17/.06 exact match
+in two tested seeds, and the partner's computation remains unidentified. Agreement without a scratchpad exposed a different
+shortcut, copying the first noun, which is valid because this generated grammar always places the main subject first.
 
 ## At a glance
 
 | Fact | Value |
 |---|---|
-| Task | Recognise two- or three-type bracket languages and predict main-verb number. |
+| Task | Recognise correctly nested brackets of two or three types and choose a main verb's singular/plural form. |
 | Input → output example | `[()]` is correctly nested; `[(])` is not. |
 | Model | Three-layer decoder, width 64, two heads per layer, ReLU MLP width 64; no positional embeddings or LayerNorm. |
-| Rungs and seeds | HAND-a/-c references; PART retrains match-head attention; TRAIN screens three seeds per cell and weight decay; final Dyck-2 scratchpad TRAIN 10 seeds at weight decay .1. |
-| Closed form status | Partial (Dyck pop pointer substitutes in 8/10, partner-head complement fails; agreement substitutions pass, with complement tested on one seed per claimed type). |
+| Rungs and seeds | HAND-a/-c fix weights; PART retrains match-head attention; TRAIN learns all weights ([rungs](../GLOSSARY.md#the-three-rungs)). Three screening seeds per cell and weight decay; final Dyck-2 scratchpad TRAIN 10 seeds at weight decay .1. |
+| Closed form status | Partial (Dyck pointer substitution .90–1.0 in 8/10 final seeds; resampling its partner leaves .17/.06 in two seeds, so no two-head form is accepted; agreement has separate one-seed-per-type complement support). |
 | Status | Solved (Dyck-2 scratchpad final TRAIN 10/10 exact; other cells include failures); last run and interpretation 2026-11-11. |
 | Weights | [Hugging Face: dyck-k-and-agreement](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/dyck-k-and-agreement), published revision `0aba437e2661`. |
 | Reproduce | Not available yet: training code for this task is not yet in `code/`. |
@@ -52,7 +58,8 @@ Revision `0aba437e2661` contains HAND-a/-c per language and format, agreement A/
 
 ## 3. Hand-built solution
 
-HAND counts nesting depth and reads the opener whose depth matches the current stack position. L0H0 is a BOS-sink count head, using the beginning-of-sequence token as an [attention sink](../GLOSSARY.md#hand-built-machinery). MLP0 writes one-hot depth `DEP_m` and opener depth `ODEP_m` with step pairs. For Dyck, L1H0 reads the latest opener at depth `b` (HAND-a), or at depth ≤ `b` (HAND-c):
+HAND counts nesting depth and reads the opener whose depth matches the current stack position. L0H0 is a BOS-sink count head, using the beginning-of-sequence token as an [attention sink](../GLOSSARY.md#hand-built-machinery). MLP0 writes one-hot depth `DEP_m` and opener depth `ODEP_m` with step pairs. Here depth `b` is the number of brackets still open. For Dyck, L1H0 reads the latest opener at depth `b` (HAND-a), or at depth ≤ `b`
+(HAND-c):
 
 ```text
 score = BETA [ODEP = target] + EPS T
@@ -66,7 +73,7 @@ MLP1 V = [closer c](1 - MT_c)
 OUTY = ReLU(DEP_0 - 4 NV + G EQ - G)
 ```
 
-`EQ` indicates the answer query `=`. In agreement, L1H0 reads the latest preposition (`p`) to form a PP flag; L2H0 is the state head and penalises PP nouns by `-2 BETA`. Constants are BETA `1e4`, EPS `20`, G `2000`, K `4` and U `20`.
+`DEAD` marks an invalid prefix; `GC/GE` are the opener-type and empty-stack state readouts. `EQ` indicates the answer query `=`. In agreement, L1H0 reads the latest preposition (`p`) to form a PP flag; L2H0 is the state head and penalises PP nouns by `-2 BETA`. Constants are BETA `1e4`, EPS `20`, G `2000`, K `4` and U `20`.
 
 ```mermaid
 flowchart TD
@@ -121,7 +128,9 @@ B-HANDa replaces the trained layer-2 attention with HAND-a's state-head formula.
 
 ### 5.2 Dyck: a partial pop-pointer description
 
-At an alive closer `t`, matched to opener `j`, the pop pointer reads `S_(j-1)`, the state written before that opener (BOS if `j = 1`), and copies it as the new stack top. It is a [fetch head](../GLOSSARY.md#hand-built-machinery), but it fetches the pre-opener state rather than HAND's depth-matched opener. Pointer substitution kept .90–1.0 exact match in 8/10 final seeds. The pointer sits in layer 2 in seven seeds and is also found in layer 1 in four; multiple heads can carry it. Best snapshots had B-pop in 7/10, versus 8/10 final: seed 5 changed pointer head and seed 7 acquired it after its best snapshot. This placement/snapshot variation is not a count of eight identical layer-2 circuits. A partner layer-2 head was also necessary in the tested joint claims.
+At an alive closer `t`, a closing bracket before any invalid-prefix flag, matched to opener `j`, the pop pointer reads `S_(j-1)`, the
+state written before that opener (the beginning-of-sequence token, BOS, if `j = 1`). It copies that state as the new stack top, the
+bracket type now left open. For example, when `]` closes `[` in `([])`, the earlier state says that `(` remains open. It is a [fetch head](../GLOSSARY.md#hand-built-machinery), but it fetches the pre-opener state rather than HAND's depth-matched opener. Pointer substitution kept .90–1.0 exact match in 8/10 final seeds. The pointer sits in layer 2 in seven seeds and is also found in layer 1 in four; multiple heads can carry it. Best snapshots had B-pop in 7/10, versus 8/10 final: seed 5 changed pointer head and seed 7 acquired it after its best snapshot. This placement/snapshot variation is not a count of eight identical layer-2 circuits. A partner layer-2 head was also necessary in the tested joint claims.
 
 With the partner head resampled, the compact final complement results were .17 / .06; source precision was .172 and .060 on seeds 1 and 2, with valid self-checks. Screening had already failed at .27 / .14. The second head is needed at every scored token class. Forcing it to the previous state or to the matched opener failed (paired replacements ≤ .88 in 9/10 in the compact account). The final source distinguishes previous-state pairs .00–.88 and stack-top pairs .27–.85, each in 9/10; the seed-8 exceptions .940/.926 do not identify a general two-head law.
 
@@ -136,7 +145,9 @@ flowchart TD
   classDef trained fill:lightyellow,stroke:darkorange
   class B,C,D trained
 ```
-*Figure 2. The B-pop description in final Dyck-2 TRAIN. The heads and MLP2 are trained. Closed-form status: partial; pointer substitution keeps .90–1.0 in 8/10, but partner-head complements fail and the partner remains unidentified. The matched-opener relation describes the tested override, not a proved native computation.*
+*Figure 2. The B-pop description in final Dyck-2 TRAIN. The shaded heads and MLP2 are trained. Closed-form status is partial: pointer
+substitution keeps .90–1.0 in 8/10 final seeds, but resampling the needed partner leaves .17/.06 in the two tested seeds. No two-head
+form is accepted. The matched-opener relation describes the tested override, not a proved native address computation.*
 
 B-HANDa follows [Yao et al. (2021)](#references) within the scaffold. From scratch, no analysed net was shown to use that depth-match head. The limited length transfer is consistent with [Bhattamishra et al. (2020)](#references), who report in-range fitting and longer-length failures for Transformers on formal languages.
 
@@ -154,7 +165,7 @@ Predictions were written before run 1. The final ten-seed evaluation tested the 
 
 | Prediction | Outcome |
 |---|---|
-| Agreement A solved 3/3 by first-noun shortcut, wide 1.0 | Held for TRAIN; PART is 2/3 because of the degenerate seed. |
+| Agreement A solved 3/3 by first-noun shortcut, wide 1.0 | In-range TRAIN solve held; native wide .99–1.0 versus substituted rule 1.0. PART is 2/3 because of the degenerate seed. |
 | Dyck B TRAIN solves ≥ 2/3 Dyck-2, ≥ 1/3 Dyck-3 | Held: 6/6 each at weight decay .1/.3. |
 | Dyck B length-80 accuracy .3–.9 | Held. |
 | Dyck B PART solves | Missed: 0/6, cannot fit. |
