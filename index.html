@@ -1,0 +1,5 @@
+---
+layout: default
+title: Circuit atlas
+---
+{% capture readme %}{% include_relative README.md %}{% endcapture %}{{ readme | replace: "code/README.md", "code/" | replace: ".md)", ".html)" | replace: ".md#", ".html#" | markdownify }}

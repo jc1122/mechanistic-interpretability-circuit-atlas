@@ -17,4 +17,4 @@ relative_links:
 defaults:
   - scope: {path: ""}
     values: {layout: default}
-exclude: [TEMPLATE.md, STYLE.md, SITE.md, CHANGELOG, code/README.md]
+exclude: [TEMPLATE.md, STYLE.md, SITE.md, CHANGELOG]
