@@ -41,6 +41,7 @@ Full table with seed counts and closed-form results: [INDEX.md](INDEX.md). Readi
 - [gcd-euclid](entries/gcd-euclid.md): a learned three-rule router on frozen Euclid parts
 - [quadratic-roots](entries/quadratic-roots.md): the register executor is one AND neuron; the parent tasks fail
 - [compose-arithmetic-registers](entries/compose-arithmetic-registers.md): compositions learned without the register lookup; the bare primitive fails
+- [integer-matvec](entries/integer-matvec.md): the scratchpad trains 8/10 with the hand-built variables only at the last layer; answer only needs 4x the budget
 
 **Number formats**
 - [base-conversion](entries/base-conversion.md): hex to binary groks as a nibble lookup; carry-type conversions are never learned
