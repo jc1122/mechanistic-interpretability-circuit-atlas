@@ -21,7 +21,7 @@ text{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--ink)}
 svg{--bg:#ffffff;--ink:#182d3d;--muted:#41586b;--line:#586e80;--blue:#12658e;--bluefill:#e8f3f9;--amber:#875000;--amberfill:#fff2d8;--card:#f4f7fa}
 @media(prefers-color-scheme:dark){svg{--bg:#0d1117;--ink:#eef4fa;--muted:#b5c5d4;--line:#9bafc0;--blue:#79c7ed;--bluefill:#152e40;--amber:#f3c26b;--amberfill:#342b1c;--card:#161f29}}
 .bg{fill:var(--bg)}.card{fill:var(--card);stroke:var(--line);stroke-width:2}
-.given{fill:var(--bluefill);stroke:var(--blue);stroke-width:2;stroke-dasharray:7 5}
+.frozen{fill:var(--bluefill);stroke:var(--blue);stroke-width:2}
 .learned{fill:var(--amberfill);stroke:var(--amber);stroke-width:2.5}
 .paper{fill:var(--bg);stroke:var(--line);stroke-width:2}
 .flow,.branch{fill:none;stroke:var(--ink);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
@@ -32,51 +32,51 @@ svg{--bg:#ffffff;--ink:#182d3d;--muted:#41586b;--line:#586e80;--blue:#12658e;--b
 <rect x="0" y="0" width="640" height="696" rx="0" class="bg"/>
 <text x="18" y="38" font-size="30" font-weight="650" class="" text-anchor="start">Written steps reuse a smaller circuit</text>
 <text x="18" y="79" font-size="24" font-weight="400" class="muted" text-anchor="start">Hand-built 8-bit division · Example: 7 ÷ 2</text>
-<rect x="18" y="94" width="604" height="238" rx="10" class="card"/>
+<rect x="18" y="94" width="604" height="254" rx="10" class="card"/>
 <text x="36" y="128" font-size="26" font-weight="650" class="" text-anchor="start">Answer only</text>
 <text x="604" y="128" font-size="24" font-weight="600" class="blue" text-anchor="end">186 used neurons</text>
-<text x="77" y="235" font-size="26" font-weight="650" class="" text-anchor="middle">7 ÷ 2</text>
-<path d="M 123 226 H 141 M 141 165 V 303" class="branch"/>
-<path d="M 141 165 H 164" class="flow"/>
-<rect x="170" y="143" width="145" height="44" rx="5" class="given"/>
-<text x="242" y="174" font-size="24" font-weight="400" class="blue" text-anchor="middle">7 ≥ 2</text>
-<path d="M 141 211 H 164" class="flow"/>
-<rect x="170" y="189" width="145" height="44" rx="5" class="given"/>
-<text x="242" y="220" font-size="24" font-weight="400" class="blue" text-anchor="middle">7 ≥ 4</text>
-<path d="M 141 257 H 164" class="flow"/>
-<rect x="170" y="235" width="145" height="44" rx="5" class="given"/>
-<text x="242" y="266" font-size="24" font-weight="400" class="blue" text-anchor="middle">7 ≥ 6</text>
-<path d="M 141 303 H 164" class="flow"/>
-<rect x="170" y="281" width="145" height="44" rx="5" class="given"/>
-<text x="242" y="312" font-size="24" font-weight="400" class="blue" text-anchor="middle">7 ≥ 8</text>
-<path d="M 321 165 L 410 198" class="flow"/>
-<text x="350" y="156" font-size="24" font-weight="400" class="" text-anchor="middle">1</text>
-<path d="M 321 211 L 410 221" class="flow"/>
-<text x="350" y="202" font-size="24" font-weight="400" class="" text-anchor="middle">1</text>
-<path d="M 321 257 L 410 244" class="flow"/>
-<text x="350" y="248" font-size="24" font-weight="400" class="" text-anchor="middle">1</text>
-<path d="M 321 303 L 410 267" class="flow"/>
-<text x="350" y="294" font-size="24" font-weight="400" class="" text-anchor="middle">0</text>
-<rect x="416" y="180" width="188" height="108" rx="8" class="given"/>
+<text x="77" y="250" font-size="26" font-weight="650" class="" text-anchor="middle">7 ÷ 2</text>
+<path d="M 123 242 H 141 M 141 162.5 V 321.5" class="branch"/>
+<path d="M 141 162.5 H 164" class="flow"/>
+<rect x="170" y="141" width="145" height="43" rx="5" class="frozen"/>
+<text x="242" y="171.5" font-size="24" font-weight="400" class="blue" text-anchor="middle">7 ≥ 2</text>
+<path d="M 141 215.5 H 164" class="flow"/>
+<rect x="170" y="194" width="145" height="43" rx="5" class="frozen"/>
+<text x="242" y="224.5" font-size="24" font-weight="400" class="blue" text-anchor="middle">7 ≥ 4</text>
+<path d="M 141 268.5 H 164" class="flow"/>
+<rect x="170" y="247" width="145" height="43" rx="5" class="frozen"/>
+<text x="242" y="277.5" font-size="24" font-weight="400" class="blue" text-anchor="middle">7 ≥ 6</text>
+<path d="M 141 321.5 H 164" class="flow"/>
+<rect x="170" y="300" width="145" height="43" rx="5" class="frozen"/>
+<text x="242" y="330.5" font-size="24" font-weight="400" class="blue" text-anchor="middle">7 ≥ 8</text>
+<path d="M 321 162.5 H 370 L 410 198" class="flow"/>
+<text x="350" y="148.5" font-size="24" font-weight="400" class="" text-anchor="middle">1</text>
+<path d="M 321 215.5 H 370 L 410 221" class="flow"/>
+<text x="350" y="201.5" font-size="24" font-weight="400" class="" text-anchor="middle">1</text>
+<path d="M 321 268.5 H 370 L 410 244" class="flow"/>
+<text x="350" y="254.5" font-size="24" font-weight="400" class="" text-anchor="middle">1</text>
+<path d="M 321 321.5 H 370 L 410 267" class="flow"/>
+<text x="350" y="307.5" font-size="24" font-weight="400" class="" text-anchor="middle">0</text>
+<rect x="416" y="180" width="188" height="108" rx="8" class="frozen"/>
 <text x="510" y="221" font-size="24" font-weight="600" class="" text-anchor="middle">quotient 3</text>
 <text x="510" y="258" font-size="24" font-weight="600" class="" text-anchor="middle">remainder 1</text>
-<rect x="18" y="342" width="604" height="304" rx="10" class="card"/>
-<text x="36" y="377" font-size="26" font-weight="650" class="" text-anchor="start">Written steps</text>
-<text x="604" y="377" font-size="24" font-weight="600" class="blue" text-anchor="end">14 used neurons</text>
-<text x="36" y="411" font-size="24" font-weight="400" class="" text-anchor="start">Reuse the written remainder at each step</text>
-<rect x="36" y="427" width="204" height="112" rx="8" class="given"/>
-<text x="52" y="462" font-size="24" font-weight="600" class="blue" text-anchor="start">Read next bit</text>
-<text x="52" y="504" font-size="24" font-weight="400" class="" text-anchor="start">2 × 1 + 1 = 3</text>
-<rect x="386" y="427" width="218" height="112" rx="8" class="given"/>
-<text x="402" y="462" font-size="24" font-weight="600" class="blue" text-anchor="start">Compare 3 ≥ 2</text>
-<text x="402" y="504" font-size="24" font-weight="400" class="" text-anchor="start">subtract 2</text>
-<path d="M 246 483 H 376" class="flow"/>
-<text x="311" y="468" font-size="26" font-weight="400" class="" text-anchor="middle">3, 2</text>
-<path d="M 495 545 V 581" class="flow"/>
-<text x="533" y="570" font-size="24" font-weight="400" class="" text-anchor="middle">1, 1</text>
-<rect x="265" y="588" width="339" height="48" rx="4" class="paper"/>
-<text x="434" y="620" font-size="24" font-weight="400" class="" text-anchor="middle">bit 1; remainder 1</text>
-<path d="M 259 612 H 26 V 483 H 30" class="flow"/>
-<text x="144" y="576" font-size="24" font-weight="400" class="" text-anchor="middle">read remainder 1</text>
+<rect x="18" y="358" width="604" height="288" rx="10" class="card"/>
+<text x="36" y="393" font-size="26" font-weight="650" class="" text-anchor="start">Written steps</text>
+<text x="604" y="393" font-size="24" font-weight="600" class="blue" text-anchor="end">14 used neurons</text>
+<text x="36" y="427" font-size="24" font-weight="400" class="" text-anchor="start">Reuse the written remainder at each step</text>
+<rect x="36" y="443" width="204" height="112" rx="8" class="frozen"/>
+<text x="52" y="478" font-size="24" font-weight="600" class="blue" text-anchor="start">Read next bit</text>
+<text x="52" y="520" font-size="24" font-weight="400" class="" text-anchor="start">2 × 1 + 1 = 3</text>
+<rect x="386" y="443" width="218" height="112" rx="8" class="frozen"/>
+<text x="402" y="478" font-size="24" font-weight="600" class="blue" text-anchor="start">Compare 3 ≥ 2</text>
+<text x="402" y="520" font-size="24" font-weight="400" class="" text-anchor="start">subtract 2</text>
+<path d="M 246 499 H 376" class="flow"/>
+<text x="311" y="484" font-size="26" font-weight="400" class="" text-anchor="middle">3, 2</text>
+<path d="M 495 561 V 591" class="flow"/>
+<text x="533" y="585.5" font-size="24" font-weight="400" class="" text-anchor="middle">1, 1</text>
+<rect x="265" y="597" width="339" height="43" rx="4" class="paper"/>
+<text x="434" y="628" font-size="24" font-weight="400" class="" text-anchor="middle">bit 1; remainder 1</text>
+<path d="M 259 620 H 26 V 499 H 30" class="flow"/>
+<text x="144" y="588" font-size="24" font-weight="400" class="" text-anchor="middle">read remainder 1</text>
 <text x="18" y="683" font-size="24" font-weight="400" class="muted" text-anchor="start">All parts frozen · Not a trained-network size</text>
 </svg>
