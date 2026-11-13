@@ -3,10 +3,10 @@
 Explore how small neural networks count, multiply and search. This atlas compares hand-built solutions with what training learned,
 keeping the tests and limits beside each explanation.
 
-[![A hand-built counter finds seven a's in a line; the trained answer stage groups counts such as two and seven by their remainder after division by five, and answers two. Only the answer stage learns. Open at full size.](figures/atlas-first-look.svg)](figures/atlas-first-look.svg)
+[<img src="figures/atlas-first-look.svg" width="640" alt="A fixed counter finds seven a's: the count-seven indicator is on (1), the count-two indicator off (0). A learned lookup groups two and seven under answer two, their remainder after division by five. Only the answer stage learns; its mechanism is unverified. Open at full size.">](figures/atlas-first-look.svg)
 
-*Figure 1. [Count a's, then remove groups of five](entries/count-mod-5.md). Only the answer stage learns. The formula is partial;
-outside circuitry was not resampled.*
+*Figure 1. [Count a's, then remove groups of five](entries/count-mod-5.md). The main count path is simplified; other supplied features
+and individual neurons are omitted. Only the answer stage learns. The formula is partial; outside circuitry was not resampled.*
 
 ## Findings worth a look
 
@@ -34,13 +34,18 @@ answer-only design keeps many comparisons inside the network.
 Neurons are small computing units; attention heads read information from other positions
 ([glossary](GLOSSARY.md#standard-machine-learning-terms)). The counts below measure these different parts, not training runs.
 
-![Hand-built long division: an answer-only network keeps many comparisons inside, using 186 neurons. A scratchpad writes the next bit and remainder, letting the same 14-neuron circuit serve each step. These are design counts, not trained-network sizes.](figures/scratchpad_size.svg)
+<img src="figures/scratchpad_size.svg" width="640" alt="Hand-built long division: an answer-only network keeps many comparisons inside, using 186 neurons. Four selected tests of 7 against multiples of 2 feed the quotient 3 and remainder 1. A scratchpad writes the next bit and remainder, letting the same 14-neuron circuit serve each step. With old remainder 1 and next bit 1, it compares 3 with 2, writes bit 1 and remainder 1, then reads that remainder again. These are design counts, not trained-network sizes.">
 
 *Figure 2. Information flow in the named 8-bit long-division designs. Writing each step allows the compare-and-subtract circuit to
-be reused. The schematic omits bit-level wiring; the complete [hand-built solution](entries/long-division-square-root.md#3-hand-built-solution)
-and the comparisons below give its scope.*
+be reused. Four selected comparisons stand for the larger internal bank; the schematic omits other comparisons and bit-level wiring.
+The complete [hand-built solution](entries/long-division-square-root.md#3-hand-built-solution) and the comparisons below give its scope.*
 
 [Open the scratchpad diagram at full size](figures/scratchpad_size.svg).
+
+Figure 2 follows division of 7 by 2. Above, tests against multiples of 2 feed an answer of quotient 3 and remainder 1. Below, a written
+remainder of 1 and the next input bit 1 give a working value of 3. The arrow labelled “3, 2” carries that value and the divisor;
+subtracting 2 writes decision bit 1 and remainder 1. The loop reads that remainder again. Both drawings show formula-set weights,
+not what a trained network was shown to use.
 
 *Table 1. Size of the named hand-built designs, with the answer only and with a scratchpad. These are not independent training
 seeds, seed averages or a common order-of-magnitude reduction. Neurons and attention heads are different units.*
@@ -64,7 +69,8 @@ correct previous tokens supplied, called teacher forcing ([glossary](GLOSSARY.md
 ## How to read the atlas
 
 A circuit is the set of network parts and connections that carry out a computation ([glossary](GLOSSARY.md#first-words)). In the
-opening picture, hand-built weights supply the letter count; only the answer stage learns to group counts by remainder. In
+opening picture (Figure 1), hand-built weights supply the letter count. The count-seven indicator is on and the count-two indicator
+is off; the learned answer stage groups those counts by remainder. Its main count path is shown, not every supplied feature. In
 [count modulo five](entries/count-mod-5.md), 30/30 seeds reached held-out accuracy ≥ .99. The split held out count/length combinations,
 not whole count values. Unseen count values were not tested, and a working formula does not replace the missing test of circuitry
 outside it.

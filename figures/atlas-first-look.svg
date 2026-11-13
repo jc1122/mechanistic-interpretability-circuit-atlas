@@ -1,8 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="540" height="290" viewBox="0 0 540 290" role="img" aria-labelledby="title desc">
-<title id="title">Different counts, the same answer</title>
-<desc id="desc">A frozen hand-built counter reads the example a a b a a a b a a and supplies count 7. Only the answer stage is trained. Its lookup pools counts with the same remainder after division by five, such as 2 and 7, and answers 2. The lookup largely ignores line length. The formula is partial, supported by substitution; circuitry outside it was not resampled. Unseen count values were not tested.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="412" viewBox="0 0 640 412" role="img" aria-labelledby="title desc">
+<title id="title">Training groups supplied counts</title>
+<desc id="desc">The fixed counter reads a a b a a a b a a: seven a&#x27;s. Its count-7 indicator is on (1); its count-2 indicator is off (0). The worked arithmetic 7 = 5 + 2 explains the requested remainder after division by five. The indicator paths feed a trained lookup that groups counts 2 and 7 under answer 2. This depicts the main count-code path, not individual neurons or all supplied features. Only the answer stage was trained. The formula is Partial, supported by substitution; circuitry outside it was not resampled. The lookup largely ignores line length; unseen count values were not tested.</desc>
 
-<metadata>CC BY 4.0. First-party explanatory redraw; no new experimental measurements. Sources: entries/count-mod-5.md; entries/long-division-square-root.md; entries/multiplication.md.</metadata>
+<metadata>CC BY 4.0. First-party explanatory redraw; no new experimental measurements. Sources: entries/count-mod-5.md (atlas research entry).</metadata>
 <style>
 text{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--ink)}
 svg{--bg:#ffffff;--ink:#182d3d;--muted:#41586b;--line:#586e80;--blue:#12658e;--bluefill:#e8f3f9;--amber:#875000;--amberfill:#fff2d8;--card:#f4f7fa}
@@ -11,42 +11,35 @@ svg{--bg:#ffffff;--ink:#182d3d;--muted:#41586b;--line:#586e80;--blue:#12658e;--b
 .given{fill:var(--bluefill);stroke:var(--blue);stroke-width:2;stroke-dasharray:7 5}
 .learned{fill:var(--amberfill);stroke:var(--amber);stroke-width:2.5}
 .paper{fill:var(--bg);stroke:var(--line);stroke-width:2}
-.line{fill:none;stroke:var(--line);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
-.flow{fill:none;stroke:var(--ink);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;marker-end:url(#arrow)}
-.repeat{stroke-dasharray:6 5}.blue{fill:var(--blue)}.amber{fill:var(--amber)}.muted{fill:var(--muted)}
+.flow,.branch{fill:none;stroke:var(--ink);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.flow{marker-end:url(#arrow)}.quiet{stroke:var(--muted)}
+.blue{fill:var(--blue)}.amber{fill:var(--amber)}.muted{fill:var(--muted)}
 </style>
 <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 1 1 L 9 5 L 1 9" fill="none" stroke="var(--ink)" stroke-width="1.6"/></marker></defs>
-<rect x="0" y="0" width="540" height="290" rx="0" class="bg"/>
-<text x="18" y="40" font-size="29" font-weight="650" class="" text-anchor="start">Different counts, the same answer</text>
-<rect x="18" y="62" width="235" height="213" rx="12" class="given"/>
-<rect x="287" y="62" width="235" height="213" rx="12" class="learned"/>
-<text x="34" y="95" font-size="24" font-weight="650" class="blue" text-anchor="start">Fixed counter</text>
-<text x="303" y="95" font-size="24" font-weight="650" class="amber" text-anchor="start">Learned stage</text>
-<path d="M 38 145 h 16" class="line"/>
-<text x="46" y="135" font-size="25" font-weight="400" class="blue" text-anchor="middle">a</text>
-<path d="M 61 145 h 16" class="line"/>
-<text x="69" y="135" font-size="25" font-weight="400" class="blue" text-anchor="middle">a</text>
-<text x="92" y="135" font-size="25" font-weight="400" class="muted" text-anchor="middle">b</text>
-<path d="M 107 145 h 16" class="line"/>
-<text x="115" y="135" font-size="25" font-weight="400" class="blue" text-anchor="middle">a</text>
-<path d="M 130 145 h 16" class="line"/>
-<text x="138" y="135" font-size="25" font-weight="400" class="blue" text-anchor="middle">a</text>
-<path d="M 153 145 h 16" class="line"/>
-<text x="161" y="135" font-size="25" font-weight="400" class="blue" text-anchor="middle">a</text>
-<text x="184" y="135" font-size="25" font-weight="400" class="muted" text-anchor="middle">b</text>
-<path d="M 199 145 h 16" class="line"/>
-<text x="207" y="135" font-size="25" font-weight="400" class="blue" text-anchor="middle">a</text>
-<path d="M 222 145 h 16" class="line"/>
-<text x="230" y="135" font-size="25" font-weight="400" class="blue" text-anchor="middle">a</text>
-<path d="M 135 157 V 184" class="flow"/>
-<text x="135" y="226" font-size="29" font-weight="600" class="" text-anchor="middle">count = 7</text>
-<path d="M 259 204 H 280" class="flow"/>
-<text x="404" y="134" font-size="24" font-weight="400" class="" text-anchor="middle">Group counts by</text>
-<text x="404" y="163" font-size="24" font-weight="400" class="" text-anchor="middle">their remainder</text>
-<rect x="320" y="173" width="59" height="47" rx="7" class="paper"/>
-<text x="350" y="205" font-size="25" font-weight="400" class="" text-anchor="middle">2</text>
-<rect x="430" y="173" width="59" height="47" rx="7" class="paper"/>
-<text x="460" y="205" font-size="25" font-weight="400" class="" text-anchor="middle">7</text>
-<path d="M 350 223 V 226 H 404 M 460 223 V 226 H 404 V 233" class="flow"/>
-<text x="404" y="261" font-size="25" font-weight="650" class="" text-anchor="middle">answer = 2</text>
+<rect x="0" y="0" width="640" height="412" rx="0" class="bg"/>
+<text x="18" y="39" font-size="30" font-weight="650" class="" text-anchor="start">Training groups supplied counts</text>
+<rect x="18" y="68" width="286" height="286" rx="10" class="given"/>
+<rect x="374" y="68" width="248" height="286" rx="10" class="learned"/>
+<text x="36" y="104" font-size="26" font-weight="650" class="blue" text-anchor="start">Fixed counter</text>
+<text x="390" y="104" font-size="26" font-weight="650" class="amber" text-anchor="start">Learned lookup</text>
+<text x="498" y="151" font-size="24" font-weight="400" class="" text-anchor="middle">7 = 5 + 2</text>
+<text x="161" y="146" font-size="26" font-weight="400" class="" text-anchor="middle">a a b a a a b a a</text>
+<path d="M 161 157 V 167" class="flow"/>
+<text x="161" y="194" font-size="28" font-weight="650" class="blue" text-anchor="middle">count = 7</text>
+<path d="M 161 205 V 211 H 36 V 311" class="branch"/>
+<path d="M 36 245 H 49" class="flow"/>
+<path d="M 36 311 H 49" class="flow"/>
+<rect x="55" y="222" width="227" height="47" rx="6" class="paper"/>
+<rect x="55" y="288" width="227" height="47" rx="6" class="paper"/>
+<text x="168" y="254" font-size="24" font-weight="400" class="muted" text-anchor="middle">count 2: off</text>
+<text x="168" y="320" font-size="24" font-weight="650" class="blue" text-anchor="middle">count 7: on</text>
+<path d="M 288 245 H 332 V 206 H 386" class="flow quiet"/>
+<text x="350" y="194" font-size="26" font-weight="400" class="muted" text-anchor="middle">0</text>
+<path d="M 288 311 H 354 V 240 H 386" class="flow"/>
+<text x="339" y="300" font-size="26" font-weight="650" class="" text-anchor="middle">1</text>
+<text x="498" y="213" font-size="28" font-weight="650" class="" text-anchor="middle">2 and 7</text>
+<text x="498" y="254" font-size="24" font-weight="400" class="" text-anchor="middle">share a group</text>
+<path d="M 498 267 V 290" class="flow"/>
+<text x="498" y="328" font-size="28" font-weight="650" class="" text-anchor="middle">answer = 2</text>
+<text x="18" y="393" font-size="24" font-weight="400" class="muted" text-anchor="start">Frozen counter · Trained lookup · Unverified</text>
 </svg>
