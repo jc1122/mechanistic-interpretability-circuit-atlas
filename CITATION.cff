@@ -15,7 +15,8 @@ repository-code: "https://github.com/jc1122/mechanistic-interpretability-circuit
 url: "https://github.com/jc1122/mechanistic-interpretability-circuit-atlas"
 repository-artifact: "https://huggingface.co/jc1122/circuit-atlas-nets"
 license: CC-BY-4.0
-date-released: "2026-11-08"
+version: "1.0.0"
+date-released: "2026-11-14"
 keywords:
   - mechanistic interpretability
   - transformer circuits

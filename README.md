@@ -265,3 +265,6 @@ Original atlas text, diagrams and first-party networks use [CC BY 4.0](LICENSE);
 For CC BY reuse, give credit, link the [licence](https://creativecommons.org/licenses/by/4.0/) (licence summary) and indicate changes.
 Third-party models, code and other linked material retain their own licences and attribution requirements; the atlas does not
 relicense them. Keep the original authors, public source links and source types when adapting an entry.
+The AlgZoo model definitions follow [ARC's alg-zoo](https://github.com/alignment-research-center/alg-zoo) (code repository, MIT-0);
+other AlgZoo interpretation repositories are cited, not redistributed. Each tagged release is archived on Zenodo with a DOI; cite
+the release you used and the Hugging Face revision of any network you load.

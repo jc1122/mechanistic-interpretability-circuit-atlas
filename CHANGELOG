@@ -4,7 +4,10 @@ This is a living atlas. This file records reader-visible additions and correctio
 change does not imply a new experiment. The dated run and audit records in each entry remain authoritative for scientific scope.
 Unreleased changes are not a tagged release or a DOI deposit.
 
-## Unreleased
+## 1.0.0 (2026-11-14)
+
+First tagged release, archived on Zenodo. Networks: Hugging Face `jc1122/circuit-atlas-nets` revision `a2754d3`;
+snapshots: `jc1122/circuit-atlas-snapshots` revision `3fcddff`. Rendered site: GitHub Pages.
 
 ### Changed
 

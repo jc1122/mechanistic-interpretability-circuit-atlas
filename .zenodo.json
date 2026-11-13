@@ -1,0 +1,14 @@
+{
+  "title": "Mechanistic Interpretability Circuit Atlas",
+  "upload_type": "dataset",
+  "description": "A living collection of small-network circuit studies for algorithmic tasks: hand-built reference networks, partly trained and from-scratch transformers, and external recurrent-model zoo snapshots. Entries report task performance separately from substitution and complement-resampling evidence, and keep failures, limited coverage and unresolved mechanisms. This archive holds the atlas text, figures and code; the networks and training snapshots are archived on Hugging Face at the revisions named in the release notes.",
+  "creators": [{"name": "jc1122"}],
+  "license": "cc-by-4.0",
+  "access_right": "open",
+  "keywords": ["mechanistic interpretability", "transformer circuits", "algorithmic tasks", "hand-built transformers", "grokking", "recurrent neural networks", "reproducibility"],
+  "related_identifiers": [
+    {"identifier": "https://huggingface.co/jc1122/circuit-atlas-nets/tree/a2754d392672ea15992a688c23f4573d83ebf716", "relation": "isSupplementedBy", "resource_type": "dataset"},
+    {"identifier": "https://huggingface.co/jc1122/circuit-atlas-snapshots/tree/3fcddffccd387dc6bf55488e5197df255b198d35", "relation": "isSupplementedBy", "resource_type": "dataset"},
+    {"identifier": "https://jc1122.github.io/mechanistic-interpretability-circuit-atlas/", "relation": "isDocumentedBy", "resource_type": "other"}
+  ]
+}
