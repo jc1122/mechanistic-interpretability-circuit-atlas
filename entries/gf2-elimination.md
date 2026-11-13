@@ -64,13 +64,15 @@ In Figure 1, a frozen row and column frame supplies fetched operand bits and the
 flowchart TD
     accTitle: Hand-built binary row update and parallel pivot reads
     accDescr: A frozen row and column frame feeds operand-bit fetches and the equality flag. Pivot and answer reads run alongside the XOR-AND row-update MLP before writing the matrix and solution. Only the update MLP is trained in PART; the separate attention-only PART cell has different trainable components.
-  A["L0-L1: block, row and column frame"] --> B["L2: fetch OLD, K and PB; compute EQ"]
-  B --> C["L3 H0-H1: pivot and answer reads"]
-  B --> D["MLP3: OLD xor (K and PB and not EQ)"]
-  C --> E["Updated matrix block, then solution bits"]
+  A["L0-L1: block, row<br/>and column frame"] --> B["L2: fetch OLD, K<br/>and PB; compute EQ"]
+  B --> C["L3 H0-H1: pivot<br/>and answer reads"]
+  B --> D["MLP3: OLD xor (K<br/>and PB and not EQ)"]
+  C --> E["Updated matrix<br/>block, then<br/>solution bits"]
   D --> E
   classDef trained fill:gold,stroke:darkgoldenrod,color:black
   class D trained
+    %% Invisible links constrain vertical layout only, not computation.
+    C ~~~ D
 ```
 
 *Figure 1. The hand-built row-update circuit. Pivot/answer reads and MLP3's row-bit write have parallel output routes. MLP3 is the only trained part in PART. The separate PARTp cell trains L3 attention instead; it does not share this shading.*
@@ -105,15 +107,18 @@ In Figure 2, earlier trained layers feed alternative last-layer roles: head-base
 flowchart TD
     accTitle: Final binary-elimination readout families
     accDescr: Earlier trained layers feed head-based, diffuse or already-complete last-layer attention roles before the final MLP and solution output. All computational nodes are trained. Status is partial only for constant-attention substitution in the already-complete family; complement is untested and no whole-network formula is established. This is a family-role schematic, not a minimum circuit.
-  A["Earlier trained layers"] --> B["L3 attention: 6 head-readout seeds"]
-  A --> C["L3 attention as a group: 2 diffuse seeds"]
-  A --> D["L3 attention replaceable: 2 L2-complete seeds"]
-  B --> E["MLP3 and output readout"]
+  A["Earlier<br/>trained<br/>layers"] --> B["L3<br/>attention: 6<br/>head-readout<br/>seeds"]
+  A --> C["L3 attention<br/>as a group:<br/>2 diffuse<br/>seeds"]
+  A --> D["L3 attention<br/>replaceable:<br/>2<br/>L2-complete<br/>seeds"]
+  B --> E["MLP3 and<br/>output<br/>readout"]
   C --> E
   D --> E
-  E --> F["Solution bits"]
+  E --> F["Solution<br/>bits"]
   classDef trained fill:gold,stroke:darkgoldenrod,color:black
   class A,B,C,D,E trained
+    %% Invisible links constrain vertical layout only, not computation.
+    B ~~~ C
+    C ~~~ D
 ```
 
 *Figure 2. Roles of the last-layer attention in the three final TRAIN families; every computational node is trained. Status: Partial for the two L2-complete seeds' constant-attention substitution, with complement untested and no whole-network formula. This is a family-role schematic, not a minimum circuit or an edge-discovery claim.*

@@ -50,12 +50,17 @@ In Figure 1, HAND-a obtains the median from signed top-k sums and central differ
 flowchart TD
     accTitle: Hand-built median references
     accDescr: Scalar inputs and stored state feed signed top-k sums, pair sorting and clipping, or a signed running sum. The first two yield median constructions; the mean is a median only on the stated short-list domain. No component was partly trained, and register counts are not width lower bounds.
-    X["Scalar input and previous state"] --> A["HAND-a: signed top-k sums"]
-    X --> B["HAND-b: sort preceding pair and clip"]
-    X --> C["HAND-c: signed sum P minus Q"]
-    A --> M["Central differences: median"]
+    X["Scalar input<br/>and previous<br/>state"] --> A["HAND-a:<br/>signed top-k<br/>sums"]
+    X --> B["HAND-b: sort<br/>preceding<br/>pair and<br/>clip"]
+    X --> C["HAND-c:<br/>signed sum P<br/>minus Q"]
+    A --> M["Central<br/>differences:<br/>median"]
     B --> M
-    C --> Y["Mean: median only for T <= 2"]
+    C --> Y["Mean: median<br/>only for T<br/><= 2"]
+    %% Invisible links constrain vertical layout only, not computation.
+    A ~~~ B
+    B ~~~ C
+    C ~~~ M
+    M ~~~ Y
 ```
 
 *Figure 1. The three hand-built references. No node is marked as trained: there was no PART cell. HAND-a's register counts are constructions, not width lower bounds.*
@@ -78,14 +83,17 @@ In Figure 2, Gaussian inputs pass through pair-mean banks, comparator insertions
 flowchart TD
     accTitle: Interpreted families in frozen median networks
     accDescr: Gaussian inputs feed pair-mean banks, comparator-insertion forms or inexact threshold, level and renewal forms before the native scalar output. All family nodes describe ARC-trained components. Status is partial: empty complements, other flagged proofs and uncompressed forms remain exceptions; sampled certificates are not global equivalence proofs.
-    X["Gaussian inputs"] --> P["21 pair-mean banks"]
-    X --> I["28 comparator insertions"]
-    X --> R["51 inexact threshold, level and renewal forms"]
-    P --> Y["Native output on sampled tests"]
+    X["Gaussian<br/>inputs"] --> P["21 pair-mean<br/>banks"]
+    X --> I["28<br/>comparator<br/>insertions"]
+    X --> R["51 inexact<br/>threshold,<br/>level and<br/>renewal<br/>forms"]
+    P --> Y["Native<br/>output on<br/>sampled<br/>tests"]
     I --> Y
     R --> Y
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class P,I,R trained
+    %% Invisible links constrain vertical layout only, not computation.
+    P ~~~ I
+    I ~~~ R
 ```
 
 *Figure 2. The trained families in the 100 terminal networks. All family nodes were trained by ARC, not in this analysis. Status: partial; sampled substitution/complement certificates include 20 empty-complement exceptions, other flagged proofs and large uncompressed forms, not global native equivalence.*

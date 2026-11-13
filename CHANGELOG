@@ -18,10 +18,21 @@ Unreleased changes are not a tagged release or a DOI deposit.
 - REFERENCES reconciles inherited task citations with source types, identifier anchors and entry links. Metadata checks are
   distinguished from full-text reading; incomplete historical attributions and limited reading scope remain explicit.
 - Mermaid guidance now requires accessible titles/descriptions, explicit text colour for light-filled nodes and light/dark renders.
-  The template permits a short onward-reading route; small plot labels remain a rendering issue, not solved by alt text alone.
+  The template permits a short onward-reading route; alt text does not substitute for legible embedded labels.
+- Standalone SVG figures now use compact, stacked layouts and larger labels, with direct counts, matching line/legend patterns
+  and light/dark palettes. Recorded values, accessible descriptions, original metadata and Markdown captions are retained. The two
+  older path-text figures now also have selectable text, accessible titles/descriptions and explicit neuron-versus-head units.
+- Circuit figures wrap long labels and stack independent branches for narrow screens. Count/comparison menus and the register-machine
+  figure use larger type; wrapped panel headings have room above their nodes. Original computational edges, label values, trained
+  membership, accessible descriptions and captions are retained. Invisible spacing links are layout constraints, not new computation.
 
 ### Corrected
 
+- [Comparison of counts](entries/compare-counts.md): the catalogue's held-out range now names fraction .8, its ten seeds and the
+  copied .917–.963 range; the 30-network family census and universal held-out tie failure remain separate.
+- README's [subtraction scrub](entries/subtraction.md#5-mechanism-and-verification) now includes the documented 416 fit and 416
+  evaluation pairs, three donor draws and adaptive keep-set selection, replacing the earlier unavailable-count statement for this row.
+  The failed scores remain failed; the glossary no longer implies that different runs use independent evaluation data.
 - [Modular addition](entries/modular-addition-mlp.md): the earlier Partly solved task label conflated a clock-family observation with
   held-out success. The headline cell is Unsolved at its stated criterion; the separate formula status remains Partial.
 - [Open-bracket counting](entries/open-bracket-count.md): the cosine-family census is not a held-out success rate; no seed reaches

@@ -139,18 +139,21 @@ In Figure 1, the frozen position frame addresses the table heads. Depending on t
 flowchart TD
     accTitle: Hand-built base-conversion routes
     accDescr: A frozen position frame addresses table heads. They supply a hexadecimal digit code, a remainder, or the scratchpad digit variables to the output MLP. Only the final stage MLP is trained in PART; the other routes remain fixed.
-    T["Prompt tokens"] --> F0["Layer 0 head 0: P = 64/(64 + r) from the start token"]
-    F0 --> F1["Layer 0 MLP: hinge neurons give the position one-hot POS"]
-    F1 --> TH["Layer 1 table heads: weighted mixtures of key tokens"]
-    TH --> X["hex to binary: X, one-hot of the source hex digit"]
-    TH --> FV["binary to decimal, decimal to binary A: remainder scalar F"]
-    TH --> CX["decimal to binary B: current digit C and X"]
-    X --> M["Layer 1 MLP: bit lookup, thresholds F >= c, or parity and floor(C/2)"]
+    T["Prompt tokens"] --> F0["Layer 0 head 0: P<br/>= 64/(64 + r) from<br/>the start token"]
+    F0 --> F1["Layer 0 MLP: hinge<br/>neurons give the<br/>position one-hot<br/>POS"]
+    F1 --> TH["Layer 1 table<br/>heads: weighted<br/>mixtures of key<br/>tokens"]
+    TH --> X["hex to binary: X,<br/>one-hot of the<br/>source hex digit"]
+    TH --> FV["binary to decimal,<br/>decimal to binary<br/>A: remainder<br/>scalar F"]
+    TH --> CX["decimal to binary<br/>B: current digit C<br/>and X"]
+    X --> M["Layer 1 MLP: bit<br/>lookup, thresholds<br/>F >= c, or parity<br/>and floor(C/2)"]
     FV --> M
     CX --> M
-    M --> Y["output digit or bit"]
+    M --> Y["output digit or<br/>bit"]
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class M trained
+    %% Invisible links constrain vertical layout only, not computation.
+    X ~~~ FV
+    FV ~~~ CX
 ```
 
 *Figure 1. The hand-built networks. A frozen position frame locates every position; layer-1 table heads deliver the cell's variable
@@ -290,10 +293,10 @@ In Figure 2, the content-weighted prefix summary passes through MLP0 to the echo
 flowchart TD
     accTitle: Probed hexadecimal-to-binary trained circuit
     accDescr: A content-weighted prefix summary and MLP feed echo-reading and restricted-softmax heads, then the bit decoder. The displayed computational blocks are trained. Status is partial: local substitutions pass, a joint digit-only scrub fails, and complement resampling was not reported.
-    T["prompt and written tokens"] --> L0["L0 attention: content-weighted prefix summary"]
+    T["prompt and written<br/>tokens"] --> L0["L0 attention:<br/>content-weighted<br/>prefix summary"]
     L0 --> M0["MLP0"]
-    M0 --> H1["L1H1: two-key mixture, reads the written echo"]
-    M0 --> H3["L1H3: six-key softmax restriction"]
+    M0 --> H1["L1H1: two-key<br/>mixture, reads the<br/>written echo"]
+    M0 --> H3["L1H3: six-key<br/>softmax<br/>restriction"]
     H1 --> M1["MLP1: bit decoding"]
     H3 --> M1
     M1 --> B["answer bits"]

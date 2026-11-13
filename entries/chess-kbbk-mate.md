@@ -66,12 +66,14 @@ In Figure 1, a winning position takes the geometric move only when that policy s
 flowchart TD
     accTitle: Hybrid policy used to label the bishops endgame
     accDescr: A winning board uses a geometric move inside its certified safe attractor and a distance-to-mate table move elsewhere. The resulting policy label trains a board-to-move transformer. This is label generation, not a hand-built neural circuit; no HAND or PART component exists, and no node is marked as such.
-    P["Winning position: white king and two bishops against a king"] --> G["Does the geometric policy stay in its certified attractor?"]
-    G -->|"yes"| R["Use the geometric rule move"]
-    G -->|"no"| D["Use a distance-to-mate optimal move, with geometric tie-breaks"]
-    R --> Y["Policy label: one chosen move"]
+    P["Winning position:<br/>white king and two<br/>bishops against a<br/>king"] --> G["Does the geometric<br/>policy stay in its<br/>certified<br/>attractor?"]
+    G -->|"yes"| R["Use the geometric<br/>rule move"]
+    G -->|"no"| D["Use a<br/>distance-to-mate<br/>optimal move, with<br/>geometric<br/>tie-breaks"]
+    R --> Y["Policy label: one<br/>chosen move"]
     D --> Y
-    Y --> T["Train the board-to-move transformer"]
+    Y --> T["Train the<br/>board-to-move<br/>transformer"]
+    %% Invisible links constrain vertical layout only, not computation.
+    R ~~~ D
 ```
 
 *Figure 1. The reference policy used to label the data. This is a label-generation diagram, not a hand-built neural circuit. No HAND or PART network exists, so no node is marked as a trained PART component. The fallback fraction measures use of the distance-to-mate table, not the policy's optimal-move rate.*

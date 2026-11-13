@@ -20,7 +20,7 @@ is task-specific. See [reuse guidance](README.md#reuse-and-reproducibility), [gl
 |---|---|---|---|---|---|
 | [modular-addition-mlp](entries/modular-addition-mlp.md) | Add two residues modulo 59 | Fourier clock using one-hot inputs and threshold encodings | clock 10/10 seeds; held-out .91–.97; 0/10 reaches 99% | partial: substitution; complement not tested | code |
 | [count-mod-5](entries/count-mod-5.md) | Letter count modulo five | Count-to-remainder lookup; length ignored | PART 30/30 seeds ≥ .99 held-out | partial: 1.000 on 1080 all cells; no complement | code |
-| [compare-counts](entries/compare-counts.md) | Name the more frequent letter | Tilted comparator; equality memorised rather than transferred | comparator family 30/30; zero correct held-out ties | partial: approximate two-way comparator | code |
+| [compare-counts](entries/compare-counts.md) | Name the more frequent letter | Tilted comparator; equality memorised rather than transferred | comparator family 30/30 networks; fraction .8: 10 seeds, held-out .917–.963; zero correct held-out ties | partial: approximate two-way comparator | code |
 | [open-bracket-count](entries/open-bracket-count.md) | Count opening brackets | Broad cosines plus odd/even features; low frequencies most common | PART 0/10 ≥ .90 held-out at fraction .8 | partial: training-inclusive approximation; no complement | code |
 | [modular-arithmetic-mod-97](entries/modular-arithmetic-mod-97.md) | Arithmetic modulo 97 in different formats | Token discrete-log circles; digit formats form no circles | TRAIN multiplication 6/10 ≥ .99; addition 10/10 ≥ .99; readout: 8 seeds with native ≥ .98 | partial: supplied logs; 9216 training-inclusive pairs | weights |
 

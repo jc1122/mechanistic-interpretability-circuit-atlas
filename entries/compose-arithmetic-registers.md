@@ -95,23 +95,29 @@ serves every task.
 In Figure 1, position and recency heads recover register addresses, the gathered operand bit and the previous carry. Tag-match heads fetch the other bit; MLP3 combines the bits and incoming carry to write a column, or copies a shifted or reversed bit. Only MLP3 is trained in PART. Status remains partial because complement coverage is restricted to the named final snapshots.
 
 ```mermaid
+%%{init: {"themeVariables": {"fontSize": "24px"}, "flowchart": {"nodeSpacing": 20, "rankSpacing": 40, "padding": 10}}}%%
 flowchart TD
     accTitle: Hand-built tag fetch and arithmetic column stage
     accDescr: Position and recency heads recover register addresses, operand bits and the previous carry. Tag-match heads fetch addends, then the column MLP writes a digit and carry or copies the shifted or reversed operand bit. Only the column MLP is trained in PART. Status is partial because complement coverage is restricted to the named final snapshots.
-    P["Prompt header: program counter, register tags; trace so far"] --> H0["L0H0: uniform attention, position code"]
-    H0 --> R["11 L1 recency heads: copy latest P/A/S/GA/ST fields"]
-    R --> PA["PA, PS: register addresses"]
-    R --> GA["GA_RD: gathered operand bit"]
-    R --> PC["PC: previous carry"]
-    PA --> M2["L2 match heads by tag equality: L2H0, L2H1, L2H2"]
-    M2 --> NUM["NUM: fetched addend bit XA1, XS0 or XR"]
-    GA --> S3["L3 MLP column stage: t = GA_RD + NUM + CI"]
+    P["Prompt<br/>header:<br/>program<br/>counter,<br/>register<br/>tags; trace<br/>so far"] --> H0["L0H0:<br/>uniform<br/>attention,<br/>position<br/>code"]
+    H0 --> R["11 L1<br/>recency<br/>heads: copy<br/>latest<br/>P/A/S/GA/ST<br/>fields"]
+    R --> PA["PA, PS:<br/>register<br/>addresses"]
+    R --> GA["GA_RD:<br/>gathered<br/>operand bit"]
+    R --> PC["PC: previous<br/>carry"]
+    PA --> M2["L2 match<br/>heads by tag<br/>equality:<br/>L2H0, L2H1,<br/>L2H2"]
+    M2 --> NUM["NUM: fetched<br/>addend bit<br/>XA1, XS0 or<br/>XR"]
+    GA --> S3["L3 MLP<br/>column<br/>stage: t =<br/>GA_RD + NUM<br/>+ CI"]
     NUM --> S3
-    PC --> CI["CI = ReLU(PC + NF - 1)"]
+    PC --> CI["CI = ReLU(PC<br/>+ NF - 1)"]
     CI --> S3
-    S3 --> D["digit d = t mod 2, carry c' = floor(t/2); SHL, REV copy GA_RD"]
+    S3 --> D["digit d = t<br/>mod 2, carry<br/>c' =<br/>floor(t/2);<br/>SHL, REV<br/>copy GA_RD"]
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class S3 trained
+    %% Invisible links constrain vertical layout only, not computation.
+    PA ~~~ GA
+    GA ~~~ PC
+    PC ~~~ M2
+    NUM ~~~ CI
 ```
 
 *Figure 1. The hand-built register machine. Gold MLP3 is the only trained PART block in the gathered-bit format. The column formula
@@ -194,14 +200,17 @@ In Figure 2, trained attention fetches operand bits by their positions in the fi
 flowchart TD
     accTitle: Positional operand fetching in the failing TRAIN family
     accDescr: The fixed trace convention supplies operand bits by position, while header-tag fetching was not recovered. A causal carry path enters the trained adder MLP. Marked nodes are wholly trained components. No TRAIN closed form was recovered; the page's partial status applies only to the separate PART screen.
-    T["trace so far, fixed register convention"] --> F["attention: operand fetch by position in the trace"]
+    T["trace so far,<br/>fixed register<br/>convention"] --> F["attention: operand<br/>fetch by position<br/>in the trace"]
     H["prompt header tags"] -.->|"tag fetch not recovered"| F
     F --> X["operand bits, XA1"]
     X --> M3["MLP3 adder"]
     CY["carry CY, causal"] --> M3
-    M3 --> Y["register line digits"]
+    M3 --> Y["register line<br/>digits"]
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class F,M3 trained
+    %% Invisible links constrain vertical layout only, not computation.
+    T ~~~ H
+    X ~~~ CY
 ```
 
 *Figure 2. The diagnosed from-scratch failure type in 10 of 10 final seeds. Gold nodes are wholly trained components, not a PART

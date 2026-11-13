@@ -116,25 +116,33 @@ values of X. The one-hot unit is the difference of neighbouring thermometer unit
 In Figure 1, the frozen matching head writes reciprocal count X, and a position scalar supplies length L. Step decoders form count indicators; these, the scalar count, length codes and distractors enter the sole trained MLP to score remainders. The diagram separates the frozen encodings from the learned readout.
 
 ```mermaid
+%%{init: {"themeVariables": {"fontSize": "24px"}, "flowchart": {"nodeSpacing": 20, "rankSpacing": 40, "padding": 10}}}%%
 flowchart TD
     accTitle: Hand-built counting and frozen count encodings
     accDescr: A frozen matching head writes the reciprocal count and a position scalar supplies length. Step decoders construct one-hot and thermometer features; these and distractors enter the sole trained MLP, which scores the remainders.
-    P["Prompt: COUNT a: line of a's and b's"] --> H["m2 layer 4 head 1: uniform attention over the c matches and the newline"]
+    P["Prompt:<br/>COUNT a:<br/>line of a's<br/>and b's"] --> H["m2 layer 4<br/>head 1:<br/>uniform<br/>attention<br/>over the c<br/>matches and<br/>the newline"]
     H --> X["X = 1/(c+1)"]
-    P --> R["m2 position scalar R, gives L"]
-    X --> D["Menu decode: GELU step ladder at the midpoints m_k"]
-    D --> OU["one-hot of c (ou)"]
-    D --> TU["thermometer of c (tu)"]
-    X --> SU["scalar X (su)"]
-    R --> LB["scalar, one-hot and thermometer of L (sv, ov, tv)"]
-    OU --> M["TRAINED: MLP, 256 ReLU units"]
+    P --> R["m2 position<br/>scalar R,<br/>gives L"]
+    X --> D["Menu decode:<br/>GELU step<br/>ladder at<br/>the<br/>midpoints<br/>m_k"]
+    D --> OU["one-hot of c<br/>(ou)"]
+    D --> TU["thermometer<br/>of c (tu)"]
+    X --> SU["scalar X<br/>(su)"]
+    R --> LB["scalar,<br/>one-hot and<br/>thermometer<br/>of L (sv,<br/>ov, tv)"]
+    OU --> M["TRAINED:<br/>MLP, 256<br/>ReLU units"]
     TU --> M
     SU --> M
     LB --> M
-    DS["distractors: brackets, copy pointer, last letter"] --> M
-    M --> Y["5 logits: c mod 5"]
+    DS["distractors:<br/>brackets,<br/>copy<br/>pointer,<br/>last letter"] --> M
+    M --> Y["5 logits: c<br/>mod 5"]
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class M trained
+    %% Invisible links constrain vertical layout only, not computation.
+    X ~~~ R
+    R ~~~ D
+    OU ~~~ TU
+    TU ~~~ SU
+    SU ~~~ LB
+    LB ~~~ DS
 ```
 
 *Figure 1. The hand-built network and the trained stage. Frozen parts, set by formula, compute the count c through layer 4, head 1
@@ -200,13 +208,16 @@ In Figure 2, count indicators feed the trained input weights and a hidden remain
 flowchart TD
     accTitle: Learned count-to-remainder lookup
     accDescr: Count indicators feed trained input weights and a hidden remainder pattern before the output logits. Length inputs have small effects that can be replaced by their mean. The equal-amplitude cosine profile is an ideal lookup description, not identical native logits or proof of trigonometric computation. Status is partial, with complement untested.
-    OU["one-hot of c (ou), largest W1 column norm"] --> W["W1 columns: c and c + 5 map to nearly the same hidden pattern"]
-    TU["thermometer of c (tu), redundant copy"] --> W
-    W --> H["hidden pattern of residue class r = c mod 5"]
-    H --> Y["logits: 2A at r = c mod 5, -A/2 elsewhere"]
-    L["L blocks (sv, ov, tv), small weights"] -.->|"mean replacement keeps accuracy"| H
+    OU["one-hot of c (ou),<br/>largest W1 column<br/>norm"] --> W["W1 columns: c and<br/>c + 5 map to<br/>nearly the same<br/>hidden pattern"]
+    TU["thermometer of c<br/>(tu), redundant<br/>copy"] --> W
+    W --> H["hidden pattern of<br/>residue class r =<br/>c mod 5"]
+    H --> Y["logits: 2A at r =<br/>c mod 5, -A/2<br/>elsewhere"]
+    L["L blocks (sv, ov,<br/>tv), small weights"] -.->|"mean replacement keeps accuracy"| H
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class W,H,Y trained
+    %% Invisible links constrain vertical layout only, not computation.
+    OU ~~~ TU
+    W ~~~ L
 ```
 
 *Figure 2. The trained readout pools counts by remainder. The equal-height delta is the ideal A = B output profile; learned logits

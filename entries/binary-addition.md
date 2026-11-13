@@ -109,22 +109,25 @@ In Figure 1, frozen position and index heads fetch the operand bits. Answer-only
 flowchart TD
     accTitle: Hand-built binary addition in three output formats
     accDescr: Position and index heads fetch operand bits. Answer-only and column-sum routes use carry lookahead; the carry-token route writes digit parity and carry before copying the carry output. Only the marked stage MLP is trained in each PART cell. Learned sum-table status is partial, with complement untested.
-    P["Prompt a+b= and output so far"] --> POS["positions: r, r_plus, r squared, thermometers T and VT"]
-    POS --> IDX["index heads copy a_i, b_i"]
+    P["Prompt a+b=<br/>and output<br/>so far"] --> POS["positions:<br/>r, r_plus, r<br/>squared,<br/>thermometers<br/>T and VT"]
+    POS --> IDX["index heads<br/>copy a_i,<br/>b_i"]
     subgraph FA["Format A"]
-        A1["lookahead head L3H0: first j below i with a_j = b_j, copies a_j = carry"] --> A2["MLP3: parity(a_i + b_i + c)"]
+        A1["lookahead<br/>head L3H0:<br/>first j<br/>below i with<br/>a_j = b_j,<br/>copies a_j =<br/>carry"] --> A2["MLP3:<br/>parity(a_i +<br/>b_i + c)"]
     end
     subgraph FB["Format B"]
-        B1["MLP2: parity and MAJ"] --> B2["previous-token head copies MAJ into the carry token"]
+        B1["MLP2: parity<br/>and MAJ"] --> B2["previous-token<br/>head copies<br/>MAJ into the<br/>carry token"]
     end
     subgraph FC["Format C"]
-        C1["lookahead head: first d_j != 1, copies [d_j = 2]"] --> C2["MLP2: digit of a_i + b_i, then parity(d_i + c)"]
+        C1["lookahead<br/>head: first<br/>d_j != 1,<br/>copies [d_j<br/>= 2]"] --> C2["MLP2: digit<br/>of a_i +<br/>b_i, then<br/>parity(d_i +<br/>c)"]
     end
     IDX --> A1
     IDX --> B1
     IDX --> C1
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class A2,B1,C2 trained
+    %% Invisible links constrain vertical layout only, not computation.
+    A2 ~~~ B1
+    B2 ~~~ C1
 ```
 
 *Figure 1. The hand-built binary adders: A is answer only, B interleaves carry tokens, and C writes column sums first. Gold MLP3
@@ -254,15 +257,18 @@ In Figure 3, earlier token and position summaries feed the operand-copy heads L3
 flowchart TD
     accTitle: Seed-specific carry-token TRAIN replacement
     accDescr: Earlier token and position summaries feed operand-copy heads and a current-token-switched head; MLP prototypes write bit or carry slots. Heads and MLP were wholly trained. Status is partial: the replacement is seed-specific and the pruned circuit fails the stronger semantic scrub; no seed-universal mechanism is verified.
-    T["layers 0-2: token and position means T[j, t_j]"] --> H0["L3H0: copy current a_i"]
-    T --> H3["L3H3: copy current b_i"]
-    T --> H1["L3H1: attention switched by the current token"]
-    H0 --> M["MLP3: 88 query and state prototypes"]
+    T["layers 0-2:<br/>token and<br/>position<br/>means T[j,<br/>t_j]"] --> H0["L3H0: copy<br/>current a_i"]
+    T --> H3["L3H3: copy<br/>current b_i"]
+    T --> H1["L3H1:<br/>attention<br/>switched by<br/>the current<br/>token"]
+    H0 --> M["MLP3: 88<br/>query and<br/>state<br/>prototypes"]
     H3 --> M
     H1 --> M
-    M --> S["bit slot: a_i xor b_i xor c_i; carry slot: 1 iff a_i + b_i = 2, or = 1 and s_i = 0"]
+    M --> S["bit slot:<br/>a_i xor b_i<br/>xor c_i;<br/>carry slot:<br/>1 iff a_i +<br/>b_i = 2, or<br/>= 1 and s_i<br/>= 0"]
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class H0,H3,H1,M trained
+    %% Invisible links constrain vertical layout only, not computation.
+    H0 ~~~ H3
+    H3 ~~~ H1
 ```
 
 *Figure 3. The seed-specific replacement for carry-token TRAIN run 2, seed 2. Gold heads and MLP3 were wholly trained; there is no

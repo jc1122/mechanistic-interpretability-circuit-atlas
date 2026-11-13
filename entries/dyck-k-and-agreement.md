@@ -146,10 +146,10 @@ In Figure 2, the proposed pointer copies the state before a valid closer's match
 flowchart TD
     accTitle: Partial pre-opener-state pointer with unidentified partner
     accDescr: At a valid closer, the proposed pointer copies the state written before its matching opener. A needed partner head also feeds the final state MLP, but its computation is unidentified. All marked heads and MLP are trained. Status is partial: pointer substitution passes only the named seeds and partner resampling fails; native address computation is not proved.
-  A["Alive closer t and matched opener j"] --> B["Pointer head reads state S before opener j"]
-  B --> D["MLP2 state and answer"]
-  C["Partner L2 head: needed, computation unidentified"] --> D
-  D --> E["Scratchpad top or membership answer"]
+  A["Alive closer t and<br/>matched opener j"] --> B["Pointer head reads<br/>state S before<br/>opener j"]
+  B --> D["MLP2 state and<br/>answer"]
+  C["Partner L2 head:<br/>needed,<br/>computation<br/>unidentified"] --> D
+  D --> E["Scratchpad top or<br/>membership answer"]
   classDef trained fill:gold,stroke:darkgoldenrod,color:black
   class B,C,D trained
 ```

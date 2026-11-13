@@ -103,14 +103,18 @@ In Figure 1, frozen map clocks and goal binding feed neighbourhood-fetch heads. 
 flowchart TD
     accTitle: Hand-built reached-set expansion and stopping route
     accDescr: Frozen map clocks and goal binding feed neighbourhood fetch heads. The sole trained PART MLP gates the reached-neighbour OR by walls, while a frozen goal check chooses the next index or END. The local rule is partial at the full-seed scope because complement and path tests cover only the named subset.
-    P["Grid walls, start, goal and written reached sets"] --> R["L0H0-1 bind map clocks and the goal at CHECK"]
-    R --> W["L1H0-4 fetch N, E, S, W and self from the previous map"]
-    W --> M["MLP2: OR reached neighbours, then gate out walls"]
-    W --> D["Frozen MLP1 sets STOP when CHECK reads the reached goal"]
-    M --> N["Write the next reached set"]
-    D --> O["Write the next step index or END"]
+    P["Grid walls, start,<br/>goal and written<br/>reached sets"] --> R["L0H0-1 bind map<br/>clocks and the<br/>goal at CHECK"]
+    R --> W["L1H0-4 fetch N, E,<br/>S, W and self from<br/>the previous map"]
+    W --> M["MLP2: OR reached<br/>neighbours, then<br/>gate out walls"]
+    W --> D["Frozen MLP1 sets<br/>STOP when CHECK<br/>reads the reached<br/>goal"]
+    M --> N["Write the next<br/>reached set"]
+    D --> O["Write the next<br/>step index or END"]
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class M trained
+    %% Invisible links constrain vertical layout only, not computation.
+    M ~~~ D
+    D ~~~ N
+    N ~~~ O
 ```
 
 *Figure 1. The hand-built breadth-first search update. Gold MLP2 is the only trained PART block. The learned nine-number update has partial status at the ten-seed scope: substitution passed in all ten, but complement and path tests covered only seeds 0–2. This is not a diagram of the wholly trained search mechanism.*

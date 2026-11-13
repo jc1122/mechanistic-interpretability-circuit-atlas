@@ -1,37 +1,43 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 440" role="img" aria-labelledby="title description">
+<svg xmlns="http://www.w3.org/2000/svg" width="540" height="838.5" viewBox="0 0 360 559" role="img" aria-labelledby="title desc">
 <title id="title">Chess attack maps: recorded final-run outcomes</title>
-<desc id="description">Each dot is one seed. Generated armies: 7 of 10 at recorded exact match 1.0; all 10 at least .998. Random-colour sliders: 1 of 10 at 1.0; 3 of 10 at least .99. Each seed was scored on 2048 boards. The scores were reported to three decimal places. The shipped archive uses a different board draw. No closed form was accepted.</desc>
-<style>text{font-family:system-ui,sans-serif} .box{stroke:#63758b;stroke-width:2}</style>
-<rect width="900" height="440" rx="16" fill="#f7f9fc"/>
-<text x="30" y="42" font-size="23" fill="#172b4d" font-weight="600">Writing the ray helps; choosing a colour can still fail</text>
-<text x="30" y="72" font-size="17" fill="#172b4d" font-weight="normal">Final from-scratch hint-trace runs; 2048 test boards per seed</text>
-<text x="30" y="97" font-size="17" fill="#172b4d" font-weight="normal">Whole-output exact match, reported to three decimal places</text>
-<text x="30" y="145" font-size="20" fill="#172b4d" font-weight="600">Generated armies</text>
-<circle cx="46" cy="175" r="10" fill="#205b9e" stroke="#205b9e" stroke-width="2"/>
-<circle cx="75" cy="175" r="10" fill="#205b9e" stroke="#205b9e" stroke-width="2"/>
-<circle cx="104" cy="175" r="10" fill="#205b9e" stroke="#205b9e" stroke-width="2"/>
-<circle cx="133" cy="175" r="10" fill="#205b9e" stroke="#205b9e" stroke-width="2"/>
-<circle cx="162" cy="175" r="10" fill="#205b9e" stroke="#205b9e" stroke-width="2"/>
-<circle cx="191" cy="175" r="10" fill="#205b9e" stroke="#205b9e" stroke-width="2"/>
-<circle cx="220" cy="175" r="10" fill="#205b9e" stroke="#205b9e" stroke-width="2"/>
-<circle cx="249" cy="175" r="10" fill="#ffffff" stroke="#205b9e" stroke-width="2"/>
-<circle cx="278" cy="175" r="10" fill="#ffffff" stroke="#205b9e" stroke-width="2"/>
-<circle cx="307" cy="175" r="10" fill="#ffffff" stroke="#205b9e" stroke-width="2"/>
-<text x="350" y="170" font-size="19" fill="#172b4d" font-weight="normal">7/10 seeds at recorded exact match 1.0</text>
-<text x="350" y="197" font-size="18" fill="#172b4d" font-weight="normal">10/10 seeds reached &gt;= .998</text>
-<text x="30" y="267" font-size="20" fill="#172b4d" font-weight="600">Random-colour sliders</text>
-<circle cx="46" cy="297" r="10" fill="#205b9e" stroke="#205b9e" stroke-width="2"/>
-<circle cx="75" cy="297" r="10" fill="#ffffff" stroke="#205b9e" stroke-width="2"/>
-<circle cx="104" cy="297" r="10" fill="#ffffff" stroke="#205b9e" stroke-width="2"/>
-<circle cx="133" cy="297" r="10" fill="#ffffff" stroke="#205b9e" stroke-width="2"/>
-<circle cx="162" cy="297" r="10" fill="#ffffff" stroke="#205b9e" stroke-width="2"/>
-<circle cx="191" cy="297" r="10" fill="#ffffff" stroke="#205b9e" stroke-width="2"/>
-<circle cx="220" cy="297" r="10" fill="#ffffff" stroke="#205b9e" stroke-width="2"/>
-<circle cx="249" cy="297" r="10" fill="#ffffff" stroke="#205b9e" stroke-width="2"/>
-<circle cx="278" cy="297" r="10" fill="#ffffff" stroke="#205b9e" stroke-width="2"/>
-<circle cx="307" cy="297" r="10" fill="#ffffff" stroke="#205b9e" stroke-width="2"/>
-<text x="350" y="292" font-size="19" fill="#172b4d" font-weight="normal">1/10 seeds at recorded exact match 1.0</text>
-<text x="350" y="319" font-size="18" fill="#172b4d" font-weight="normal">3/10 seeds reached &gt;= .99</text>
-<text x="30" y="372" font-size="17" fill="#172b4d" font-weight="normal">Filled dots: recorded 1.0. Dot order does not identify seeds.</text>
-<text x="30" y="399" font-size="17" fill="#172b4d" font-weight="normal">Archive boards use a different draw. No closed form was accepted.</text>
+<desc id="desc">Each dot is one seed. Generated armies: 7 of 10 at recorded exact match 1.0; all 10 at least .998. Random-colour sliders: 1 of 10 at 1.0; 3 of 10 at least .99. Each seed was scored on 2048 boards. The scores were reported to three decimal places. The shipped archive uses a different board draw. No closed form was accepted.</desc>
+<metadata>CC BY 4.0. Compact redraw; recorded values unchanged. Original figure metadata retained.</metadata>
+<style>text{font-family:system-ui,sans-serif}.fg{fill:#172b3a}.bg{fill:#ffffff}.panel{fill:#f0f4f8;stroke:#63758b;stroke-width:1.5}.trained{fill:#fff0ba;stroke:#63758b;stroke-width:1.5}.ink{fill:#172b3a}.grid{stroke:#7d8c98}.track{fill:#e1e6eb}.blue{fill:#176b9b}.amber{fill:#a05a00}.grey{fill:#697681}.light{fill:#e1e6eb;stroke:#63758b}.blue-line{stroke:#176b9b}.amber-line{stroke:#a05a00}.grey-line{stroke:#697681}
+@media(prefers-color-scheme:dark){.fg{fill:#f0f6fc}.bg{fill:#161b22}.panel{fill:#263746;stroke:#9bacc0}.trained{stroke:#e3b341}.grid{stroke:#8b949e}.track{fill:#303c49}.blue{fill:#58a6ff}.amber{fill:#e3b341}.grey{fill:#a0adba}.light{fill:#303c49;stroke:#9bacc0}.blue-line{stroke:#58a6ff}.amber-line{stroke:#e3b341}.grey-line{stroke:#a0adba}}</style>
+<rect width="360" height="559" rx="8" class="bg"/>
+<text x="20" y="24" font-size="18" class="fg" font-weight="600" text-anchor="start">Chess: attack-map outcomes</text>
+<text x="20" y="59" font-size="16" class="fg" font-weight="400" text-anchor="start">Final from-scratch hint traces;</text>
+<text x="20" y="82" font-size="16" class="fg" font-weight="400" text-anchor="start">2048 test boards per seed.</text>
+<text x="20" y="114" font-size="16" class="fg" font-weight="400" text-anchor="start">Whole-output exact match, reported</text>
+<text x="20" y="137" font-size="16" class="fg" font-weight="400" text-anchor="start">to three decimal places.</text>
+<text x="20" y="169" font-size="16" class="fg" font-weight="600" text-anchor="start">Generated armies</text>
+<circle cx="34" cy="205" r="9" class="blue blue-line" stroke-width="2"/>
+<circle cx="66" cy="205" r="9" class="blue blue-line" stroke-width="2"/>
+<circle cx="98" cy="205" r="9" class="blue blue-line" stroke-width="2"/>
+<circle cx="130" cy="205" r="9" class="blue blue-line" stroke-width="2"/>
+<circle cx="162" cy="205" r="9" class="blue blue-line" stroke-width="2"/>
+<circle cx="194" cy="205" r="9" class="blue blue-line" stroke-width="2"/>
+<circle cx="226" cy="205" r="9" class="blue blue-line" stroke-width="2"/>
+<circle cx="258" cy="205" r="9" class="bg blue-line" stroke-width="2"/>
+<circle cx="290" cy="205" r="9" class="bg blue-line" stroke-width="2"/>
+<circle cx="322" cy="205" r="9" class="bg blue-line" stroke-width="2"/>
+<text x="20" y="237" font-size="16" class="fg" font-weight="400" text-anchor="start">7/10 seeds at recorded 1.0</text>
+<text x="20" y="269" font-size="16" class="fg" font-weight="400" text-anchor="start">10/10 seeds reached &gt;= .998</text>
+<text x="20" y="301" font-size="16" class="fg" font-weight="600" text-anchor="start">Random-colour sliders</text>
+<circle cx="34" cy="337" r="9" class="blue blue-line" stroke-width="2"/>
+<circle cx="66" cy="337" r="9" class="bg blue-line" stroke-width="2"/>
+<circle cx="98" cy="337" r="9" class="bg blue-line" stroke-width="2"/>
+<circle cx="130" cy="337" r="9" class="bg blue-line" stroke-width="2"/>
+<circle cx="162" cy="337" r="9" class="bg blue-line" stroke-width="2"/>
+<circle cx="194" cy="337" r="9" class="bg blue-line" stroke-width="2"/>
+<circle cx="226" cy="337" r="9" class="bg blue-line" stroke-width="2"/>
+<circle cx="258" cy="337" r="9" class="bg blue-line" stroke-width="2"/>
+<circle cx="290" cy="337" r="9" class="bg blue-line" stroke-width="2"/>
+<circle cx="322" cy="337" r="9" class="bg blue-line" stroke-width="2"/>
+<text x="20" y="369" font-size="16" class="fg" font-weight="400" text-anchor="start">1/10 seeds at recorded 1.0</text>
+<text x="20" y="401" font-size="16" class="fg" font-weight="400" text-anchor="start">3/10 seeds reached &gt;= .99</text>
+<text x="20" y="433" font-size="16" class="fg" font-weight="400" text-anchor="start">Filled dots: recorded 1.0. Dot</text>
+<text x="20" y="456" font-size="16" class="fg" font-weight="400" text-anchor="start">order does not identify seeds.</text>
+<text x="20" y="488" font-size="16" class="fg" font-weight="400" text-anchor="start">Archive boards use a different</text>
+<text x="20" y="511" font-size="16" class="fg" font-weight="400" text-anchor="start">draw. No closed form was accepted.</text>
 </svg>

@@ -1,24 +1,28 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 385" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="540" height="786.0" viewBox="0 0 360 524" role="img" aria-labelledby="title desc">
 <title id="title">Three learned circuit families in binary elimination</title>
 <desc id="desc">Of 10 final seeds, 6 used a layer 3 head readout, 2 diffuse layer 3, and 2 were complete by layer 2. All had final exact match 1.0 on 2000 held-out systems. Only 2 seeds passed the constant layer-3 substitution, without a reported complement test. Source: atlas entry (research report), https://github.com/jc1122/mechanistic-interpretability-circuit-atlas/blob/main/entries/gf2-elimination.md.</desc>
-<rect width="100%" height="100%" fill="white"/>
-<g font-family="system-ui, -apple-system, sans-serif">
-<text x="28" y="35" font-size="23" fill="#0f172a" font-weight="bold">Same accuracy, different finishing layers</text>
-<text x="28" y="66" font-size="15" fill="#0f172a" font-weight="normal">Final answer-only run: 10/10 seeds, exact on 2000 unseen-matrix systems</text>
-<text x="28" y="92" font-size="14" fill="#64748b" font-weight="normal">Dimension 4; circuit families from the source interpretation</text>
-<text x="28" y="143" font-size="17" fill="#0f172a" font-weight="normal">Layer 3 head readout</text>
-<rect x="265" y="124" width="380.000" height="26" rx="3" fill="#e2e8f0"/>
-<rect x="265" y="124" width="228.000" height="26" rx="3" fill="#2563eb"/>
-<text x="669" y="144" font-size="17" fill="#0f172a" font-weight="bold">6/10</text>
-<text x="28" y="204" font-size="17" fill="#0f172a" font-weight="normal">Diffuse layer 3</text>
-<rect x="265" y="185" width="380.000" height="26" rx="3" fill="#e2e8f0"/>
-<rect x="265" y="185" width="76.000" height="26" rx="3" fill="#2563eb"/>
-<text x="669" y="205" font-size="17" fill="#0f172a" font-weight="bold">2/10</text>
-<text x="28" y="265" font-size="17" fill="#0f172a" font-weight="normal">Complete by layer 2</text>
-<rect x="265" y="246" width="380.000" height="26" rx="3" fill="#e2e8f0"/>
-<rect x="265" y="246" width="76.000" height="26" rx="3" fill="#2563eb"/>
-<text x="669" y="266" font-size="17" fill="#0f172a" font-weight="bold">2/10</text>
-<text x="28" y="333" font-size="15" fill="#0f172a" font-weight="normal">Only the layer-2-complete group kept accuracy with layer-3 attention</text>
-<text x="28" y="357" font-size="15" fill="#0f172a" font-weight="normal">replaced by a per-slot constant. This is not a whole-network formula.</text>
-</g>
+<metadata>CC BY 4.0. Compact redraw; recorded values unchanged. Original figure metadata retained.</metadata>
+<style>text{font-family:system-ui,sans-serif}.fg{fill:#172b3a}.bg{fill:#ffffff}.panel{fill:#f0f4f8;stroke:#63758b;stroke-width:1.5}.trained{fill:#fff0ba;stroke:#63758b;stroke-width:1.5}.ink{fill:#172b3a}.grid{stroke:#7d8c98}.track{fill:#e1e6eb}.blue{fill:#176b9b}.amber{fill:#a05a00}.grey{fill:#697681}.light{fill:#e1e6eb;stroke:#63758b}.blue-line{stroke:#176b9b}.amber-line{stroke:#a05a00}.grey-line{stroke:#697681}
+@media(prefers-color-scheme:dark){.fg{fill:#f0f6fc}.bg{fill:#161b22}.panel{fill:#263746;stroke:#9bacc0}.trained{stroke:#e3b341}.grid{stroke:#8b949e}.track{fill:#303c49}.blue{fill:#58a6ff}.amber{fill:#e3b341}.grey{fill:#a0adba}.light{fill:#303c49;stroke:#9bacc0}.blue-line{stroke:#58a6ff}.amber-line{stroke:#e3b341}.grey-line{stroke:#a0adba}}</style>
+<rect width="360" height="524" rx="8" class="bg"/>
+<text x="20" y="24" font-size="18" class="fg" font-weight="600" text-anchor="start">Binary elimination: circuit</text>
+<text x="20" y="50" font-size="18" class="fg" font-weight="600" text-anchor="start">census</text>
+<text x="20" y="85" font-size="16" class="fg" font-weight="400" text-anchor="start">Final answer-only run, dimension</text>
+<text x="20" y="108" font-size="16" class="fg" font-weight="400" text-anchor="start">4: 10/10 seeds exact on 2000</text>
+<text x="20" y="131" font-size="16" class="fg" font-weight="400" text-anchor="start">unseen-matrix systems.</text>
+<text x="20" y="163" font-size="16" class="fg" font-weight="400" text-anchor="start">Layer 3 head readout: 6/10</text>
+<rect x="20" y="190" width="320" height="12" rx="3" class="track"/>
+<rect x="20" y="190" width="192.0" height="12" rx="3" class="blue"/>
+<text x="20" y="226" font-size="16" class="fg" font-weight="400" text-anchor="start">Diffuse layer 3: 2/10</text>
+<rect x="20" y="253" width="320" height="12" rx="3" class="track"/>
+<rect x="20" y="253" width="64.0" height="12" rx="3" class="blue"/>
+<text x="20" y="289" font-size="16" class="fg" font-weight="400" text-anchor="start">Complete by layer 2: 2/10</text>
+<rect x="20" y="316" width="320" height="12" rx="3" class="track"/>
+<rect x="20" y="316" width="64.0" height="12" rx="3" class="blue"/>
+<text x="20" y="352" font-size="16" class="fg" font-weight="400" text-anchor="start">Only the layer-2-complete group</text>
+<text x="20" y="375" font-size="16" class="fg" font-weight="400" text-anchor="start">kept accuracy with layer-3</text>
+<text x="20" y="398" font-size="16" class="fg" font-weight="400" text-anchor="start">attention replaced by a per-slot</text>
+<text x="20" y="421" font-size="16" class="fg" font-weight="400" text-anchor="start">constant.</text>
+<text x="20" y="453" font-size="16" class="fg" font-weight="400" text-anchor="start">Not a whole-network formula;</text>
+<text x="20" y="476" font-size="16" class="fg" font-weight="400" text-anchor="start">complement not reported.</text>
 </svg>

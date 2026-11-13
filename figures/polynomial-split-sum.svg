@@ -1,24 +1,28 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" role="img" aria-labelledby="title description">
+<svg xmlns="http://www.w3.org/2000/svg" width="540" height="835.5" viewBox="0 0 360 557" role="img" aria-labelledby="title desc">
 <title id="title">Polynomial multiplication: learning the sum with product gates fixed</title>
-<desc id="description">The answer-only split-sum screening arm froze the hand-built signed-product gates and trained the output weights. Three of three seeds reached .998-.999 whole-output exact match on 1000 held-out pairs per seed; none reached 1.0. This is a distinct arm, not the ordinary partly trained cell or a verified learned mechanism.</desc>
-<style>text{font-family:system-ui,sans-serif} .box{stroke:#63758b;stroke-width:2}</style>
-<rect width="900" height="400" rx="16" fill="#f7f9fc"/>
-<text x="30" y="42" font-size="25" fill="#172b4d" font-weight="600">Separate the products from the sum</text>
-<text x="30" y="73" font-size="18" fill="#172b4d" font-weight="normal">Answer-only multiplication: the split-sum screening arm</text>
-<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#63758b"/></marker></defs>
-<rect x="30" y="116" width="260" height="105" rx="10" fill="#ffffff" class="box"/>
-<text x="46" y="153" font-size="19" fill="#172b4d" font-weight="600">Operand coefficients</text>
-<text x="46" y="190" font-size="17" fill="#172b4d" font-weight="normal">input</text>
-<rect x="320" y="116" width="260" height="105" rx="10" fill="#e5ecf5" class="box"/>
-<text x="336" y="153" font-size="19" fill="#172b4d" font-weight="600">Signed-product gates</text>
-<text x="336" y="190" font-size="17" fill="#172b4d" font-weight="normal">hand-built and frozen</text>
-<rect x="610" y="116" width="260" height="105" rx="10" fill="#fff0ba" class="box"/>
-<text x="626" y="153" font-size="19" fill="#172b4d" font-weight="600">Sum / output weights</text>
-<text x="626" y="190" font-size="17" fill="#172b4d" font-weight="normal">trained</text>
-<line x1="290" y1="169" x2="316" y2="169" stroke="#63758b" stroke-width="2" marker-end="url(#arrow)"/>
-<line x1="580" y1="169" x2="606" y2="169" stroke="#63758b" stroke-width="2" marker-end="url(#arrow)"/>
-<text x="30" y="272" font-size="22" fill="#172b4d" font-weight="600">3/3 screening seeds: .998-.999 whole-output exact match</text>
-<text x="30" y="305" font-size="18" fill="#172b4d" font-weight="normal">1000 held-out pairs per seed</text>
-<text x="30" y="338" font-size="18" fill="#172b4d" font-weight="normal">No seed reached whole-output exact match 1.0</text>
-<text x="30" y="372" font-size="17" fill="#172b4d" font-weight="normal">A separate arm; no verified learned multiplication mechanism.</text>
+<desc id="desc">The answer-only split-sum screening arm froze the hand-built signed-product gates and trained the output weights. Three of three seeds reached .998-.999 whole-output exact match on 1000 held-out pairs per seed; none reached 1.0. This is a distinct arm, not the ordinary partly trained cell or a verified learned mechanism.</desc>
+<metadata>CC BY 4.0. Compact redraw; recorded values unchanged. Original figure metadata retained.</metadata>
+<style>text{font-family:system-ui,sans-serif}.fg{fill:#172b3a}.bg{fill:#ffffff}.panel{fill:#f0f4f8;stroke:#63758b;stroke-width:1.5}.trained{fill:#fff0ba;stroke:#63758b;stroke-width:1.5}.ink{fill:#172b3a}.grid{stroke:#7d8c98}.track{fill:#e1e6eb}.blue{fill:#176b9b}.amber{fill:#a05a00}.grey{fill:#697681}.light{fill:#e1e6eb;stroke:#63758b}.blue-line{stroke:#176b9b}.amber-line{stroke:#a05a00}.grey-line{stroke:#697681}
+@media(prefers-color-scheme:dark){.fg{fill:#f0f6fc}.bg{fill:#161b22}.panel{fill:#263746;stroke:#9bacc0}.trained{stroke:#e3b341}.grid{stroke:#8b949e}.track{fill:#303c49}.blue{fill:#58a6ff}.amber{fill:#e3b341}.grey{fill:#a0adba}.light{fill:#303c49;stroke:#9bacc0}.blue-line{stroke:#58a6ff}.amber-line{stroke:#e3b341}.grey-line{stroke:#a0adba}}</style>
+<rect width="360" height="557" rx="8" class="bg"/>
+<text x="20" y="24" font-size="18" class="fg" font-weight="600" text-anchor="start">Polynomial split-sum</text>
+<text x="20" y="59" font-size="16" class="fg" font-weight="400" text-anchor="start">Answer-only screening arm</text>
+<rect x="20" y="85" width="320" height="74" rx="3" class="panel"/>
+<text x="34" y="114" font-size="16" class="fg" font-weight="600" text-anchor="start">Operand coefficients</text>
+<text x="34" y="140" font-size="16" class="fg" font-weight="400" text-anchor="start">input</text>
+<path d="M180,160 L180,184" class="grid" fill="none" stroke-width="2"/>
+<path d="M175,179 L180,185 L185,179" class="grid" fill="none" stroke-width="2"/>
+<rect x="20" y="191" width="320" height="74" rx="3" class="panel"/>
+<text x="34" y="220" font-size="16" class="fg" font-weight="600" text-anchor="start">Signed-product gates</text>
+<text x="34" y="246" font-size="16" class="fg" font-weight="400" text-anchor="start">hand-built and frozen</text>
+<path d="M180,266 L180,290" class="grid" fill="none" stroke-width="2"/>
+<path d="M175,285 L180,291 L185,285" class="grid" fill="none" stroke-width="2"/>
+<rect x="20" y="297" width="320" height="74" rx="3" class="trained"/>
+<text x="34" y="326" font-size="16" class="ink" font-weight="600" text-anchor="start">Sum / output weights</text>
+<text x="34" y="352" font-size="16" class="ink" font-weight="400" text-anchor="start">trained</text>
+<text x="20" y="390" font-size="16" class="fg" font-weight="600" text-anchor="start">3/3 screening seeds: .998-.999</text>
+<text x="20" y="413" font-size="16" class="fg" font-weight="600" text-anchor="start">whole-output exact match</text>
+<text x="20" y="445" font-size="16" class="fg" font-weight="400" text-anchor="start">1000 held-out pairs per seed</text>
+<text x="20" y="477" font-size="16" class="fg" font-weight="400" text-anchor="start">No seed reached 1.0.</text>
+<text x="20" y="509" font-size="16" class="fg" font-weight="400" text-anchor="start">No verified learned mechanism.</text>
 </svg>

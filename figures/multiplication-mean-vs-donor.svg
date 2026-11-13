@@ -1,24 +1,26 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 440" role="img" aria-labelledby="title description">
+<svg xmlns="http://www.w3.org/2000/svg" width="540" height="739.5" viewBox="0 0 360 493" role="img" aria-labelledby="title desc">
 <title id="title">Binary multiplication: a mean readout is not an activation identity</title>
-<desc id="description">One examined from-scratch retry seed, best snapshot. A mean table fitted on 819 non-training pairs gives whole-output exact match 1.000 on 820 disjoint evaluation pairs. Replacing activations by individual donors with the same output-query and arithmetic key gives .5841 whole-output exact match, despite .99336 token accuracy. This is a sufficient readout only, not a verified native mechanism.</desc>
-<style>text{font-family:system-ui,sans-serif} .box{stroke:#63758b;stroke-width:2}</style>
-<rect width="900" height="440" rx="16" fill="#f7f9fc"/>
-<text x="30" y="42" font-size="24" fill="#172b4d" font-weight="600">A working average can hide context dependence</text>
-<text x="30" y="74" font-size="18" fill="#172b4d" font-weight="normal">TRAIN retry, seed 0 best snapshot</text>
-<text x="30" y="102" font-size="18" fill="#172b4d" font-weight="normal">819 fit pairs; 820 disjoint evaluation pairs</text>
-<text x="30" y="140" font-size="17" fill="#172b4d" font-weight="normal">Same output-query index and arithmetic key in both tests</text>
-<line x1="310" y1="169" x2="310" y2="310" stroke="#9bacc0" stroke-width="1"/>
-<text x="303" y="337" font-size="17" fill="#172b4d" font-weight="normal">0</text>
-<line x1="780" y1="169" x2="780" y2="310" stroke="#9bacc0" stroke-width="1"/>
-<text x="773" y="337" font-size="17" fill="#172b4d" font-weight="normal">1.0</text>
-<text x="30" y="210" font-size="18" fill="#172b4d" font-weight="normal">Mean output table</text>
-<rect x="310" y="185" width="470" height="34" rx="4" fill="#e0e7ef"/>
-<rect x="310" y="185" width="470.0" height="34" rx="4" fill="#205b9e"/>
-<text x="797" y="210" font-size="20" fill="#172b4d" font-weight="600">1.000</text>
-<text x="30" y="290" font-size="18" fill="#172b4d" font-weight="normal">Individual same-key donor</text>
-<rect x="310" y="265" width="470" height="34" rx="4" fill="#e0e7ef"/>
-<rect x="310" y="265" width="274.527" height="34" rx="4" fill="#6e628f"/>
-<text x="797" y="290" font-size="20" fill="#172b4d" font-weight="600">.5841</text>
-<text x="310" y="365" font-size="17" fill="#172b4d" font-weight="normal">Teacher-forced whole-output exact match</text>
-<text x="30" y="400" font-size="18" fill="#172b4d" font-weight="normal">One seed; sufficient readout only, not a verified native mechanism.</text>
+<desc id="desc">One examined from-scratch retry seed, best snapshot. A mean table fitted on 819 non-training pairs gives whole-output exact match 1.000 on 820 disjoint evaluation pairs. Replacing activations by individual donors with the same output-query and arithmetic key gives .5841 whole-output exact match, despite .99336 token accuracy. This is a sufficient readout only, not a verified native mechanism.</desc>
+<metadata>CC BY 4.0. Compact redraw; recorded values unchanged. Original figure metadata retained.</metadata>
+<style>text{font-family:system-ui,sans-serif}.fg{fill:#172b3a}.bg{fill:#ffffff}.panel{fill:#f0f4f8;stroke:#63758b;stroke-width:1.5}.trained{fill:#fff0ba;stroke:#63758b;stroke-width:1.5}.ink{fill:#172b3a}.grid{stroke:#7d8c98}.track{fill:#e1e6eb}.blue{fill:#176b9b}.amber{fill:#a05a00}.grey{fill:#697681}.light{fill:#e1e6eb;stroke:#63758b}.blue-line{stroke:#176b9b}.amber-line{stroke:#a05a00}.grey-line{stroke:#697681}
+@media(prefers-color-scheme:dark){.fg{fill:#f0f6fc}.bg{fill:#161b22}.panel{fill:#263746;stroke:#9bacc0}.trained{stroke:#e3b341}.grid{stroke:#8b949e}.track{fill:#303c49}.blue{fill:#58a6ff}.amber{fill:#e3b341}.grey{fill:#a0adba}.light{fill:#303c49;stroke:#9bacc0}.blue-line{stroke:#58a6ff}.amber-line{stroke:#e3b341}.grey-line{stroke:#a0adba}}</style>
+<rect width="360" height="493" rx="8" class="bg"/>
+<text x="20" y="24" font-size="18" class="fg" font-weight="600" text-anchor="start">Multiplication: mean versus</text>
+<text x="20" y="50" font-size="18" class="fg" font-weight="600" text-anchor="start">donor</text>
+<text x="20" y="85" font-size="16" class="fg" font-weight="400" text-anchor="start">TRAIN retry, seed 0 best snapshot;</text>
+<text x="20" y="108" font-size="16" class="fg" font-weight="400" text-anchor="start">819 non-training fit pairs; 820</text>
+<text x="20" y="131" font-size="16" class="fg" font-weight="400" text-anchor="start">disjoint evaluation pairs.</text>
+<text x="20" y="163" font-size="16" class="fg" font-weight="400" text-anchor="start">Same output-query index and</text>
+<text x="20" y="186" font-size="16" class="fg" font-weight="400" text-anchor="start">arithmetic key in both tests.</text>
+<text x="20" y="218" font-size="16" class="fg" font-weight="400" text-anchor="start">Mean output table: 1.000</text>
+<rect x="20" y="245" width="320" height="12" rx="3" class="track"/>
+<rect x="20" y="245" width="320.0" height="12" rx="3" class="blue"/>
+<text x="20" y="281" font-size="16" class="fg" font-weight="400" text-anchor="start">Individual same-key donor: .5841</text>
+<rect x="20" y="308" width="320" height="12" rx="3" class="track"/>
+<rect x="20" y="308" width="186.91199999999998" height="12" rx="3" class="amber"/>
+<text x="20" y="344" font-size="16" class="fg" font-weight="400" text-anchor="start">Common 0–1.0 scale; teacher-forced</text>
+<text x="20" y="367" font-size="16" class="fg" font-weight="400" text-anchor="start">whole-output exact match. Donor</text>
+<text x="20" y="390" font-size="16" class="fg" font-weight="400" text-anchor="start">token accuracy: .99336.</text>
+<text x="20" y="422" font-size="16" class="fg" font-weight="400" text-anchor="start">One seed; sufficient readout only,</text>
+<text x="20" y="445" font-size="16" class="fg" font-weight="400" text-anchor="start">not a verified native mechanism.</text>
 </svg>

@@ -98,19 +98,24 @@ In Figure 1, frozen position and separator frames address two operand-fetch head
 flowchart TD
     accTitle: Hand-built operand fetch and XOR-of-AND update
     accDescr: Frozen position and separator frames address two operand-fetch heads. Their bits, the preceding parity and separator flags enter the final XOR-of-AND lookup MLP. Only that final stage is trained in PART.
-    P["Prompt: B column-major ; A row-major = and trace so far"] --> L0["L0: position R, uniform head and 256 reciprocal neurons"]
-    L0 --> L1["L1: 4 first/last heads; MLP gives SEG, G, J and SEGN, GN, JN"]
-    L1 --> H0["L2H0: match SEG 1, G = GN, J = JN"]
-    L1 --> H1["L2H1: match SEG 0, G = SEGN - 2, J = JN"]
+    P["Prompt: B<br/>column-major<br/>; A<br/>row-major =<br/>and trace so<br/>far"] --> L0["L0: position<br/>R, uniform<br/>head and 256<br/>reciprocal<br/>neurons"]
+    L0 --> L1["L1: 4<br/>first/last<br/>heads; MLP<br/>gives SEG,<br/>G, J and<br/>SEGN, GN, JN"]
+    L1 --> H0["L2H0: match<br/>SEG 1, G =<br/>GN, J = JN"]
+    L1 --> H1["L2H1: match<br/>SEG 0, G =<br/>SEGN - 2, J<br/>= JN"]
     H0 --> MA["MA = A_ij"]
     H1 --> MB["MB = B_jk"]
-    L1 --> F["L2 MLP: separator flags TS, TSEMI, TB"]
-    MA --> M3["L3 MLP: 4 cell neurons, tok1 xor (MA and MB)"]
+    L1 --> F["L2 MLP:<br/>separator<br/>flags TS,<br/>TSEMI, TB"]
+    MA --> M3["L3 MLP: 4<br/>cell<br/>neurons,<br/>tok1 xor (MA<br/>and MB)"]
     MB --> M3
     F --> M3
-    M3 --> Y["next running parity s_ij, or separator"]
+    M3 --> Y["next running<br/>parity s_ij,<br/>or separator"]
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class M3 trained
+    %% Invisible links constrain vertical layout only, not computation.
+    H0 ~~~ H1
+    H1 ~~~ MA
+    MA ~~~ MB
+    MB ~~~ F
 ```
 
 *Figure 1. The hand-built network for the trace format. Layers 0 and 1 build a position frame, two layer-2 heads fetch A_ij and B_jk,

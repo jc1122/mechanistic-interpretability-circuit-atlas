@@ -39,8 +39,9 @@ Plain-language meanings of the terms used in the entries. Technical definitions 
 - **Best / final snapshot**: the saved network with the highest accuracy on the entry's selection set (the test set, or a separate
   monitor set where the entry says so) / the network at the end of training. A snapshot is one saved network of one seed.
 - **First exact step**: the first evaluation at which test exact match reached 1 (entries that use .99 instead say so).
-- **Seed count versus snapshot count**: independent training runs versus saved states of those runs. Best and final states of one
-  seed are two snapshots, not two independent successes. A circuit-family census counts a mechanism label, not necessarily a task solve.
+- **Seed count versus snapshot count**: training runs versus saved states of those runs. Best and final states of one seed are two
+  snapshots, not two independent successes. Different runs need not use independent evaluation data. A circuit-family census counts
+  a mechanism label, not necessarily a task solve.
 - **Exact versus threshold success**: an evaluation score of 1.0 differs from reaching a threshold such as ≥ .99. A rounded printed
   1.0 does not by itself establish zero errors. Both the criterion and the evaluated example count belong beside the result.
 - **Sampled certificate**: a checked statement on the registered samples, distributions and interventions. It does not imply

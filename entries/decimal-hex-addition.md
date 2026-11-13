@@ -97,16 +97,19 @@ In Figure 1, frozen index heads fetch digits. Answer only uses carry lookahead b
 flowchart TD
     accTitle: Hand-built digit and carry routes in larger bases
     accDescr: Frozen index heads fetch operand digits. Answer only uses lookahead and a digit MLP; written carries use a digit-and-carry MLP and a frozen carry-copy head; column sums use a two-phase MLP. Only marked stage MLPs are trained in PART. Status is partial, with complement untested and no whole TRAIN mechanism established.
-    P["Base-10 or base-16 operands"] --> F["Frozen index heads fetch the current digits"]
-    F --> A["Answer only: L2 MLP writes digit equality and carry conditions"]
-    A --> L["Frozen L3H0 lookahead finds the incoming carry"]
-    L --> AM["MLP3 writes the answer digit"]
-    F --> BM["Carry tokens: MLP2 writes digit and carry"]
-    BM --> R["Frozen L3H0 copies the previous carry output"]
-    F --> CL["Column sums: frozen lookahead finds the incoming carry"]
-    CL --> CM["MLP2 writes local sums, then answer digits"]
+    P["Base-10 or base-16<br/>operands"] --> F["Frozen index heads<br/>fetch the current<br/>digits"]
+    F --> A["Answer only: L2<br/>MLP writes digit<br/>equality and carry<br/>conditions"]
+    A --> L["Frozen L3H0<br/>lookahead finds<br/>the incoming carry"]
+    L --> AM["MLP3 writes the<br/>answer digit"]
+    F --> BM["Carry tokens: MLP2<br/>writes digit and<br/>carry"]
+    BM --> R["Frozen L3H0 copies<br/>the previous carry<br/>output"]
+    F --> CL["Column sums:<br/>frozen lookahead<br/>finds the incoming<br/>carry"]
+    CL --> CM["MLP2 writes local<br/>sums, then answer<br/>digits"]
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class AM,BM,CM trained
+    %% Invisible links constrain vertical layout only, not computation.
+    AM ~~~ BM
+    R ~~~ CL
 ```
 
 *Figure 1. The hand-built decimal and hexadecimal adders. Gold nodes are the stage blocks trained in PART. The learned column-total readouts have partial status: local substitutions support them, but complement resampling was not reported. This diagram does not establish the whole TRAIN mechanism or equal weights on its native carry input.*
@@ -205,14 +208,16 @@ In Figure 2, the native subtotal enters the trained carry response, a frozen hea
 flowchart TD
     accTitle: Analogue carry component and failed Boolean replacement
     accDescr: A native subtotal enters the trained carry response, a frozen head relays it, and the trained downstream digit response reads it. Forcing a Boolean carry instead damages whole-answer accuracy. This one-seed component substitute is partial, with complement untested, and is not length-general.
-    S["Native predecessor subtotal s"] --> T["MLP2: calibrated carry response in MJP"]
-    T --> H["Frozen L3H0 relays the carry response"]
-    H --> M["Native downstream MLP2 digit response"]
-    M --> Y["Digit and written carry outputs"]
-    S --> B["Alternative intervention: force a Boolean carry"]
-    B --> F["Whole-answer exact falls to .222"]
+    S["Native predecessor<br/>subtotal s"] --> T["MLP2: calibrated<br/>carry response in<br/>MJP"]
+    T --> H["Frozen L3H0 relays<br/>the carry response"]
+    H --> M["Native downstream<br/>MLP2 digit<br/>response"]
+    M --> Y["Digit and written<br/>carry outputs"]
+    S --> B["Alternative<br/>intervention:<br/>force a Boolean<br/>carry"]
+    B --> F["Whole-answer exact<br/>falls to .222"]
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class T,M trained
+    %% Invisible links constrain vertical layout only, not computation.
+    Y ~~~ B
 ```
 
 *Figure 2. A component substitution in b16 B PART retry seed 1. The hinge replacement scored 1.000 on 1,024 fresh pairs; the Boolean replacement scored .222. Gold marks the trained MLP2's carry and digit responses at successive output positions; L3H0 is frozen. Closed-form status is partial; complement resampling was not reported, and the substitute is not length-general.*

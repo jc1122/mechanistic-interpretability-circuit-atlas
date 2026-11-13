@@ -1,54 +1,72 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="760" height="407" viewBox="0 0 760 407" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="540" height="1345.5" viewBox="0 0 360 897" role="img" aria-labelledby="title desc">
 <title id="title">More search steps did not mean a larger map</title>
 <desc id="desc">Final scratchpads; 10 seeds per cell; 16 mazes per sampled distance; teacher-forced. Intervals copy the source-reported distance-average or grid-size ranges across seeds. New square tokens on 8x8 grids were untrained. Greedy checks covered only distance 2. PART: partial verification coverage (complement in 3 seeds). No TRAIN form accepted. Values: 6x6, distance 11-16: PART: frozen routing 1.0, TRAIN: all weights learned .66–1.0; 6x6, distance 17-20: PART: frozen routing 1.0, TRAIN: all weights learned .41–.78; 8x8, distance 0-10: PART: frozen routing 1.0, TRAIN: all weights learned 0–.09.</desc>
-<rect width="100%" height="100%" fill="white"/>
-<g font-family="system-ui, sans-serif" fill="#1d2630">
-<text x="24" y="32" font-size="21" font-weight="600">More search steps did not mean a larger map</text>
-<text x="24" y="58" font-size="13">Final scratchpads; 10 seeds per cell; 16 mazes per sampled distance; teacher-forced.</text>
-<circle cx="29" cy="81" r="4" fill="#175a96"/>
-<text x="41" y="85" font-size="13">PART: frozen routing</text>
-<circle cx="360" cy="81" r="4" fill="#a53b13"/>
-<text x="372" y="85" font-size="13">TRAIN: all weights learned</text>
-<path d="M242.0 108 V250" stroke="#e0e5ea"/>
-<text x="242.0" y="270" text-anchor="middle" font-size="12">0</text>
-<path d="M331.5 108 V250" stroke="#e0e5ea"/>
-<text x="331.5" y="270" text-anchor="middle" font-size="12">.25</text>
-<path d="M421.0 108 V250" stroke="#e0e5ea"/>
-<text x="421.0" y="270" text-anchor="middle" font-size="12">.50</text>
-<path d="M510.5 108 V250" stroke="#e0e5ea"/>
-<text x="510.5" y="270" text-anchor="middle" font-size="12">.75</text>
-<path d="M600.0 108 V250" stroke="#e0e5ea"/>
-<text x="600.0" y="270" text-anchor="middle" font-size="12">1.00</text>
-<text x="24" y="129" font-size="13">6x6, distance 11-16</text>
-<path d="M600.0 118 H600.0" stroke="#175a96" stroke-width="3"/>
-<circle cx="600.0" cy="118" r="3" fill="#175a96"/>
-<circle cx="600.0" cy="118" r="3" fill="#175a96"/>
-<text x="616" y="122" fill="#175a96" font-size="12">1.0</text>
-<path d="M478.28 134 H600.0" stroke="#a53b13" stroke-width="3"/>
-<circle cx="478.28" cy="134" r="3" fill="#a53b13"/>
-<circle cx="600.0" cy="134" r="3" fill="#a53b13"/>
-<text x="616" y="138" fill="#a53b13" font-size="12">.66–1.0</text>
-<text x="24" y="176" font-size="13">6x6, distance 17-20</text>
-<path d="M600.0 165 H600.0" stroke="#175a96" stroke-width="3"/>
-<circle cx="600.0" cy="165" r="3" fill="#175a96"/>
-<circle cx="600.0" cy="165" r="3" fill="#175a96"/>
-<text x="616" y="169" fill="#175a96" font-size="12">1.0</text>
-<path d="M388.78 181 H521.24" stroke="#a53b13" stroke-width="3"/>
-<circle cx="388.78" cy="181" r="3" fill="#a53b13"/>
-<circle cx="521.24" cy="181" r="3" fill="#a53b13"/>
-<text x="616" y="185" fill="#a53b13" font-size="12">.41–.78</text>
-<text x="24" y="223" font-size="13">8x8, distance 0-10</text>
-<path d="M600.0 212 H600.0" stroke="#175a96" stroke-width="3"/>
-<circle cx="600.0" cy="212" r="3" fill="#175a96"/>
-<circle cx="600.0" cy="212" r="3" fill="#175a96"/>
-<text x="616" y="216" fill="#175a96" font-size="12">1.0</text>
-<path d="M242.0 228 H274.22" stroke="#a53b13" stroke-width="3"/>
-<circle cx="242.0" cy="228" r="3" fill="#a53b13"/>
-<circle cx="274.22" cy="228" r="3" fill="#a53b13"/>
-<text x="616" y="232" fill="#a53b13" font-size="12">0–.09</text>
-<text x="421.0" y="295" text-anchor="middle" font-size="13">Whole-output exact accuracy</text>
-<text x="24" y="325" font-size="12">Intervals copy the source-reported distance-average or grid-size ranges across seeds.</text>
-<text x="24" y="344" font-size="12">New square tokens on 8x8 grids were untrained. Greedy checks covered only distance 2.</text>
-<text x="24" y="363" font-size="12">PART: partial verification coverage (complement in 3 seeds). No TRAIN form accepted.</text>
-</g>
+<metadata>CC BY 4.0. Compact redraw; recorded values unchanged. Original figure metadata retained.</metadata>
+<style>text{font-family:system-ui,sans-serif}.fg{fill:#172b3a}.bg{fill:#ffffff}.panel{fill:#f0f4f8;stroke:#63758b;stroke-width:1.5}.trained{fill:#fff0ba;stroke:#63758b;stroke-width:1.5}.ink{fill:#172b3a}.grid{stroke:#7d8c98}.track{fill:#e1e6eb}.blue{fill:#176b9b}.amber{fill:#a05a00}.grey{fill:#697681}.light{fill:#e1e6eb;stroke:#63758b}.blue-line{stroke:#176b9b}.amber-line{stroke:#a05a00}.grey-line{stroke:#697681}
+@media(prefers-color-scheme:dark){.fg{fill:#f0f6fc}.bg{fill:#161b22}.panel{fill:#263746;stroke:#9bacc0}.trained{stroke:#e3b341}.grid{stroke:#8b949e}.track{fill:#303c49}.blue{fill:#58a6ff}.amber{fill:#e3b341}.grey{fill:#a0adba}.light{fill:#303c49;stroke:#9bacc0}.blue-line{stroke:#58a6ff}.amber-line{stroke:#e3b341}.grey-line{stroke:#a0adba}}</style>
+<rect width="360" height="897" rx="8" class="bg"/>
+<text x="20" y="24" font-size="18" class="fg" font-weight="600" text-anchor="start">Grid BFS: transfer limits</text>
+<text x="20" y="59" font-size="16" class="fg" font-weight="400" text-anchor="start">Final scratchpads; 10 seeds per</text>
+<text x="20" y="82" font-size="16" class="fg" font-weight="400" text-anchor="start">cell; 16 mazes per sampled</text>
+<text x="20" y="105" font-size="16" class="fg" font-weight="400" text-anchor="start">distance; teacher-forced.</text>
+<path d="M20,132 L50,132" class="blue-line" fill="none" stroke-width="3"/>
+<circle cx="35" cy="132" r="4" class="blue"/>
+<text x="65" y="137" font-size="16" class="fg" font-weight="400" text-anchor="start">A: PART: frozen routing</text>
+<path d="M20,164 L50,164" class="amber-line" fill="none" stroke-width="3" stroke-dasharray="5 3"/>
+<rect x="31" y="160" width="8" height="8" class="bg amber-line" stroke-width="2"/>
+<text x="65" y="169" font-size="16" class="fg" font-weight="400" text-anchor="start">B: TRAIN: all weights</text>
+<text x="65" y="192" font-size="16" class="fg" font-weight="400" text-anchor="start">learned</text>
+<text x="20" y="224" font-size="16" class="fg" font-weight="600" text-anchor="start">6x6, distance 11-16</text>
+<text x="20" y="256" font-size="16" class="fg" font-weight="400" text-anchor="start">A</text>
+<text x="340" y="256" font-size="16" class="fg" font-weight="600" text-anchor="end">1.0</text>
+<path d="M30,273 L330,273" class="grid" fill="none" stroke-width="1"/>
+<path d="M330.0,273 L330.0,273" class="blue-line" fill="none" stroke-width="3"/>
+<circle cx="330.0" cy="273" r="4" class="blue"/>
+<circle cx="330.0" cy="273" r="4" class="blue"/>
+<text x="20" y="299" font-size="16" class="fg" font-weight="400" text-anchor="start">B</text>
+<text x="340" y="299" font-size="16" class="fg" font-weight="600" text-anchor="end">.66–1.0</text>
+<path d="M30,316 L330,316" class="grid" fill="none" stroke-width="1"/>
+<path d="M228.0,316 L330.0,316" class="amber-line" fill="none" stroke-width="3" stroke-dasharray="5 3"/>
+<rect x="224.0" y="312" width="8" height="8" class="bg amber-line" stroke-width="2"/>
+<rect x="326.0" y="312" width="8" height="8" class="bg amber-line" stroke-width="2"/>
+<text x="20" y="352" font-size="16" class="fg" font-weight="600" text-anchor="start">6x6, distance 17-20</text>
+<text x="20" y="384" font-size="16" class="fg" font-weight="400" text-anchor="start">A</text>
+<text x="340" y="384" font-size="16" class="fg" font-weight="600" text-anchor="end">1.0</text>
+<path d="M30,401 L330,401" class="grid" fill="none" stroke-width="1"/>
+<path d="M330.0,401 L330.0,401" class="blue-line" fill="none" stroke-width="3"/>
+<circle cx="330.0" cy="401" r="4" class="blue"/>
+<circle cx="330.0" cy="401" r="4" class="blue"/>
+<text x="20" y="427" font-size="16" class="fg" font-weight="400" text-anchor="start">B</text>
+<text x="340" y="427" font-size="16" class="fg" font-weight="600" text-anchor="end">.41–.78</text>
+<path d="M30,444 L330,444" class="grid" fill="none" stroke-width="1"/>
+<path d="M153.0,444 L264.0,444" class="amber-line" fill="none" stroke-width="3" stroke-dasharray="5 3"/>
+<rect x="149.0" y="440" width="8" height="8" class="bg amber-line" stroke-width="2"/>
+<rect x="260.0" y="440" width="8" height="8" class="bg amber-line" stroke-width="2"/>
+<text x="20" y="480" font-size="16" class="fg" font-weight="600" text-anchor="start">8x8, distance 0-10</text>
+<text x="20" y="512" font-size="16" class="fg" font-weight="400" text-anchor="start">A</text>
+<text x="340" y="512" font-size="16" class="fg" font-weight="600" text-anchor="end">1.0</text>
+<path d="M30,529 L330,529" class="grid" fill="none" stroke-width="1"/>
+<path d="M330.0,529 L330.0,529" class="blue-line" fill="none" stroke-width="3"/>
+<circle cx="330.0" cy="529" r="4" class="blue"/>
+<circle cx="330.0" cy="529" r="4" class="blue"/>
+<text x="20" y="555" font-size="16" class="fg" font-weight="400" text-anchor="start">B</text>
+<text x="340" y="555" font-size="16" class="fg" font-weight="600" text-anchor="end">0–.09</text>
+<path d="M30,572 L330,572" class="grid" fill="none" stroke-width="1"/>
+<path d="M30.0,572 L57.0,572" class="amber-line" fill="none" stroke-width="3" stroke-dasharray="5 3"/>
+<rect x="26.0" y="568" width="8" height="8" class="bg amber-line" stroke-width="2"/>
+<rect x="53.0" y="568" width="8" height="8" class="bg amber-line" stroke-width="2"/>
+<text x="30.0" y="608" font-size="16" class="fg" font-weight="400" text-anchor="middle">0</text>
+<text x="105.0" y="608" font-size="16" class="fg" font-weight="400" text-anchor="middle">.25</text>
+<text x="180.0" y="608" font-size="16" class="fg" font-weight="400" text-anchor="middle">.50</text>
+<text x="255.0" y="608" font-size="16" class="fg" font-weight="400" text-anchor="middle">.75</text>
+<text x="330.0" y="608" font-size="16" class="fg" font-weight="400" text-anchor="middle">1.00</text>
+<text x="20" y="638" font-size="16" class="fg" font-weight="400" text-anchor="start">Whole-output exact accuracy</text>
+<text x="20" y="670" font-size="16" class="fg" font-weight="400" text-anchor="start">Copied distance-average or</text>
+<text x="20" y="693" font-size="16" class="fg" font-weight="400" text-anchor="start">grid-size ranges across seeds.</text>
+<text x="20" y="725" font-size="16" class="fg" font-weight="400" text-anchor="start">New square tokens on 8x8 grids</text>
+<text x="20" y="748" font-size="16" class="fg" font-weight="400" text-anchor="start">were untrained. Greedy checks</text>
+<text x="20" y="771" font-size="16" class="fg" font-weight="400" text-anchor="start">covered only distance 2.</text>
+<text x="20" y="803" font-size="16" class="fg" font-weight="400" text-anchor="start">PART: partial verification</text>
+<text x="20" y="826" font-size="16" class="fg" font-weight="400" text-anchor="start">coverage (complement in 3 seeds).</text>
+<text x="20" y="849" font-size="16" class="fg" font-weight="400" text-anchor="start">No TRAIN form accepted.</text>
 </svg>

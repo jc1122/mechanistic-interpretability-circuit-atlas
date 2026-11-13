@@ -69,17 +69,19 @@ In Figure 1, clock and previous-state retrieval feed clause selection, the confl
 flowchart TD
     accTitle: Hand-built search controller and answer-only witness route
     accDescr: Clock and previous-state retrieval feed clause selection, a conflict controller and the local state update. A separate answer-only route pools clause tests over fixed witnesses and thresholds survivors. Only the marked update or threshold MLP is trained in the respective PART format; search and witness computation remain frozen.
-  A["L0: clock and header"] --> B["L1-L2: previous state and clause operands"]
-  B --> C["L3: unit clause, conflict and action"]
-  C --> D["L4H0 and MLP4: controller and equality flags"]
-  B --> E["MLP5: copy, clear, force, decide or backtrack"]
+  A["L0: clock and<br/>header"] --> B["L1-L2: previous<br/>state and clause<br/>operands"]
+  B --> C["L3: unit clause,<br/>conflict and<br/>action"]
+  C --> D["L4H0 and MLP4:<br/>controller and<br/>equality flags"]
+  B --> E["MLP5: copy, clear,<br/>force, decide or<br/>backtrack"]
   D --> E
-  E --> F["New state, level and next trace tokens"]
-  G["A: clause falsification for 128 witnesses"] --> H["One head: pool clauses"]
-  H --> I["MLP1: count survivors and threshold"]
+  E --> F["New state, level<br/>and next trace<br/>tokens"]
+  G["A: clause<br/>falsification for<br/>128 witnesses"] --> H["One head: pool<br/>clauses"]
+  H --> I["MLP1: count<br/>survivors and<br/>threshold"]
   I --> J["SAT or UNSAT"]
   classDef trained fill:gold,stroke:darkgoldenrod,color:black
   class E,I trained
+    %% Invisible links constrain vertical layout only, not computation.
+    F ~~~ G
 ```
 
 *Figure 1. The hand-built search and answer-only circuits. MLP5 is the only trained part in scratchpad PART; A PART trains MLP1. Both are shaded. Clause checks, witness pooling and the search controller remain frozen.*
@@ -138,12 +140,15 @@ In Figure 2, frozen old-state retrieval, force-decide-backtrack control and equa
 flowchart TD
     accTitle: Verified local decision update inside frozen DPLL search
     accDescr: Frozen old-state retrieval, force-decide-backtrack control and equality or keep flags feed the sole trained update MLP. It writes the next state and level. Substitution and complement resampling verify this local update on the stated traces, not a wholly learned search algorithm.
-  A["L1H0: old state and level"] --> D["MLP5: learned seven-field update"]
-  B["L4H0: force, decide and backtrack controller"] --> D
-  C["MLP4: target and keep flags"] --> D
-  D --> E["Y, YL and YL2: new state and level"]
+  A["L1H0: old state<br/>and level"] --> D["MLP5: learned<br/>seven-field update"]
+  B["L4H0: force,<br/>decide and<br/>backtrack<br/>controller"] --> D
+  C["MLP4: target and<br/>keep flags"] --> D
+  D --> E["Y, YL and YL2: new<br/>state and level"]
   classDef trained fill:gold,stroke:darkgoldenrod,color:black
   class D trained
+    %% Invisible links constrain vertical layout only, not computation.
+    A ~~~ B
+    B ~~~ C
 ```
 
 *Figure 2. Verified local update in final scratchpad PART, 10/10 seeds. The shaded MLP5 is trained; substitution and complement resampling preserve the tested trace accuracy. Frozen upstream search is part of the claim.*

@@ -1,25 +1,31 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 485" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="540" height="837.0" viewBox="0 0 360 558" role="img" aria-labelledby="title desc">
 <title id="title">Polynomial integration screening pack stops</title>
 <desc id="desc">Recorded stopping steps: answer-only PART26000, scratchpad PART5500, answer-only TRAIN14500, scratchpad TRAIN27000. Three seeds per screening cell. These are stopping points, not seed means or the final ten-seed results. Only scratchpad PART scores 1.0 on withheld fractions. No full gcd/division mechanism is verified.</desc>
-<metadata>CC BY 4.0</metadata>
-<g font-family="system-ui, sans-serif">
-<rect x="0" y="0" width="900" height="485" fill="white"/>
-<text x="34" y="38" font-size="23" fill="#172b3a" text-anchor="start">Polynomial integration: where the scratchpad helps</text>
-<text x="34" y="69" font-size="15" fill="#172b3a" text-anchor="start">Three-seed screening packs: stopping steps after all seeds reached exact saved-test output</text>
-<text x="34" y="134" font-size="15" fill="#172b3a" text-anchor="start">Frozen scaffold, answer only</text>
-<rect x="335" y="114" width="424.6666666666667" height="30" fill="#697681"/>
-<text x="769.6666666666667" y="135" font-size="15" fill="#172b3a" text-anchor="start">26000</text>
-<text x="34" y="197" font-size="15" fill="#172b3a" text-anchor="start">Frozen scaffold, scratchpad</text>
-<rect x="335" y="177" width="89.83333333333333" height="30" fill="#176b9b"/>
-<text x="434.8333333333333" y="198" font-size="15" fill="#172b3a" text-anchor="start">5500</text>
-<text x="34" y="260" font-size="15" fill="#172b3a" text-anchor="start">From scratch, answer only</text>
-<rect x="335" y="240" width="236.83333333333334" height="30" fill="#697681"/>
-<text x="581.8333333333334" y="261" font-size="15" fill="#172b3a" text-anchor="start">14500</text>
-<text x="34" y="323" font-size="15" fill="#172b3a" text-anchor="start">From scratch, scratchpad</text>
-<rect x="335" y="303" width="441.0" height="30" fill="#176b9b"/>
-<text x="786.0" y="324" font-size="15" fill="#172b3a" text-anchor="start">27000</text>
-<text x="34" y="408" font-size="15" fill="#172b3a" text-anchor="start">These are recorded pack stops, not averages or each seed&#x27;s first-exact step.</text>
-<text x="34" y="435" font-size="15" fill="#172b3a" text-anchor="start">Only scratchpad PART was exact on withheld fractions (1.0); TRAIN was not.</text>
-<text x="34" y="462" font-size="14" fill="#172b3a" text-anchor="start">The learned integration circuit remains partial: no gcd/division closed form or complement certificate.</text>
-</g>
+<ns0:metadata xmlns:ns0="http://www.w3.org/2000/svg">CC BY 4.0</ns0:metadata>
+<metadata>CC BY 4.0. Compact redraw; recorded values unchanged. Original figure metadata retained.</metadata>
+<style>text{font-family:system-ui,sans-serif}.fg{fill:#172b3a}.bg{fill:#ffffff}.panel{fill:#f0f4f8;stroke:#63758b;stroke-width:1.5}.trained{fill:#fff0ba;stroke:#63758b;stroke-width:1.5}.ink{fill:#172b3a}.grid{stroke:#7d8c98}.track{fill:#e1e6eb}.blue{fill:#176b9b}.amber{fill:#a05a00}.grey{fill:#697681}.light{fill:#e1e6eb;stroke:#63758b}.blue-line{stroke:#176b9b}.amber-line{stroke:#a05a00}.grey-line{stroke:#697681}
+@media(prefers-color-scheme:dark){.fg{fill:#f0f6fc}.bg{fill:#161b22}.panel{fill:#263746;stroke:#9bacc0}.trained{stroke:#e3b341}.grid{stroke:#8b949e}.track{fill:#303c49}.blue{fill:#58a6ff}.amber{fill:#e3b341}.grey{fill:#a0adba}.light{fill:#303c49;stroke:#9bacc0}.blue-line{stroke:#58a6ff}.amber-line{stroke:#e3b341}.grey-line{stroke:#a0adba}}</style>
+<rect width="360" height="558" rx="8" class="bg"/>
+<text x="20" y="24" font-size="18" class="fg" font-weight="600" text-anchor="start">Integration pack stops</text>
+<text x="20" y="59" font-size="16" class="fg" font-weight="400" text-anchor="start">Three seeds per screening cell</text>
+<text x="20" y="91" font-size="16" class="fg" font-weight="400" text-anchor="start">Frozen scaffold, answer only</text>
+<text x="340" y="123" font-size="16" class="fg" font-weight="600" text-anchor="end">26000</text>
+<rect x="20" y="133" width="320" height="14" rx="3" class="track"/>
+<rect x="20" y="133" width="277.3333333333333" height="14" rx="3" class="grey"/>
+<text x="20" y="174" font-size="16" class="fg" font-weight="400" text-anchor="start">Frozen scaffold, scratchpad</text>
+<text x="340" y="206" font-size="16" class="fg" font-weight="600" text-anchor="end">5500</text>
+<rect x="20" y="216" width="320" height="14" rx="3" class="track"/>
+<rect x="20" y="216" width="58.666666666666664" height="14" rx="3" class="blue"/>
+<text x="20" y="257" font-size="16" class="fg" font-weight="400" text-anchor="start">From scratch, answer only</text>
+<text x="340" y="289" font-size="16" class="fg" font-weight="600" text-anchor="end">14500</text>
+<rect x="20" y="299" width="320" height="14" rx="3" class="track"/>
+<rect x="20" y="299" width="154.66666666666666" height="14" rx="3" class="grey"/>
+<text x="20" y="340" font-size="16" class="fg" font-weight="400" text-anchor="start">From scratch, scratchpad</text>
+<text x="340" y="372" font-size="16" class="fg" font-weight="600" text-anchor="end">27000</text>
+<rect x="20" y="382" width="320" height="14" rx="3" class="track"/>
+<rect x="20" y="382" width="288.0" height="14" rx="3" class="blue"/>
+<text x="20" y="423" font-size="16" class="fg" font-weight="400" text-anchor="start">Optimiser steps; common bar scale.</text>
+<text x="20" y="455" font-size="16" class="fg" font-weight="400" text-anchor="start">Recorded stops, not seed means.</text>
+<text x="20" y="487" font-size="16" class="fg" font-weight="400" text-anchor="start">Partial: no gcd/division form or</text>
+<text x="20" y="510" font-size="16" class="fg" font-weight="400" text-anchor="start">complement certificate.</text>
 </svg>

@@ -118,27 +118,36 @@ Appendix A.
 In Figure 1, the frozen count head supplies X and the position scalar supplies length L. Count decoders form the one-hot and thermometer codes; these, scalar inputs, length codes and distractors enter the trained menu-reading MLP. A separate frozen comparator supplies the hand-built reference answer. Only the menu-reading MLP is trained.
 
 ```mermaid
+%%{init: {"themeVariables": {"fontSize": "24px"}, "flowchart": {"nodeSpacing": 20, "rankSpacing": 40, "padding": 10}}}%%
 flowchart TD
     accTitle: Frozen count menu and learned comparison stage
     accDescr: The frozen count head and position scalar supply count and length encodings to a trained MLP. A separate fixed comparator supplies the hand-built reference answer. Only the menu-reading MLP is trained; scalar, one-hot, thermometer and distractor inputs are distinct routes.
-    P["Prompt: shuffled line of a's and b's"] --> H["m2 layer 4 head 1: uniform attention over the c matches and the newline"]
+    P["Prompt:<br/>shuffled<br/>line of a's<br/>and b's"] --> H["m2 layer 4<br/>head 1:<br/>uniform<br/>attention<br/>over the c<br/>matches and<br/>the newline"]
     H --> X["X = 1/(c+1)"]
-    P --> R["m2 position scalar R, gives L"]
-    X --> D["Menu decode: GELU step ladder at the midpoints m_k"]
-    D --> OU["one-hot of c (ou)"]
-    D --> TU["thermometer of c (tu)"]
-    X --> SU["scalar X (su)"]
-    R --> LB["scalar, one-hot and thermometer of L (sv, ov, tv)"]
-    OU --> M["TRAINED: MLP, 256 ReLU units"]
+    P --> R["m2 position<br/>scalar R,<br/>gives L"]
+    X --> D["Menu decode:<br/>GELU step<br/>ladder at<br/>the<br/>midpoints<br/>m_k"]
+    D --> OU["one-hot of c<br/>(ou)"]
+    D --> TU["thermometer<br/>of c (tu)"]
+    X --> SU["scalar X<br/>(su)"]
+    R --> LB["scalar,<br/>one-hot and<br/>thermometer<br/>of L (sv,<br/>ov, tv)"]
+    OU --> M["TRAINED:<br/>MLP, 256<br/>ReLU units"]
     TU --> M
     SU --> M
     LB --> M
-    DS["distractors: brackets, copy pointer, last letter"] --> M
-    M --> Y["3 logits: a, b, ="]
-    P --> C["m2 layer 5 MLP comparator: = by default, greater and less step units on NA - NB"]
-    C --> HY["hand-built answer: a, b or ="]
+    DS["distractors:<br/>brackets,<br/>copy<br/>pointer,<br/>last letter"] --> M
+    M --> Y["3 logits: a,<br/>b, ="]
+    P --> C["m2 layer 5<br/>MLP<br/>comparator:<br/>= by<br/>default,<br/>greater and<br/>less step<br/>units on NA<br/>- NB"]
+    C --> HY["hand-built<br/>answer: a, b<br/>or ="]
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class M trained
+    %% Invisible links constrain vertical layout only, not computation.
+    X ~~~ R
+    R ~~~ D
+    OU ~~~ TU
+    TU ~~~ SU
+    SU ~~~ LB
+    LB ~~~ DS
+    Y ~~~ C
 ```
 
 *Figure 1. The hand-built network and the trained stage. Frozen parts, set by formula, compute the count c through layer 4, head 1
@@ -191,13 +200,16 @@ In Figure 2, thermometer count and length features feed the trained letter-score
 flowchart TD
     accTitle: Approximate comparison with a memorised tie score
     accDescr: Thermometer count and length features feed a tilted linear approximation to the letter-score difference. One-hot codes feed a separate tie score that does not generalise to test ties. Both score computations are trained. Status is partial, supported by substitution with complement untested; it is not an exact equality-aware comparator.
-    TU["thermometer of c (tu), main input"] --> D["a - b logit difference: alpha c + beta L + gamma, beta/alpha -.56 to -.64"]
-    LB["L blocks (ov, tv, sv)"] --> D
-    D --> AB["answer a or b; boundary tilted away from 2c = L"]
-    OH["one-hot codes of c and L (ou, ov)"] --> EQ["= logit: per-cell lookup, large on training cells only"]
-    EQ --> NE["= never generalises: 0 correct test cells"]
+    TU["thermometer of c<br/>(tu), main input"] --> D["a - b logit<br/>difference: alpha<br/>c + beta L +<br/>gamma, beta/alpha<br/>-.56 to -.64"]
+    LB["L blocks (ov, tv,<br/>sv)"] --> D
+    D --> AB["answer a or b;<br/>boundary tilted<br/>away from 2c = L"]
+    OH["one-hot codes of c<br/>and L (ou, ov)"] --> EQ["= logit: per-cell<br/>lookup, large on<br/>training cells<br/>only"]
+    EQ --> NE["= never<br/>generalises: 0<br/>correct test cells"]
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class D,EQ trained
+    %% Invisible links constrain vertical layout only, not computation.
+    TU ~~~ LB
+    AB ~~~ OH
 ```
 
 *Figure 2. The circuit type found in 30/30 networks. The trained MLP's a − b difference is approximated by a tilted linear function

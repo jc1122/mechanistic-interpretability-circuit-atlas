@@ -1,53 +1,68 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="760" height="388" viewBox="0 0 760 388" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="540" height="1194.0" viewBox="0 0 360 796" role="img" aria-labelledby="title desc">
 <title id="title">When position becomes a shortcut</title>
 <desc id="desc">Frozen-routing binary addition; column-sum scratchpad; 10 seeds per setting. Intervals are copied seed ranges on 1,000 random pairs per length (fp32). The position mask repairs this format; carry-token stages still have length errors. Values: 7-bit operands: Original trained stage .17–.20, Position inputs masked during training 1.00; 8-bit operands: Original trained stage .01–.02, Position inputs masked during training 1.00; 12-bit operands: Original trained stage 0, Position inputs masked during training 1.00.</desc>
-<rect width="100%" height="100%" fill="white"/>
-<g font-family="system-ui, sans-serif" fill="#1d2630">
-<text x="24" y="32" font-size="21" font-weight="600">When position becomes a shortcut</text>
-<text x="24" y="58" font-size="13">Frozen-routing binary addition; column-sum scratchpad; 10 seeds per setting.</text>
-<circle cx="29" cy="81" r="4" fill="#175a96"/>
-<text x="41" y="85" font-size="13">Original trained stage</text>
-<circle cx="360" cy="81" r="4" fill="#a53b13"/>
-<text x="372" y="85" font-size="13">Position inputs masked during training</text>
-<path d="M242.0 108 V250" stroke="#e0e5ea"/>
-<text x="242.0" y="270" text-anchor="middle" font-size="12">0</text>
-<path d="M331.5 108 V250" stroke="#e0e5ea"/>
-<text x="331.5" y="270" text-anchor="middle" font-size="12">.25</text>
-<path d="M421.0 108 V250" stroke="#e0e5ea"/>
-<text x="421.0" y="270" text-anchor="middle" font-size="12">.50</text>
-<path d="M510.5 108 V250" stroke="#e0e5ea"/>
-<text x="510.5" y="270" text-anchor="middle" font-size="12">.75</text>
-<path d="M600.0 108 V250" stroke="#e0e5ea"/>
-<text x="600.0" y="270" text-anchor="middle" font-size="12">1.00</text>
-<text x="24" y="129" font-size="13">7-bit operands</text>
-<path d="M302.86 118 H313.6" stroke="#175a96" stroke-width="3"/>
-<circle cx="302.86" cy="118" r="3" fill="#175a96"/>
-<circle cx="313.6" cy="118" r="3" fill="#175a96"/>
-<text x="616" y="122" fill="#175a96" font-size="12">.17–.20</text>
-<path d="M600.0 134 H600.0" stroke="#a53b13" stroke-width="3"/>
-<circle cx="600.0" cy="134" r="3" fill="#a53b13"/>
-<circle cx="600.0" cy="134" r="3" fill="#a53b13"/>
-<text x="616" y="138" fill="#a53b13" font-size="12">1.00</text>
-<text x="24" y="176" font-size="13">8-bit operands</text>
-<path d="M245.58 165 H249.16" stroke="#175a96" stroke-width="3"/>
-<circle cx="245.58" cy="165" r="3" fill="#175a96"/>
-<circle cx="249.16" cy="165" r="3" fill="#175a96"/>
-<text x="616" y="169" fill="#175a96" font-size="12">.01–.02</text>
-<path d="M600.0 181 H600.0" stroke="#a53b13" stroke-width="3"/>
-<circle cx="600.0" cy="181" r="3" fill="#a53b13"/>
-<circle cx="600.0" cy="181" r="3" fill="#a53b13"/>
-<text x="616" y="185" fill="#a53b13" font-size="12">1.00</text>
-<text x="24" y="223" font-size="13">12-bit operands</text>
-<path d="M242.0 212 H242.0" stroke="#175a96" stroke-width="3"/>
-<circle cx="242.0" cy="212" r="3" fill="#175a96"/>
-<circle cx="242.0" cy="212" r="3" fill="#175a96"/>
-<text x="616" y="216" fill="#175a96" font-size="12">0</text>
-<path d="M600.0 228 H600.0" stroke="#a53b13" stroke-width="3"/>
-<circle cx="600.0" cy="228" r="3" fill="#a53b13"/>
-<circle cx="600.0" cy="228" r="3" fill="#a53b13"/>
-<text x="616" y="232" fill="#a53b13" font-size="12">1.00</text>
-<text x="421.0" y="295" text-anchor="middle" font-size="13">Whole-output exact accuracy</text>
-<text x="24" y="325" font-size="12">Intervals are copied seed ranges on 1,000 random pairs per length (fp32).</text>
-<text x="24" y="344" font-size="12">The position mask repairs this format; carry-token stages still have length errors.</text>
-</g>
+<metadata>CC BY 4.0. Compact redraw; recorded values unchanged. Original figure metadata retained.</metadata>
+<style>text{font-family:system-ui,sans-serif}.fg{fill:#172b3a}.bg{fill:#ffffff}.panel{fill:#f0f4f8;stroke:#63758b;stroke-width:1.5}.trained{fill:#fff0ba;stroke:#63758b;stroke-width:1.5}.ink{fill:#172b3a}.grid{stroke:#7d8c98}.track{fill:#e1e6eb}.blue{fill:#176b9b}.amber{fill:#a05a00}.grey{fill:#697681}.light{fill:#e1e6eb;stroke:#63758b}.blue-line{stroke:#176b9b}.amber-line{stroke:#a05a00}.grey-line{stroke:#697681}
+@media(prefers-color-scheme:dark){.fg{fill:#f0f6fc}.bg{fill:#161b22}.panel{fill:#263746;stroke:#9bacc0}.trained{stroke:#e3b341}.grid{stroke:#8b949e}.track{fill:#303c49}.blue{fill:#58a6ff}.amber{fill:#e3b341}.grey{fill:#a0adba}.light{fill:#303c49;stroke:#9bacc0}.blue-line{stroke:#58a6ff}.amber-line{stroke:#e3b341}.grey-line{stroke:#a0adba}}</style>
+<rect width="360" height="796" rx="8" class="bg"/>
+<text x="20" y="24" font-size="18" class="fg" font-weight="600" text-anchor="start">Binary addition: position mask</text>
+<text x="20" y="59" font-size="16" class="fg" font-weight="400" text-anchor="start">Frozen routing; column-sum</text>
+<text x="20" y="82" font-size="16" class="fg" font-weight="400" text-anchor="start">scratchpad; 10 seeds per setting.</text>
+<path d="M20,109 L50,109" class="blue-line" fill="none" stroke-width="3"/>
+<circle cx="35" cy="109" r="4" class="blue"/>
+<text x="65" y="114" font-size="16" class="fg" font-weight="400" text-anchor="start">A: Original trained stage</text>
+<path d="M20,141 L50,141" class="amber-line" fill="none" stroke-width="3" stroke-dasharray="5 3"/>
+<rect x="31" y="137" width="8" height="8" class="bg amber-line" stroke-width="2"/>
+<text x="65" y="146" font-size="16" class="fg" font-weight="400" text-anchor="start">B: Position inputs masked</text>
+<text x="65" y="169" font-size="16" class="fg" font-weight="400" text-anchor="start">during training</text>
+<text x="20" y="201" font-size="16" class="fg" font-weight="600" text-anchor="start">7-bit operands</text>
+<text x="20" y="233" font-size="16" class="fg" font-weight="400" text-anchor="start">A</text>
+<text x="340" y="233" font-size="16" class="fg" font-weight="600" text-anchor="end">.17–.20</text>
+<path d="M30,250 L330,250" class="grid" fill="none" stroke-width="1"/>
+<path d="M81.0,250 L90.0,250" class="blue-line" fill="none" stroke-width="3"/>
+<circle cx="81.0" cy="250" r="4" class="blue"/>
+<circle cx="90.0" cy="250" r="4" class="blue"/>
+<text x="20" y="276" font-size="16" class="fg" font-weight="400" text-anchor="start">B</text>
+<text x="340" y="276" font-size="16" class="fg" font-weight="600" text-anchor="end">1.00</text>
+<path d="M30,293 L330,293" class="grid" fill="none" stroke-width="1"/>
+<path d="M330.0,293 L330.0,293" class="amber-line" fill="none" stroke-width="3" stroke-dasharray="5 3"/>
+<rect x="326.0" y="289" width="8" height="8" class="bg amber-line" stroke-width="2"/>
+<rect x="326.0" y="289" width="8" height="8" class="bg amber-line" stroke-width="2"/>
+<text x="20" y="329" font-size="16" class="fg" font-weight="600" text-anchor="start">8-bit operands</text>
+<text x="20" y="361" font-size="16" class="fg" font-weight="400" text-anchor="start">A</text>
+<text x="340" y="361" font-size="16" class="fg" font-weight="600" text-anchor="end">.01–.02</text>
+<path d="M30,378 L330,378" class="grid" fill="none" stroke-width="1"/>
+<path d="M33.0,378 L36.0,378" class="blue-line" fill="none" stroke-width="3"/>
+<circle cx="33.0" cy="378" r="4" class="blue"/>
+<circle cx="36.0" cy="378" r="4" class="blue"/>
+<text x="20" y="404" font-size="16" class="fg" font-weight="400" text-anchor="start">B</text>
+<text x="340" y="404" font-size="16" class="fg" font-weight="600" text-anchor="end">1.00</text>
+<path d="M30,421 L330,421" class="grid" fill="none" stroke-width="1"/>
+<path d="M330.0,421 L330.0,421" class="amber-line" fill="none" stroke-width="3" stroke-dasharray="5 3"/>
+<rect x="326.0" y="417" width="8" height="8" class="bg amber-line" stroke-width="2"/>
+<rect x="326.0" y="417" width="8" height="8" class="bg amber-line" stroke-width="2"/>
+<text x="20" y="457" font-size="16" class="fg" font-weight="600" text-anchor="start">12-bit operands</text>
+<text x="20" y="489" font-size="16" class="fg" font-weight="400" text-anchor="start">A</text>
+<text x="340" y="489" font-size="16" class="fg" font-weight="600" text-anchor="end">0</text>
+<path d="M30,506 L330,506" class="grid" fill="none" stroke-width="1"/>
+<path d="M30.0,506 L30.0,506" class="blue-line" fill="none" stroke-width="3"/>
+<circle cx="30.0" cy="506" r="4" class="blue"/>
+<circle cx="30.0" cy="506" r="4" class="blue"/>
+<text x="20" y="532" font-size="16" class="fg" font-weight="400" text-anchor="start">B</text>
+<text x="340" y="532" font-size="16" class="fg" font-weight="600" text-anchor="end">1.00</text>
+<path d="M30,549 L330,549" class="grid" fill="none" stroke-width="1"/>
+<path d="M330.0,549 L330.0,549" class="amber-line" fill="none" stroke-width="3" stroke-dasharray="5 3"/>
+<rect x="326.0" y="545" width="8" height="8" class="bg amber-line" stroke-width="2"/>
+<rect x="326.0" y="545" width="8" height="8" class="bg amber-line" stroke-width="2"/>
+<text x="30.0" y="585" font-size="16" class="fg" font-weight="400" text-anchor="middle">0</text>
+<text x="105.0" y="585" font-size="16" class="fg" font-weight="400" text-anchor="middle">.25</text>
+<text x="180.0" y="585" font-size="16" class="fg" font-weight="400" text-anchor="middle">.50</text>
+<text x="255.0" y="585" font-size="16" class="fg" font-weight="400" text-anchor="middle">.75</text>
+<text x="330.0" y="585" font-size="16" class="fg" font-weight="400" text-anchor="middle">1.00</text>
+<text x="20" y="615" font-size="16" class="fg" font-weight="400" text-anchor="start">Whole-output exact accuracy</text>
+<text x="20" y="647" font-size="16" class="fg" font-weight="400" text-anchor="start">Copied seed ranges; 1,000 random</text>
+<text x="20" y="670" font-size="16" class="fg" font-weight="400" text-anchor="start">pairs per length; fp32.</text>
+<text x="20" y="702" font-size="16" class="fg" font-weight="400" text-anchor="start">The mask repairs this format;</text>
+<text x="20" y="725" font-size="16" class="fg" font-weight="400" text-anchor="start">carry-token stages still have</text>
+<text x="20" y="748" font-size="16" class="fg" font-weight="400" text-anchor="start">length errors.</text>
 </svg>

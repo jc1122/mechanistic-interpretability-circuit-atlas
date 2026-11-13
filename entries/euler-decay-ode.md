@@ -80,12 +80,12 @@ In Figure 1, frozen rate and duration retrieval supplies active-step flags to ML
 flowchart TD
     accTitle: Hand-built rounded-decay update and remaining frozen steps
     accDescr: Frozen rate and duration retrieval and active-step flags feed the only trained PART update MLP. Scratchpad scoring supplies preceding correct values; answer only passes its absolute current-value channel through remaining frozen updates. Closed-form status is none because no trained update formula was substituted.
-    P["Initial value y, rate code c and requested steps T"] --> F["L0H0 fetches c and T; L0H1 counts written values"]
-    F --> G["L0 MLP sets active-step flags ON_l"]
-    G --> M["MLP1 computes the first rounded decay step"]
-    M --> Y["Scratchpad: read Y1 and write the next value token"]
-    M --> A["Answer only: frozen MLP2-6 apply remaining steps to YT"]
-    A --> R["Read the final value"]
+    P["Initial value y,<br/>rate code c and<br/>requested steps T"] --> F["L0H0 fetches c and<br/>T; L0H1 counts<br/>written values"]
+    F --> G["L0 MLP sets<br/>active-step flags<br/>ON_l"]
+    G --> M["MLP1 computes the<br/>first rounded<br/>decay step"]
+    M --> Y["Scratchpad: read<br/>Y1 and write the<br/>next value token"]
+    M --> A["Answer only:<br/>frozen MLP2-6<br/>apply remaining<br/>steps to YT"]
+    A --> R["Read the final<br/>value"]
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class M trained
 ```

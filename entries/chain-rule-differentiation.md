@@ -90,23 +90,26 @@ powers 1–8, padding 0–7) and 2,265/2,265 on the widened retry domain, with m
 In Figure 1, the shared parser supplies subtree spans and children. Scratchpad T fetches a node and its children's results, emits a local rewrite, and converts addresses into reference tokens. Answer-only A descends the expansion template and copies source spans. PART trains only the rewrite emitter in T or descent emitter in A; parsing remains frozen.
 
 ```mermaid
+%%{init: {"flowchart": {"subGraphTitleMargin": {"top": 5, "bottom": 35}}}}%%
 flowchart TD
     accTitle: Hand-built differentiation parser and emitters
     accDescr: A uniform-prefix and depth-routed parser supplies subtree spans and children. One route emits local register rewrites; the other descends an expansion template and copies source spans. The marked emitter MLPs are the only stages trained in the respective PART formats.
-    P["Prompt: pad dots, prefix source symbols, ="] --> U["uniform prefix head: bracket balance, completion counts, position frame"]
-    U --> D["depth- and recency-routed heads, child reads: subtree start, end, children"]
+    P["Prompt: pad dots,<br/>prefix source<br/>symbols, ="] --> U["uniform prefix<br/>head: bracket<br/>balance,<br/>completion counts,<br/>position frame"]
+    U --> D["depth- and<br/>recency-routed<br/>heads, child<br/>reads: subtree<br/>start, end,<br/>children"]
     subgraph FT["Format T: 5 layers"]
-        T1["fetch completed node and children's results"] --> T3["layer-3 rewrite MLP: text and reference neurons on OP, SLOT, END"]
-        T3 --> T4["layer 4: step thresholds turn the address into a reference token"]
+        T1["fetch completed<br/>node and<br/>children's results"] --> T3["layer-3 rewrite<br/>MLP: text and<br/>reference neurons<br/>on OP, SLOT, END"]
+        T3 --> T4["layer 4: step<br/>thresholds turn<br/>the address into a<br/>reference token"]
     end
-    subgraph FA["Format A: 15 layers"]
-        A1["propagate derivative lengths, descend expansion template"] --> A13["layer-13 descent emitter MLP"]
+    subgraph FA["Format A: 15<br/>layers"]
+        A1["propagate<br/>derivative<br/>lengths, descend<br/>expansion template"] --> A13["layer-13 descent<br/>emitter MLP"]
         A13 --> A2["copy source spans"]
     end
     D --> T1
     D --> A1
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class T3,A13 trained
+    %% Invisible links constrain vertical layout only, not computation.
+    T4 ~~~ A1
 ```
 
 *Figure 1. The hand-built networks. A shared parsing front end gives each subtree's span and children; format `T` emits one rewrite

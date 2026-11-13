@@ -1,32 +1,32 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 495" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="540" height="804.0" viewBox="0 0 360 536" role="img" aria-labelledby="title desc">
 <title id="title">Opening-bracket count learning curve</title>
 <desc id="desc">Seed 0 at training fraction 0.8. Training reaches 1.0 at step 500; held-out performance improves later, remaining below .90. Points are the archived log entries, joined without smoothing. This is one seed, not the ten-seed range. No closed-form complement certificate is shown.</desc>
-<metadata>CC BY 4.0</metadata>
-<g font-family="system-ui, sans-serif">
-<rect x="0" y="0" width="900" height="495" fill="white"/>
-<text x="36" y="36" font-size="23" fill="#172b3a" text-anchor="start">Opening-bracket count: delayed held-out improvement</text>
-<text x="36" y="63" font-size="15" fill="#172b3a" text-anchor="start">One recorded seed (0), training fraction .8; no smoothing or seed averaging</text>
-<path d="M 95,367 H 835" stroke="#cbd4dc" fill="none"/>
-<text x="83" y="372" font-size="14" fill="#172b3a" text-anchor="end">0</text>
-<path d="M 95,234.5 H 835" stroke="#cbd4dc" fill="none"/>
-<text x="83" y="239.5" font-size="14" fill="#172b3a" text-anchor="end">.5</text>
-<path d="M 95,128.5 H 835" stroke="#cbd4dc" fill="none"/>
-<text x="83" y="133.5" font-size="14" fill="#172b3a" text-anchor="end">.9</text>
-<path d="M 95,102 H 835" stroke="#cbd4dc" fill="none"/>
-<text x="83" y="107" font-size="14" fill="#172b3a" text-anchor="end">1.0</text>
-<text x="95.0" y="393" font-size="13" fill="#172b3a" text-anchor="middle">0</text>
-<text x="280.0" y="393" font-size="13" fill="#172b3a" text-anchor="middle">50000</text>
-<text x="465.0" y="393" font-size="13" fill="#172b3a" text-anchor="middle">100000</text>
-<text x="650.0" y="393" font-size="13" fill="#172b3a" text-anchor="middle">150000</text>
-<text x="835.0" y="393" font-size="13" fill="#172b3a" text-anchor="middle">200000</text>
-<polyline points="95.0,359.9456016141921 96.85,102.0 98.7,102.0 100.55,102.0 102.4,102.0 113.5,102.0 132.0,102.0 150.5,102.0 169.0,102.0 187.5,102.0 206.0,102.0 224.5,102.0 243.0,102.0 261.5,102.0 280.0,102.0 298.5,102.0 317.0,102.0 335.5,102.0 354.0,102.0 372.5,102.0 391.0,102.0 409.5,102.0 428.0,102.0 446.5,102.0 465.0,102.0 483.5,102.0 502.0,102.0 520.5,102.0 539.0,102.0 557.5,102.0 576.0,102.0 594.5,102.0 613.0,102.0 631.5,102.0 650.0,102.0 668.5,102.0 687.0,102.0 705.5,102.0 724.0,102.0 742.5,102.0 761.0,102.0 779.5,102.0 798.0,102.0 816.5,102.0 835.0,102.0" stroke="#176b9b" stroke-width="3" fill="none"/>
-<polyline points="95.0,351.0509255602956 96.85,367.0 98.7,365.7731481390074 100.55,365.7731481390074 102.4,365.7731481390074 113.5,365.7731481390074 132.0,357.1851851120591 150.5,320.37962977588177 169.0,268.8518550693989 187.5,222.23148089647293 206.0,202.60184717178345 224.5,190.33332806825638 243.0,182.97222924232483 261.5,178.0648089647293 280.0,176.83796179294586 298.5,176.83796179294586 317.0,174.3842516541481 335.5,175.61111462116241 354.0,175.61111462116241 372.5,174.3842516541481 391.0,173.15740448236465 409.5,173.15740448236465 428.0,171.9305573105812 446.5,170.70371013879776 465.0,167.02315282821655 483.5,165.79628986120224 502.0,163.34259551763535 520.5,163.34259551763535 539.0,159.66203820705414 557.5,158.4351910352707 576.0,159.66203820705414 594.5,159.66203820705414 613.0,158.4351910352707 631.5,159.66203820705414 650.0,159.66203820705414 668.5,158.4351910352707 687.0,158.4351910352707 705.5,158.4351910352707 724.0,158.4351910352707 742.5,158.4351910352707 761.0,158.4351910352707 779.5,158.4351910352707 798.0,159.66203820705414 816.5,159.66203820705414 835.0,159.66203820705414" stroke="#a05a00" stroke-width="3" stroke-dasharray="8 4" fill="none"/>
-<text x="36" y="94" font-size="14" fill="#172b3a" text-anchor="start">Accuracy</text>
-<text x="825" y="420" font-size="14" fill="#172b3a" text-anchor="end">Optimiser step</text>
-<rect x="105" y="432" width="25" height="4" fill="#176b9b"/>
-<text x="140" y="440" font-size="15" fill="#172b3a" text-anchor="start">Training cells</text>
-<rect x="340" y="432" width="25" height="4" fill="#a05a00"/>
-<text x="375" y="440" font-size="15" fill="#172b3a" text-anchor="start">Held-out cells</text>
-<text x="36" y="472" font-size="14" fill="#172b3a" text-anchor="start">Formula scores elsewhere use all 1080 cells, including training cells; they are not this curve.</text>
-</g>
+<ns0:metadata xmlns:ns0="http://www.w3.org/2000/svg">CC BY 4.0</ns0:metadata>
+<metadata>CC BY 4.0. Compact redraw; recorded values unchanged. Original figure metadata retained.</metadata>
+<style>text{font-family:system-ui,sans-serif}.fg{fill:#172b3a}.bg{fill:#ffffff}.panel{fill:#f0f4f8;stroke:#63758b;stroke-width:1.5}.trained{fill:#fff0ba;stroke:#63758b;stroke-width:1.5}.ink{fill:#172b3a}.grid{stroke:#7d8c98}.track{fill:#e1e6eb}.blue{fill:#176b9b}.amber{fill:#a05a00}.grey{fill:#697681}.light{fill:#e1e6eb;stroke:#63758b}.blue-line{stroke:#176b9b}.amber-line{stroke:#a05a00}.grey-line{stroke:#697681}
+@media(prefers-color-scheme:dark){.fg{fill:#f0f6fc}.bg{fill:#161b22}.panel{fill:#263746;stroke:#9bacc0}.trained{stroke:#e3b341}.grid{stroke:#8b949e}.track{fill:#303c49}.blue{fill:#58a6ff}.amber{fill:#e3b341}.grey{fill:#a0adba}.light{fill:#303c49;stroke:#9bacc0}.blue-line{stroke:#58a6ff}.amber-line{stroke:#e3b341}.grey-line{stroke:#a0adba}}</style>
+<rect width="360" height="536" rx="8" class="bg"/>
+<text x="20" y="24" font-size="18" class="fg" font-weight="600" text-anchor="start">Opening-bracket count</text>
+<text x="20" y="59" font-size="16" class="fg" font-weight="400" text-anchor="start">Seed 0; training fraction .8</text>
+<text x="20" y="91" font-size="16" class="fg" font-weight="400" text-anchor="start">Accuracy</text>
+<path d="M52,314 L322,314" class="grid" fill="none" stroke-width="2"/>
+<text x="43" y="319" font-size="16" class="fg" font-weight="400" text-anchor="end">0</text>
+<path d="M52,211.5 L322,211.5" class="grid" fill="none" stroke-width="2"/>
+<text x="43" y="216.5" font-size="16" class="fg" font-weight="400" text-anchor="end">.5</text>
+<path d="M52,129.5 L322,129.5" class="grid" fill="none" stroke-width="2"/>
+<text x="43" y="134.5" font-size="16" class="fg" font-weight="400" text-anchor="end">.9</text>
+<path d="M52,109 L322,109" class="grid" fill="none" stroke-width="2"/>
+<text x="43" y="114" font-size="16" class="fg" font-weight="400" text-anchor="end">1.0</text>
+<text x="52.0" y="342" font-size="16" class="fg" font-weight="400" text-anchor="middle">0</text>
+<text x="187.0" y="342" font-size="16" class="fg" font-weight="400" text-anchor="middle">100000</text>
+<text x="322.0" y="342" font-size="16" class="fg" font-weight="400" text-anchor="middle">200000</text>
+<polyline points="52.0,308.5428238902241 52.675,109.0 53.35,109.0 54.025,109.0 54.7,109.0 58.75,109.0 65.5,109.0 72.25,109.0 79.0,109.0 85.75,109.0 92.5,109.0 99.25,109.0 106.0,109.0 112.75,109.0 119.5,109.0 126.25,109.0 133.0,109.0 139.75,109.0 146.5,109.0 153.25,109.0 160.0,109.0 166.75,109.0 173.5,109.0 180.25,109.0 187.0,109.0 193.75,109.0 200.5,109.0 207.25,109.0 214.0,109.0 220.75,109.0 227.5,109.0 234.25,109.0 241.0,109.0 247.75,109.0 254.5,109.0 261.25,109.0 268.0,109.0 274.75,109.0 281.5,109.0 288.25,109.0 295.0,109.0 301.75,109.0 308.5,109.0 315.25,109.0 322.0,109.0" fill="none" class="blue-line" stroke-width="2.5"/>
+<polyline points="52.0,301.6620367541909 52.675,314.0 53.35,313.0509259188548 54.025,313.0509259188548 54.7,313.0509259188548 58.75,313.0509259188548 65.5,306.4074073508382 72.25,277.93518529832363 79.0,238.0740765631199 85.75,202.00925880670547 92.5,186.8240704536438 99.25,177.33332926034927 106.0,171.6388943195343 112.75,167.84258806705475 119.5,166.89351761341095 126.25,166.89351761341095 133.0,164.99536448717117 139.75,165.94444715976715 146.5,165.94444715976715 153.25,164.99536448717117 160.0,164.04629403352737 166.75,164.04629403352737 173.5,163.09722357988358 180.25,162.14815312623978 187.0,159.3009295463562 193.75,158.35184687376022 200.5,156.45370596647263 207.25,156.45370596647263 214.0,153.60648238658905 220.75,152.65741193294525 227.5,153.60648238658905 234.25,153.60648238658905 241.0,152.65741193294525 247.75,153.60648238658905 254.5,153.60648238658905 261.25,152.65741193294525 268.0,152.65741193294525 274.75,152.65741193294525 281.5,152.65741193294525 288.25,152.65741193294525 295.0,152.65741193294525 301.75,152.65741193294525 308.5,153.60648238658905 315.25,153.60648238658905 322.0,153.60648238658905" fill="none" class="amber-line" stroke-width="2.5" stroke-dasharray="7 4"/>
+<text x="322" y="372" font-size="16" class="fg" font-weight="400" text-anchor="end">Optimiser step</text>
+<path d="M20,397 L55,397" class="blue-line" fill="none" stroke-width="2.5"/>
+<text x="66" y="402" font-size="16" class="fg" font-weight="400" text-anchor="start">Training cells</text>
+<path d="M20,424 L55,424" class="amber-line" fill="none" stroke-width="2.5" stroke-dasharray="7 4"/>
+<text x="66" y="429" font-size="16" class="fg" font-weight="400" text-anchor="start">Held-out cells</text>
+<text x="20" y="456" font-size="16" class="fg" font-weight="400" text-anchor="start">Training: 1.0 at step 500.</text>
+<text x="20" y="488" font-size="16" class="fg" font-weight="400" text-anchor="start">Held-out: below .90 throughout.</text>
 </svg>

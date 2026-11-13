@@ -108,21 +108,23 @@ In Figure 1, piece indicators produce the fence frame, each rule's candidate mas
 flowchart TD
     accTitle: Hand-built fence policy and frozen-feature router
     accDescr: Piece indicators feed a fence frame, per-rule candidate masks and keys, and the first-applicable-rule selector. The smallest key selects the destination. PART replaces priority and selection with the marked trained router, which reads the frozen features.
-    P["Piece one-hots on 64 squares"] --> H["1 counting head and 3 gather heads"]
-    H --> F["Fence frame from the piece coordinates"]
-    F --> M["Per rule p: candidate mask m_pt and keys key_pt"]
-    M --> E["E_p = 1 if rule p has a candidate"]
-    E --> G["Priority: g_p = ReLU(E_p - sum of earlier E_r)"]
-    G --> T["to = argmax over t, smallest key wins"]
+    P["Piece<br/>one-hots on<br/>64 squares"] --> H["1 counting<br/>head and 3<br/>gather heads"]
+    H --> F["Fence frame<br/>from the<br/>piece<br/>coordinates"]
+    F --> M["Per rule p:<br/>candidate<br/>mask m_pt<br/>and keys<br/>key_pt"]
+    M --> E["E_p = 1 if<br/>rule p has a<br/>candidate"]
+    E --> G["Priority:<br/>g_p =<br/>ReLU(E_p -<br/>sum of<br/>earlier E_r)"]
+    G --> T["to = argmax<br/>over t,<br/>smallest key<br/>wins"]
     M --> T
     subgraph PR["PART"]
-        R["Trained router, 3 x 512 ReLU, on 3,122 frozen features"]
+        R["Trained<br/>router, 3 x<br/>512 ReLU, on<br/>3,122 frozen<br/>features"]
     end
     M --> R
     E --> R
-    R --> O["phase, from, to"]
+    R --> O["phase, from,<br/>to"]
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class R trained
+    %% Invisible links constrain vertical layout only, not computation.
+    T ~~~ R
 ```
 
 *Figure 1. The hand-built network. The frozen levels compute the fence frame, each rule's candidates and keys, and whether each rule
@@ -211,10 +213,10 @@ In Figure 2, trained king-coordinate features feed late heads and the destinatio
 flowchart TD
     accTitle: Partial source-copy rule and unresolved destination decoder
     accDescr: Trained king-coordinate features feed late heads and the destination MLP. Separately, the written phase selects whether the source is the white king or rook. Status is partial: source substitution passes with complement untested, while an additive destination formula fails. Shading marks trained components and the describing source rule.
-    B["Board tokens"] --> M0["MLP0: kings as file and rank"]
+    B["Board tokens"] --> M0["MLP0: kings as<br/>file and rank"]
     M0 --> L5["Layer-5 heads"]
-    L5 --> M5["MLP5: decodes to, not additive in HAND variables"]
-    PH["written phase token"] --> SRC["from = square of WK if phase is APPROACH, else square of WR"]
+    L5 --> M5["MLP5: decodes to,<br/>not additive in<br/>HAND variables"]
+    PH["written phase<br/>token"] --> SRC["from = square of<br/>WK if phase is<br/>APPROACH, else<br/>square of WR"]
     B --> SRC
     M5 --> TO["to"]
     SRC --> FR["from"]

@@ -98,11 +98,11 @@ In Figure 1, frozen scratchpad heads fetch the shift, input, divisor and quotien
 flowchart TD
     accTitle: Hand-built scratchpad and answer-only remainder routes
     accDescr: Scratchpad heads fetch shift, input, divisor and quotient bits before the stage shifts and XORs the conditional divisor. The answer-only route instead uses parity staircases. Only the marked stage MLP is trained in each PART format; heads remain frozen.
-    P["BOS N / D = and scratchpad so far"] --> HT["T heads: fetch shift bit X, input bit A, divisor bit DB, quotient bit QB"]
-    HT --> ST["T layer-2 MLP: shift r, append a, XOR q times D"]
-    ST --> YT["quotient bit and 4 remainder bits per step"]
+    P["BOS N / D = and<br/>scratchpad so far"] --> HT["T heads: fetch<br/>shift bit X, input<br/>bit A, divisor bit<br/>DB, quotient bit<br/>QB"]
+    HT --> ST["T layer-2 MLP:<br/>shift r, append a,<br/>XOR q times D"]
+    ST --> YT["quotient bit and 4<br/>remainder bits per<br/>step"]
     P --> HA["A: 18 frozen heads"]
-    HA --> SA["A layer-3 MLP: GF(2) parity staircases per divisor"]
+    HA --> SA["A layer-3 MLP:<br/>GF(2) parity<br/>staircases per<br/>divisor"]
     SA --> YA["4 remainder bits"]
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class ST,SA trained
@@ -208,11 +208,11 @@ In Figure 2, trained scratchpad codes pass through fetch heads to the final bit 
 flowchart TD
     accTitle: Trained scratchpad readout and dense answer-only candidate
     accDescr: A trained scratchpad code passes through fetch heads to the final bit write; the answer-only route uses a dense last-layer readout. All marked components are trained. Overall status is partial: the scratchpad readout and discovered circuit pass their scoped tests, but earlier layers have no formula and the coarse key includes the emitted bit. The tested answer-only form is rejected.
-    I["TRAIN T: input, divisor and previous state"] --> M1["trained MLP1 code"]
-    M1 --> H["trained layer-2 fetch heads"]
-    H --> M2["trained MLP2: bit readout W phase, column, next"]
-    M2 --> Y["quotient and remainder bits"]
-    IA["TRAIN A: input bits, divisor and column"] --> RA["trained last-layer MLP: dense non-HAND parity readout"]
+    I["TRAIN T: input,<br/>divisor and<br/>previous state"] --> M1["trained MLP1 code"]
+    M1 --> H["trained layer-2<br/>fetch heads"]
+    H --> M2["trained MLP2: bit<br/>readout W phase,<br/>column, next"]
+    M2 --> Y["quotient and<br/>remainder bits"]
+    IA["TRAIN A: input<br/>bits, divisor and<br/>column"] --> RA["trained last-layer<br/>MLP: dense<br/>non-HAND parity<br/>readout"]
     RA --> YA["4 remainder bits"]
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class M1,H,M2,RA trained

@@ -109,20 +109,21 @@ All 6 HAND cells are exact on 2000 words with n = 1..16.
 In Figure 1, a frozen position stage feeds separate routes. Scratchpad B fetches the previous state and applies a transition table; answer-only parity and Z3 sum symbols and read a residue; answer-only S3 composes blocks by prefix doubling. PART trains only each route's marked MLP, leaving the other stages frozen.
 
 ```mermaid
+%%{init: {"flowchart": {"subGraphTitleMargin": {"top": 5, "bottom": 35}}}}%%
 flowchart TD
     accTitle: Hand-built state-table, residue and prefix-doubling routes
     accDescr: A frozen position stage feeds three routes: scratchpads fetch the previous state and apply a transition table; abelian answer-only cells sum symbols and read a residue; permutation answer-only cells compose blocks by prefix doubling. The marked MLPs are the stages trained in the corresponding PART cells.
-    P["Word s_1 .. s_t"] --> L0["L0: position stage, P = 1/(j+1), R = j/256"]
-    subgraph FB["Format B: scratchpad"]
-        B1["L1 recency head: copy q_t-1 into QP"] --> B2["L1 MLP: G squared neurons relu(QP_a + TOK_b - 1)"]
-        B2 --> B3["OUT: state q_t = q_t-1 times s_t"]
+    P["Word s_1 ..<br/>s_t"] --> L0["L0: position<br/>stage, P =<br/>1/(j+1), R =<br/>j/256"]
+    subgraph FB["Format B:<br/>scratchpad"]
+        B1["L1 recency<br/>head: copy<br/>q_t-1 into<br/>QP"] --> B2["L1 MLP: G<br/>squared<br/>neurons<br/>relu(QP_a +<br/>TOK_b - 1)"]
+        B2 --> B3["OUT: state<br/>q_t = q_t-1<br/>times s_t"]
     end
-    subgraph FA["Format A, parity and Z3"]
-        A1["BOS-sink head: symbol sum S"] --> A2["L1 MLP: (G-1) n hinges relu(S - k)"]
-        A2 --> A3["answer [S mod G = r]"]
+    subgraph FA["Format A, parity<br/>and Z3"]
+        A1["BOS-sink<br/>head: symbol<br/>sum S"] --> A2["L1 MLP:<br/>(G-1) n<br/>hinges<br/>relu(S - k)"]
+        A2 --> A3["answer [S<br/>mod G = r]"]
     end
     subgraph FS["Format A, S3"]
-        S1["layers 1 to 4: index head fetches block 2^(k-1) back, 36-neuron table composes, ST1..ST4"] --> S2["L5 MLP: compose the last blocks"]
+        S1["layers 1 to<br/>4: index<br/>head fetches<br/>block<br/>2^(k-1)<br/>back,<br/>36-neuron<br/>table<br/>composes,<br/>ST1..ST4"] --> S2["L5 MLP:<br/>compose the<br/>last blocks"]
         S2 --> S3["answer q_n"]
     end
     L0 --> B1
@@ -130,6 +131,9 @@ flowchart TD
     L0 --> S1
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class B2,A2,S2 trained
+    %% Invisible links constrain vertical layout only, not computation.
+    B3 ~~~ A1
+    A3 ~~~ S1
 ```
 
 *Figure 1. The hand-built networks. Format B copies the previous state with one recency head and applies the transition with a G²

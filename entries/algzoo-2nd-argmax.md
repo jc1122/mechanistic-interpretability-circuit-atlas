@@ -66,12 +66,15 @@ In Figure 1, scalar inputs take separate reference routes: HAND-a uses delay and
 flowchart TD
     accTitle: Hand-built second-argmax references
     accDescr: Scalar inputs enter delay-and-maximum, signed-projection or absolute-distance references, which produce position logits on their stated domains. No component was partly trained. The positive-input restriction on HAND-a remains part of the claim.
-    X["Scalar inputs"] --> A["HAND-a: delay and leave-one-out maxima"]
-    X --> B["HAND-b: signed binary or T3 projections"]
-    X --> C["HAND-c: T3 sum of absolute distances"]
-    A --> Y["Position logits on the certified domain"]
+    X["Scalar<br/>inputs"] --> A["HAND-a:<br/>delay and<br/>leave-one-out<br/>maxima"]
+    X --> B["HAND-b:<br/>signed<br/>binary or T3<br/>projections"]
+    X --> C["HAND-c: T3<br/>sum of<br/>absolute<br/>distances"]
+    A --> Y["Position<br/>logits on<br/>the<br/>certified<br/>domain"]
     B --> Y
     C --> Y
+    %% Invisible links constrain vertical layout only, not computation.
+    A ~~~ B
+    B ~~~ C
 ```
 
 *Figure 1. The three hand-built references. No node is marked as trained: there was no PART cell. HAND-a's exactness is restricted to positive separated inputs; a matching task output does not assign a learned mechanism.*
@@ -111,12 +114,14 @@ In Figure 2, short lists use comparison, angle, clamp or fan descriptions; longe
 flowchart TD
     accTitle: Families interpreted in frozen second-argmax networks
     accDescr: Gaussian inputs feed short-list comparison, angle and clamp forms or longer-list window, envelope and threshold forms. The family nodes describe externally trained components. Status is partial: optimal-only and activation-level exceptions remain flagged, and sampled tests do not prove global recurrent identities.
-    X["Gaussian inputs"] --> B["T2 comparisons and T3 angle, clamp or fan forms"]
-    X --> L["Longer-list window, envelope and threshold-table forms"]
-    B --> Y["Native position logits or decision"]
+    X["Gaussian inputs"] --> B["T2 comparisons and<br/>T3 angle, clamp or<br/>fan forms"]
+    X --> L["Longer-list<br/>window, envelope<br/>and<br/>threshold-table<br/>forms"]
+    B --> Y["Native position<br/>logits or decision"]
     L --> Y
     classDef trained fill:gold,stroke:darkgoldenrod,color:black
     class B,L trained
+    %% Invisible links constrain vertical layout only, not computation.
+    B ~~~ L
 ```
 
 *Figure 2. Families identified in ARC-trained networks; both family nodes are marked as trained. Status: partial, with 15 optimal-only and eight activation-level proofs flagged; sampled agreement and exact final-kernel algebra are not global recurrent identities.*

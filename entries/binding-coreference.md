@@ -89,10 +89,10 @@ In Figure 1, L0H0 and MLP0 form clause and mention codes. L1H0 selects the first
 flowchart TD
     accTitle: Hand-built subject and pronoun routes
     accDescr: Clause and mention codes feed separate heads for the current subject and the latest earlier feature match. The two heads are the trained PART stage; frozen gates write the referent identifier. The alternate HAND changes pronoun clause scoring.
-    X["Clause and mention tokens"] --> C["L0H0 count head and MLP0: clause and mention codes"]
-    C --> S["L1H0: first mention in current clause"]
-    C --> P["L1H1: latest earlier feature match"]
-    S --> M["MLP1: state and answer gates"]
+    X["Clause and mention<br/>tokens"] --> C["L0H0 count head<br/>and MLP0: clause<br/>and mention codes"]
+    C --> S["L1H0: first<br/>mention in current<br/>clause"]
+    C --> P["L1H1: latest<br/>earlier feature<br/>match"]
+    S --> M["MLP1: state and<br/>answer gates"]
     P --> M
     M --> Y["Referent id"]
     classDef trained fill:gold,stroke:darkgoldenrod,color:black

@@ -1,50 +1,83 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 490" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="540" height="2124.0" viewBox="0 0 360 1416" role="img" aria-labelledby="title desc">
 <title id="title">Interpretation coverage of 280 second-argmax models</title>
 <desc id="desc">Five disjoint groups. At iteration12: 117 resample-tested, 15 flagged optimal-only certificates, 33 read, 115 unexplained. Counts are copied, not recomputed. All binary models include weak and constant predictors. Some resample-tested forms have activation-level or control flags. The 15 optimal-only forms are not atlas-verified resample proofs.</desc>
-<metadata>CC BY 4.0</metadata>
-<g font-family="system-ui, sans-serif">
-<rect x="0" y="0" width="900" height="490" fill="white"/>
-<text x="34" y="36" font-size="23" fill="#172b3a" text-anchor="start">Second-largest position: interpretation coverage</text>
-<text x="34" y="64" font-size="15" fill="#172b3a" text-anchor="start">Dated iteration-12 snapshot, 2026-11-13; 280 fixed-length ARC networks</text>
-<text x="34" y="90" font-size="14" fill="#172b3a" text-anchor="start">Each bar spans its own group; labels are model counts, not task accuracy.</text>
-<text x="34" y="138" font-size="15" fill="#172b3a" text-anchor="start">Two inputs, all widths (n=40)</text>
-<rect x="320" y="120" width="530.0" height="28" fill="#176b9b"/>
-<text x="585.0" y="140" font-size="14" fill="white" text-anchor="middle">40</text>
-<text x="34" y="189" font-size="15" fill="#172b3a" text-anchor="start">Three inputs, all widths (n=40)</text>
-<rect x="320" y="171" width="503.5" height="28" fill="#176b9b"/>
-<text x="571.75" y="191" font-size="14" fill="white" text-anchor="middle">38</text>
-<rect x="823.5" y="171" width="26.5" height="28" fill="#697681"/>
-<text x="836.75" y="191" font-size="14" fill="white" text-anchor="middle">2</text>
-<text x="34" y="240" font-size="15" fill="#172b3a" text-anchor="start">Longer, width 2 (n=25)</text>
-<rect x="320" y="222" width="339.2" height="28" fill="#176b9b"/>
-<text x="489.6" y="242" font-size="14" fill="white" text-anchor="middle">16</text>
-<rect x="659.2" y="222" width="190.8" height="28" fill="#697681"/>
-<text x="754.6" y="242" font-size="14" fill="white" text-anchor="middle">9</text>
-<text x="34" y="291" font-size="15" fill="#172b3a" text-anchor="start">Longer, width 3 (n=25)</text>
-<rect x="320" y="273" width="148.4" height="28" fill="#176b9b"/>
-<text x="394.2" y="293" font-size="14" fill="white" text-anchor="middle">7</text>
-<rect x="468.4" y="273" width="212.0" height="28" fill="#697681"/>
-<text x="574.4" y="293" font-size="14" fill="white" text-anchor="middle">10</text>
-<rect x="680.4" y="273" width="169.6" height="28" fill="#e1e6eb"/>
-<text x="765.1999999999999" y="293" font-size="14" fill="#172b3a" text-anchor="middle">8</text>
-<text x="34" y="342" font-size="15" fill="#172b3a" text-anchor="start">Longer, width at least 4 (n=150)</text>
-<rect x="320" y="324" width="56.53333333333333" height="28" fill="#176b9b"/>
-<text x="348.26666666666665" y="344" font-size="14" fill="white" text-anchor="middle">16</text>
-<rect x="376.5333333333333" y="324" width="53.0" height="28" fill="#a05a00"/>
-<text x="403.0333333333333" y="344" font-size="14" fill="white" text-anchor="middle">15</text>
-<rect x="429.5333333333333" y="324" width="42.4" height="28" fill="#697681"/>
-<text x="450.7333333333333" y="344" font-size="14" fill="white" text-anchor="middle">12</text>
-<rect x="471.9333333333333" y="324" width="378.06666666666666" height="28" fill="#e1e6eb"/>
-<text x="660.9666666666666" y="344" font-size="14" fill="#172b3a" text-anchor="middle">107</text>
-<rect x="34" y="389" width="18" height="18" fill="#176b9b"/>
-<text x="59" y="404" font-size="15" fill="#172b3a" text-anchor="start">Resample-tested</text>
-<rect x="260" y="389" width="18" height="18" fill="#a05a00"/>
-<text x="285" y="404" font-size="15" fill="#172b3a" text-anchor="start">Optimal-only</text>
-<rect x="465" y="389" width="18" height="18" fill="#697681"/>
-<text x="490" y="404" font-size="15" fill="#172b3a" text-anchor="start">Read</text>
-<rect x="625" y="389" width="18" height="18" fill="#e1e6eb"/>
-<text x="650" y="404" font-size="15" fill="#172b3a" text-anchor="start">Unexplained</text>
-<text x="34" y="443" font-size="14" fill="#172b3a" text-anchor="start">15 optimal-only certificates fail resampling. Resample-tested forms retain their recorded flags.</text>
-<text x="34" y="468" font-size="14" fill="#172b3a" text-anchor="start">Empirical certificates do not prove exact task algorithms or longer-length generalisation.</text>
-</g>
+<ns0:metadata xmlns:ns0="http://www.w3.org/2000/svg">CC BY 4.0</ns0:metadata>
+<metadata>CC BY 4.0. Compact redraw; recorded values unchanged. Original figure metadata retained.</metadata>
+<style>text{font-family:system-ui,sans-serif}.fg{fill:#172b3a}.bg{fill:#ffffff}.panel{fill:#f0f4f8;stroke:#63758b;stroke-width:1.5}.trained{fill:#fff0ba;stroke:#63758b;stroke-width:1.5}.ink{fill:#172b3a}.grid{stroke:#7d8c98}.track{fill:#e1e6eb}.blue{fill:#176b9b}.amber{fill:#a05a00}.grey{fill:#697681}.light{fill:#e1e6eb;stroke:#63758b}.blue-line{stroke:#176b9b}.amber-line{stroke:#a05a00}.grey-line{stroke:#697681}
+@media(prefers-color-scheme:dark){.fg{fill:#f0f6fc}.bg{fill:#161b22}.panel{fill:#263746;stroke:#9bacc0}.trained{stroke:#e3b341}.grid{stroke:#8b949e}.track{fill:#303c49}.blue{fill:#58a6ff}.amber{fill:#e3b341}.grey{fill:#a0adba}.light{fill:#303c49;stroke:#9bacc0}.blue-line{stroke:#58a6ff}.amber-line{stroke:#e3b341}.grey-line{stroke:#a0adba}}</style>
+<rect width="360" height="1416" rx="8" class="bg"/>
+<text x="20" y="24" font-size="18" class="fg" font-weight="600" text-anchor="start">Second-argmax: interpretation</text>
+<text x="20" y="50" font-size="18" class="fg" font-weight="600" text-anchor="start">coverage</text>
+<text x="20" y="85" font-size="16" class="fg" font-weight="400" text-anchor="start">Iteration-12 snapshot, 2026-11-13:</text>
+<text x="20" y="108" font-size="16" class="fg" font-weight="400" text-anchor="start">280 fixed-length ARC networks.</text>
+<text x="20" y="140" font-size="16" class="fg" font-weight="400" text-anchor="start">Model counts, not task accuracy.</text>
+<text x="20" y="163" font-size="16" class="fg" font-weight="400" text-anchor="start">Each bar spans its own group.</text>
+<text x="20" y="195" font-size="16" class="fg" font-weight="600" text-anchor="start">Two inputs, all widths (n=40)</text>
+<rect x="20" y="222" width="320.0" height="16" rx="3" class="blue"/>
+<rect x="20" y="252" width="13" height="13" rx="3" class="blue"/>
+<text x="44" y="265" font-size="16" class="fg" font-weight="400" text-anchor="start">Resample-tested: 40</text>
+<rect x="20" y="277" width="13" height="13" rx="3" class="amber"/>
+<text x="44" y="290" font-size="16" class="fg" font-weight="400" text-anchor="start">Optimal-only: 0</text>
+<rect x="20" y="302" width="13" height="13" rx="3" class="grey"/>
+<text x="44" y="315" font-size="16" class="fg" font-weight="400" text-anchor="start">Read: 0</text>
+<rect x="20" y="327" width="13" height="13" rx="3" class="light"/>
+<text x="44" y="340" font-size="16" class="fg" font-weight="400" text-anchor="start">Unexplained: 0</text>
+<text x="20" y="380" font-size="16" class="fg" font-weight="600" text-anchor="start">Three inputs, all widths (n=40)</text>
+<rect x="20" y="407" width="304.0" height="16" rx="3" class="blue"/>
+<rect x="324.0" y="407" width="16.0" height="16" rx="3" class="grey"/>
+<rect x="20" y="437" width="13" height="13" rx="3" class="blue"/>
+<text x="44" y="450" font-size="16" class="fg" font-weight="400" text-anchor="start">Resample-tested: 38</text>
+<rect x="20" y="462" width="13" height="13" rx="3" class="amber"/>
+<text x="44" y="475" font-size="16" class="fg" font-weight="400" text-anchor="start">Optimal-only: 0</text>
+<rect x="20" y="487" width="13" height="13" rx="3" class="grey"/>
+<text x="44" y="500" font-size="16" class="fg" font-weight="400" text-anchor="start">Read: 2</text>
+<rect x="20" y="512" width="13" height="13" rx="3" class="light"/>
+<text x="44" y="525" font-size="16" class="fg" font-weight="400" text-anchor="start">Unexplained: 0</text>
+<text x="20" y="565" font-size="16" class="fg" font-weight="600" text-anchor="start">Longer, width 2 (n=25)</text>
+<rect x="20" y="592" width="204.8" height="16" rx="3" class="blue"/>
+<rect x="224.8" y="592" width="115.2" height="16" rx="3" class="grey"/>
+<rect x="20" y="622" width="13" height="13" rx="3" class="blue"/>
+<text x="44" y="635" font-size="16" class="fg" font-weight="400" text-anchor="start">Resample-tested: 16</text>
+<rect x="20" y="647" width="13" height="13" rx="3" class="amber"/>
+<text x="44" y="660" font-size="16" class="fg" font-weight="400" text-anchor="start">Optimal-only: 0</text>
+<rect x="20" y="672" width="13" height="13" rx="3" class="grey"/>
+<text x="44" y="685" font-size="16" class="fg" font-weight="400" text-anchor="start">Read: 9</text>
+<rect x="20" y="697" width="13" height="13" rx="3" class="light"/>
+<text x="44" y="710" font-size="16" class="fg" font-weight="400" text-anchor="start">Unexplained: 0</text>
+<text x="20" y="750" font-size="16" class="fg" font-weight="600" text-anchor="start">Longer, width 3 (n=25)</text>
+<rect x="20" y="777" width="89.6" height="16" rx="3" class="blue"/>
+<rect x="109.6" y="777" width="128.0" height="16" rx="3" class="grey"/>
+<rect x="237.6" y="777" width="102.4" height="16" rx="3" class="light"/>
+<rect x="20" y="807" width="13" height="13" rx="3" class="blue"/>
+<text x="44" y="820" font-size="16" class="fg" font-weight="400" text-anchor="start">Resample-tested: 7</text>
+<rect x="20" y="832" width="13" height="13" rx="3" class="amber"/>
+<text x="44" y="845" font-size="16" class="fg" font-weight="400" text-anchor="start">Optimal-only: 0</text>
+<rect x="20" y="857" width="13" height="13" rx="3" class="grey"/>
+<text x="44" y="870" font-size="16" class="fg" font-weight="400" text-anchor="start">Read: 10</text>
+<rect x="20" y="882" width="13" height="13" rx="3" class="light"/>
+<text x="44" y="895" font-size="16" class="fg" font-weight="400" text-anchor="start">Unexplained: 8</text>
+<text x="20" y="935" font-size="16" class="fg" font-weight="600" text-anchor="start">Longer, width at least 4 (n=150)</text>
+<rect x="20" y="962" width="34.13333333333333" height="16" rx="3" class="blue"/>
+<rect x="54.13333333333333" y="962" width="32.0" height="16" rx="3" class="amber"/>
+<rect x="86.13333333333333" y="962" width="25.6" height="16" rx="3" class="grey"/>
+<rect x="111.73333333333332" y="962" width="228.26666666666668" height="16" rx="3" class="light"/>
+<rect x="20" y="992" width="13" height="13" rx="3" class="blue"/>
+<text x="44" y="1005" font-size="16" class="fg" font-weight="400" text-anchor="start">Resample-tested: 16</text>
+<rect x="20" y="1017" width="13" height="13" rx="3" class="amber"/>
+<text x="44" y="1030" font-size="16" class="fg" font-weight="400" text-anchor="start">Optimal-only: 15</text>
+<rect x="20" y="1042" width="13" height="13" rx="3" class="grey"/>
+<text x="44" y="1055" font-size="16" class="fg" font-weight="400" text-anchor="start">Read: 12</text>
+<rect x="20" y="1067" width="13" height="13" rx="3" class="light"/>
+<text x="44" y="1080" font-size="16" class="fg" font-weight="400" text-anchor="start">Unexplained: 107</text>
+<text x="20" y="1120" font-size="16" class="fg" font-weight="400" text-anchor="start">117 resample-tested; 15</text>
+<text x="20" y="1143" font-size="16" class="fg" font-weight="400" text-anchor="start">optimal-only; 33 read; 115</text>
+<text x="20" y="1166" font-size="16" class="fg" font-weight="400" text-anchor="start">unexplained.</text>
+<text x="20" y="1198" font-size="16" class="fg" font-weight="400" text-anchor="start">The 15 optimal-only certificates</text>
+<text x="20" y="1221" font-size="16" class="fg" font-weight="400" text-anchor="start">fail resampling. Resample-tested</text>
+<text x="20" y="1244" font-size="16" class="fg" font-weight="400" text-anchor="start">forms retain their recorded flags.</text>
+<text x="20" y="1276" font-size="16" class="fg" font-weight="400" text-anchor="start">All binary models include weak and</text>
+<text x="20" y="1299" font-size="16" class="fg" font-weight="400" text-anchor="start">constant predictors. Empirical</text>
+<text x="20" y="1322" font-size="16" class="fg" font-weight="400" text-anchor="start">certificates do not prove exact</text>
+<text x="20" y="1345" font-size="16" class="fg" font-weight="400" text-anchor="start">task algorithms or longer-length</text>
+<text x="20" y="1368" font-size="16" class="fg" font-weight="400" text-anchor="start">generalisation.</text>
 </svg>

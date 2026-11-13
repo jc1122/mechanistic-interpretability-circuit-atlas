@@ -44,11 +44,12 @@ requires the complement test and the entry's stated controls.
 | [Group automata](entries/dfa-group-automata.md#53-earlier-circuit-probes) | 71.42% in seed 4 and 1.69% in seed 0; means of 3 donor draws, with native and joint substitution each 100%. |
 | [Base conversion](entries/base-conversion.md#5-mechanism-and-verification) | .556 / .923 in seeds 1 / 4 under the selected-nibble-only joint scrub. |
 | [Long division](entries/long-division-square-root.md#5-mechanism-and-verification) | 2.9% and 1.8% in answer-only TRAIN seeds 0 and 3 under the whole-role scrub. |
-| [Subtraction](entries/subtraction.md#5-mechanism-and-verification) | .938 / .933 in binary borrow-token TRAIN seeds 0 / 3, below the .99 control bar. |
+| [Subtraction](entries/subtraction.md#5-mechanism-and-verification) | .938 / .933 in binary borrow-token TRAIN seeds 0 / 3, below the .99 control bar; means of three donor draws on 416 evaluation pairs, also used to select the keep-sets. |
 | [Decimal addition](entries/decimal-hex-addition.md#53-why-the-train-algorithm-remains-unresolved) | .74–.80 in seed 1 and .81–.82 in seed 2. The earlier overview's .74–.82 combined display is historical, not a newly pooled range. |
 
-These are selected-seed audits, not failed-seed frequencies. The cited scrub paragraphs do not give their example counts; those
-counts are unavailable for this overview and must not be borrowed from a neighbouring substitution batch.
+These are selected-seed audits, not failed-seed frequencies. Subtraction used 416 non-training fit pairs and 416 disjoint evaluation
+pairs, with the evaluation pairs also used adaptively for keep-set selection; this was not an untouched validation set. Example counts
+for the other scrub rows are unavailable in this overview and must not be borrowed from a neighbouring substitution batch.
 
 Trained networks can use the hand-built variables with different wiring. In [binary addition](entries/binary-addition.md) and
 [decimal and hexadecimal addition](entries/decimal-hex-addition.md), the earlier overview summarised edge overlap with HAND
