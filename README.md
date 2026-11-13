@@ -76,6 +76,7 @@ Full table with seed counts and closed-form results: [INDEX.md](INDEX.md). Readi
 
 **External model zoos**
 - [algzoo-2nd-argmax](entries/algzoo-2nd-argmax.md): 132 of 280 ARC AlgZoo RNNs proven in closed form (2026-11-13 snapshot)
+- [algzoo-median](entries/algzoo-median.md): all 100 ARC AlgZoo median RNNs proven on sampled tests (2026-11-13 snapshot); 51 are inexact approximators and the widest forms are as large as the nets (see Limitations)
 
 ## Quick start
 
