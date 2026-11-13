@@ -16,7 +16,7 @@
 <a href="{{ '/REFERENCES.html' | relative_url }}">References</a>
 </nav></header>
 <main>
-{{ content }}
+{{ content | replace: 'href="README.md', 'href="./' | replace: 'href="../README.md', 'href="../' }}
 </main>
 <footer>
 <p>Text CC BY 4.0 (<a href="{{ '/LICENSE' | relative_url }}">licence</a>); code MIT. Rendered from
