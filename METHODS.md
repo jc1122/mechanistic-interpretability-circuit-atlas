@@ -561,7 +561,20 @@ any coordinates; no paired R-against-RAW or R-against-RI interval was registered
 MC-normalised ratios of Table 10.3 does not provide one. That axis-parallel label boundaries cause the gain is an interpretation:
 the network's own boundaries and fixed-gap tie bands are not axis-parallel in R's coordinates, and no experiment isolated alignment
 as the cause. The reference accuracies are measured from 2^23 inputs, not exact; the numerical bias of float64 execution is not
-bounded; the intervals are pointwise. A validation on independently trained networks, registered in advance, has not been run.
+bounded; the intervals are pointwise. A validation on independently trained networks, registered in advance, had not been run when
+this section was first released.
+
+Follow-up studies (2026-11-14, after release 1.1.0). These are later analyses by the same authors, not an independent replication.
+(1) Independently trained networks. In a pre-registered secondary analysis on 228 independently trained final networks of the
+AlgZoo second-argmax and argmedian tasks (seeds 2 to 4, n = 4096, 32 estimates per arm, each arm against its own matched-cost MC),
+R's pooled variance ratio was .688 (95% CI .632–.742): second-argmax .658 (.595–.722, 168 networks), argmedian .749 (.651–.853,
+60 networks). So R transfers, but the .380 above does not. The gain is large at sequence length 2 and 3 (.032 to .26) and
+small from length 4 on (.56 to .84); for second-argmax at length 8 and argmedian at length 11 the upper bound reaches 1.0.
+(2) Small budgets. On 48 new noisy copies of the same public network, R's pooled MSE relative to the binomial variance of
+matched-cost MC was 5.01 at n = 16 and 1.45 at n = 64, then .75, .49, .39, .35 and .29 at n = 256 to 65,536. R is therefore
+worse than plain sampling at the smallest budgets and does not meet ARC's requirement of a gain at every compute budget.
+Closed-form control variates (top-two gaps, positive-input counts, a hand-built network's correctness) added to R removed no
+variance at n = 4096 (efficiency against R alone 1.061, 1.053–1.069).
 
 ### 10.9 Relation to published work
 

@@ -6,6 +6,12 @@ Unreleased changes are not a tagged release or a DOI deposit.
 
 ## Unreleased
 
+### Changed
+
+- METHODS Section 10.8 adds two follow-up results for rank-coordinate RQMC. On 228 independently trained AlgZoo networks the
+  pooled variance ratio against matched MC is .688 (.632–.742), not .380, and the gain is small from sequence length 4 on. At
+  budgets of 16 and 64 rows R is worse than plain sampling (5.01, 1.45), so it does not give a gain at every compute budget.
+
 ### Added
 
 - Entry [AlgZoo argmedian](entries/algzoo-argmedian.md): 100 of ARC's recurrent networks that return the position of the median,
