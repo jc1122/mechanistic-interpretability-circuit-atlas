@@ -159,6 +159,8 @@ splits. Read each entry's archive subsection before reuse.
 ### External model zoos
 - [algzoo-2nd-argmax](entries/algzoo-2nd-argmax.md): short-list comparison and angle forms and longer-list readings; after the specificity audit most are read only (16 proven / 257 read / 7 unexplained); optimal-only certificates stay flagged
 - [algzoo-median](entries/algzoo-median.md): sampled formulas explain median estimates; after the specificity audit only 18 width-2 empty-complement exceptions stay proven; near-network-sized forms remain flagged
+- [algzoo-argmedian](entries/algzoo-argmedian.md): length-3 tables, paired registers and filter banks; 22 proven (20 width-2 exceptions) / 78 read
+- [algzoo-longest-cycle](entries/algzoo-longest-cycle.md): no graph algorithm identified in two-layer attention nets; 0 proven / 94 read / 6 unexplained
 
 ## Main findings
 

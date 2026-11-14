@@ -104,6 +104,8 @@ is task-specific. See [reuse guidance](README.md#reuse-and-reproducibility), [gl
 |---|---|---|---|---|---|
 | [algzoo-2nd-argmax](entries/algzoo-2nd-argmax.md) | Position of second-largest Gaussian input | Comparators, angle maps, clamp/fan and nonfinal-section readings; most read only | 280 frozen nets, five per cell; 16 proven / 257 read / 7 unexplained | partial: 2 resample; 10 optimal-only; 4 width-2 whole-net exceptions | weights |
 | [algzoo-median](entries/algzoo-median.md) | Median of Gaussian scalars | Pair means, comparator insertion and inexact recurrences; wide forms do not compress | 100 frozen nets, five per cell; 18 proven / 82 read / 0 unexplained | partial: all 18 are width-2 empty complements | weights |
+| [algzoo-argmedian](entries/algzoo-argmedian.md) | Position of the median of Gaussian inputs | Paired-register quotients, comparison/filter banks and length-3 tables; most read only | 100 frozen nets, five per cell; 22 proven / 78 read / 0 unexplained | partial: 2 resample; 20 width-2 whole-net exceptions | weights |
+| [algzoo-longest-cycle](entries/algzoo-longest-cycle.md) | Longest cycle length in a functional graph | No graph algorithm identified; five low-rank numerical readings | 100 frozen nets, five per cell; 0 proven / 94 read / 6 unexplained | partial: numerical readings, none proven | weights |
 
 Second-argmax counts analysis iteration 61 (2026-11-14) and median iteration 22 (2026-11-13), both with the 2026-11-14 specificity
 audit applied ([METHODS §9.1](METHODS.md#91-specificity-audit-of-the-algzoo-entries-2026-11-14)): an earlier proof stays proven

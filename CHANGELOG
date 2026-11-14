@@ -4,6 +4,24 @@ This is a living atlas. This file records reader-visible additions and correctio
 change does not imply a new experiment. The dated run and audit records in each entry remain authoritative for scientific scope.
 Unreleased changes are not a tagged release or a DOI deposit.
 
+## Unreleased
+
+### Added
+
+- Entry [AlgZoo argmedian](entries/algzoo-argmedian.md): 100 of ARC's recurrent networks that return the position of the median,
+  at analysis iteration 24 with the 2026-11-14 specificity audit (METHODS Section 9.1) applied: 22 proven / 78 read / 0 unexplained.
+  The 22 are 20 width-2 whole-network exceptions and two width-16 length-3 resample proofs; the other 77 earlier proofs, including
+  all 40 paired-register charts, are READ. Adds a grouping table with each group's audit outcome and a circuit figure of the
+  length-3 prefix table. Every earlier limitation and failed test is retained.
+- Entry [AlgZoo longest cycle](entries/algzoo-longest-cycle.md): 100 of ARC's two-layer attention networks on functional graphs,
+  0 proven / 94 read / 6 unexplained after a second attack on 2026-11-14 that added no proof; the specificity audit does not apply.
+  No graph algorithm is identified, so the entry has no circuit figure.
+- REFERENCES adds six records cited by these entries (Hoeffding 1963; Geiger et al. 2023, causal abstraction; Isac et al. 2022;
+  Gross et al. 2024; Chen et al. 2020; Maron et al. 2018; Jia & Rinard 2021), each checked against registry metadata with scite.
+- Both entries link their hand-built weights on Hugging Face (revision `22977ef`), each with an independent anonymous reload.
+  The argmedian positive-domain net ties exactly on 51% of rows, so its fp32 accuracy depends on summation order (56.46–56.63%);
+  the entry and manifest give the fp64 accuracy with a first-index tie-break (56.47%), the strict accuracy (48.9%) and the fp32 band.
+
 ## 1.1.0 (2026-11-14)
 
 ### Added

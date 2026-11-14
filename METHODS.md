@@ -304,9 +304,9 @@ the whole hypothesis fails, which is why the rule requires the complement test.
 
 ### 9.1 Specificity audit of the AlgZoo entries (2026-11-14)
 
-The two external-zoo entries ([second-argmax](entries/algzoo-2nd-argmax.md) and [median](entries/algzoo-median.md)) count a
-network as proven only if its earlier proof also passes a stricter specificity gate, applied by an audit on 2026-11-14 to every
-earlier proof in both entries. A same-size random control can be much weaker than the claimed circuit, so the audit matches each
+The external-zoo entries ([second-argmax](entries/algzoo-2nd-argmax.md), [median](entries/algzoo-median.md) and
+[argmedian](entries/algzoo-argmedian.md)) count a network as proven only if its earlier proof also passes a stricter specificity
+gate, applied by an audit on 2026-11-14 to every earlier proof in these entries ([longest-cycle](entries/algzoo-longest-cycle.md) had none). A same-size random control can be much weaker than the claimed circuit, so the audit matches each
 random control to the claim by output effect. The matching rule was registered before any control was run on a target network. On
 an independent 2,048-row calibration set with three donors, every omitted component gets the root-mean-square size of its effect on
 the output, binned as zero (at most 1e−12) or by floor(log2(effect/1e−12)). A control omits the same number of components with the
