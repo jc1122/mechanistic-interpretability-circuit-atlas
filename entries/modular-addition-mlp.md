@@ -2,9 +2,15 @@
 
 On a clock, adding can take you past the last number and back to the start. This task did the same with 59 possible answers: 58 plus 2 gives 1. A hand-built reader supplied several encodings of the inputs. A small feed-forward network, an [MLP](../GLOSSARY.md#standard-machine-learning-terms), learned to combine them into a Fourier clock: repeating wave-like responses to each number.
 
-All 10 training runs developed that pattern, yet none reached the 99% held-out criterion after 300,000 steps. The task remains unsolved. Replacing the learned layer with a fitted cosine rule improved accuracy to .996–1.000 on all 3481 pairs, against the networks' .94–.98 on that same set, which included training examples.
+All 10 training runs developed that pattern, yet none reached the 99% held-out criterion after 300,000 steps. The task remains unsolved. Swapping the other parts' signals between examples was not tested.
 
-The [formula is partial](../GLOSSARY.md#verifying-a-circuit): a successful replacement can fix answers without explaining the original mistakes. Swapping the other parts' signals between examples was not tested.
+## The circuit at a glance
+
+Figure S1 shows how the frozen number labels and passed-threshold flags converge on the trained answer vote; the example wraps 58 + 2 to remainder 1 after division by 59.
+
+<a href="../figures/circuits/modular-addition-mlp.svg"><img src="../figures/circuits/modular-addition-mlp.svg" width="640" alt="A frozen number reader writes nominal codes .58 and .02 into its residual stream. Parallel number-label and passed-threshold features feed the external trained feed-forward block's fitted wave-like responses and answer votes, dashed as not verified. SUM: 58 2 targets remainder 1 after division by 59; this is a task example, not a measured prediction."></a>
+
+*Figure S1 shows fixed number codes feeding a wave-like answer vote in all ten menu-fed feed-forward networks, with no hand-built adder for comparison; the fitted clock is Partial, does not reproduce every native answer, leaves the task unsolved and has no circuit-complement test ([evidence](#5-mechanism-and-verification)).*
 
 | Fact | Value |
 |---|---|
@@ -17,15 +23,11 @@ The [formula is partial](../GLOSSARY.md#verifying-a-circuit): a successful repla
 | Weights | [Hugging Face: modular-addition-mlp](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/modular-addition-mlp) (hand-built base in `_shared/m2`) |
 | Reproduce | [Commands](#24-reproduction), run from `code/` |
 
+Replacing the learned layer with a fitted cosine rule improved accuracy to .996–1.000 on all 3481 pairs, against the networks' .94–.98 on that same set, which included training examples.
+
+The [formula is partial](../GLOSSARY.md#verifying-a-circuit): a successful replacement can fix answers without explaining the original mistakes.
+
 Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [open-bracket count](open-bracket-count.md) for another approximate periodic readout, or [mod-97 arithmetic](modular-arithmetic-mod-97.md) for different number formats.
-
-## The circuit at a glance
-
-Figure S1 shows how the frozen number labels and passed-threshold flags converge on the trained answer vote; the example wraps 58 + 2 to remainder 1 after division by 59.
-
-<a href="../figures/circuits/modular-addition-mlp.svg"><img src="../figures/circuits/modular-addition-mlp.svg" width="640" alt="A frozen number reader writes nominal codes .58 and .02 into its residual stream. Parallel number-label and passed-threshold features feed the external trained feed-forward block's fitted wave-like responses and answer votes, dashed as not verified. SUM: 58 2 targets remainder 1 after division by 59; this is a task example, not a measured prediction."></a>
-
-*Figure S1 shows fixed number codes feeding a wave-like answer vote in all ten menu-fed feed-forward networks, with no hand-built adder for comparison; the fitted clock is Partial, does not reproduce every native answer, leaves the task unsolved and has no circuit-complement test ([evidence](#5-mechanism-and-verification)).*
 
 ## 1. Task and data
 

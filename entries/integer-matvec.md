@@ -2,9 +2,15 @@
 
 A matrix is a table of numbers. The identity matrix leaves a list unchanged: each row selects its matching number. Other matrices need products and running sums. A five-layer network wrote those sums on a [scratchpad](../GLOSSARY.md#task-formats), a record of working; 8/10 fully trained runs got whole outputs right on 2,000 held-out inputs per run.
 
-Successful networks used running-sum bits and carries, the overflow passed to the next bit. Yet the proposed arithmetic rule failed when fed values read from the network by a fitted weighted sum. No from-scratch formula is accepted.
+No from-scratch formula is accepted. Answer-only training succeeded less often, and every final scratchpad network failed at both other matrix sizes. All scores supplied correct earlier output tokens; they do not test unaided working.
 
-The task is partly solved. Answer-only training succeeded less often, and every final scratchpad network failed at both other matrix sizes. With hand-built retrieval, a [partial formula](../GLOSSARY.md#verifying-a-circuit) passed replacement in three runs; swapping the other parts' signals between examples was tested in only two. All scores supplied correct earlier output tokens; they do not test unaided working.
+## The circuit at a glance
+
+Figure S1 separates the matrix/vector input from the correct earlier running sum; both feed the late sum-bit write, whose arithmetic rule remains unrecovered.
+
+<a href="../figures/circuits/integer-matvec.svg"><img src="../figures/circuits/integer-matvec.svg" width="640" alt="Separate matrix/vector and correct-prior-trace branches converge on one residual stream before earlier neuron blocks, late operand routing and a dashed, unverified sum-bit write. For row one of identity times (1,2,3), a zero matrix entry paired with vector value 2 leaves the supplied running sum 1 unchanged, targeting units bit 1. This is a task example; the native arithmetic substitute was rejected."></a>
+
+*Figure S1 shows late retrieval feeding a sum-bit write in the final-exact scratchpad networks trained from scratch, seeds 0–6 and 8; their wiring differs from the hand-built network, the arithmetic substitute is rejected, and the teacher-forced evidence is limited to dimension three without size transfer ([evidence](#t2-from-scratch-scratchpad-family)).*
 
 ## At a glance
 
@@ -19,17 +25,13 @@ The task is partly solved. Answer-only training succeeded less often, and every 
 | Weights | [Hugging Face: integer-matvec](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/integer-matvec), revision `b9c5bae`; PART nets not archived |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
+Successful networks used running-sum bits and carries, the overflow passed to the next bit. Yet the proposed arithmetic rule failed when fed values read from the network by a fitted weighted sum.
+
+The task is partly solved. With hand-built retrieval, a [partial formula](../GLOSSARY.md#verifying-a-circuit) passed replacement in three runs; swapping the other parts' signals between examples was tested in only two.
+
 HAND sets every weight by formula, PART trains one stage on frozen HAND parts, and TRAIN learns all weights ([rungs](../GLOSSARY.md#the-three-rungs)). A scratchpad writes intermediate results before the answer; scores here are teacher-forced, with correct previous tokens supplied ([task formats](../GLOSSARY.md#task-formats)). Exact match requires the whole output to be correct, not just its final answer.
 
 Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [binary multiplication](multiplication.md) for the local carry step, or [finite-field linear systems](linear-systems-finite-fields.md) for row-update traces.
-
-## The circuit at a glance
-
-Figure S1 separates the matrix/vector input from the correct earlier running sum; both feed the late sum-bit write, whose arithmetic rule remains unrecovered.
-
-<a href="../figures/circuits/integer-matvec.svg"><img src="../figures/circuits/integer-matvec.svg" width="640" alt="Separate matrix/vector and correct-prior-trace branches converge on one residual stream before earlier neuron blocks, late operand routing and a dashed, unverified sum-bit write. For row one of identity times (1,2,3), a zero matrix entry paired with vector value 2 leaves the supplied running sum 1 unchanged, targeting units bit 1. This is a task example; the native arithmetic substitute was rejected."></a>
-
-*Figure S1 shows late retrieval feeding a sum-bit write in the final-exact scratchpad networks trained from scratch, seeds 0–6 and 8; their wiring differs from the hand-built network, the arithmetic substitute is rejected, and the teacher-forced evidence is limited to dimension three without size transfer ([evidence](#t2-from-scratch-scratchpad-family)).*
 
 ## 1. Task and data
 

@@ -1,8 +1,16 @@
 # King and two bishops versus king
 
-A king and two bishops can force checkmate against a lone king; here the challenge was to imitate one fixed choice of winning move. Six-layer transformers learned from 2,503,608 winning positions, with 99.63% of labels supplied by a distance-to-mate table, an exhaustive record of how far optimal play is from checkmate, and the rest by geometric rules. The task stayed unsolved across nine independent runs: the best answer-only accuracy was .627 on the fixed 2,048-position held-out screen, and writing a candidate-move list before the answer did worse.
+A king and two bishops can force checkmate against a lone king; here the challenge was to imitate one fixed choice of winning move. The task stayed unsolved across nine independent runs: the best answer-only accuracy was .627 on the fixed 2,048-position held-out screen, and writing a candidate-move list before the answer did worse.
 
-In all three candidate-list runs, changing internal activity supported a simpler operation: copy the first listed candidate into the destination answer, leaving the failure in how candidates were generated. No hand-built neural reference or accepted replacement formula was recovered, and the scores supply correct earlier output tokens rather than measuring free play.
+No hand-built neural reference or accepted replacement formula was recovered, and the scores supply correct earlier output tokens rather than measuring free play.
+
+## The circuit at a glance
+
+Figure S1 separates the unresolved candidate generator from the independently supplied candidate that the final layer copies into the destination.
+
+<img src="../figures/circuits/chess-kbbk-mate.svg" width="640" alt="The board feeds unresolved candidate generation. Independently, the first candidate c4 is supplied in the correct earlier trace at test; it is not shown as the verified output of the generator. A final-layer copy reads that supplied token and writes destination c4, including on wrong rows. Both learned roles are dashed: no faithful replacement was recovered. The source route is outside scope; c4 illustrates copying, not a legal move, autonomous candidate generation or free play.">
+
+*Figure S1 shows the supplied first candidate being copied into the destination while generation remains unresolved (candidate-list networks trained from scratch, run 1, all three seeds; no hand-built network exists); status is None because no faithful replacement was recovered, and the causal copy uses correct earlier tokens supplied at test, with c4 illustrating copying rather than a legal move or free play.*
 
 | Fact | Value |
 |---|---|
@@ -15,13 +23,9 @@ In all three candidate-list runs, changing internal activity supported a simpler
 | Weights | [Hugging Face: chess-kbbk-mate](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/chess-kbbk-mate) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
-## The circuit at a glance
+Six-layer transformers learned from 2,503,608 winning positions, with 99.63% of labels supplied by a distance-to-mate table, an exhaustive record of how far optimal play is from checkmate, and the rest by geometric rules.
 
-Figure S1 separates the unresolved candidate generator from the independently supplied candidate that the final layer copies into the destination.
-
-<img src="../figures/circuits/chess-kbbk-mate.svg" width="640" alt="The board feeds unresolved candidate generation. Independently, the first candidate c4 is supplied in the correct earlier trace at test; it is not shown as the verified output of the generator. A final-layer copy reads that supplied token and writes destination c4, including on wrong rows. Both learned roles are dashed: no faithful replacement was recovered. The source route is outside scope; c4 illustrates copying, not a legal move, autonomous candidate generation or free play.">
-
-*Figure S1 shows the supplied first candidate being copied into the destination while generation remains unresolved (candidate-list networks trained from scratch, run 1, all three seeds; no hand-built network exists); status is None because no faithful replacement was recovered, and the causal copy uses correct earlier tokens supplied at test, with c4 illustrating copying rather than a legal move or free play.*
+In all three candidate-list runs, changing internal activity supported a simpler operation: copy the first listed candidate into the destination answer, leaving the failure in how candidates were generated.
 
 ## 1. Task and data
 

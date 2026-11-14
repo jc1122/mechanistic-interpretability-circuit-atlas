@@ -1,10 +1,16 @@
 # Routing addition by column
 
-For 5+7=12, the network must first find the matching 5 and 7. A [router scratchpad](../GLOSSARY.md#task-formats), written column-by-column working, gives both digits and the step using them the same column label. Four-layer networks were tested with and without hand-built retrieval.
+For 5+7=12, the network must first find the matching 5 and 7. A [router scratchpad](../GLOSSARY.md#task-formats), written column-by-column working, gives both digits and the step using them the same column label.
 
-Hiding position signals from the learned stage helped transfer: binary and decimal index-scratchpad settings and decimal direct-answer settings each got whole outputs right in 10/10 runs on 1000 doubled-length pairs per run. Labels alone did not guarantee this. Unmasked stages with supplied retrieval transferred imperfectly; every format trained from scratch failed at doubled length.
+Hiding position signals from the learned stage helped transfer: binary and decimal index-scratchpad settings and decimal direct-answer settings each got whole outputs right in 10/10 runs on 1000 doubled-length pairs per run. Labels alone did not guarantee this. Unmasked stages with supplied retrieval transferred imperfectly; every format trained from scratch failed at doubled length. All output scores supplied correct preceding tokens.
 
-The task is partly solved. The [partial formula](../GLOSSARY.md#verifying-a-circuit) keeps in-range answers within the hand-built scaffold, but swapping the other parts' signals between examples was not tested. A [separate subtraction experiment](#51-closed-forms) has two passing tests of the remaining circuit at the best saved states and one failure at the final state, not a full certificate. All output scores supplied correct preceding tokens.
+## The circuit at a glance
+
+Figure 3 shows how matching column labels supply one reused local addition stage ([mechanism and verification](#5-mechanism-and-verification)).
+
+<img src="../figures/circuits/router-addition.svg" width="640" alt="Column labels route both digits into one reused addition step. One upward residual stream has separate read/write branches for Find first digit (match column label); Find other digit (match column label); Shared step (digit / carry / label). Decimal example: labelled 5 + 7; given carry 0; Targets: digit 2, carry 1, next label. Task values are illustrative; dashed boxes and branches are not verified.">
+
+*Figure 3. The decimal example illustrates how partly trained router networks in both bases (ten seeds per cell) reuse the hand-built local column step under substitution, a partial form with no complement test, correct earlier tokens supplied and native length transfer not exact in every seed.*
 
 | Fact | Value |
 |---|---|
@@ -17,15 +23,11 @@ The task is partly solved. The [partial formula](../GLOSSARY.md#verifying-a-circ
 | Weights | [Hugging Face: router-addition](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/router-addition) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
+Four-layer networks were tested with and without hand-built retrieval.
+
+The task is partly solved. The [partial formula](../GLOSSARY.md#verifying-a-circuit) keeps in-range answers within the hand-built scaffold, but swapping the other parts' signals between examples was not tested. A [separate subtraction experiment](#51-closed-forms) has two passing tests of the remaining circuit at the best saved states and one failure at the final state, not a full certificate.
+
 Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [binary addition](binary-addition.md) for the column step, or [subtraction](subtraction.md) for the borrow rule.
-
-## The circuit at a glance
-
-Figure 3 shows how matching column labels supply one reused local addition stage ([mechanism and verification](#5-mechanism-and-verification)).
-
-<img src="../figures/circuits/router-addition.svg" width="640" alt="Column labels route both digits into one reused addition step. One upward residual stream has separate read/write branches for Find first digit (match column label); Find other digit (match column label); Shared step (digit / carry / label). Decimal example: labelled 5 + 7; given carry 0; Targets: digit 2, carry 1, next label. Task values are illustrative; dashed boxes and branches are not verified.">
-
-*Figure 3. The decimal example illustrates how partly trained router networks in both bases (ten seeds per cell) reuse the hand-built local column step under substitution, a partial form with no complement test, correct earlier tokens supplied and native length transfer not exact in every seed.*
 
 ## 1. Task and data
 

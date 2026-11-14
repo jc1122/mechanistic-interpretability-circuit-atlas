@@ -1,8 +1,16 @@
 # Rounded decay by Euler steps
 
-Halving 8 twice gives 4, then 2; this task repeats a chosen shrinkage rate and rounds down after every step. Seven-layer transformers either wrote those intermediate values or gave only the final value, and even fixing the hand-built input routing left the first learned update short of reliable rounding. None of the ten final independent runs produced every output token correctly on all 480 held-out inputs with correct earlier tokens supplied: final accuracy was .963–.988.
+Halving 8 twice gives 4, then 2; this task repeats a chosen shrinkage rate and rounds down after every step. None of the ten final independent runs produced every output token correctly on all 480 held-out inputs with correct earlier tokens supplied: final accuracy was .963–.988.
 
 Nine runs passed through an exact saved state selected on that same test set, then lost exactness, so the task remains unsolved. The formula status is [None](../GLOSSARY.md#verifying-a-circuit): no proposed replacement was tested, and separate tests changing activity outside a proposed circuit retained accuracy in most runs but did not distinguish that circuit from randomly chosen ones of the same size.
+
+## The circuit at a glance
+
+<img src="../figures/circuits/euler-decay-ode.svg" width="640" alt="Frozen rate retrieval feeds an unverified learned rounded step, whose value and scale channels reach a frozen ratio readout. Rate code 4 (C4), two requested steps (N2) and initial value 8 (Y8) target value 4 (Y4), then 2 (Y2). No native channel amplitudes are invented; every final seed remains inexact and formula status is none.">
+
+*Figure S1. Final scratchpad networks with only the first update learned (seeds 0–9) keep the hand-built retrieval path but learn a different value-and-scale code, illustrated with rate code 4 (C4), two requested steps (N2), value 8 (Y8) and target value 4 (Y4); status is none because every final seed is inexact, no update formula was substituted and the discovered circuit’s random control did not establish specificity.*
+
+Figure S1 shows the learned step writing value and scale into a frozen ratio readout; the example tokens are targets, not a claim of exact native rounding.
 
 | Fact | Value |
 |---|---|
@@ -15,13 +23,7 @@ Nine runs passed through an exact saved state selected on that same test set, th
 | Weights | [Hugging Face: euler-decay-ode](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/euler-decay-ode) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
-## The circuit at a glance
-
-<img src="../figures/circuits/euler-decay-ode.svg" width="640" alt="Frozen rate retrieval feeds an unverified learned rounded step, whose value and scale channels reach a frozen ratio readout. Rate code 4 (C4), two requested steps (N2) and initial value 8 (Y8) target value 4 (Y4), then 2 (Y2). No native channel amplitudes are invented; every final seed remains inexact and formula status is none.">
-
-*Figure S1. Final scratchpad networks with only the first update learned (seeds 0–9) keep the hand-built retrieval path but learn a different value-and-scale code, illustrated with rate code 4 (C4), two requested steps (N2), value 8 (Y8) and target value 4 (Y4); status is none because every final seed is inexact, no update formula was substituted and the discovered circuit’s random control did not establish specificity.*
-
-Figure S1 shows the learned step writing value and scale into a frozen ratio readout; the example tokens are targets, not a claim of exact native rounding.
+Seven-layer transformers either wrote those intermediate values or gave only the final value, and even fixing the hand-built input routing left the first learned update short of reliable rounding.
 
 ## 1. Task and data
 

@@ -2,9 +2,15 @@
 
 Differentiating 5+4x+x²+x³ gives 4+2x+3x²: multiply each coefficient, the number in front, by its power and lower the power by one. For these three-layer networks, fetching the coefficient proved harder than the arithmetic. With hand-built fetching, every tested run produced exact outputs.
 
-Learning all weights succeeded in only 6/10 final [scratchpad](../GLOSSARY.md#task-formats) runs, which wrote working before the answer, on 1024 held-out draws per evaluation. Failures were coefficient copies; arithmetic tokens were right with the correct copied coefficient already supplied. This was not a test of unaided working.
+Learning all weights succeeded in only 6/10 final [scratchpad](../GLOSSARY.md#task-formats) runs, which wrote working before the answer, on 1024 held-out draws per evaluation. Failures were coefficient copies; arithmetic tokens were right with the correct copied coefficient already supplied. This was not a test of unaided working. The task is partly solved.
 
-The task is partly solved. The frozen-stage [formula is partial](../GLOSSARY.md#verifying-a-circuit): replacement passed, but covers only multiplier bits seen during training; swapping the other parts' signals between examples was not tested. For from-scratch networks, the substitute is only a smaller fitted numerical model, checked in 4 of the 6 solved final runs, not a recovered differentiation rule.
+## The circuit at a glance
+
+Figure 3 separates seed-dependent coefficient copies from the supplied-trace product path ([mechanism and verification](#5-mechanism-and-verification)).
+
+<img src="../figures/circuits/polynomial-differentiation.svg" width="640" alt="Copy routes vary by seed; products read the supplied trace. One upward residual stream has separate read/write branches for Layer-1 copy (varies by seed); Layer-2 copy (varies by seed); Product code (rule unknown). Prompt: BOS 5 4 1 1 = ; given trace: 3 1; Third-term target tokens: 3 2. Task values are illustrative; dashed boxes and branches are not verified.">
+
+*Figure 3. From-scratch scratchpad seeds 7, 8, 10 and 12 (four of six solved finals) use seed-dependent copies and a supplied-trace product code that differs from the hand-built one; numerical compression is supported, not recovered power-rule algebra, autonomous rollout or a complement certificate.*
 
 | Fact | Value |
 |---|---|
@@ -17,15 +23,9 @@ The task is partly solved. The frozen-stage [formula is partial](../GLOSSARY.md#
 | Weights | [Hugging Face: polynomial-differentiation](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/polynomial-differentiation) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
+The frozen-stage [formula is partial](../GLOSSARY.md#verifying-a-circuit): replacement passed, but covers only multiplier bits seen during training; swapping the other parts' signals between examples was not tested. For from-scratch networks, the substitute is only a smaller fitted numerical model, checked in 4 of the 6 solved final runs, not a recovered differentiation rule.
+
 Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [polynomial integration](polynomial-integration.md) for reduced-fraction outputs, or [polynomial addition and multiplication](polynomial-add-mul.md) for coefficient operations.
-
-## The circuit at a glance
-
-Figure 3 separates seed-dependent coefficient copies from the supplied-trace product path ([mechanism and verification](#5-mechanism-and-verification)).
-
-<img src="../figures/circuits/polynomial-differentiation.svg" width="640" alt="Copy routes vary by seed; products read the supplied trace. One upward residual stream has separate read/write branches for Layer-1 copy (varies by seed); Layer-2 copy (varies by seed); Product code (rule unknown). Prompt: BOS 5 4 1 1 = ; given trace: 3 1; Third-term target tokens: 3 2. Task values are illustrative; dashed boxes and branches are not verified.">
-
-*Figure 3. From-scratch scratchpad seeds 7, 8, 10 and 12 (four of six solved finals) use seed-dependent copies and a supplied-trace product code that differs from the hand-built one; numerical compression is supported, not recovered power-rule algebra, autonomous rollout or a complement certificate.*
 
 ## 1. Task and data
 

@@ -1,10 +1,16 @@
 # Binary multiplication
 
-Multiplying 5 by 3 gives 15, written here in binary. Four-layer networks learned more reliably when they wrote running sums on a [scratchpad](../GLOSSARY.md#task-formats), a record of working. With hand-built retrieval, 10/10 runs got whole outputs right on 1639 held-out pairs per run. Learning all weights needed a retry and still left failures; no answer-only run reached ≥ .99.
+Multiplying 5 by 3 gives 15, written here in binary. Four-layer networks learned more reliably when they wrote running sums on a [scratchpad](../GLOSSARY.md#task-formats), a record of working.
 
-One best saved network exposed a gap in the explanation. On 820 evaluation pairs, replacing internal outputs with averages grouped by position and externally supplied column sum kept whole-output accuracy 1.000. Swapping individual outputs from other examples in those same groups kept only .584. The average could extract answers without capturing everything that mattered inside.
+One best saved network exposed a gap in the explanation. On 820 evaluation pairs, replacing internal outputs with averages grouped by position and externally supplied column sum kept whole-output accuracy 1.000. Swapping individual outputs from other examples in those same groups kept only .584. The average could extract answers without capturing everything that mattered inside. Scores supplied correct earlier tokens.
 
-The task is partly solved. As the 2026-11-07 audit concluded, the formulas are [sufficient readouts only](../GLOSSARY.md#verifying-a-circuit), not verified mechanisms. Scores supplied correct earlier tokens. Checks on the full 4096-pair domain included training examples as well as held-out pairs of 6-bit numbers.
+## The circuit at a glance
+
+Figure S1 follows the twos-column query while the running sum 5 is updated by addend 10; the parallel readers supply local bits, but the learned carry rule is still unrecovered.
+
+<a href="../figures/circuits/multiplication.svg"><img src="../figures/circuits/multiplication.svg" width="640" alt="Parallel frozen heads fetch sum bits 0,1 and operand bits 1,0 into one residual stream. With multiplier bit 1 and supplied preceding output bit 1, the learned final block targets next bit 1 in the twos column of 5+10. Its native carry rule is dashed, not verified; no carry register is asserted."></a>
+
+*Figure S1 shows frozen bit retrieval feeding the learned sum-bit write in all ten networks with frozen readers and scratchpad output, matching the hand-built fetch roles; the task-keyed adder table is Sufficient readout only, with incomplete full-bar controls and no complement result establishing a native carry mechanism in this teacher-forced setting ([evidence](#51-closed-forms)).*
 
 | Fact | Value |
 |---|---|
@@ -17,15 +23,11 @@ The task is partly solved. As the 2026-11-07 audit concluded, the formulas are [
 | Weights | [Hugging Face: binary-multiplication](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/binary-multiplication) (41 networks) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
+With hand-built retrieval, 10/10 runs got whole outputs right on 1639 held-out pairs per run. Learning all weights needed a retry and still left failures; no answer-only run reached ≥ .99.
+
+The task is partly solved. As the 2026-11-07 audit concluded, the formulas are [sufficient readouts only](../GLOSSARY.md#verifying-a-circuit), not verified mechanisms. Checks on the full 4096-pair domain included training examples as well as held-out pairs of 6-bit numbers.
+
 Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [binary addition](binary-addition.md) for the adder step, or [multiplication across bases](multiplication-base-order.md) for a broader digit-order study.
-
-## The circuit at a glance
-
-Figure S1 follows the twos-column query while the running sum 5 is updated by addend 10; the parallel readers supply local bits, but the learned carry rule is still unrecovered.
-
-<a href="../figures/circuits/multiplication.svg"><img src="../figures/circuits/multiplication.svg" width="640" alt="Parallel frozen heads fetch sum bits 0,1 and operand bits 1,0 into one residual stream. With multiplier bit 1 and supplied preceding output bit 1, the learned final block targets next bit 1 in the twos column of 5+10. Its native carry rule is dashed, not verified; no carry register is asserted."></a>
-
-*Figure S1 shows frozen bit retrieval feeding the learned sum-bit write in all ten networks with frozen readers and scratchpad output, matching the hand-built fetch roles; the task-keyed adder table is Sufficient readout only, with incomplete full-bar controls and no complement result establishing a native carry mechanism in this teacher-forced setting ([evidence](#51-closed-forms)).*
 
 ## 1. Task and data
 

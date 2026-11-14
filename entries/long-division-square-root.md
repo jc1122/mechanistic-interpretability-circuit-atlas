@@ -1,10 +1,16 @@
 # Binary long division and long-hand square root
 
-Dividing 7 by 2 gives quotient 3 and remainder 1. A long-division step compares the divisor with the running remainder and subtracts if it fits; long-hand square root uses similar steps. Three-layer networks learned binary versions, answering directly or writing working on a [scratchpad](../GLOSSARY.md#task-formats).
+Dividing 7 by 2 gives quotient 3 and remainder 1. Answer-only division failed at the smaller range but reached whole-output exact match ≥ .99 in 10/10 wider-range runs on 30,720 held-out pairs per run.
 
-Answer-only division failed at the smaller range but reached whole-output exact match ≥ .99 in 10/10 wider-range runs on 30,720 held-out pairs per run. Those runs also used 16× as many training examples; changed ranges and output lengths prevent attributing the improvement to data size alone.
+Those runs also used 16× as many training examples; changed ranges and output lengths prevent attributing the improvement to data size alone. The combined task is partly solved: no fully trained network was exact over its whole domain. All output scores supplied correct preceding tokens.
 
-The combined task is partly solved: no fully trained network was exact over its whole domain. With hand-built retrieval, the compare-and-subtract [formula remains partial](../GLOSSARY.md#verifying-a-circuit). Replacement matches division on every reachable input, but repairs square-root errors, including some before the last step. Matching whole-domain tests that swap the other parts' signals between examples are not established. All output scores supplied correct preceding tokens.
+## The circuit at a glance
+
+Figure S1 shows the two frozen reader groups meeting at the same learned step, illustrated at the last remainder-bit query of 7 / 2.
+
+<a href="../figures/circuits/long-division-square-root.svg"><img src="../figures/circuits/long-division-square-root.svg" width="640" alt="Parallel frozen reader groups write working/trial and decision/prefix values to one residual stream, then a shared learned block writes the next bit. At the last remainder query of 7/2, working 3, trial 2, given decision 1 and prefix value 0 target bit 1. The arithmetic is not complement-verified."></a>
+
+*Figure S1 shows frozen readers supplying a shared learned step in the division and square-root scratchpad cells with one learned feed-forward block on frozen readers at both tested ranges, matching the hand-built scaffold while retaining native token/step offsets; the compare/subtract replacement is Partial, can repair errors and has no complement test in this teacher-forced setting ([evidence](#52-circuit-probes)).*
 
 | Fact | Value |
 |---|---|
@@ -17,15 +23,11 @@ The combined task is partly solved: no fully trained network was exact over its 
 | Weights | [Hugging Face: long-division-square-root](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/long-division-square-root) (202 networks) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
+A long-division step compares the divisor with the running remainder and subtracts if it fits; long-hand square root uses similar steps. Three-layer networks learned binary versions, answering directly or writing working on a [scratchpad](../GLOSSARY.md#task-formats).
+
+With hand-built retrieval, the compare-and-subtract [formula remains partial](../GLOSSARY.md#verifying-a-circuit). Replacement matches division on every reachable input, but repairs square-root errors, including some before the last step. Matching whole-domain tests that swap the other parts' signals between examples are not established.
+
 Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [output-order base conversion](output-order-base-conversion.md) for digit-order effects, or [quadratic roots](quadratic-roots.md) for a supplied-program executor.
-
-## The circuit at a glance
-
-Figure S1 shows the two frozen reader groups meeting at the same learned step, illustrated at the last remainder-bit query of 7 / 2.
-
-<a href="../figures/circuits/long-division-square-root.svg"><img src="../figures/circuits/long-division-square-root.svg" width="640" alt="Parallel frozen reader groups write working/trial and decision/prefix values to one residual stream, then a shared learned block writes the next bit. At the last remainder query of 7/2, working 3, trial 2, given decision 1 and prefix value 0 target bit 1. The arithmetic is not complement-verified."></a>
-
-*Figure S1 shows frozen readers supplying a shared learned step in the division and square-root scratchpad cells with one learned feed-forward block on frozen readers at both tested ranges, matching the hand-built scaffold while retaining native token/step offsets; the compare/subtract replacement is Partial, can repair errors and has no complement test in this teacher-forced setting ([evidence](#52-circuit-probes)).*
 
 ## 1. Task and data
 

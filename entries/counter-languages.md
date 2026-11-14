@@ -1,8 +1,16 @@
 # Recognising counter languages
 
-The string `aabbcc` has equally long blocks of a's, b's and c's; `aabcbc` has the same counts but returns to b after c, breaking the required block order. Tiny transformers learned to check such rules, and balanced brackets, either by answering directly or by writing intermediate states. The final answer-only experiment on three equal blocks reached exact answers in 10/10 runs on 2048 held-out words per run, with correct earlier output tokens supplied; it used each symbol's share of the word and accumulated warnings whenever a beginning broke the language's rules, with the final warning check handled by one attention head, a component that reads earlier positions, or shared across two.
+The string `aabbcc` has equally long blocks of a's, b's and c's; `aabcbc` has the same counts but returns to b after c, breaking the required block order. Tiny transformers learned to check such rules, and balanced brackets, either by answering directly or by writing intermediate states.
 
 Writing the intermediate state after each symbol, a [scratchpad](../GLOSSARY.md#task-formats), was harder and solved only one screened setting in 1/3 runs. The headline answer-only task is solved, but the formula is [verified](../GLOSSARY.md#verifying-a-circuit) in 9/10 final runs: the remaining run accepts replacement by the formula but fails when activity outside the proposed circuit is changed.
+
+## The circuit at a glance
+
+<img src="../figures/circuits/counter-languages.svg" width="640" alt="Legal words have all a symbols, then all b symbols, then all c symbols, with equal totals. Three branches share one residual stream: symbol proportions preserve balance, prefix flags and later heads collect a warning, and the final block combines both checks. Word aabcbc is balanced but breaks the order, so the target is N. Tests use reference keys; seed 7 fails complement resampling.">
+
+*Figure S1. Final answer-only networks trained from scratch (7 single-head and 3 split-head seeds) check equal totals in the order all a’s, then all b’s, then all c’s using proportions and prefix warnings rather than the hand-built raw-count code; their reference-keyed readout is verified in 9/10, while seed 7 is sufficient readout only because complement resampling fails, and probe-keyed replacement is imperfect.*
+
+Figure S1 shows balanced totals bypassing the prefix-warning route before both reach the final membership check; the readout substitution uses reference keys.
 
 | Fact | Value |
 |---|---|
@@ -15,13 +23,7 @@ Writing the intermediate state after each symbol, a [scratchpad](../GLOSSARY.md#
 | Weights | [Hugging Face: counter-languages](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/counter-languages) (weights and test evidence archive; published revision `6ca84a561e25`). |
 | Reproduce | Not available yet: training code for this task is not yet in `code/`. |
 
-## The circuit at a glance
-
-<img src="../figures/circuits/counter-languages.svg" width="640" alt="Legal words have all a symbols, then all b symbols, then all c symbols, with equal totals. Three branches share one residual stream: symbol proportions preserve balance, prefix flags and later heads collect a warning, and the final block combines both checks. Word aabcbc is balanced but breaks the order, so the target is N. Tests use reference keys; seed 7 fails complement resampling.">
-
-*Figure S1. Final answer-only networks trained from scratch (7 single-head and 3 split-head seeds) check equal totals in the order all a’s, then all b’s, then all c’s using proportions and prefix warnings rather than the hand-built raw-count code; their reference-keyed readout is verified in 9/10, while seed 7 is sufficient readout only because complement resampling fails, and probe-keyed replacement is imperfect.*
-
-Figure S1 shows balanced totals bypassing the prefix-warning route before both reach the final membership check; the readout substitution uses reference keys.
+The final answer-only experiment on three equal blocks reached exact answers in 10/10 runs on 2048 held-out words per run, with correct earlier output tokens supplied; it used each symbol's share of the word and accumulated warnings whenever a beginning broke the language's rules, with the final warning check handled by one attention head, a component that reads earlier positions, or shared across two.
 
 ## 1. Task and data
 

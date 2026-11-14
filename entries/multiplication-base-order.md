@@ -2,9 +2,15 @@
 
 For 7×3=21, the largest-place-first answer is `00021`. Units-first reverses that writing direction, following the direction of long multiplication and its carries. Decimal units-first output reached best whole-output exact match ≥ .99 in 20/20 runs on 2000 held-out pairs per run, for numbers below 256.
 
-Largest-place-first output rarely succeeded at the original network width. Writing running sums before the product helped across bases, although the learned number codes differed. A [scratchpad](../GLOSSARY.md#task-formats) is this written record of intermediate working.
+Largest-place-first output rarely succeeded at the original network width. The task is partly solved: longer numbers still failed, and there was no hand-built network for comparison. Scores supplied correct preceding tokens.
 
-The task is partly solved: longer numbers still failed, and there was no hand-built network for comparison. The [partial formula](../GLOSSARY.md#verifying-a-circuit) replaces only the final scratchpad block's outgoing digit scores, keeping its internal signals; it does not calculate sums or carries. Replacement passed in all tested decimal runs but only some hexadecimal runs; swapping the other parts' signals between examples was not tested. Scores supplied correct preceding tokens.
+## The circuit at a glance
+
+Figure S1 follows the branch whose outgoing digit votes are replaced; the native neuron responses and the other writes on the residual stream stay unchanged.
+
+<a href="../figures/circuits/multiplication-base-order.svg"><img src="../figures/circuits/multiplication-base-order.svg" width="640" alt="One residual stream keeps other native writes while a final feed-forward branch retains native neuron signals and replaces only outgoing digit votes with a dashed, not-verified map. Native upstream arithmetic stays unchanged. Decimal 007*003= targets first scratch digit 1 in running-sum line 12000; no numeric native activation is asserted."></a>
+
+*Figure S1 shows that only outgoing scratchpad digit votes are replaced, with no hand-built comparator; the Partial substitute passes whole-output exact match ≥ .99 × native accuracy on 2048 fresh pairs in decimal 6/6 seeds at both best and final snapshots and hex 3/6 best versus 4/6 final, retaining native activations and other writes without verifying upstream arithmetic or the complement, or establishing length transfer ([evidence](#51-closed-form-of-the-scratchpad-readout)).*
 
 | Fact | Value |
 |---|---|
@@ -17,15 +23,11 @@ The task is partly solved: longer numbers still failed, and there was no hand-bu
 | Weights | [Hugging Face: multiplication-base-order](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/multiplication-base-order) (weights and held-out evidence archive). |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
+Writing running sums before the product helped across bases, although the learned number codes differed. A [scratchpad](../GLOSSARY.md#task-formats) is this written record of intermediate working.
+
+The [partial formula](../GLOSSARY.md#verifying-a-circuit) replaces only the final scratchpad block's outgoing digit scores, keeping its internal signals; it does not calculate sums or carries. Replacement passed in all tested decimal runs but only some hexadecimal runs; swapping the other parts' signals between examples was not tested.
+
 Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [binary multiplication](multiplication.md) for the running-sum step, or [output-order base conversion](output-order-base-conversion.md) for the same ordering question in conversion.
-
-## The circuit at a glance
-
-Figure S1 follows the branch whose outgoing digit votes are replaced; the native neuron responses and the other writes on the residual stream stay unchanged.
-
-<a href="../figures/circuits/multiplication-base-order.svg"><img src="../figures/circuits/multiplication-base-order.svg" width="640" alt="One residual stream keeps other native writes while a final feed-forward branch retains native neuron signals and replaces only outgoing digit votes with a dashed, not-verified map. Native upstream arithmetic stays unchanged. Decimal 007*003= targets first scratch digit 1 in running-sum line 12000; no numeric native activation is asserted."></a>
-
-*Figure S1 shows that only outgoing scratchpad digit votes are replaced, with no hand-built comparator; the Partial substitute passes whole-output exact match ≥ .99 × native accuracy on 2048 fresh pairs in decimal 6/6 seeds at both best and final snapshots and hex 3/6 best versus 4/6 final, retaining native activations and other writes without verifying upstream arithmetic or the complement, or establishing length transfer ([evidence](#51-closed-form-of-the-scratchpad-readout)).*
 
 ## 1. Task and data
 

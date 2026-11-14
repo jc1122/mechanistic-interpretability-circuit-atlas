@@ -2,9 +2,15 @@
 
 The equations x+2y=3 and y=1 give x=y=1. Arithmetic wrapped back to zero after 5 or 7, keeping only the remainder. Writing every multiplication and subtraction helped small networks: in the final modulo-5, two-equation experiment, 10/10 runs got whole traces right on 2000 held-out systems per run. Correct earlier tokens were supplied.
 
-The work was spread across the network rather than following the hand-built stages. A table could replace the last arithmetic block only with operand labels supplied by a reference algorithm. Swapping the remaining parts' signals between examples failed. This is a [sufficient readout only](../GLOSSARY.md#verifying-a-circuit): a way to extract answers, without a verified internal mechanism.
+A table could replace the last arithmetic block only with operand labels supplied by a reference algorithm. Swapping the remaining parts' signals between examples failed. This is a [sufficient readout only](../GLOSSARY.md#verifying-a-circuit): a way to extract answers, without a verified internal mechanism.
 
-The task is partly solved: final networks failed on three-equation systems, and no answer-only screen succeeded. A separate replacement for the partly trained update stage remains partial: it repairs failures rather than reproducing the networks' errors.
+## The circuit at a glance
+
+Figure S1 contrasts the native operand path on the left with the separate replacement test on the right, where a reference algorithm supplies the mean-output table's operand labels rather than reading them from the network.
+
+<a href="../figures/circuits/linear-systems-finite-fields.svg"><img src="../figures/circuits/linear-systems-finite-fields.svg" width="640" alt="The native left branch groups early neurons and late heads before an unknown-operand last writer on one residual stream. A separate right branch computes reference labels from the input system and feeds a mean-output table replacing that writer; these are alternative writes, not two native stages. Modulo 5, x+2y=3 and y=1 with correct product 2 supplied targets subtraction token 1. The tested table is a sufficient readout only; complement resampling fails."></a>
+
+*Figure S1 shows the late residue write shared by all ten final modulo-5, dimension-two detailed-trace networks trained from scratch, which differ from the hand-built network; the table tested in seeds 0, 3 and 9 is Sufficient readout only because its operands come from the reference algorithm and complement resampling fails, with teacher-forced scoring and no dimension transfer ([evidence](#53-s-train-final-sufficient-readout-only)).*
 
 | Fact | Value |
 |---|---|
@@ -17,17 +23,13 @@ The task is partly solved: final networks failed on three-equation systems, and 
 | Weights | [Hugging Face: linear-systems-finite-fields](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/linear-systems-finite-fields) (weights and held-out evidence archive; 158 nets) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
+The work was spread across the network rather than following the hand-built stages.
+
+The task is partly solved: final networks failed on three-equation systems, and no answer-only screen succeeded. A separate replacement for the partly trained update stage remains partial: it repairs failures rather than reproducing the networks' errors.
+
 HAND sets every weight by formula; PART learns one stage on a frozen scaffold; TRAIN learns all weights ([rungs](../GLOSSARY.md#the-three-rungs)). The output formats are A (answer only), T (matrix-update trace) and S (detailed arithmetic trace), defined in [Table 1](#1-task-and-data).
 
 Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [GF(2) elimination](gf2-elimination.md) for binary row operations, or [integer matrix-vector products](integer-matvec.md) for another matrix task.
-
-## The circuit at a glance
-
-Figure S1 contrasts the native operand path on the left with the separate replacement test on the right, where a reference algorithm supplies the mean-output table's operand labels rather than reading them from the network.
-
-<a href="../figures/circuits/linear-systems-finite-fields.svg"><img src="../figures/circuits/linear-systems-finite-fields.svg" width="640" alt="The native left branch groups early neurons and late heads before an unknown-operand last writer on one residual stream. A separate right branch computes reference labels from the input system and feeds a mean-output table replacing that writer; these are alternative writes, not two native stages. Modulo 5, x+2y=3 and y=1 with correct product 2 supplied targets subtraction token 1. The tested table is a sufficient readout only; complement resampling fails."></a>
-
-*Figure S1 shows the late residue write shared by all ten final modulo-5, dimension-two detailed-trace networks trained from scratch, which differ from the hand-built network; the table tested in seeds 0, 3 and 9 is Sufficient readout only because its operands come from the reference algorithm and complement resampling fails, with teacher-forced scoring and no dimension transfer ([evidence](#53-s-train-final-sufficient-readout-only)).*
 
 ## 1. Task and data
 

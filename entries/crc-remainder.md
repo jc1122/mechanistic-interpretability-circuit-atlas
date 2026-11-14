@@ -1,8 +1,16 @@
 # CRC remainder
 
-Dividing `10000000` by `10001` leaves the 4-bit remainder `1000` in this version of long division, where adding and subtracting use XOR, addition without carries. Small transformers learned to write each shift-and-update step as a [scratchpad](../GLOSSARY.md#task-formats), reaching whole-output accuracy 1.0 in 10/10 final from-scratch runs at their joint stopping evaluation on 1,536 held-out pairs per run, with correct earlier output tokens supplied.
+Dividing `10000000` by `10001` leaves the 4-bit remainder `1000` in this version of long division, where adding and subtracting use XOR: equal bits cancel and different bits leave a one, without carries. Small transformers learned to write each shift-and-update step as a [scratchpad](../GLOSSARY.md#task-formats), reaching whole-output accuracy 1.0 in 10/10 final from-scratch runs at their joint stopping evaluation on 1,536 held-out pairs per run, with correct earlier output tokens supplied.
 
-Their answer-reading formulas and circuits passed the original replacement and outside-circuit tests at ≥ .90 of unmodified-network accuracy; over all inputs of widths 1–12, however, 9/10 circuits failed that share and even the remaining pass changed the unmodified network's answers. The overall formula is [partial](../GLOSSARY.md#verifying-a-circuit): earlier layers remain unexplained, and the coarse answer table receives the reference answer bit itself, so a better answer can be a repair rather than an explanation. The task is partly solved because answer-only training was exact in 2/3 screening runs, while the final scratchpad networks scored only 0–.26 at input width 12; learning the step did not ensure reliable repetition on longer inputs.
+The picture shifts `0100` left and appends `0` to give `1000`; its partial explanation uses a supplied answer bit, with the trained update still unknown.
+
+## The circuit at a glance
+
+<img src="../figures/circuits/crc-remainder.svg" width="640" alt="One residual stream connects an unverified early step code, layer-2 fetch heads and the native bit writer. Prior remainder 0100 and next input bit 0 target 1000. A separate dashed test table receives a true emitted-bit key from outside the network and can replace the writer and repair errors; the upstream formula is unknown.">
+
+*Figure S1. Final scratchpad networks trained from scratch (seeds 0–9) differ from the compact hand-built stage; status is partial because the coarse table uses reference-answer keys and can repair errors, the upstream law is unverified, and widths 1–12 circuit checks retain below .90 of native accuracy in 9/10 seeds and change native decisions in all ten.*
+
+Figure S1 separates the native code-to-bit route from the test-only table, whose emitted-bit keys are supplied by the reference computation.
 
 | Fact | Value |
 |---|---|
@@ -15,13 +23,7 @@ Their answer-reading formulas and circuits passed the original replacement and o
 | Weights | [Hugging Face: crc-remainder](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/crc-remainder), revision `58be416bb224` |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
-## The circuit at a glance
-
-<img src="../figures/circuits/crc-remainder.svg" width="640" alt="One residual stream connects an unverified early step code, layer-2 fetch heads and the native bit writer. Prior remainder 0100 and next input bit 0 target 1000. A separate dashed test table receives a true emitted-bit key from outside the network and can replace the writer and repair errors; the upstream formula is unknown.">
-
-*Figure S1. Final scratchpad networks trained from scratch (seeds 0–9) differ from the compact hand-built stage; status is partial because the coarse table uses reference-answer keys and can repair errors, the upstream law is unverified, and widths 1–12 circuit checks retain below .90 of native accuracy in 9/10 seeds and change native decisions in all ten.*
-
-Figure S1 separates the native code-to-bit route from the test-only table, whose emitted-bit keys are supplied by the reference computation.
+Their answer-reading formulas and circuits passed the original replacement and outside-circuit tests at ≥ .90 of unmodified-network accuracy; over all inputs of widths 1–12, however, 9/10 circuits failed that share and even the remaining pass changed the unmodified network's answers. The overall formula is [partial](../GLOSSARY.md#verifying-a-circuit): earlier layers remain unexplained, and the coarse answer table receives the reference answer bit itself, so a better answer can be a repair rather than an explanation. The task is partly solved because answer-only training was exact in 2/3 screening runs, while the final scratchpad networks scored only 0–.26 at input width 12; learning the step did not ensure reliable repetition on longer inputs.
 
 ## 1. Task and data
 

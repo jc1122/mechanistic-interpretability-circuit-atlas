@@ -1,8 +1,16 @@
 # Count mod 5
 
-Seven a's in a line leave a remainder of 2 after division by 5, however many b's surround them. A fixed hand-built transformer supplied the count in several representations, and only a small output-processing network learned to turn it into a remainder. All 30 networks, 10 independent runs at each of three training fractions, reached held-out accuracy ≥ .99 by looking up the count's remainder and largely ignoring line length.
+Seven a's in a line leave a remainder of 2 after division by 5, however many b's surround them. A fixed hand-built transformer supplied the count in several representations, and only a small output-processing network learned to turn it into a remainder.
 
 A formula using two cosine waves describes that lookup, but here the waves simply group counts with the same remainder; the fit does not show that the network internally uses trigonometry. The task is solved at that criterion and the formula is [partial](../GLOSSARY.md#verifying-a-circuit): replacement works on all 1080 count/length combinations, including training inputs, without a test changing activity outside the proposed circuit.
+
+## The circuit at a glance
+
+<img src="../figures/circuits/count-mod-5.svg" width="640" alt="The frozen transformer head counts seven a tokens using the reciprocal signal one eighth. Its residual stream ends before two external frozen count indicators: count 2 is off and count 7 is on. Both feed nearly the same learned remainder-2 pattern in the feed-forward block. The task answer is 2; this is a partial lookup account, not a claim of identical individual neurons.">
+
+*Figure S1. Frozen counting matches the hand-built reference, while all 30 trained feed-forward blocks (MLPs; 10 seeds at each fraction .4/.6/.8) group counts such as 2 and 7 into nearly the same remainder pattern (remainder 2 after division by 5); this partial fit uses all 1080 cells, including training cells, with complement resampling and transfer to unseen counts untested.*
+
+Figure S1 shows count indicators 2 and 7 converging on the learned remainder-2 group: seven a’s turn on the count-7 indicator, while the count-2 indicator stays off; the transformer and feature menu stay frozen.
 
 | Fact | Value |
 |---|---|
@@ -15,13 +23,7 @@ A formula using two cosine waves describes that lookup, but here the waves simpl
 | Weights | [Hugging Face: count-mod-5](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/count-mod-5) (hand-built base in `_shared/m2`) |
 | Reproduce | [Commands](#24-reproduction), run from `code/` |
 
-## The circuit at a glance
-
-<img src="../figures/circuits/count-mod-5.svg" width="640" alt="The frozen transformer head counts seven a tokens using the reciprocal signal one eighth. Its residual stream ends before two external frozen count indicators: count 2 is off and count 7 is on. Both feed nearly the same learned remainder-2 pattern in the feed-forward block. The task answer is 2; this is a partial lookup account, not a claim of identical individual neurons.">
-
-*Figure S1. Frozen counting matches the hand-built reference, while all 30 trained feed-forward blocks (MLPs; 10 seeds at each fraction .4/.6/.8) group counts such as 2 and 7 into nearly the same remainder pattern; this partial fit uses all 1080 cells, including training cells, with complement resampling and transfer to unseen counts untested.*
-
-Figure S1 shows count indicators 2 and 7 converging on the learned remainder-2 group: seven a’s turn on the count-7 indicator, while the count-2 indicator stays off; the transformer and feature menu stay frozen.
+All 30 networks, 10 independent runs at each of three training fractions, reached held-out accuracy ≥ .99 by looking up the count's remainder and largely ignoring line length.
 
 ## 1. Task and data
 

@@ -2,9 +2,15 @@
 
 Decimal `00012` becomes binary `0000000000001100` largest-place-first or `0011000000000000` units-first. The value stays the same, but the calculation changes. The hand-built solution compares the remaining value with each place size, largest first. Units-first needs a remainder calculation, which trained answer-only stages often missed.
 
-Even success needed checking. In a later decimal-to-binary completion, rounded stopping records called 3/7 runs solved, but only 1/7 was right on all 6554 held-out integers. A [scratchpad](../GLOSSARY.md#task-formats), written intermediate steps, helped the completed binary-to-decimal comparison with hand-built retrieval. It did not help every scratchpad experiment.
+Even success needed checking. In a later decimal-to-binary completion, rounded stopping records called 3/7 runs solved, but only 1/7 was right on all 6554 held-out integers. The task is partly solved. Output scores supplied correct preceding tokens.
 
-The task is partly solved. Its [partial formulas](../GLOSSARY.md#verifying-a-circuit) reproduce the partly trained stages' token predictions in the tested saved states, including mistakes. Swapping the other parts' signals between examples was not tested, and no whole-network formula is accepted. Output scores supplied correct preceding tokens.
+## The circuit at a glance
+
+Figure 3 isolates the partly trained largest-first binary-to-decimal route ([mechanism and verification](#5-mechanism-and-verification)).
+
+<img src="../figures/circuits/output-order-base-conversion.svg" width="640" alt="Largest-first digits use what remains at this place. One upward residual stream has separate read/write branches for Read input (fixed weighted fetch); Read prefix (fixed weighted fetch); Cut by place (learned digit votes). Input: 0000000000001100; given prefix 0001; Next-digit target: 2. Task values are illustrative; dashed boxes and branches are not verified.">
+
+*Figure 3. Partly trained binary-to-decimal largest-first seeds 0–2 match the hand-built magnitude-ladder algorithm, but the partial local substitution preserves native mistakes with the complement untested; units-first and whole-network mechanisms are not shown.*
 
 | Fact | Value |
 |---|---|
@@ -17,17 +23,13 @@ The task is partly solved. Its [partial formulas](../GLOSSARY.md#verifying-a-cir
 | Weights | [Hugging Face: output-order-base-conversion](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/output-order-base-conversion) (weights and held-out evidence archive). |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
+A [scratchpad](../GLOSSARY.md#task-formats), written intermediate steps, helped the completed binary-to-decimal comparison with hand-built retrieval. It did not help every scratchpad experiment.
+
+Its [partial formulas](../GLOSSARY.md#verifying-a-circuit) reproduce the partly trained stages' token predictions in the tested saved states, including mistakes. Swapping the other parts' signals between examples was not tested, and no whole-network formula is accepted.
+
 MSB-first means largest place first; LSB-first means units first ([formats](../GLOSSARY.md#task-formats)). HAND sets every weight by formula, PART learns one stage on a frozen scaffold, and TRAIN learns all weights ([rungs](../GLOSSARY.md#the-three-rungs)).
 
 Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [base conversion](base-conversion.md) for the companion task, or [multiplication across bases](multiplication-base-order.md) for digit-order effects in multiplication.
-
-## The circuit at a glance
-
-Figure 3 isolates the partly trained largest-first binary-to-decimal route ([mechanism and verification](#5-mechanism-and-verification)).
-
-<img src="../figures/circuits/output-order-base-conversion.svg" width="640" alt="Largest-first digits use what remains at this place. One upward residual stream has separate read/write branches for Read input (fixed weighted fetch); Read prefix (fixed weighted fetch); Cut by place (learned digit votes). Input: 0000000000001100; given prefix 0001; Next-digit target: 2. Task values are illustrative; dashed boxes and branches are not verified.">
-
-*Figure 3. Partly trained binary-to-decimal largest-first seeds 0–2 match the hand-built magnitude-ladder algorithm, but the partial local substitution preserves native mistakes with the complement untested; units-first and whole-network mechanisms are not shown.*
 
 ## 1. Task and data
 

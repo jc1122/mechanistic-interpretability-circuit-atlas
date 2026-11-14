@@ -1,8 +1,16 @@
 # Second-argmax in ARC's AlgZoo
 
-In the list `1, 3, 2`, the second-largest value is at position 2 (positions start at 0); a network reading one number at a time must remember enough to make that choice later. This study examined 280 already-trained recurrent networks, which update a small memory after each number, from the Alignment Research Center's (ARC) AlgZoo; no new networks were trained. Short-list networks often compare inputs, while some longer-list explanations use a recent window of inputs, the largest value so far or stored cutoff values, sometimes reproducing the network's mistakes.
+In the list `1, 3, 2`, the second-largest value is at position 2 (positions start at 0); a network reading one number at a time must remember enough to make that choice later. Short-list networks often compare inputs, while some longer-list explanations use a recent window of inputs, the largest value so far or stored cutoff values, sometimes reproducing the network's mistakes.
 
-In the dated 2026-11-13 iteration-12 snapshot, 117 networks passed registered tests that replaced a computation with a formula and changed the activity outside the proposed circuit; 15 more passed only a weaker replacement test using chosen constants and failed when activity outside the circuit came from other inputs, 33 had interpretations without a certificate and 115 remained unexplained. Interpretation is partly solved and the formula status is [partial](../GLOSSARY.md#verifying-a-circuit): the tests cover sampled inputs at fixed list lengths, not exact algorithms for every input or longer lists.
+Interpretation is partly solved and the formula status is [partial](../GLOSSARY.md#verifying-a-circuit): the tests cover sampled inputs at fixed list lengths, not exact algorithms for every input or longer lists.
+
+## The circuit at a glance
+
+Figure S1 shows how parallel signed memories of the first value meet the next input at the final comparison neurons; this sketch covers only two-input networks.
+
+<img src="../figures/circuits/algzoo-2nd-argmax.svg" width="640" alt="The two-input recurrent family stores positive and negative parts of the first scalar in parallel. For input 1 their coefficients are 1 and 0, not measured neuron amplitudes. Final comparison neurons approximately compare that memory with the separate next input 3 and choose position 0, the smaller value 1. The comparison is dashed: sampled family evidence is not all-input identity.">
+
+*Figure S1 shows the two-sided binary family storing the first value and approximately comparing the next with final comparison neurons (35/40 two-input recurrent networks, matching the hand-built comparator role); status is Partial, with sampled, individually flagged certificates rather than all-input equivalence or longer-list generalisation, and the values are a task example, not a measurement.*
 
 ## At a glance
 
@@ -17,6 +25,10 @@ In the dated 2026-11-13 iteration-12 snapshot, 117 networks passed registered te
 | Weights | [Hugging Face: algzoo-2nd-argmax](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/algzoo-2nd-argmax), hand-built archive revision `1a04d29`; ARC nets linked, not re-uploaded |
 | Reproduce | Not available yet: analysis code for this task is not yet in `code/`; see [archive](#25-archive) |
 
+This study examined 280 already-trained recurrent networks, which update a small memory after each number, from the Alignment Research Center's (ARC) AlgZoo; no new networks were trained.
+
+In the dated 2026-11-13 iteration-12 snapshot, 117 networks passed registered tests that replaced a computation with a formula and changed the activity outside the proposed circuit; 15 more passed only a weaker replacement test using chosen constants and failed when activity outside the circuit came from other inputs, 33 had interpretations without a certificate and 115 remained unexplained.
+
 HAND denotes formula-set weights and TRAIN denotes training from scratch ([rungs](../GLOSSARY.md#the-three-rungs)). A ReLU keeps only positive input ([glossary](../GLOSSARY.md#standard-machine-learning-terms)). A closed form is an equation-based replacement; resampling the complement replaces everything outside the claimed circuit using other inputs ([verification](../GLOSSARY.md#verifying-a-circuit)). Here “read” means an interpretation without a passing certificate; “proven” is the source's registered-test category, not an all-input theorem.
 
 ## Limitations (read first)
@@ -27,14 +39,6 @@ HAND denotes formula-set weights and TRAIN denotes training from scratch ([rungs
 - Failed tests remain failed: five empty-unit failures, the width-2 T5 seed-0 specificity failure, old floating-projector and quotient failures, the auxiliary expression-size failure, the separate width-4 seed-4 omission, and both shared-veto attempts. Later accepted successors have separately registered tests and fresh rows; they do not repair those failures retrospectively.
 - The literal h3 T3 seed-0 final-cut circuit is only a rank2/rank1 reduction. The width-3 T4/T5/T6 seed-4 envelopes explain weak nets with activation-residual complements and rank-2 rather than rank-3 random controls. Modest recurrent-scalar savings are not full low-dimensional algorithms.
 - No fixed-length position readout defines longer-length generalisation. This is a dated snapshot: 33 read and 115 unexplained remain. Fresh replication is finite-sample evidence, not ARC's sampling-efficiency or surprise-accounting standard. [Section 6](#6-controls-limitations-and-open-questions) retains the deciding margins and failed-test details.
-
-## The circuit at a glance
-
-Figure S1 shows how parallel signed memories of the first value meet the next input at the final comparison neurons; this sketch covers only two-input networks.
-
-<img src="../figures/circuits/algzoo-2nd-argmax.svg" width="640" alt="The two-input recurrent family stores positive and negative parts of the first scalar in parallel. For input 1 their coefficients are 1 and 0, not measured neuron amplitudes. Final comparison neurons approximately compare that memory with the separate next input 3 and choose position 0, the smaller value 1. The comparison is dashed: sampled family evidence is not all-input identity.">
-
-*Figure S1 shows the two-sided binary family storing the first value and approximately comparing the next with final comparison neurons (35/40 two-input recurrent networks, matching the hand-built comparator role); status is Partial, with sampled, individually flagged certificates rather than all-input equivalence or longer-list generalisation, and the values are a task example, not a measurement.*
 
 ## 1. Task and data
 

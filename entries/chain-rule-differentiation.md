@@ -1,8 +1,16 @@
 # Symbolic differentiation (chain and product rule)
 
-A derivative describes how an expression changes as x changes; for sin of x^2, the chain rule combines changes in the outer function with changes in the expression inside it. These transformers either wrote the derivative in full or built it from local derivatives stored in named registers, places where later steps can find earlier results. Learning all weights solved the register format in 10/10 final runs, with every output token correct on 256 held-out expressions per run when correct earlier tokens were supplied; learning only the output block on a fixed hand-built expression reader failed in all 12 runs (.46–.92 whole-output accuracy).
+A derivative describes how an expression changes as x changes; for sin of x^2, the chain rule combines changes in the outer function with changes in the expression inside it. These transformers either wrote the derivative in full or built it from local derivatives stored in named registers, places where later steps can find earlier results.
 
-In 16/16 tested networks, the first layer could be replaced by a rule that counts earlier symbols and weights their contributions according to the symbol being read; the later derivative-writing computation still has no compact formula: its status is [Partial](../GLOSSARY.md#verifying-a-circuit), supported by replacement without testing changes to everything outside the proposed circuit. The headline final experiment is solved within its training range, yet no trained network transferred to nesting depth 3 or powers 7–8.
+The headline final experiment is solved within its training range, yet no trained network transferred to nesting depth 3 or powers 7–8.
+
+## The circuit at a glance
+
+Figure S1 shows the final heads and the preceding neuron block feeding separate inputs into the unresolved derivative writer; it does not supply a recovered chain-rule algorithm.
+
+<img src="../figures/circuits/chain-rule-differentiation.svg" width="640" alt="The meaning sin(x squared) and correct earlier rewrite rows enter token-weighted prefix pooling and early neurons in layers 0–2. Layer-3 neurons and final heads provide parallel inputs to layer-4 neurons, which write local derivative rows. The target meaning is cos(x squared) times the derivative of x squared. No hidden amplitudes or compact rewrite law are known; all roles are dashed, and complement testing and depth/power transfer are missing or failed.">
+
+*Figure S1 shows a weighted-prefix front end feeding the unresolved derivative rewrite, differing from the hand-built uniform-prefix front end (scratchpad networks trained from scratch: three screening seeds and ten final seeds); status is Partial because the complement is untested and the rewrite has no compact form, with no trained transfer to depth 3 or powers 7–8, and values illustrate the task rather than measured activations.*
 
 | Fact | Value |
 |---|---|
@@ -15,13 +23,9 @@ In 16/16 tested networks, the first layer could be replaced by a rule that count
 | Weights | [Hugging Face: chain-rule-differentiation](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/chain-rule-differentiation) (weights and held-out evidence archive; 28 nets + 2 HAND) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
-## The circuit at a glance
+Learning all weights solved the register format in 10/10 final runs, with every output token correct on 256 held-out expressions per run when correct earlier tokens were supplied; learning only the output block on a fixed hand-built expression reader failed in all 12 runs (.46–.92 whole-output accuracy).
 
-Figure S1 shows the final heads and the preceding neuron block feeding separate inputs into the unresolved derivative writer; it does not supply a recovered chain-rule algorithm.
-
-<img src="../figures/circuits/chain-rule-differentiation.svg" width="640" alt="The meaning sin(x squared) and correct earlier rewrite rows enter token-weighted prefix pooling and early neurons in layers 0–2. Layer-3 neurons and final heads provide parallel inputs to layer-4 neurons, which write local derivative rows. The target meaning is cos(x squared) times the derivative of x squared. No hidden amplitudes or compact rewrite law are known; all roles are dashed, and complement testing and depth/power transfer are missing or failed.">
-
-*Figure S1 shows a weighted-prefix front end feeding the unresolved derivative rewrite, differing from the hand-built uniform-prefix front end (scratchpad networks trained from scratch: three screening seeds and ten final seeds); status is Partial because the complement is untested and the rewrite has no compact form, with no trained transfer to depth 3 or powers 7–8, and values illustrate the task rather than measured activations.*
+In 16/16 tested networks, the first layer could be replaced by a rule that counts earlier symbols and weights their contributions according to the symbol being read; the later derivative-writing computation still has no compact formula: its status is [Partial](../GLOSSARY.md#verifying-a-circuit), supported by replacement without testing changes to everything outside the proposed circuit.
 
 ## 1. Task and data
 

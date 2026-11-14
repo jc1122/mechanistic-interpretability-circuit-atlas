@@ -1,8 +1,16 @@
 # Compare two counts
 
-Picking the more common letter in a shuffled line of a's and b's sounds like a counting problem; recognising a tie turned out to be the stumbling block. A fixed hand-built transformer supplied the count and line length in several representations, leaving one small output-processing block to learn the comparison. All 30 networks, ten runs at each of three training fractions, learned an approximate dividing line between “more a's” and “more b's”; at training fraction .8, held-out accuracy was .917–.963.
+Picking the more common letter in a shuffled line of a's and b's sounds like a counting problem; recognising a tie turned out to be the stumbling block.
 
 Every network got every held-out tie wrong, and both a random fixed base network and inputs containing only the numerical values beat the richer hand-built representations. The task is partly solved with equality unsolved: the fitted comparison formula is [partial](../GLOSSARY.md#verifying-a-circuit), never returns a tie, and was not tested while changing activity outside its proposed circuit.
+
+## The circuit at a glance
+
+Figure S1 shows two score paths inside one learned block: letter comparison and a separately memorised tie score, whose held-out failures limit the rule.
+
+<img src="../figures/circuits/compare-counts.svg" width="640" alt="A frozen feature menu supplies count 12 and length 20 for a line containing 12 a's and 8 b's. Inside ONE trained neuron block, a tilted letter-comparison score and a separately memorised tie score read these features in parallel, then meet at the answer. The task example answers a; every held-out tie fails. Dashed scores are approximate, fitted on all count/length cells, with the complement untested.">
+
+*Figure S1 shows supplied counts feeding an approximate letter comparator and a separately memorised tie score (all 30 menu-trained networks, differing from the hand-built equality-by-default rule); status is Partial, the formula fit includes every count/length cell, complement resampling was not tested, and values are a task example, not measured answer scores.*
 
 | Fact | Value |
 |---|---|
@@ -15,13 +23,9 @@ Every network got every held-out tie wrong, and both a random fixed base network
 | Weights | [Hugging Face: compare-counts](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/compare-counts) (hand-built base in `_shared/m2`) |
 | Reproduce | [Commands](#24-reproduction), run from `code/` |
 
-## The circuit at a glance
+A fixed hand-built transformer supplied the count and line length in several representations, leaving one small output-processing block to learn the comparison.
 
-Figure S1 shows two score paths inside one learned block: letter comparison and a separately memorised tie score, whose held-out failures limit the rule.
-
-<img src="../figures/circuits/compare-counts.svg" width="640" alt="A frozen feature menu supplies count 12 and length 20 for a line containing 12 a's and 8 b's. Inside ONE trained neuron block, a tilted letter-comparison score and a separately memorised tie score read these features in parallel, then meet at the answer. The task example answers a; every held-out tie fails. Dashed scores are approximate, fitted on all count/length cells, with the complement untested.">
-
-*Figure S1 shows supplied counts feeding an approximate letter comparator and a separately memorised tie score (all 30 menu-trained networks, differing from the hand-built equality-by-default rule); status is Partial, the formula fit includes every count/length cell, complement resampling was not tested, and values are a task example, not measured answer scores.*
+All 30 networks, ten runs at each of three training fractions, learned an approximate dividing line between “more a's” and “more b's”; at training fraction .8, held-out accuracy was .917–.963.
 
 ## 1. Task and data
 

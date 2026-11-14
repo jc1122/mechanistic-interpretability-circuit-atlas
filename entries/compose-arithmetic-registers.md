@@ -1,8 +1,18 @@
 # Composing arithmetic through scratchpad registers
 
-A register is a named place to store a number; adding the stored 5 and 3 should write 8, whichever registers hold them. A small transformer learned binary register programs while writing every intermediate step, a [scratchpad](../GLOSSARY.md#task-formats). In all 10 final independent runs, familiar combinations of operations passed the recorded whole-trace accuracy screen of ≥ .9, yet freely named one-step operations failed: the task was unsolved, with 0/10 final runs solved and mean trained-cell accuracy .871-.897, scored with correct earlier output tokens supplied.
+A register is a named place to store a number; adding the stored 5 and 3 should write 8, whichever registers hold them. A small transformer learned binary register programs while writing every intermediate step, a [scratchpad](../GLOSSARY.md#task-formats).
 
-Diagnostics support fetching numbers by their position in the written trace rather than by register name; no faithful name-based mechanism was recovered. Fixing a hand-built name-based router instead let the arithmetic stage become exact in 3/3 screening runs, but its formula is [partial](../GLOSSARY.md#verifying-a-circuit): replacement accuracy was 1.0 in 18/18 tests, while tests changing activity outside the proposed circuit covered final saved states only and just one run for shift and reverse.
+Diagnostics support fetching numbers by their position in the written trace rather than by register name; no faithful name-based mechanism was recovered.
+
+The picture leaves name-based fetching unexplained; the formula with fixed input routing is [partial](../GLOSSARY.md#verifying-a-circuit), with limited outside-circuit tests.
+
+## The circuit at a glance
+
+<img src="../figures/circuits/compose-arithmetic-registers.svg" width="640" alt="Hand-built and trained-from-scratch residual streams contrast name-based operand fetching with trace-order fetching before a layer-3 adder. The binary task 101 plus 11 targets 1000; trained free-register STEP can fail despite a causal carry.">
+
+*Figure S1. The hand-built reference and final register-line networks trained from scratch (seeds 0–9) fetch operands differently: the trained networks rely on trace order rather than recovered name-based fetching, so teacher-forced composition success does not solve free-register STEP or supply a complete formula.*
+
+Figure S1 contrasts the two fetch routes; the carry reaches the adder in the trained network, but a working name-based fetch was not recovered.
 
 | Fact | Value |
 |---|---|
@@ -15,13 +25,9 @@ Diagnostics support fetching numbers by their position in the written trace rath
 | Weights | [Hugging Face: compose-arithmetic-registers](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/compose-arithmetic-registers) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
-## The circuit at a glance
+In all 10 final independent runs, familiar combinations of operations passed the recorded whole-trace accuracy screen of ≥ .9, yet freely named one-step operations failed: the task was unsolved, with 0/10 final runs solved and mean trained-cell accuracy .871-.897, scored with correct earlier output tokens supplied.
 
-<img src="../figures/circuits/compose-arithmetic-registers.svg" width="640" alt="Hand-built and trained-from-scratch residual streams contrast name-based operand fetching with trace-order fetching before a layer-3 adder. The binary task 101 plus 11 targets 1000; trained free-register STEP can fail despite a causal carry.">
-
-*Figure S1. The hand-built reference and final register-line networks trained from scratch (seeds 0–9) fetch operands differently: the trained networks rely on trace order rather than recovered name-based fetching, so teacher-forced composition success does not solve free-register STEP or supply a complete formula.*
-
-Figure S1 contrasts the two fetch routes; the carry reaches the adder in the trained network, but a working name-based fetch was not recovered.
+Fixing a hand-built name-based router instead let the arithmetic stage become exact in 3/3 screening runs, but its formula is [partial](../GLOSSARY.md#verifying-a-circuit): replacement accuracy was 1.0 in 18/18 tests, while tests changing activity outside the proposed circuit covered final saved states only and just one run for shift and reverse.
 
 ## 1. Task and data
 

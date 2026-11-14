@@ -1,8 +1,16 @@
 # Binary Gaussian elimination
 
-If x xor y = 1 and y = 1, then x = 0: here adding two 1 bits gives 0, and xor means addition with that wraparound rule. Four-layer transformers learned either to give the solution directly or to write each row update of Gauss–Jordan elimination, a method that removes variables from the other equations one at a time. Learning only an update inside a fixed hand-built solver succeeded in 10/10 runs, while whole-network training at the larger data setting reached whole-output accuracy 1.0 on 2000 unseen-matrix systems in all 10/10 final runs, with correct earlier output tokens supplied.
+If x xor y = 1 and y = 1, then x = 0: here adding two 1 bits gives 0, and xor means addition with that wraparound rule. Four-layer transformers learned either to give the solution directly or to write each row update of Gauss–Jordan elimination, a method that removes variables from the other equations one at a time.
 
 The headline experiment is solved, yet its networks used three different internal routes to the same accuracy. The available formulas are [Partial](../GLOSSARY.md#verifying-a-circuit), supported by local replacements without testing changes to everything outside the proposed circuit, and no setting established reliable exact transfer across all tested matrix sizes.
+
+## The circuit at a glance
+
+<img src="../figures/circuits/gf2-elimination.svg" width="640" alt="Earlier trained layers leave an unknown answer code on one residual stream. Mutually exclusive seed families use individual layer-3 heads, a layer-3 head group, or an attention bypass before the final bit writer. Identity matrix with right side 1010 targets solution 1010, not a new model test.">
+
+*Figure S1. Final answer-only networks trained from scratch (10 seeds: 6 head-readout, 2 diffuse and 2 that finish before the last attention) have three last-layer routes and no hand-built answer-only counterpart; only the two early-finish seeds have a partial constant-attention substitute, with complement untested, no complete algorithm and failed size transfer.*
+
+Figure S1 shows mutually exclusive seed families: individual-head readout, a head group or a bypass when the answer is already available.
 
 | Fact | Value |
 |---|---|
@@ -15,13 +23,7 @@ The headline experiment is solved, yet its networks used three different interna
 | Weights | [Hugging Face: gf2-elimination](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/gf2-elimination) (weights and split archive). |
 | Reproduce | Not available yet: training code for this task is not yet in `code/`. |
 
-## The circuit at a glance
-
-<img src="../figures/circuits/gf2-elimination.svg" width="640" alt="Earlier trained layers leave an unknown answer code on one residual stream. Mutually exclusive seed families use individual layer-3 heads, a layer-3 head group, or an attention bypass before the final bit writer. Identity matrix with right side 1010 targets solution 1010, not a new model test.">
-
-*Figure S1. Final answer-only networks trained from scratch (10 seeds: 6 head-readout, 2 diffuse and 2 that finish before the last attention) have three last-layer routes and no hand-built answer-only counterpart; only the two early-finish seeds have a partial constant-attention substitute, with complement untested, no complete algorithm and failed size transfer.*
-
-Figure S1 shows mutually exclusive seed families: individual-head readout, a head group or a bypass when the answer is already available.
+Learning only an update inside a fixed hand-built solver succeeded in 10/10 runs, while whole-network training at the larger data setting reached whole-output accuracy 1.0 on 2000 unseen-matrix systems in all 10/10 final runs, with correct earlier output tokens supplied.
 
 ## 1. Task and data
 

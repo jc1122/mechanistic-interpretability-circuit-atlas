@@ -2,9 +2,15 @@
 
 Adding (1+2x) and (3+x²) gives 4+2x+x². This combines coefficients, the numbers in front of matching powers of x. Multiplication also needs products across different powers. Small networks learned addition on degree-3 inputs in 40/40 final runs across direct answers, written working, hand-built retrieval and training from scratch. Each got whole outputs right on 1000 held-out pairs, with correct preceding tokens supplied. No learned multiplication experiment was exact.
 
-Networks trained from scratch with working read coefficients back from that working to produce the sum. Supplying hand-built products and training only their sum helped multiplication, but still stopped short of exact outputs. Learning to combine products differed from learning to construct them.
+Networks trained from scratch with working read coefficients back from that working to produce the sum. The task is partly solved.
 
-The task is partly solved. The [addition formula is partial](../GLOSSARY.md#verifying-a-circuit): replacement preserved in-range answers only for partly trained networks. It repaired rather than reproduced their out-of-range errors, and swapping the other parts' signals between examples was not tested.
+## The circuit at a glance
+
+Figure 4 shows the partly trained answer-only addition cell ([mechanism and verification](#5-mechanism-and-verification)).
+
+<img src="../figures/circuits/polynomial-add-mul.svg" width="640" alt="Addition writes a value and scale; the fixed output reads their ratio. One upward residual stream has separate read/write branches for Read first list (coefficient fetch); Read other list (coefficient fetch); Add this pair (write value + scale). Add lists: (1, 2, 0, 0) + (3, 0, 1, 0); Constant-term target: 4. Task values are illustrative; dashed boxes and branches are not verified.">
+
+*Figure 4. Final partly trained answer-only addition seeds 0–9 match the hand-built in-range sum through a value/scale ratio, a partial substitution form with no complement test that repairs rather than describes out-of-range errors; multiplication is not covered.*
 
 | Fact | Value |
 |---|---|
@@ -17,15 +23,11 @@ The task is partly solved. The [addition formula is partial](../GLOSSARY.md#veri
 | Weights | [Hugging Face: polynomial-add-mul](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/polynomial-add-mul) (4 HAND + 55 nets) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
+Supplying hand-built products and training only their sum helped multiplication, but still stopped short of exact outputs. Learning to combine products differed from learning to construct them.
+
+The [addition formula is partial](../GLOSSARY.md#verifying-a-circuit): replacement preserved in-range answers only for partly trained networks. It repaired rather than reproduced their out-of-range errors, and swapping the other parts' signals between examples was not tested.
+
 Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [polynomial differentiation](polynomial-differentiation.md) for coefficient arithmetic, or [symbol-level algebra](symbolic-algebra-atoms.md) for collecting and expanding terms.
-
-## The circuit at a glance
-
-Figure 4 shows the partly trained answer-only addition cell ([mechanism and verification](#5-mechanism-and-verification)).
-
-<img src="../figures/circuits/polynomial-add-mul.svg" width="640" alt="Addition writes a value and scale; the fixed output reads their ratio. One upward residual stream has separate read/write branches for Read first list (coefficient fetch); Read other list (coefficient fetch); Add this pair (write value + scale). Add lists: (1, 2, 0, 0) + (3, 0, 1, 0); Constant-term target: 4. Task values are illustrative; dashed boxes and branches are not verified.">
-
-*Figure 4. Final partly trained answer-only addition seeds 0–9 match the hand-built in-range sum through a value/scale ratio, a partial substitution form with no complement test that repairs rather than describes out-of-range errors; multiplication is not covered.*
 
 ## 1. Task and data
 

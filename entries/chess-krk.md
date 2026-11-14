@@ -1,8 +1,18 @@
 # KRK mate (king + rook vs king)
 
-A king and rook can trap a lone king by shrinking the space it can use. These networks learned to imitate a fixed 8-rule version of that strategy, rather than the fastest move from an exhaustive endgame table. A six-layer transformer that wrote the box around the defender and the active rule before its move reached .990–.997 whole-output accuracy in all 7 completed final runs on 2,048 held-out positions, with correct earlier output tokens supplied; none was exact and 3 launched runs never finished.
+A king and rook can trap a lone king by shrinking the space it can use. A six-layer transformer that wrote the box around the defender and the active rule before its move reached .990–.997 whole-output accuracy in all 7 completed final runs on 2,048 held-out positions, with correct earlier output tokens supplied; none was exact and 3 launched runs never finished.
 
-The written rule suffices to choose whether the king or rook moves, but the destination remains unexplained. The task is unsolved at the final audit's exact criterion despite 7/7 passing the separate ≥ .99 milestone: the output formulas are [partial](../GLOSSARY.md#verifying-a-circuit), supported by replacement, while failed diagnostic jobs left no test showing that activity outside the proposed circuit can be changed without harming accuracy.
+The written rule suffices to choose whether the king or rook moves, but the destination remains unexplained.
+
+The picture carries the supplied strategy step, called its phase, along a shared line of running internal values ([residual stream](../GLOSSARY.md#standard-machine-learning-terms)).
+
+## The circuit at a glance
+
+Figure S1 shows the phase-to-source copy bypassing the destination decoder, whose coordinate-based rule remains unknown.
+
+<img src="../figures/circuits/chess-krk.svg" width="640" alt="One residual stream retains board and supplied strategy-phase information. The source copy reads that phase directly: APPROACH selects the white king's square, otherwise the white rook's. Independently, early neurons encode king file/rank, late layer-5 heads read coordinates, and layer-5 neurons decode an unresolved destination. The source path bypasses destination decoding; both contribute to the move. Learned roles are dashed: source substitution passes but complement is untested and the additive destination fit fails. The phase example asserts no board move.">
+
+*Figure S1 shows the written phase selecting the source independently of the unresolved coordinate-based destination, differing from the hand-built priority/key selector (strategy-scratchpad networks trained from scratch, seven completed final seeds); status is Partial because source substitution passes but the complement is untested and the additive destination fit fails, with APPROACH illustrating a supplied phase rather than a legal board move.*
 
 | Fact | Value |
 |---|---|
@@ -15,13 +25,9 @@ The written rule suffices to choose whether the king or rook moves, but the dest
 | Weights | [Hugging Face: chess-krk](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/chess-krk) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
-## The circuit at a glance
+These networks learned to imitate a fixed 8-rule version of that strategy, rather than the fastest move from an exhaustive endgame table.
 
-Figure S1 shows the phase-to-source copy bypassing the destination decoder, whose coordinate-based rule remains unknown.
-
-<img src="../figures/circuits/chess-krk.svg" width="640" alt="One residual stream retains board and supplied strategy-phase information. The source copy reads that phase directly: APPROACH selects the white king's square, otherwise the white rook's. Independently, early neurons encode king file/rank, late layer-5 heads read coordinates, and layer-5 neurons decode an unresolved destination. The source path bypasses destination decoding; both contribute to the move. Learned roles are dashed: source substitution passes but complement is untested and the additive destination fit fails. The phase example asserts no board move.">
-
-*Figure S1 shows the written phase selecting the source independently of the unresolved coordinate-based destination, differing from the hand-built priority/key selector (strategy-scratchpad networks trained from scratch, seven completed final seeds); status is Partial because source substitution passes but the complement is untested and the additive destination fit fails, with APPROACH illustrating a supplied phase rather than a legal board move.*
+The task is unsolved at the final audit's exact criterion despite 7/7 passing the separate ≥ .99 milestone: the output formulas are [partial](../GLOSSARY.md#verifying-a-circuit), supported by replacement, while failed diagnostic jobs left no test showing that activity outside the proposed circuit can be changed without harming accuracy.
 
 ## 1. Task and data
 

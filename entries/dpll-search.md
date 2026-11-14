@@ -1,8 +1,16 @@
 # DPLL search on small Boolean formulas
 
-If a rule says “not a, or b, or c”, setting a true and b false forces c to be true. A satisfiability solver combines such forced choices with guesses and backtracking, undoing choices that cause a conflict; here a transformer wrote the intermediate states of that procedure, called [DPLL](../GLOSSARY.md#standard-machine-learning-terms). With the search controller hand-built and fixed, 10/10 runs learned the final local update and produced 192/192 exact held-out traces per run with correct earlier output tokens supplied, while neither whole-network training format solved the task.
+If a rule says “not a, or b, or c”, setting a true and b false forces c to be true. A satisfiability solver combines such forced choices with guesses and backtracking, undoing choices that cause a conflict; here a transformer wrote the intermediate states of that procedure, called [DPLL](../GLOSSARY.md#standard-machine-learning-terms).
 
 The local-update experiment is solved, and a replacement formula with no fitted parameters is [verified](../GLOSSARY.md#verifying-a-circuit) by both substitution and tests changing activity outside its circuit. The replacement also repairs the trained update's mistakes on sampled longer formulas; this verifies a learned update inside fixed search machinery, not a network that learned the whole search.
+
+## The circuit at a glance
+
+<img src="../figures/circuits/dpll-search.svg" width="640" alt="Frozen old-state retrieval and search control are parallel inputs to one learned layer-5 update on the residual stream. Clause not a or b or c with a true and b false forces c true from unset. The verified rule is local; the network did not learn search control.">
+
+*Figure S1. Final scratchpad networks with only the state update learned (seeds 0–9) match the hand-built local rule under substitution and complement tests, but this verified rule still depends on frozen search control and correct earlier trace tokens, and native longer-trace errors remain.*
+
+Figure S1 shows old-state and controller branches joining the learned copy, clear or set update; the controller itself remains frozen.
 
 | Fact | Value |
 |---|---|
@@ -15,13 +23,7 @@ The local-update experiment is solved, and a replacement formula with no fitted 
 | Weights | [Hugging Face: dpll-search](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/dpll-search) (weights and test evidence archive). |
 | Reproduce | Not available yet: training code for this task is not yet in `code/`. |
 
-## The circuit at a glance
-
-<img src="../figures/circuits/dpll-search.svg" width="640" alt="Frozen old-state retrieval and search control are parallel inputs to one learned layer-5 update on the residual stream. Clause not a or b or c with a true and b false forces c true from unset. The verified rule is local; the network did not learn search control.">
-
-*Figure S1. Final scratchpad networks with only the state update learned (seeds 0–9) match the hand-built local rule under substitution and complement tests, but this verified rule still depends on frozen search control and correct earlier trace tokens, and native longer-trace errors remain.*
-
-Figure S1 shows old-state and controller branches joining the learned copy, clear or set update; the controller itself remains frozen.
+With the search controller hand-built and fixed, 10/10 runs learned the final local update and produced 192/192 exact held-out traces per run with correct earlier output tokens supplied, while neither whole-network training format solved the task.
 
 ## 1. Task and data
 

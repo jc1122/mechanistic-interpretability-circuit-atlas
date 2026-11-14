@@ -1,8 +1,16 @@
 # Shortest paths on a grid
 
-A shortest route through a maze can be found by marking the start, then its free neighbours, then theirs, until the goal is reached; this is breadth-first search. Four-layer transformers learned to write the growing maps on 6×6 mazes, with all 10 final independent from-scratch runs reported exact on 176 held-out traces per run when correct earlier output tokens were supplied. A separate fresh bank scored those unmodified networks at 174–176/176, and no tested formula reproduced the computation spread across their components.
+A shortest route through a maze can be found by marking the start, then its free neighbours, then theirs, until the goal is reached; this is breadth-first search. Four-layer transformers learned to write the growing maps on 6×6 mazes, with all 10 final independent from-scratch runs reported exact on 176 held-out traces per run when correct earlier output tokens were supplied.
 
 With hand-built input routing fixed, all 10 networks also scored 176/176; their nine-number update formula is [partial](../GLOSSARY.md#verifying-a-circuit) because replacement passed in all ten runs but tests changing activity outside the proposed circuit covered only three. The map-writing experiment is solved under its correct-history scoring rule, while answer-only runs stayed unsolved and the from-scratch map writers transferred poorly to 8×8 grids.
+
+## The circuit at a glance
+
+<img src="../figures/circuits/grid-bfs.svg" width="640" alt="Parallel frozen neighbour retrieval and goal-state retrieval share one residual stream with separate map-growth and goal-stop writes. A free cell with north reached and all other inputs zero targets reached 1; goal zero targets continuing. Correct earlier maps are supplied and complement coverage is partial.">
+
+*Figure S1. Final reached-map networks with only the local update learned (seeds 0–9) match the hand-built local expansion and frozen stop logic; status is partial because complement tests cover only seeds 0–2, correct history is supplied and no formula was accepted for the separate wholly trained circuit.*
+
+Figure S1 shows separate reached-map and goal-stop paths; the local update does not itself compute a distance or supply the wholly trained network’s formula.
 
 | Fact | Value |
 |---|---|
@@ -15,13 +23,7 @@ With hand-built input routing fixed, all 10 networks also scored 176/176; their 
 | Weights | [Hugging Face: grid-bfs](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/grid-bfs) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
-## The circuit at a glance
-
-<img src="../figures/circuits/grid-bfs.svg" width="640" alt="Parallel frozen neighbour retrieval and goal-state retrieval share one residual stream with separate map-growth and goal-stop writes. A free cell with north reached and all other inputs zero targets reached 1; goal zero targets continuing. Correct earlier maps are supplied and complement coverage is partial.">
-
-*Figure S1. Final reached-map networks with only the local update learned (seeds 0–9) match the hand-built local expansion and frozen stop logic; status is partial because complement tests cover only seeds 0–2, correct history is supplied and no formula was accepted for the separate wholly trained circuit.*
-
-Figure S1 shows separate reached-map and goal-stop paths; the local update does not itself compute a distance or supply the wholly trained network’s formula.
+A separate fresh bank scored those unmodified networks at 174–176/176, and no tested formula reproduced the computation spread across their components.
 
 ## 1. Task and data
 

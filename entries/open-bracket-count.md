@@ -4,7 +4,13 @@ The line `(()` contains two opening brackets. These networks had to give that co
 
 The learned responses resembled broad waves, helped by units that distinguished odd and even answers. All 10 runs improved late after training on 80% of the 1080 depth/length combinations. Yet final held-out accuracy stopped at .78–.88, below the .90 criterion. The task remains unsolved.
 
-The fitted cosine rule is a [partial approximation](../GLOSSARY.md#verifying-a-circuit). Its higher scores use all combinations, including training examples. No test swapping the other parts' signals between examples established it as the complete learned mechanism.
+## The circuit at a glance
+
+Figure 4 shows the parallel contributions to the approximate count readout ([mechanism and verification](#5-mechanism-and-verification)).
+
+<img src="../figures/circuits/open-bracket-count.svg" width="640" alt="Opening-bracket counts combine broad waves and odd/even votes. One upward residual stream has separate read/write branches for Read length (fixed number codes); Read depth (fixed head + decoder); Broad waves (coarse count votes); Odd / even (split neighbours). Input: ((); Opening-bracket target: 2. Task values are illustrative; dashed boxes and branches are not verified.">
+
+*Figure 4. All ten training-fraction-.8 seeds count opening brackets by merging broad-wave and odd/even votes, unlike the nearest hand-built design, but the partial form includes training cells, has no complement test and no native net reaches the .90 held-out criterion.*
 
 | Fact | Value |
 |---|---|
@@ -17,15 +23,9 @@ The fitted cosine rule is a [partial approximation](../GLOSSARY.md#verifying-a-c
 | Weights | [Hugging Face: open-bracket-count](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/open-bracket-count) (hand-built base in `_shared/m2`) |
 | Reproduce | [Commands](#24-reproduction), run from `code/` |
 
+The fitted cosine rule is a [partial approximation](../GLOSSARY.md#verifying-a-circuit). Its higher scores use all combinations, including training examples. No test swapping the other parts' signals between examples established it as the complete learned mechanism.
+
 Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [compare counts](compare-counts.md) for a related counting task, or [mod-59 addition](modular-addition-mlp.md) for another periodic readout.
-
-## The circuit at a glance
-
-Figure 4 shows the parallel contributions to the approximate count readout ([mechanism and verification](#5-mechanism-and-verification)).
-
-<img src="../figures/circuits/open-bracket-count.svg" width="640" alt="Opening-bracket counts combine broad waves and odd/even votes. One upward residual stream has separate read/write branches for Read length (fixed number codes); Read depth (fixed head + decoder); Broad waves (coarse count votes); Odd / even (split neighbours). Input: ((); Opening-bracket target: 2. Task values are illustrative; dashed boxes and branches are not verified.">
-
-*Figure 4. All ten training-fraction-.8 seeds count opening brackets by merging broad-wave and odd/even votes, unlike the nearest hand-built design, but the partial form includes training cells, has no complement test and no native net reaches the .90 held-out criterion.*
 
 ## 1. Task and data
 

@@ -1,8 +1,16 @@
 # Decimal and hexadecimal addition
 
-Adding a column can send a carry into the next one; decimal and hexadecimal addition share this rule even though their digits use different bases. Four-layer transformers were tested with answers alone, written carries or written column sums, learning either one block on fixed hand-built input routing or the whole network from scratch. All 60/60 networks selected for the fixed-routing mechanism census turned column totals into output digits. This counts a behaviour rather than exact task successes: the [census](#41-one-trained-stage-on-frozen-routing) combines the original decimal settings, original hexadecimal answer-only setting and hexadecimal written-working retries.
+Adding a column can send a carry into the next one; decimal and hexadecimal addition share this rule even though their digits use different bases.
 
 Longer training brought 37/40 independent from-scratch answer-only or column-sum runs to whole-output test accuracy ≥ .99, without recovering the hand-built attention head, a component that reads earlier positions, that fetches the carry from lower columns. The task is partly solved because longer inputs still fail, and the formulas are [partial](../GLOSSARY.md#verifying-a-circuit): replacing individual pieces does not verify the whole from-scratch computation, while the learned block on fixed routing lacks a test changing activity outside its proposed circuit.
+
+## The circuit at a glance
+
+<img src="../figures/circuits/decimal-hex-addition.svg" width="640" alt="Frozen digit heads preserve tens digits 4 and 7 on the residual stream while lower-column flags and a lookahead head provide carry 1. Both reach the learned layer-3 digit writer: total 12 targets digit 2 in 345 plus 678 equals 1023. This is the partial fixed-routing account.">
+
+*Figure S1. Answer-only fixed-routing networks in bases 10 and 16 (10 seeds each) keep the hand-built digit/carry routing and learn a column-total readout; this partial account has no complement test, and the rule example does not mean every learned digit table is exact.*
+
+Figure S1 shows current digits retained while a lower-column carry is fetched, then combined at the only learned block.
 
 | Fact | Value |
 |---|---|
@@ -15,13 +23,9 @@ Longer training brought 37/40 independent from-scratch answer-only or column-sum
 | Weights | [Hugging Face: decimal-hex-addition](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/decimal-hex-addition) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
-## The circuit at a glance
+Four-layer transformers were tested with answers alone, written carries or written column sums, learning either one block on fixed hand-built input routing or the whole network from scratch.
 
-<img src="../figures/circuits/decimal-hex-addition.svg" width="640" alt="Frozen digit heads preserve tens digits 4 and 7 on the residual stream while lower-column flags and a lookahead head provide carry 1. Both reach the learned layer-3 digit writer: total 12 targets digit 2 in 345 plus 678 equals 1023. This is the partial fixed-routing account.">
-
-*Figure S1. Answer-only fixed-routing networks in bases 10 and 16 (10 seeds each) keep the hand-built digit/carry routing and learn a column-total readout; this partial account has no complement test, and the rule example does not mean every learned digit table is exact.*
-
-Figure S1 shows current digits retained while a lower-column carry is fetched, then combined at the only learned block.
+All 60/60 networks selected for the fixed-routing mechanism census turned column totals into output digits. This counts a behaviour rather than exact task successes: the [census](#41-one-trained-stage-on-frozen-routing) combines the original decimal settings, original hexadecimal answer-only setting and hexadecimal written-working retries.
 
 ## 1. Task and data
 

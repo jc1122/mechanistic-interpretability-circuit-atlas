@@ -1,10 +1,16 @@
 # Subtraction (base 10 and 2)
 
-In 742 minus 358, the units column must borrow before subtracting 8. Four-layer networks had to learn both the answer digit and how borrowing affects the next column. Each of four retried direct-answer/column-difference settings got whole outputs right in 10/10 runs on 2k decimal or 832 binary test pairs per run. Whole-network training did not transfer to longer numbers.
+In 742 minus 358, the units column must borrow before subtracting 8. Each of four retried direct-answer/column-difference settings got whole outputs right in 10/10 runs on 2k decimal or 832 binary test pairs per run.
 
-A table reproduced most local responses when supplied the signed difference after borrowing. That label came from outside the network, so the table did not explain how the network computed it.
+A table reproduced most local responses when supplied the signed difference after borrowing. That label came from outside the network, so the table did not explain how the network computed it. The stronger whole-mechanism test failed. Scores supplied correct earlier tokens.
 
-The task is partly solved. Its formulas are [sufficient readouts only](../GLOSSARY.md#verifying-a-circuit): swapping internal states between examples with matching claimed arithmetic labels kept only .938 and .933 whole-output accuracy in the two tested binary borrow-token runs, below the .99 control bar. The stronger whole-mechanism test failed. Scores supplied correct earlier tokens.
+## The circuit at a glance
+
+Figure 3 shows the observed direct digit write that bypasses the hand-built store ([mechanism and verification](#5-mechanism-and-verification)).
+
+<img src="../figures/circuits/subtraction.svg" width="640" alt="The trained block writes digit scores, bypassing the hand-built store. One upward residual stream has separate read/write branches for Read first bit (layer 2, head 0); Read other bit (layer 2, head 1); Write digit (layer 2 block). Local input: 1 − 0; given incoming borrow 1; Digit target: 0. Task values are illustrative; dashed boxes and branches are not verified.">
+
+*Figure 3. Binary borrow-token partly trained seed 0 differs from the hand-built design through its layer-2 feed-forward block writing digit scores around the supplied digit store at digit queries, a sufficient-readout result rather than endogenous difference/borrow proof; separate from-scratch whole-role controls failed.*
 
 | Fact | Value |
 |---|---|
@@ -17,15 +23,11 @@ The task is partly solved. Its formulas are [sufficient readouts only](../GLOSSA
 | Weights | [Hugging Face: subtraction](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/subtraction) (112 networks) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
+Four-layer networks had to learn both the answer digit and how borrowing affects the next column. Whole-network training did not transfer to longer numbers.
+
+The task is partly solved. Its formulas are [sufficient readouts only](../GLOSSARY.md#verifying-a-circuit): swapping internal states between examples with matching claimed arithmetic labels kept only .938 and .933 whole-output accuracy in the two tested binary borrow-token runs, below the .99 control bar.
+
 Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [router addition](router-addition.md) for shared column labels, or [binary multiplication](multiplication.md) for a different sufficient-readout example.
-
-## The circuit at a glance
-
-Figure 3 shows the observed direct digit write that bypasses the hand-built store ([mechanism and verification](#5-mechanism-and-verification)).
-
-<img src="../figures/circuits/subtraction.svg" width="640" alt="The trained block writes digit scores, bypassing the hand-built store. One upward residual stream has separate read/write branches for Read first bit (layer 2, head 0); Read other bit (layer 2, head 1); Write digit (layer 2 block). Local input: 1 − 0; given incoming borrow 1; Digit target: 0. Task values are illustrative; dashed boxes and branches are not verified.">
-
-*Figure 3. Binary borrow-token partly trained seed 0 differs from the hand-built design through its layer-2 feed-forward block writing digit scores around the supplied digit store at digit queries, a sufficient-readout result rather than endogenous difference/borrow proof; separate from-scratch whole-role controls failed.*
 
 ## 1. Task and data
 

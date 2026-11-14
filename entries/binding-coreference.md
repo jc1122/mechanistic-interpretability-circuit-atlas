@@ -1,8 +1,16 @@
 # Binding and coreference
 
-`SELF` means “self” in this invented language; with `e0` in an earlier clause, a sentence unit with its own subject, and `e1` as the current subject, it selects `e1`. `PRO_0` instead selects `e0`, the latest name marked 0 in an earlier clause. A small two-layer transformer learned both choices using one final-layer attention head, a component that reads earlier text, where the hand-built design used separate heads. That finding covers all 7 exact answer-only models trained from scratch: 3/30 screening runs and 4/10 retry runs, each exact on 2048 held-out sentences.
+`SELF` means “self” in this invented language; with `e0` in an earlier clause, a sentence unit with its own subject, and `e1` as the current subject, it selects `e1`. `PRO_0` instead selects `e0`, the latest name marked 0 in an earlier clause. A small two-layer transformer learned both choices using one final-layer attention head, a component that reads earlier text, where the hand-built design used separate heads.
 
-Writing the current subject as intermediate working, a [scratchpad](../GLOSSARY.md#task-formats), did not solve the remaining choice among several pronoun matches. The task is partly solved and the rule is a [sufficient readout only](../GLOSSARY.md#verifying-a-circuit): replacing attention by the proposed rule scored .965-1.0, but changing activity outside every shared circuit template broke the acceptance test, including the scratchpad template at .898 against the required .90 share of native accuracy.
+The pictured single-head rule remains [a sufficient readout only](../GLOSSARY.md#verifying-a-circuit): it passes replacement, but changing activity outside its circuit fails.
+
+## The circuit at a glance
+
+Figure S1 shows clause information and the query merging at one shared name-reading head, followed by a separate identifier write.
+
+<img src="../figures/circuits/binding-coreference.svg" width="640" alt="C starts a clause; PRO_0 requests the latest earlier-clause name marked 0, while SELF requests the current subject. Clause cues identify earlier e0 and current e1, while the illustrated query supplies PRO_0. Both reach one layer-1 referent head: it selects e0 for PRO_0, or the current subject for SELF. Layer-1 neurons write that identifier. Learned roles are dashed because the shared circuit fails complement resampling; this is a sufficient readout, not an accepted neural mechanism.">
+
+*Figure S1 shows one final-layer head retrieving either kind of referent, unlike the hand-built separate subject and pronoun heads (type T, all seven solved answer-only networks trained from scratch; C starts a clause, PRO_0 requests the latest earlier-clause name marked 0, SELF requests the current subject); status is Sufficient readout only because substitution passes but the shared circuit fails complement resampling, and values are a task example, not a measurement.*
 
 ## At a glance
 
@@ -17,15 +25,13 @@ Writing the current subject as intermediate working, a [scratchpad](../GLOSSARY.
 | Weights | [Hugging Face: binding-coreference](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/binding-coreference), revision `e409d98` |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
+That finding covers all 7 exact answer-only models trained from scratch: 3/30 screening runs and 4/10 retry runs, each exact on 2048 held-out sentences.
+
+Writing the current subject as intermediate working, a [scratchpad](../GLOSSARY.md#task-formats), did not solve the remaining choice among several pronoun matches.
+
+The task is partly solved and the rule is a [sufficient readout only](../GLOSSARY.md#verifying-a-circuit): replacing attention by the proposed rule scored .965-1.0, but changing activity outside every shared circuit template broke the acceptance test, including the scratchpad template at .898 against the required .90 share of native accuracy.
+
 HAND sets every weight by formula; PART retrains one stage on frozen hand-built parts; TRAIN learns all weights ([rungs](../GLOSSARY.md#the-three-rungs)). A scratchpad writes the local subject after each input token ([task formats](../GLOSSARY.md#task-formats)). A complement test resamples everything outside a proposed circuit; passing substitution alone does not verify its mechanism ([verification](../GLOSSARY.md#verifying-a-circuit)).
-
-## The circuit at a glance
-
-Figure S1 shows clause information and the query merging at one shared name-reading head, followed by a separate identifier write.
-
-<img src="../figures/circuits/binding-coreference.svg" width="640" alt="C starts a clause; PRO_0 requests the latest earlier-clause name marked 0, while SELF requests the current subject. Clause cues identify earlier e0 and current e1, while the illustrated query supplies PRO_0. Both reach one layer-1 referent head: it selects e0 for PRO_0, or the current subject for SELF. Layer-1 neurons write that identifier. Learned roles are dashed because the shared circuit fails complement resampling; this is a sufficient readout, not an accepted neural mechanism.">
-
-*Figure S1 shows one final-layer head retrieving either kind of referent, unlike the hand-built separate subject and pronoun heads (type T, all seven solved answer-only networks trained from scratch; C starts a clause, PRO_0 requests the latest earlier-clause name marked 0, SELF requests the current subject); status is Sufficient readout only because substitution passes but the shared circuit fails complement resampling, and values are a task example, not a measurement.*
 
 ## 1. Task and data
 

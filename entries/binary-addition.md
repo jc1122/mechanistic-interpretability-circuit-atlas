@@ -2,7 +2,15 @@
 
 In binary, 1 + 1 is written 10: an extra unit, the carry, has to travel to the next column. Four-layer transformers learned sums of 6-bit numbers either from scratch or with hand-built input routing fixed and only an output-processing block trained. A [scratchpad](../GLOSSARY.md#task-formats), written working that lists each pair of bits' sum before the answer, exposed a shortcut: removing absolute position, the column's fixed address in the line, from that learned block made all 10 independent runs exact on 1000 sampled 12-bit pairs.
 
-The networks trained entirely from scratch still failed at 12 bits, so the task is partly solved across the tested lengths. The local sum-table formula remains [partial](../GLOSSARY.md#verifying-a-circuit): replacement works only in the formats and runs listed below, no test changed everything outside that circuit, and the separate from-scratch replacement covers one run whose reduced circuit failed stronger intervention checks.
+The networks trained entirely from scratch still failed at 12 bits, so the task is partly solved across the tested lengths.
+
+## The circuit at a glance
+
+Figure S1 shows the frozen operand and carry readers working in parallel before the only learned stage writes the sum bit.
+
+<img src="../figures/circuits/binary-addition.svg" width="640" alt="In the answer-only partly trained network, frozen operand heads and a frozen lookahead head read in parallel. For the low column of binary 1 plus 1 they supply bits 1,1 and incoming carry 0 to residual registers. Layer-3 neurons read that local total 2 and write parity bit 0. Only the learned parity rule is dashed; complement resampling was not tested.">
+
+*Figure S1 shows frozen heads fetching column bits and carry in parallel before a learned table writes parity (answer-only partly trained network, 10/10 seeds, matching hand-built arithmetic); status is Partial because substitution is supported but complement resampling was not tested, this is not the failed-length from-scratch circuit, and values are a task example, not a measurement.*
 
 | Fact | Value |
 |---|---|
@@ -15,13 +23,7 @@ The networks trained entirely from scratch still failed at 12 bits, so the task 
 | Weights | [Hugging Face: binary-addition](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/binary-addition) (recorded publication inventory: 62 networks; earlier task archive record: 59, unresolved; [archive scope](#25-archive)) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
-## The circuit at a glance
-
-Figure S1 shows the frozen operand and carry readers working in parallel before the only learned stage writes the sum bit.
-
-<img src="../figures/circuits/binary-addition.svg" width="640" alt="In the answer-only partly trained network, frozen operand heads and a frozen lookahead head read in parallel. For the low column of binary 1 plus 1 they supply bits 1,1 and incoming carry 0 to residual registers. Layer-3 neurons read that local total 2 and write parity bit 0. Only the learned parity rule is dashed; complement resampling was not tested.">
-
-*Figure S1 shows frozen heads fetching column bits and carry in parallel before a learned table writes parity (answer-only partly trained network, 10/10 seeds, matching hand-built arithmetic); status is Partial because substitution is supported but complement resampling was not tested, this is not the failed-length from-scratch circuit, and values are a task example, not a measurement.*
+The local sum-table formula remains [partial](../GLOSSARY.md#verifying-a-circuit): replacement works only in the formats and runs listed below, no test changed everything outside that circuit, and the separate from-scratch replacement covers one run whose reduced circuit failed stronger intervention checks.
 
 ## 1. Task and data
 

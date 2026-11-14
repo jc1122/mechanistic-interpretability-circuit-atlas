@@ -2,9 +2,15 @@
 
 The number 96 can be one symbol or two decimal digits. These networks learned differently from that choice, although both formats ask the same arithmetic: 96+2 leaves remainder 1 after division by 97. Whole-number multiplication produced circular codes ordered by powers of 5. An exponent counts the multiplications by 5; this code, called a [discrete logarithm](../GLOSSARY.md#analysis-measures), turns multiplication into addition.
 
-Every whole-number multiplication run developed circles, but only 6/10 reached held-out accuracy ≥ .99 on 941 inputs per run. The tested digit formats had no circular code; digit multiplication remained limited by memorisation. The task is partly solved.
+Every whole-number multiplication run developed circles, but only 6/10 reached held-out accuracy ≥ .99 on 941 inputs per run. The task is partly solved.
 
-Its output-only formula is [partial](../GLOSSARY.md#verifying-a-circuit): replacement worked on all nonzero pairs in eight runs with held-out accuracy ≥ .98, but included training inputs and used externally supplied true exponents. It does not explain how the network calculates those exponents. No test swapping the other parts' signals between examples established that internal mechanism.
+## The circuit at a glance
+
+Figure S1 compares scalar exponents in the hand-built lane with circular codes in the trained lane; the dashed trained arithmetic is unrecovered.
+
+<a href="../figures/circuits/modular-arithmetic-mod-97.svg"><img src="../figures/circuits/modular-arithmetic-mod-97.svg" width="640" alt="Alternative hand-built and trained-from-scratch lanes have separate residual streams. Hand-built embeddings turn tokens 5 and 25 into scalar exponents 1 and 2, add to 3 and look up 28. Trained embeddings use circular exponent codes; their internal arithmetic is dashed, not verified, and 28 is only a task target."></a>
+
+*Figure S1 shows circular exponent codes in all ten final token multipliers at training fraction .9, differing from the hand-built scalar code; the separate Partial output-only surrogate needs true external logarithms rather than recovered activations, leaving the internal arithmetic and complement unverified ([evidence](#5-mechanism-and-verification)).*
 
 | Fact | Value |
 |---|---|
@@ -17,15 +23,11 @@ Its output-only formula is [partial](../GLOSSARY.md#verifying-a-circuit): replac
 | Weights | [Hugging Face: modular-arithmetic-formats](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/modular-arithmetic-formats) (earlier round: [modular-arithmetic-mod-97](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/modular-arithmetic-mod-97)) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
+The tested digit formats had no circular code; digit multiplication remained limited by memorisation.
+
+Its output-only formula is [partial](../GLOSSARY.md#verifying-a-circuit): replacement worked on all nonzero pairs in eight runs with held-out accuracy ≥ .98, but included training inputs and used externally supplied true exponents. It does not explain how the network calculates those exponents. No test swapping the other parts' signals between examples established that internal mechanism.
+
 Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [mod-59 addition](modular-addition-mlp.md) for a simpler Fourier clock, or [multiplication across bases](multiplication-base-order.md) for digit-order comparisons.
-
-## The circuit at a glance
-
-Figure S1 compares scalar exponents in the hand-built lane with circular codes in the trained lane; the dashed trained arithmetic is unrecovered.
-
-<a href="../figures/circuits/modular-arithmetic-mod-97.svg"><img src="../figures/circuits/modular-arithmetic-mod-97.svg" width="640" alt="Alternative hand-built and trained-from-scratch lanes have separate residual streams. Hand-built embeddings turn tokens 5 and 25 into scalar exponents 1 and 2, add to 3 and look up 28. Trained embeddings use circular exponent codes; their internal arithmetic is dashed, not verified, and 28 is only a task target."></a>
-
-*Figure S1 shows circular exponent codes in all ten final token multipliers at training fraction .9, differing from the hand-built scalar code; the separate Partial output-only surrogate needs true external logarithms rather than recovered activations, leaving the internal arithmetic and complement unverified ([evidence](#5-mechanism-and-verification)).*
 
 ## 1. Task and data
 

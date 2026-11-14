@@ -1,8 +1,16 @@
 # Chess attack maps
 
-A rook threatens squares along a straight line until another piece blocks it; an attack map collects such threats from every piece of a chosen colour, including friendly-occupied squares. Four-layer transformers learned this task more often when they first listed attacks piece by piece as written working, a [scratchpad](../GLOSSARY.md#task-formats), before drawing the final map. On the recorded draw of 2048 held-out full boards per run, 7/10 networks trained from scratch reached whole-output accuracy 1.0, reported to three decimals, and 10/10 reached ≥ .998, with correct earlier output tokens supplied.
+A rook threatens squares along a straight line until another piece blocks it; an attack map collects such threats from every piece of a chosen colour, including friendly-occupied squares. Four-layer transformers learned this task more often when they first listed attacks piece by piece as written working, a [scratchpad](../GLOSSARY.md#task-formats), before drawing the final map.
 
-The task is partly solved: on sparse boards containing sliding pieces only 1/10 reached recorded 1.0, and no tested answer-only setting reached 1.0. The proposed formula was [rejected](../GLOSSARY.md#verifying-a-circuit) both when it replaced the learned computation and when activity outside its proposed circuit was changed; the shipped archive also uses a different test-board draw from the headline results.
+The proposed formula was [rejected](../GLOSSARY.md#verifying-a-circuit) both when it replaced the learned computation and when activity outside its proposed circuit was changed; the shipped archive also uses a different test-board draw from the headline results.
+
+## The circuit at a glance
+
+Figure S1 separates the late piece-token and board-square reads from the neuron write; these roles occur at different token queries, and the dashed routes do not establish a square-by-square algorithm.
+
+<img src="../figures/circuits/chess-attack-maps.svg" width="640" alt="The board has White knight a1 and king h1, and Black king h8; White is requested. Independently supplied correct past scratchpad tokens include square b3. Early weighted counts and necessary middle layers supply context. Two layer-3 read roles are separated: at a direction marker heads read the piece token, and at a piece/square token heads read the named board square. In this task illustration the piece is a knight and b3 is empty. Neurons, not a next-square head, write steps and map bits; the targets include listing b3 and marking its bit 1. These are roles at different token queries, not two recovered exact heads or a measured b3 output. All learned routes are dashed because uniform/dominant-key substitution and complement tests fail.">
+
+*Figure S1 shows marker-to-piece and square-token-to-board reads feeding neuron writes, rather than the hand-built next-square head (type T1: ten full-board and four slider hint-scratchpad networks trained from scratch with recorded teacher-forced exact match ≥ .93; a marker denotes a direction, and the two read roles occur at different token queries); status is Rejected because uniform/dominant-key substitutions and complement tests fail, so this is not a recovered formula, correct past tokens are supplied, and the White-knight example’s empty b3 and attacked bit 1 are task targets, not measured outputs.*
 
 ## At a glance
 
@@ -17,13 +25,9 @@ The task is partly solved: on sparse boards containing sliding pieces only 1/10 
 | Weights | [Hugging Face: chess-attack-maps](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/chess-attack-maps), published revision `3919dc14f8ab`; recorded and archived test draws differ. |
 | Reproduce | Not available yet: training code for this task is not yet in `code/`. |
 
-## The circuit at a glance
+On the recorded draw of 2048 held-out full boards per run, 7/10 networks trained from scratch reached whole-output accuracy 1.0, reported to three decimals, and 10/10 reached ≥ .998, with correct earlier output tokens supplied.
 
-Figure S1 separates the late piece-token and board-square reads from the neuron write; these roles occur at different token queries, and the dashed routes do not establish a square-by-square algorithm.
-
-<img src="../figures/circuits/chess-attack-maps.svg" width="640" alt="The board has White knight a1 and king h1, and Black king h8; White is requested. Independently supplied correct past scratchpad tokens include square b3. Early weighted counts and necessary middle layers supply context. Two layer-3 read roles are separated: at a direction marker heads read the piece token, and at a piece/square token heads read the named board square. In this task illustration the piece is a knight and b3 is empty. Neurons, not a next-square head, write steps and map bits; the targets include listing b3 and marking its bit 1. These are roles at different token queries, not two recovered exact heads or a measured b3 output. All learned routes are dashed because uniform/dominant-key substitution and complement tests fail.">
-
-*Figure S1 shows marker-to-piece and square-token-to-board reads feeding neuron writes, rather than the hand-built next-square head (type T1: ten full-board and four slider hint-scratchpad networks trained from scratch with recorded teacher-forced exact match ≥ .93; a marker denotes a direction, and the two read roles occur at different token queries); status is Rejected because uniform/dominant-key substitutions and complement tests fail, so this is not a recovered formula, correct past tokens are supplied, and the White-knight example’s empty b3 and attacked bit 1 are task targets, not measured outputs.*
+The task is partly solved: on sparse boards containing sliding pieces only 1/10 reached recorded 1.0, and no tested answer-only setting reached 1.0.
 
 ## 1. Task and data
 

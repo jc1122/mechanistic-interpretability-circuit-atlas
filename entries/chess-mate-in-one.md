@@ -1,8 +1,16 @@
 # Chess mate-in-one selection
 
-If only the second of three supplied checks leaves a lone black king no escape square, this task picks the second; it selects the first mate from a list, without generating moves itself. Learning one output stage on a fixed hand-built escape-square counter solved both formats in 3/3 runs, but learning on short lists left only 52–64% exact on a 608-sequence longer-list stress set. Later whole-network screens reached exact 1.0 on 128 held-out sequences in 3/3 answer-only runs and, after retries, 3/3 count-writing runs, with correct earlier output tokens supplied.
+If only the second of three supplied checks leaves a lone black king no escape square, this task picks the second; it selects the first mate from a list, without generating moves itself.
 
-The task is partly solved: the count-writing lookup is [Verified](../GLOSSARY.md#verifying-a-circuit) in this three-run screen, but it receives escape counts and the winning index from the reference algorithm, so it does not explain how the network finds them. For the answer-only whole-network screen, the formula is Sufficient readout only: changing activity outside its circuit fails. For the learned stage on fixed hand-built machinery, the formulas are Partial because that test is unreported. Longer-list whole-network transfer is unreported and no ten-run final experiment was obtained.
+The task is partly solved, with three separate explanation scopes. With fixed hand-built machinery, learned-stage formulas are Partial: activity outside the circuit was not tested. With whole-network answer-only training, the formula is Sufficient readout only: that test fails. With whole-network count-writing training, the lookup is [Verified](../GLOSSARY.md#verifying-a-circuit) in this three-run screen, but the test supplies the reference algorithm's escape counts and winning index, leaving their computation unexplained.
+
+## The circuit at a glance
+
+Figure S1 shows the frozen escape-count and first-zero stages selecting a supplied check before the learned stage decodes its slot.
+
+<img src="../figures/circuits/chess-mate-in-one.svg" width="640" alt="In the answer-only partly trained network, three supplied checks fan into frozen virtual-board and escape-count stages. Task-example escape counts 2,0,1 enter the frozen earliest-zero selector, which writes slot 2. Trained layer-7 neurons decode that slot into answer 2. Only the decoder is dashed because the complement is untested. The board needs a bare black king, and candidates are supplied, not generated. This is not the later reference-keyed whole-network lookup; counts are illustrative, not a scored board.">
+
+*Figure S1 shows a learned decoder turning the first zero-escape slot into the answer (answer-only partly trained network, run 1, three seeds, best and final snapshots; matches hand-built selection); status is Partial because substitution passes but the complement is untested, short-list training does not transfer reliably to longer lists, and the escape counts illustrate the task rather than a scored board.*
 
 | Fact | Value |
 |---|---|
@@ -15,13 +23,9 @@ The task is partly solved: the count-writing lookup is [Verified](../GLOSSARY.md
 | Weights | [Hugging Face: chess-mate-in-one](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/chess-mate-in-one) (HAND/PART weights and test archive; public follow-up TRAIN weights not confirmed). |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
-## The circuit at a glance
+Learning one output stage on a fixed hand-built escape-square counter solved both formats in 3/3 runs, but learning on short lists left only 52–64% exact on a 608-sequence longer-list stress set. Later whole-network screens reached exact 1.0 on 128 held-out sequences in 3/3 answer-only runs and, after retries, 3/3 count-writing runs, with correct earlier output tokens supplied.
 
-Figure S1 shows the frozen escape-count and first-zero stages selecting a supplied check before the learned stage decodes its slot.
-
-<img src="../figures/circuits/chess-mate-in-one.svg" width="640" alt="In the answer-only partly trained network, three supplied checks fan into frozen virtual-board and escape-count stages. Task-example escape counts 2,0,1 enter the frozen earliest-zero selector, which writes slot 2. Trained layer-7 neurons decode that slot into answer 2. Only the decoder is dashed because the complement is untested. The board needs a bare black king, and candidates are supplied, not generated. This is not the later reference-keyed whole-network lookup; counts are illustrative, not a scored board.">
-
-*Figure S1 shows a learned decoder turning the first zero-escape slot into the answer (answer-only partly trained network, run 1, three seeds, best and final snapshots; matches hand-built selection); status is Partial because substitution passes but the complement is untested, short-list training does not transfer reliably to longer lists, and the escape counts illustrate the task rather than a scored board.*
+Longer-list whole-network transfer is unreported and no ten-run final experiment was obtained.
 
 ## 1. Task and data
 

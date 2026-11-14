@@ -4,7 +4,13 @@ Integrating 4+6x gives 4x+3x². Its second coefficient, the number in front of x
 
 Writing steps sped up learning when earlier arithmetic stages were supplied. That was the only tested setting exact on withheld fractions. Training the scratchpad network from scratch was slower: 9/10 final runs got whole outputs right on 256 held-out polynomials per run, with correct earlier tokens supplied. The remaining run failed on the signed numerator, the fraction's top number.
 
-The task is partly solved. Its [partial explanation](../GLOSSARY.md#verifying-a-circuit) covers an early layer that pools earlier symbols by identity and count, ignoring order. Replacing that pooling preserved predictions. No formula recovered the largest-common-factor or division calculation, and swapping the other parts' signals between examples was not tested.
+## The circuit at a glance
+
+Figure 4 separates the token-count pool from the supplied common-factor input; the dashed neuron group has no recovered reduction rule ([mechanism and verification](#5-mechanism-and-verification)).
+
+<img src="../figures/circuits/polynomial-integration.svg" width="640" alt="All prefix tokens feed trained layer-0 attention, whose partial substitute weights token identities by their counts; the shown coefficient token C:6 occurs once. A distinct supplied-history input gives G:2, common factor 2. Essential feed-forward blocks have no recovered reduction rule. The target for coefficient 6 at term power 2 is N:3 D:1, numerator 3 and denominator 1. One upward residual stream shows availability, not verified scratchpad wiring. Dashed parts are not verified; no native numerical mixture or gcd/division algorithm is claimed.">
+
+*Figure 4. All ten final from-scratch scratchpad seeds, including failed seed 4, have a substitution-supported prefix pool unlike the hand-built design: the C:6 coefficient token occurs once, while G:2 supplies common factor 2 from correct history; this partial component/input map does not recover common-factor reduction or division, verified scratchpad wiring or a complement test.*
 
 | Fact | Value |
 |---|---|
@@ -17,15 +23,9 @@ The task is partly solved. Its [partial explanation](../GLOSSARY.md#verifying-a-
 | Weights | [Hugging Face: polynomial-integration](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/polynomial-integration) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
+The task is partly solved. Its [partial explanation](../GLOSSARY.md#verifying-a-circuit) covers an early layer that pools earlier symbols by identity and count, ignoring order. Replacing that pooling preserved predictions. No formula recovered the largest-common-factor or division calculation, and swapping the other parts' signals between examples was not tested.
+
 Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [Euclid's algorithm](gcd-euclid.md) for fraction reduction, or [polynomial differentiation](polynomial-differentiation.md) for the reverse coefficient operation.
-
-## The circuit at a glance
-
-Figure 4 separates the token-count pool from the supplied common-factor input; the dashed neuron group has no recovered reduction rule ([mechanism and verification](#5-mechanism-and-verification)).
-
-<img src="../figures/circuits/polynomial-integration.svg" width="640" alt="All prefix tokens feed trained layer-0 attention, whose partial substitute weights token identities by their counts; the shown coefficient token C:6 occurs once. A distinct supplied-history input gives G:2, common factor 2. Essential feed-forward blocks have no recovered reduction rule. The target for coefficient 6 at term power 2 is N:3 D:1, numerator 3 and denominator 1. One upward residual stream shows availability, not verified scratchpad wiring. Dashed parts are not verified; no native numerical mixture or gcd/division algorithm is claimed.">
-
-*Figure 4. All ten final from-scratch scratchpad seeds, including failed seed 4, have a substitution-supported prefix pool unlike the hand-built design: the C:6 coefficient token occurs once, while G:2 supplies common factor 2 from correct history; this partial component/input map does not recover common-factor reduction or division, verified scratchpad wiring or a complement test.*
 
 ## 1. Task and data
 

@@ -1,8 +1,16 @@
 # Greatest common divisor by repeated subtraction
 
-The largest number that divides both 6 and 4 is 2; repeated subtraction finds this greatest common divisor by keeping the pair's absolute difference and smaller value. Four-layer transformers either gave the answer directly or wrote each such step before answering. With the arithmetic and input-reading stages fixed by hand, 7/10 final runs produced exact whole traces on 256 held-out input tuples with correct earlier output tokens supplied; a three-rule selector that chooses which supplied value to write next was substituted into all 10 models and was exact on all 4096 six-bit pairs, repairing errors in every seed rather than reproducing each model's answers.
+The largest number that divides both 6 and 4 is 2; repeated subtraction finds this greatest common divisor by keeping the pair's absolute difference and smaller value. Four-layer transformers either gave the answer directly or wrote each such step before answering.
 
 The task is partly solved and the formula status is [partial](../GLOSSARY.md#verifying-a-circuit): replacement and tests changing activity outside the circuit passed in the 7 exact fixed-scaffold runs, but 3 trained output selectors still made held-out errors, and no complete formula was accepted for the from-scratch models, of which 5/10 were exact. Neither training setting reliably transferred to eight-bit inputs.
+
+## The circuit at a glance
+
+<img src="../figures/circuits/gcd-euclid.svg" width="640" alt="Two frozen layer-2 heads read the previous row A:6 B:4 in parallel. A frozen layer-2 block supplies difference 2 and minimum 4. For the query asking for the next B token, the learned layer-3 router targets B:4 from that minimum; the role is supplied, and one token rather than a whole row is illustrated. Substitution can repair native decisions; acceptance is partial.">
+
+*Figure S1. Final trace networks with only the router learned (seeds 0–9) use frozen hand-built arithmetic; status is partial because sampled paired checks cover seven held-out-exact seeds, substitution repairs native decisions in every seed and native eight-bit transfer fails.*
+
+Figure S1 shows parallel operand reads and frozen arithmetic feeding the learned token router; for the illustrated next-B query, minimum 4 supplies the single token B:4.
 
 | Fact | Value |
 |---|---|
@@ -15,15 +23,9 @@ The task is partly solved and the formula status is [partial](../GLOSSARY.md#ver
 | Weights | [Hugging Face: gcd-euclid](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/gcd-euclid), published revision `6ca84a561e25` |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
+With the arithmetic and input-reading stages fixed by hand, 7/10 final runs produced exact whole traces on 256 held-out input tuples with correct earlier output tokens supplied; a three-rule selector that chooses which supplied value to write next was substituted into all 10 models and was exact on all 4096 six-bit pairs, repairing errors in every seed rather than reproducing each model's answers.
+
 HAND sets every weight by formula; PART trains one stage on frozen HAND parts; TRAIN learns all weights ([rungs](../GLOSSARY.md#the-three-rungs)). A scratchpad is a written sequence of intermediate results ([task formats](../GLOSSARY.md#task-formats)). A router chooses the next token's role and value from supplied arithmetic channels. An MLP is a feed-forward block ([glossary](../GLOSSARY.md#standard-machine-learning-terms)). Complement resampling replaces everything outside a proposed circuit with values from other inputs ([verification](../GLOSSARY.md#verifying-a-circuit)).
-
-## The circuit at a glance
-
-<img src="../figures/circuits/gcd-euclid.svg" width="640" alt="Two frozen layer-2 heads read the previous row A:6 B:4 in parallel. A frozen layer-2 block supplies difference 2 and minimum 4. For the query asking for the next B token, the learned layer-3 router targets B:4 from that minimum; the role is supplied, and one token rather than a whole row is illustrated. Substitution can repair native decisions; acceptance is partial.">
-
-*Figure S1. Final trace networks with only the router learned (seeds 0–9) use frozen hand-built arithmetic; status is partial because sampled paired checks cover seven held-out-exact seeds, substitution repairs native decisions in every seed and native eight-bit transfer fails.*
-
-Figure S1 shows parallel operand reads and frozen arithmetic feeding the learned token router; for the illustrated next-B query, minimum 4 supplies the single token B:4.
 
 ## 1. Task and data
 

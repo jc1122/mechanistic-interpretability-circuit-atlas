@@ -1,8 +1,16 @@
 # Dyck-k and subject–verb agreement
 
-`[()]` nests correctly but `[(])` does not: counting brackets is not enough, because their types must match. Three-layer transformers learned this task and a related memory task, choosing a verb's singular or plural form, with or without written intermediate bracket or subject states, a [scratchpad](../GLOSSARY.md#task-formats). The final two-bracket-type scratchpad experiment is solved in range, with 10/10 runs at whole-output accuracy 1.0 on 2048 held-out words per run when correct earlier tokens were supplied; replacing one component with a pointer to the written state just before the matching opener, recording what was still open then, kept .90–1.0 accuracy in 8/10 final saved networks.
+`[()]` nests correctly but `[(])` does not: counting brackets is not enough, because their types must match. Three-layer transformers learned this task and a related memory task, choosing a verb's singular or plural form, with or without written intermediate bracket or subject states, a [scratchpad](../GLOSSARY.md#task-formats).
 
 That formula is [partial](../GLOSSARY.md#verifying-a-circuit): it still needs a partner attention head, a component that reads earlier positions, whose computation is unidentified, and replacing that partner's activity with values from other inputs left only .17/.06 exact match in two tested runs. The verb task without written working exposed a different shortcut, copying the first noun, which works because this generated grammar always puts the main subject first.
+
+## The circuit at a glance
+
+<img src="../figures/circuits/dyck-k-and-agreement.svg" width="640" alt="Removing the most recent opening bracket is called a pop. In the tested pointer override, a reference-supplied match identifies that opener so its preceding written state can be read. This unverified pointer and an unidentified needed partner meet at the layer-2 block. At the closing square bracket in ([]), the target top is the round opener. Correct earlier tokens are supplied; native addressing is unverified.">
+
+*Figure S1. For the final Dyck-2 scratchpad networks trained from scratch (8/10 seeds), the tested pop pointer models removal of the most recent opening bracket by reading its preceding state using a reference-supplied matching-opener override, unlike the hand-built depth match; the account remains partial because the needed partner head is unidentified, both tested partner scrubs fail and native address computation is not verified.*
+
+Figure S1 shows the tested pre-opener-state pointer and unidentified partner converging on the next stack-state write; the pointer’s matched-opener address is supplied by the reference override, not proved to be computed natively.
 
 ## At a glance
 
@@ -17,13 +25,7 @@ That formula is [partial](../GLOSSARY.md#verifying-a-circuit): it still needs a 
 | Weights | [Hugging Face: dyck-k-and-agreement](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/dyck-k-and-agreement), published revision `0aba437e2661`. |
 | Reproduce | Not available yet: training code for this task is not yet in `code/`. |
 
-## The circuit at a glance
-
-<img src="../figures/circuits/dyck-k-and-agreement.svg" width="640" alt="Removing the most recent opening bracket is called a pop. In the tested pointer override, a reference-supplied match identifies that opener so its preceding written state can be read. This unverified pointer and an unidentified needed partner meet at the layer-2 block. At the closing square bracket in ([]), the target top is the round opener. Correct earlier tokens are supplied; native addressing is unverified.">
-
-*Figure S1. For the final Dyck-2 scratchpad networks trained from scratch (8/10 seeds), the tested pop pointer models removal of the most recent opening bracket by reading its preceding state using a reference-supplied matching-opener override, unlike the hand-built depth match; the account remains partial because the needed partner head is unidentified, both tested partner scrubs fail and native address computation is not verified.*
-
-Figure S1 shows the tested pre-opener-state pointer and unidentified partner converging on the next stack-state write; the pointer’s matched-opener address is supplied by the reference override, not proved to be computed natively.
+The final two-bracket-type scratchpad experiment is solved in range, with 10/10 runs at whole-output accuracy 1.0 on 2048 held-out words per run when correct earlier tokens were supplied; replacing one component with a pointer to the written state just before the matching opener, recording what was still open then, kept .90–1.0 accuracy in 8/10 final saved networks.
 
 ## 1. Task and data
 

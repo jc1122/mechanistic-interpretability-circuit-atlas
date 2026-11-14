@@ -2,9 +2,15 @@
 
 Expanding (2x+1)(3x+4) gives 6x²+11x+4. These networks received each term's side, power and coefficient (the number in front): the left 2x was supplied as left, power 1, coefficient 2. They did not parse ordinary notation.
 
-Training from scratch with a [scratchpad](../GLOSSARY.md#task-formats), a record of working, produced exact best saved networks in 10/10 runs each for expansion and equation solving, on 1000 saved test examples per run. Correct preceding tokens were supplied. Expansion dropped to 9/10 exact at the final state; answer-only expansion and solving never became exact.
+Training from scratch with a [scratchpad](../GLOSSARY.md#task-formats), a record of working, produced exact best saved networks in 10/10 runs each for expansion and equation solving, on 1000 saved test examples per run. Correct preceding tokens were supplied. No from-scratch formula was accepted. The picture's residual stream carries shared running information that each layer reads and updates ([glossary](../GLOSSARY.md#standard-machine-learning-terms)).
 
-The task is partly solved. Term collection with hand-built retrieval has a [partial addition formula](../GLOSSARY.md#verifying-a-circuit); replacement passed, but swapping the other parts' signals between examples was not tested. No from-scratch formula was accepted. Claimed expansion and solving circuits retain the whole network, leaving nothing outside to test. Their final scratchpad models also failed on untrained coefficient tokens ±8, scoring 0–.008 on 256 out-of-range examples per run.
+## The circuit at a glance
+
+Figure 3 separates each layer’s context-reading heads from its neuron block; the branches identify retained components rather than an expansion formula ([mechanism and verification](#5-mechanism-and-verification)).
+
+<img src="../figures/circuits/symbolic-algebra-atoms.svg" width="640" alt="Three layers branch from one upward residual stream. In each row, trained heads read context and return it to the stream before that layer’s feed-forward neuron block reads and updates it. Layer-0 and layer-1 heads are fetch heads; layer-2 heads feed the final neuron block and answer scores. All heads and blocks are retained, not just one strongest head. Input term atoms mean (2x+1)(3x+4); one product query has coefficients 2 and 3, target atom 6. Correct earlier tokens are supplied separately during scoring; arrows do not establish autonomous rollout. Dashed borders mean no verified product formula, not that component necessity is untested.">
+
+*Figure 3. The ten final from-scratch scratchpad expansion seeds retain every layer’s heads and feed-forward block (MLP), differing from the hand-built design: coefficients 2 and 3 have product target 6 within (2x+1)(3x+4) = 6x²+11x+4, with correct earlier tokens supplied, no accepted product formula or notation parser; the whole-network complement is empty rather than a compact certificate, and seed 3’s final snapshot is inexact.*
 
 | Fact | Value |
 |---|---|
@@ -17,15 +23,11 @@ The task is partly solved. Term collection with hand-built retrieval has a [part
 | Weights | [Hugging Face: symbolic-algebra-atoms](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/symbolic-algebra-atoms) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
+Expansion dropped to 9/10 exact at the final state; answer-only expansion and solving never became exact.
+
+The task is partly solved. Term collection with hand-built retrieval has a [partial addition formula](../GLOSSARY.md#verifying-a-circuit); replacement passed, but swapping the other parts' signals between examples was not tested. Claimed expansion and solving circuits retain the whole network, leaving nothing outside to test. Their final scratchpad models also failed on untrained coefficient tokens ±8, scoring 0–.008 on 256 out-of-range examples per run.
+
 Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [polynomial addition and multiplication](polynomial-add-mul.md) for coefficient-list inputs, or [nested expressions](nested-expressions-mod-7.md) for a frozen parser.
-
-## The circuit at a glance
-
-Figure 3 separates each layer’s context-reading heads from its neuron block; the branches identify retained components rather than an expansion formula ([mechanism and verification](#5-mechanism-and-verification)).
-
-<img src="../figures/circuits/symbolic-algebra-atoms.svg" width="640" alt="Three layers branch from one upward residual stream. In each row, trained heads read context and return it to the stream before that layer’s feed-forward neuron block reads and updates it. Layer-0 and layer-1 heads are fetch heads; layer-2 heads feed the final neuron block and answer scores. All heads and blocks are retained, not just one strongest head. Input term atoms mean (2x+1)(3x+4); one product query has coefficients 2 and 3, target atom 6. Correct earlier tokens are supplied separately during scoring; arrows do not establish autonomous rollout. Dashed borders mean no verified product formula, not that component necessity is untested.">
-
-*Figure 3. The ten final from-scratch scratchpad expansion seeds retain every layer’s heads and feed-forward block (MLP), differing from the hand-built design: coefficients 2 and 3 have product target 6 within (2x+1)(3x+4) = 6x²+11x+4, with correct earlier tokens supplied, no accepted product formula or notation parser; the whole-network complement is empty rather than a compact certificate, and seed 3’s final snapshot is inexact.*
 
 ## 1. Task and data
 

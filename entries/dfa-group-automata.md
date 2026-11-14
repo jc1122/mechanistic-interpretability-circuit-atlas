@@ -1,8 +1,16 @@
 # Group automata (parity, Z3, S3)
 
-Rearrange three objects, then rearrange them again: the final order depends on the sequence of moves. Six-layer transformers tracked these six possible arrangements, odd/even counts or remainders after division by 3, either answering directly or writing the current state after every symbol as a [scratchpad](../GLOSSARY.md#task-formats). All 10 final arrangement-tracking runs reached whole-output accuracy 1.0 on 2k held-out words with correct earlier output tokens supplied, but the computation ran through a chain of feed-forward blocks, which process each position, rather than the hand-built design's single state reader and update table.
+As a task example, swapping the first two of three objects changes `cup, key, book` to `key, cup, book`; later moves act on this new order. All 10 final arrangement-tracking runs reached whole-output accuracy 1.0 on 2k held-out words with correct earlier output tokens supplied, but the computation ran through a chain of feed-forward blocks, which process each position, rather than the hand-built design's single state reader and update table.
 
-The task is partly solved and the formulas are [partial](../GLOSSARY.md#verifying-a-circuit): table replacement passed in 10/10 final runs and tests changing activity outside the discovered circuits passed in all 8 measured runs, leaving 2 without that certificate; older failed joint tests remain failed. At 128 symbols every final trained run scored 0 on 1000 random words, while models learning one stage on the fixed hand-built scaffold were exact at that length.
+The picture's shared line carries running internal values ([residual stream](../GLOSSARY.md#standard-machine-learning-terms)); its table tests are given the true state and symbol from outside the network.
+
+## The circuit at a glance
+
+<img src="../figures/circuits/dfa-group-automata.svg" width="640" alt="For S3, the permutations of three items, an unverified early state-code and fetch branch feeds late feed-forward blocks, also called MLPs, on one residual stream. Their table tests use externally supplied true state and symbol keys. Some seeds bypass the last block. Identity with a first-pair swap targets that swap; upstream computation and the complete circuit remain partial.">
+
+*Figure S1. Final scratchpad networks for S3 (permutations of three items), trained from scratch (seeds 0–9), differ from the hand-built reference through a serial feed-forward-block (MLP) path with an optional last block and late tables tested using externally supplied true state/symbol keys; status is partial, with paired acceptance on 8/10, two missing circuit certificates, upstream fetching unverified and older failed joint scrubs still failed.*
+
+Figure S1 shows the serial state-code route and the last-block bypass; the table tests use true state and symbol keys rather than a recovered native fetch law.
 
 | Fact | Value |
 |---|---|
@@ -15,15 +23,11 @@ The task is partly solved and the formulas are [partial](../GLOSSARY.md#verifyin
 | Weights | [Hugging Face: dfa-group-automata](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/dfa-group-automata), revision `ababc8276281`; final archive note: 217 networks; earlier archive: 219 |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
+Six-layer transformers tracked these six possible arrangements, odd/even counts or remainders after division by 3, either answering directly or writing the current state after every symbol as a [scratchpad](../GLOSSARY.md#task-formats).
+
+The task is partly solved and the formulas are [partial](../GLOSSARY.md#verifying-a-circuit): table replacement passed in 10/10 final runs and tests changing activity outside the discovered circuits passed in all 8 measured runs, leaving 2 without that certificate; older failed joint tests remain failed. At 128 symbols every final trained run scored 0 on 1000 random words, while models learning one stage on the fixed hand-built scaffold were exact at that length.
+
 HAND sets every weight by formula, PART trains one stage on those frozen parts and TRAIN learns all weights ([rungs](../GLOSSARY.md#the-three-rungs)). An MLP is the feed-forward block between attention stages ([glossary](../GLOSSARY.md#standard-machine-learning-terms)). A scratchpad writes intermediate results as output tokens, not hidden memory ([task formats](../GLOSSARY.md#task-formats)). Complement resampling replaces everything outside a proposed circuit using values from other inputs ([verification](../GLOSSARY.md#verifying-a-circuit)).
-
-## The circuit at a glance
-
-<img src="../figures/circuits/dfa-group-automata.svg" width="640" alt="For S3, the permutations of three items, an unverified early state-code and fetch branch feeds late feed-forward blocks, also called MLPs, on one residual stream. Their table tests use externally supplied true state and symbol keys. Some seeds bypass the last block. Identity with a first-pair swap targets that swap; upstream computation and the complete circuit remain partial.">
-
-*Figure S1. Final scratchpad networks for S3 (permutations of three items), trained from scratch (seeds 0–9), differ from the hand-built reference through a serial feed-forward-block (MLP) path with an optional last block and late tables tested using externally supplied true state/symbol keys; status is partial, with paired acceptance on 8/10, two missing circuit certificates, upstream fetching unverified and older failed joint scrubs still failed.*
-
-Figure S1 shows the serial state-code route and the last-block bypass; the table tests use true state and symbol keys rather than a recovered native fetch law.
 
 ## 1. Task and data
 

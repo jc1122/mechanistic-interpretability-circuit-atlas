@@ -1,8 +1,16 @@
 # Base conversion: hexadecimal, binary and decimal
 
-The hexadecimal digit `f` translates to the binary block `1111`; translating each digit separately works for hexadecimal, while decimal-to-binary conversion needs information from across the number. Two-layer transformers were tested on every number from 0 to 255, with or without written intermediate steps, to see which kind of conversion they could learn. Learning all weights from scratch brought 16/40 hexadecimal-to-binary runs to held-out whole-output accuracy ≥ .99; with hand-built input-reading components fixed, 6/10 decimal-to-binary answer-only runs reached that criterion.
+The hexadecimal digit `f` translates to the binary block `1111`; translating each digit separately works for hexadecimal, while decimal-to-binary conversion needs information from across the number.
 
-Replacing an internal representation with a fitted code for each hexadecimal digit gave 1.00 accuracy on all 256 inputs in 36/40 networks, even repairing some networks' mistakes, but the fit included test inputs. The task is partly solved and the formulas are [partial](../GLOSSARY.md#verifying-a-circuit): this replacement can read out the answer at the tested point, yet changing context showed that digit identity alone does not explain how information reaches it, and no test changed everything outside the proposed circuit.
+The picture gives a [partial](../GLOSSARY.md#verifying-a-circuit) explanation of answer-reading: context matters, and activity outside its circuit was not tested.
+
+## The circuit at a glance
+
+Figure S1 shows the written-digit read and the context read merging at the bit decoder, rather than a direct read of only the original digit.
+
+<img src="../figures/circuits/base-conversion.svg" width="640" alt="A hexadecimal prompt ^a5= and its written echo a enter layer 0's weighted prefix summary. Parallel layer-1 heads read mainly the echo (head 1) and additional original context (head 3). Layer-1 neurons decode the bit. The illustrative digit a has binary block 1010, starting with 1. Learned roles are dashed: the joint digit-only scrub fails and the complement is untested.">
+
+*Figure S1 shows the probed hexadecimal scratchpad circuit mainly reading the written digit echo, unlike the hand-built original-digit route (trained from scratch, seed 1); status is Partial because local substitutions pass but the joint digit-only scrub fails and complement resampling was not reported, and values are a task example, not a measurement.*
 
 | Fact | Value |
 |---|---|
@@ -15,13 +23,9 @@ Replacing an internal representation with a fitted code for each hexadecimal dig
 | Weights | [Hugging Face: base-conversion](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/base-conversion) (6 HAND, 77 PART/TRAIN) |
 | Reproduce | [Commands](#24-reproduction), run from `code/` |
 
-## The circuit at a glance
+Two-layer transformers were tested on every number from 0 to 255, with or without written intermediate steps, to see which kind of conversion they could learn. Learning all weights from scratch brought 16/40 hexadecimal-to-binary runs to held-out whole-output accuracy ≥ .99; with hand-built input-reading components fixed, 6/10 decimal-to-binary answer-only runs reached that criterion.
 
-Figure S1 shows the written-digit read and the context read merging at the bit decoder, rather than a direct read of only the original digit.
-
-<img src="../figures/circuits/base-conversion.svg" width="640" alt="A hexadecimal prompt ^a5= and its written echo a enter layer 0's weighted prefix summary. Parallel layer-1 heads read mainly the echo (head 1) and additional original context (head 3). Layer-1 neurons decode the bit. The illustrative digit a has binary block 1010, starting with 1. Learned roles are dashed: the joint digit-only scrub fails and the complement is untested.">
-
-*Figure S1 shows the probed hexadecimal scratchpad circuit mainly reading the written digit echo, unlike the hand-built original-digit route (trained from scratch, seed 1); status is Partial because local substitutions pass but the joint digit-only scrub fails and complement resampling was not reported, and values are a task example, not a measurement.*
+Replacing an internal representation with a fitted code for each hexadecimal digit gave 1.00 accuracy on all 256 inputs in 36/40 networks, even repairing some networks' mistakes, but the fit included test inputs. The task is partly solved and the formulas are [partial](../GLOSSARY.md#verifying-a-circuit): this replacement can read out the answer at the tested point, yet changing context showed that digit identity alone does not explain how information reaches it, and no test changed everything outside the proposed circuit.
 
 ## 1. Task and data
 

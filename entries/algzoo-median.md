@@ -1,8 +1,16 @@
 # Median in ARC's AlgZoo recurrent networks
 
-A median is the middle value after sorting, or the average of the central pair for an even-sized list: for `1, 3` it is 2, their average. Finding it while reading one number at a time means deciding what to remember. This study examined 100 already-trained recurrent networks, which update a memory after each number, from the Alignment Research Center (ARC), without training new models. The accurate ones average pairs or keep values in sorted order as each new number arrives; others follow approximate rules that explain their mistakes too.
+A median is the middle value after sorting, or the average of the central pair for an even-sized list: for `1, 3` it is 2, their average. Finding it while reading one number at a time means deciding what to remember. The accurate ones average pairs or keep values in sorted order as each new number arrives; others follow approximate rules that explain their mistakes too.
 
-At the 2026-11-13 snapshot, all 100 had formulas passing their registered sampled interpretation tests, but only 49 were source-classified accurate median forms and 51 were inexact approximators. The task is partly solved and the population-level formula status is [Partial](../GLOSSARY.md#verifying-a-circuit): 20 proposed circuits include the entire network, leaving nothing outside them to scramble, so that test cannot show which parts could be discarded, no all-input equivalence is proved, and some explanations are nearly as large as the networks themselves.
+The pictured family is accurate, but the population-wide explanation remains [partial](../GLOSSARY.md#verifying-a-circuit), with no all-input equivalence.
+
+## The circuit at a glance
+
+Figure S1 shows the two remembered bounds meeting a separate new value at the final comparison neurons, which keep that value between the bounds.
+
+<img src="../figures/circuits/algzoo-median.svg" width="640" alt="The accurate three-input recurrent family keeps lower and upper bounds from the first pair in parallel memory. For 1 then 3 those bounds are 1 and 3. Final comparison neurons keep the separate next input 2 between those bounds, giving median 2. Learned roles are dashed: these are sampled family certificates, not global native equivalence or the inexact families.">
+
+*Figure S1 shows the accurate three-input family keeping the first pair’s bounds and using final comparison neurons to keep the new value between them (15 recurrent networks, matching the hand-built sorted-bounds role); status is Partial at population level, these sampled certificates do not establish global native equivalence or describe the inexact families, and values are a task example, not a measurement.*
 
 | Fact | Value |
 |---|---|
@@ -15,14 +23,11 @@ At the 2026-11-13 snapshot, all 100 had formulas passing their registered sample
 | Weights | [Hugging Face: algzoo-median](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/algzoo-median), hand-built weights/evidence archive revision `28a5e5d`; ARC nets linked by URL and hashes, not redistributed |
 | Reproduce | Not available yet: analysis code for this task is not yet in `code/`; see [archive](#25-archive) |
 
+This study examined 100 already-trained recurrent networks, which update a memory after each number, from the Alignment Research Center (ARC), without training new models.
+
+At the 2026-11-13 snapshot, all 100 had formulas passing their registered sampled interpretation tests, but only 49 were source-classified accurate median forms and 51 were inexact approximators. The task is partly solved and the population-level formula status is [Partial](../GLOSSARY.md#verifying-a-circuit): 20 proposed circuits include the entire network, leaving nothing outside them to scramble, so that test cannot show which parts could be discarded, no all-input equivalence is proved, and some explanations are nearly as large as the networks themselves.
+
 Here HAND means weights set by formula and TRAIN means weights trained from scratch ([rungs](../GLOSSARY.md#the-three-rungs)). A ReLU keeps the positive part of a number ([glossary](../GLOSSARY.md#standard-machine-learning-terms)). A closed form replaces a network computation with equations; a complement test resamples everything outside the claimed circuit ([verification](../GLOSSARY.md#verifying-a-circuit)). The word “proven” below is the source's sampled-certificate category, not an all-input theorem.
-## The circuit at a glance
-
-Figure S1 shows the two remembered bounds meeting a separate new value at the final comparison neurons, which keep that value between the bounds.
-
-<img src="../figures/circuits/algzoo-median.svg" width="640" alt="The accurate three-input recurrent family keeps lower and upper bounds from the first pair in parallel memory. For 1 then 3 those bounds are 1 and 3. Final comparison neurons keep the separate next input 2 between those bounds, giving median 2. Learned roles are dashed: these are sampled family certificates, not global native equivalence or the inexact families.">
-
-*Figure S1 shows the accurate three-input family keeping the first pair’s bounds and using final comparison neurons to keep the new value between them (15 recurrent networks, matching the hand-built sorted-bounds role); status is Partial at population level, these sampled certificates do not establish global native equivalence or describe the inexact families, and values are a task example, not a measurement.*
 
 ## 1. Task and data
 

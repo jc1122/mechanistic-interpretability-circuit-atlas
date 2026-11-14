@@ -2,9 +2,15 @@
 
 For (2+6), keeping the remainder after division by 7 gives 1. A hand-built parser keeps a stack, a last-in-first-out list: it reduces ready `2+6` entries to `1`, then removes the brackets. Only the arithmetic block of a four-layer network was trained.
 
-All 10 final runs got 260/260 held-out working traces right, with correct preceding tokens supplied. Replacing the block with exact arithmetic kept that score. Its internal values differed from the hand-built version: only the largest answer score had to be right.
+All 10 final runs got 260/260 held-out working traces right, with correct preceding tokens supplied. The final frozen-parser experiment is solved. There was no untouched test, and each formula stress set had only 16 expressions.
 
-The final frozen-parser experiment is solved. Its [formula is verified](../GLOSSARY.md#verifying-a-circuit) within the supplied parser: swapping the other parts' signals between examples also passed on 32 diagnostic rows. There was no untouched test, and each formula stress set had only 16 expressions. Training entirely from scratch usually failed even held-out single numbers, so this does not show that a network learned the parser.
+## The circuit at a glance
+
+Figure 3 shows the local arithmetic block inside the supplied parser ([mechanism and verification](#5-mechanism-and-verification)).
+
+<img src="../figures/circuits/nested-expressions-mod-7.svg" width="640" alt="The parser writes the winning remainder after division by 7. One upward residual stream has separate read/write branches for Read top stack (layer 2 heads); Shift / copy (other parser actions); Score residues (trained arithmetic). Given stack: 2 + 6; arithmetic is modulo 7; Next stack: 1. Task values are illustrative; dashed boxes and branches are not verified.">
+
+*Figure 3. Final partly trained seeds 0–9 keep the hand-built parser but use a different residue-score code whose winning remainder after division by 7 feeds its frozen stack writer; the local block is verified, not a learned parser, with no untouched test and small diagnostic/stress sets.*
 
 | Fact | Value |
 |---|---|
@@ -17,15 +23,11 @@ The final frozen-parser experiment is solved. Its [formula is verified](../GLOSS
 | Weights | [Hugging Face: nested-expressions-mod-7](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/nested-expressions-mod-7) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
+Replacing the block with exact arithmetic kept that score. Its internal values differed from the hand-built version: only the largest answer score had to be right.
+
+Its [formula is verified](../GLOSSARY.md#verifying-a-circuit) within the supplied parser: swapping the other parts' signals between examples also passed on 32 diagnostic rows. Training entirely from scratch usually failed even held-out single numbers, so this does not show that a network learned the parser.
+
 Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [symbol-level algebra](symbolic-algebra-atoms.md) for structured inputs, or [finite-field linear systems](linear-systems-finite-fields.md) for written arithmetic microsteps.
-
-## The circuit at a glance
-
-Figure 3 shows the local arithmetic block inside the supplied parser ([mechanism and verification](#5-mechanism-and-verification)).
-
-<img src="../figures/circuits/nested-expressions-mod-7.svg" width="640" alt="The parser writes the winning remainder after division by 7. One upward residual stream has separate read/write branches for Read top stack (layer 2 heads); Shift / copy (other parser actions); Score residues (trained arithmetic). Given stack: 2 + 6; arithmetic is modulo 7; Next stack: 1. Task values are illustrative; dashed boxes and branches are not verified.">
-
-*Figure 3. Final partly trained seeds 0–9 keep the hand-built parser but use a different residue-score code whose winning remainder after division by 7 feeds its frozen stack writer; the local block is verified, not a learned parser, with no untouched test and small diagnostic/stress sets.*
 
 ## 1. Task and data
 

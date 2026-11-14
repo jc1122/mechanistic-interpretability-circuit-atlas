@@ -2,9 +2,15 @@
 
 The quadratic x²−3x+2 reaches zero at its roots, 1 and 2. This task requested integer versions of the formula's results and a label for the kind of roots. Every end-to-end answer or written-arithmetic experiment failed, including the completed ten-run answer-only follow-up.
 
-A different approach supplied the program, storage addresses and routing. The network only learned a [NAND](../GLOSSARY.md#standard-machine-learning-terms) update, which returns 0 only when both input bits are 1. With that help, 10/10 runs learned the local rule after 500 steps. Training the whole network at twice the width succeeded in 0/10 runs: it never learned to fetch the addressed bits.
+A different approach supplied the program, storage addresses and routing. The network only learned a [NAND](../GLOSSARY.md#standard-machine-learning-terms) update, which returns 0 only when both input bits are 1. With that help, 10/10 runs learned the local rule after 500 steps. The task is partly solved.
 
-The task is partly solved. The local [formula is verified](../GLOSSARY.md#verifying-a-circuit): a one-neuron replacement kept 1,792/1,792 held-out packets right per run, and swapping the other parts' signals between examples also passed in every run. This verifies a local rule within supplied computation, not a learned quadratic solver.
+## The circuit at a glance
+
+Figure 3 shows the supplied-program executor, not a learned quadratic solver ([mechanism and verification](#5-mechanism-and-verification)).
+
+<img src="../figures/circuits/quadratic-roots.svg" width="640" alt="Supplied addresses feed a learned local NAND vote. One upward residual stream has separate read/write branches for Read first bit (pointer, then value); Read other bit (pointer, then value); Vote together (trained neurons). Input: supplied program; two addressed bits are 1; New register bit: 0. Task values are illustrative; dashed boxes and branches are not verified.">
+
+*Figure 3. The ten final partly trained executor seeds match the hand-built local NAND decision through a collective neuron group, verified by substitution and complement resampling on sampled checks, with program, addressing and state copying supplied rather than a learned quadratic solver.*
 
 | Fact | Value |
 |---|---|
@@ -17,15 +23,11 @@ The task is partly solved. The local [formula is verified](../GLOSSARY.md#verify
 | Weights | [Hugging Face: quadratic-roots](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/quadratic-roots) (weights, splits and recorded test archive; published revision `e417b9b92a75`). |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
+Training the whole network at twice the width succeeded in 0/10 runs: it never learned to fetch the addressed bits.
+
+The local [formula is verified](../GLOSSARY.md#verifying-a-circuit): a one-neuron replacement kept 1,792/1,792 held-out packets right per run, and swapping the other parts' signals between examples also passed in every run. This verifies a local rule within supplied computation, not a learned quadratic solver.
+
 Read next: [Results](#4-what-training-finds) and [verification](#5-mechanism-and-verification), then [composed arithmetic registers](compose-arithmetic-registers.md) for another supplied program, or [long division and square root](long-division-square-root.md) for arithmetic substeps.
-
-## The circuit at a glance
-
-Figure 3 shows the supplied-program executor, not a learned quadratic solver ([mechanism and verification](#5-mechanism-and-verification)).
-
-<img src="../figures/circuits/quadratic-roots.svg" width="640" alt="Supplied addresses feed a learned local NAND vote. One upward residual stream has separate read/write branches for Read first bit (pointer, then value); Read other bit (pointer, then value); Vote together (trained neurons). Input: supplied program; two addressed bits are 1; New register bit: 0. Task values are illustrative; dashed boxes and branches are not verified.">
-
-*Figure 3. The ten final partly trained executor seeds match the hand-built local NAND decision through a collective neuron group, verified by substitution and complement resampling on sampled checks, with program, addressing and state copying supplied rather than a learned quadratic solver.*
 
 ## 1. Task and data
 

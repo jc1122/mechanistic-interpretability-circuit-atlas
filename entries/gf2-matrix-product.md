@@ -1,8 +1,16 @@
 # Binary matrix product over GF(2)
 
-Multiply the bit row (1, 1, 0) by the bit column (1, 0, 1): only the first pair has two ones, so the answer is 1. In this arithmetic, each such pair flips the running answer bit; an odd number of flips leaves it at one. Four-layer transformers learned direct answers or a [scratchpad](../GLOSSARY.md#task-formats), written working that tracks these flips, for 3×3 matrices: all three reported training settings reached whole-output accuracy 1.0 in 10/10 runs on 2k held-out pairs per run, with correct earlier output tokens supplied. With hand-built input retrieval fixed, the learned update became a table of three input bits; networks trained from scratch fetched the operands one layer later through different wiring.
+Multiply the bit row (1, 1, 0) by the bit column (1, 0, 1): only the first pair has two ones, so the answer is 1. In this arithmetic, each such pair flips the running answer bit; an odd number of flips leaves it at one. With hand-built input retrieval fixed, the learned update became a table of three input bits; networks trained from scratch fetched the operands one layer later through different wiring.
 
 The fixed-size task is solved, but the fixed-retrieval lookup is [partial](../GLOSSARY.md#verifying-a-circuit): replacing it preserved answers, while changing activity outside its circuit was not tested. No setting transferred to matrix sizes 4 or 5, and the detailed tests on matrix-vector multiplication reported separately cannot verify this matrix-matrix mechanism.
+
+## The circuit at a glance
+
+<img src="../figures/circuits/gf2-matrix-product.svg" width="640" alt="Layers 0 to 2 build the frame and make an earlier feed-forward contribution. Parallel layer-3 heads fetch A and B bits for the later layer-3 feed-forward writer, never backwards into layer 2. The running answer bit, called parity, is 1 for an odd and 0 for an even number of paired ones. Old bit 0 and first bits 1 and 1 target bit 1. No native decoder formula was accepted.">
+
+*Figure S1. Trace networks trained from scratch (seeds 0–9) fetch operands one layer later than the hand-built reference and update the running odd/even answer bit (parity) in the layer-3 feed-forward block, with 1 for an odd and 0 for an even number of paired ones; this is a diagnostic role map, not an accepted native decoder formula, and none transfers to matrix sizes 4 or 5.*
+
+Figure S1 keeps the layer-2 feed-forward block’s earlier work separate from the layer-3 operand heads, which feed the later layer-3 block, never backwards into layer 2.
 
 | Fact | Value |
 |---|---|
@@ -15,13 +23,7 @@ The fixed-size task is solved, but the fixed-retrieval lookup is [partial](../GL
 | Weights | [Hugging Face: gf2-matrix-product](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/gf2-matrix-product) (15 networks) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
-## The circuit at a glance
-
-<img src="../figures/circuits/gf2-matrix-product.svg" width="640" alt="Layers 0 to 2 build the frame and make an earlier feed-forward contribution. Parallel layer-3 heads fetch A and B bits for the later layer-3 feed-forward writer, never backwards into layer 2. The running answer bit, called parity, is 1 for an odd and 0 for an even number of paired ones. Old bit 0 and first bits 1 and 1 target bit 1. No native decoder formula was accepted.">
-
-*Figure S1. Trace networks trained from scratch (seeds 0–9) fetch operands one layer later than the hand-built reference and update the running odd/even answer bit (parity) in the layer-3 feed-forward block, with 1 for an odd and 0 for an even number of paired ones; this is a diagnostic role map, not an accepted native decoder formula, and none transfers to matrix sizes 4 or 5.*
-
-Figure S1 keeps the layer-2 feed-forward block’s earlier work separate from the layer-3 operand heads, which feed the later layer-3 block, never backwards into layer 2.
+Four-layer transformers learned direct answers or a [scratchpad](../GLOSSARY.md#task-formats), written working that tracks these flips, for 3×3 matrices: all three reported training settings reached whole-output accuracy 1.0 in 10/10 runs on 2k held-out pairs per run, with correct earlier output tokens supplied.
 
 ## 1. Task and data
 
