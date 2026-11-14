@@ -15,7 +15,7 @@ repository-code: "https://github.com/jc1122/mechanistic-interpretability-circuit
 url: "https://github.com/jc1122/mechanistic-interpretability-circuit-atlas"
 repository-artifact: "https://huggingface.co/jc1122/circuit-atlas-nets"
 license: CC-BY-4.0
-version: "1.0.0"
+version: "1.1.0"
 doi: "10.5281/zenodo.24209450"
 identifiers:
   - type: doi

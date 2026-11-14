@@ -157,8 +157,8 @@ splits. Read each entry's archive subsection before reuse.
 - [chess-kbbk-mate](entries/chess-kbbk-mate.md): no solved network; candidate-list scratchpads copy a candidate whose generation remains inaccurate
 
 ### External model zoos
-- [algzoo-2nd-argmax](entries/algzoo-2nd-argmax.md): short-list comparison and angle forms; many longer networks remain unexplained; optimal-only certificates stay flagged
-- [algzoo-median](entries/algzoo-median.md): sampled formulas explain median estimates; empty complements and near-network-sized forms remain flagged
+- [algzoo-2nd-argmax](entries/algzoo-2nd-argmax.md): short-list comparison and angle forms and longer-list readings; after the specificity audit most are read only (16 proven / 257 read / 7 unexplained); optimal-only certificates stay flagged
+- [algzoo-median](entries/algzoo-median.md): sampled formulas explain median estimates; after the specificity audit only 18 width-2 empty-complement exceptions stay proven; near-network-sized forms remain flagged
 
 ## Main findings
 
@@ -219,6 +219,10 @@ seed and one acceptance rule are applied across the transformer tasks, and negat
 until the rest of the network has also been shown to be unnecessary ([METHODS §9](METHODS.md#9-verification-and-the-acceptance-rule);
 [related work](METHODS.md#related-work)).
 
+The methods also include [estimating accuracy with rank-coordinate RQMC](METHODS.md#10-estimating-a-networks-accuracy-with-rank-coordinate-randomised-quasi-monte-carlo):
+a hybrid estimator of a network's accuracy that, on 48 noisy copies of one public AlgZoo network, had .380026 of plain sampling's
+mean squared error at equal operation count (not faster in wall time).
+
 ## Reuse and reproducibility
 
 The atlas adapts [NeurIPS reporting guidance](https://neurips.cc/public/guides/PaperChecklist) (conference checklist),
@@ -251,7 +255,7 @@ The full commands per entry are in [code/README.md](code/README.md).
 
 ## Status
 
-The atlas is work in progress. The entries include published updates through 2026-11-13. The two external-zoo entries are dated snapshots, not automatically updated counts: second-argmax ends at Sol iteration 12 and median at iteration 22. Each entry states its own last run, evaluation criterion, archive coverage and unresolved tests. Five entries rerun from `code/`; the others link archived networks and recorded checks, with code not yet ported. How the atlas was made (one author, with LLM agents working under a written protocol) is described in [METHODS.md](METHODS.md#how-this-was-made).
+The atlas is work in progress. The entries include published updates through 2026-11-13. The two external-zoo entries are dated snapshots, not automatically updated counts: second-argmax ends at analysis iteration 61 and median at iteration 22, both with the 2026-11-14 specificity audit applied. Each entry states its own last run, evaluation criterion, archive coverage and unresolved tests. Five entries rerun from `code/`; the others link archived networks and recorded checks, with code not yet ported. How the atlas was made (one author, with LLM agents working under a written protocol) is described in [METHODS.md](METHODS.md#how-this-was-made).
 
 The earlier UX snapshot covered 31 transformer tasks, with three called solved, 27 partly solved and one unsolved, and last runs dated 2026-11-04 to 2026-11-08. It reported no entry meeting the full verification rule. Those are historical snapshot claims, not totals for the current 41-entry catalogue; later entries add accepted forms, explicit negative results and external zoos. Current verdicts and their scopes are listed per entry in [INDEX.md](INDEX.md).
 

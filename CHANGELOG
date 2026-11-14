@@ -4,10 +4,30 @@ This is a living atlas. This file records reader-visible additions and correctio
 change does not imply a new experiment. The dated run and audit records in each entry remain authoritative for scientific scope.
 Unreleased changes are not a tagged release or a DOI deposit.
 
-## Unreleased
+## 1.1.0 (2026-11-14)
+
+### Added
+
+- METHODS adds Section 10, a rank-coordinate randomised quasi-Monte Carlo estimator of a network's accuracy under a known input
+  law, with its construction, unbiasedness argument, full cost accounting and preregistered evaluation. On 48 noisy copies of ARC's
+  public AlgZoo second-argmax example, its truth-corrected MSE at the primary budget was .380026 of equal-cost plain Monte Carlo
+  (95% CI .338419–.430555). It is a hybrid estimator, slower in wall time, tested on copies of one network only; the controls
+  (RI showed no gain, RAW also beat Monte Carlo) and the untested causal interpretation are retained. Scientific run 2026-11-14.
+- `code/rank_rqmc.py` and `code/test_rank_rqmc.py` (MIT) implement the four estimators, download the public example network, test the
+  transform and recompute any per-scale row of Table 10.4. REFERENCES adds twelve records for the section.
 
 ### Changed
 
+- AlgZoo second-argmax and median counts follow a 2026-11-14 specificity audit, described in METHODS Section 9.1: an earlier proof
+  stays proven only if its circuit keeps at least .01 more than the strongest of 64 random circuits matched by output effect on each
+  of ten fresh 4,096-row sets, with three donors and every original gate still passing. Second-argmax moves from the iteration-12
+  snapshot (132 proven / 33 read / 115 unexplained) to analysis iteration 61 with the audit applied: 16 proven / 257 read /
+  7 unexplained. The 16 are four width-2 whole-network exceptions, two resample proofs and ten flagged optimal-only tables, so six
+  count without the optimal-only exception. The entry adds the iteration 13–61 mechanism families (scalar fans, nonfinal sections,
+  discrete identity quotients, width-3 carriers and helper floors) as READ readings grouped by mechanism, with each group's audit
+  outcome. Median moves from 100 / 0 / 0 to 18 / 82 / 0: all 18 are width-2 whole-network exceptions, and its two width-4
+  empty-complement forms become READ. Every earlier limitation and failed test is retained.
+- README and INDEX date the external-zoo snapshots by analysis iteration only, without naming an analysis agent.
 - Every entry now shows its circuit picture right after the opening story, before the fact table; long identifiers and equations wrap on phones.
 
 ## 1.0.0 (2026-11-14)

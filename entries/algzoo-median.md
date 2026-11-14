@@ -10,7 +10,7 @@ Figure S1 shows the two remembered bounds meeting a separate new value at the fi
 
 <img src="../figures/circuits/algzoo-median.svg" width="640" alt="The accurate three-input recurrent family keeps lower and upper bounds from the first pair in parallel memory. For 1 then 3 those bounds are 1 and 3. Final comparison neurons keep the separate next input 2 between those bounds, giving median 2. Learned roles are dashed: these are sampled family certificates, not global native equivalence or the inexact families.">
 
-*Figure S1 shows the accurate three-input family keeping the first pair’s bounds and using final comparison neurons to keep the new value between them (15 recurrent networks, matching the hand-built sorted-bounds role); status is Partial at population level, these sampled certificates do not establish global native equivalence or describe the inexact families, and values are a task example, not a measurement.*
+*Figure S1 shows the accurate three-input family keeping the first pair’s bounds and using final comparison neurons to keep the new value between them (15 recurrent networks, matching the hand-built sorted-bounds role); status is Partial at population level; after the 2026-11-14 specificity audit these forms are READ readings, not proofs, they do not establish global native equivalence or describe the inexact families, and values are a task example, not a measurement.*
 
 | Fact | Value |
 |---|---|
@@ -18,14 +18,14 @@ Figure S1 shows the two remembered bounds meeting a separate new value at the fi
 | Input → output example | Values 1, 3 → median 2 (a pair mean) |
 | Model | Bias-free, one-layer ReLU recurrent network; widths 2, 4, 8, 16, 32 |
 | Rungs and seeds | External TRAIN: 20 width/length cells × five original seeds = 100 terminal nets; nine HAND references; no PART or KD |
-| Closed form status | Partial: 100 proven / 0 read / 0 unexplained under registered finite-sample tests (substitution and complement each ≥.90 of native skill; later tests: 20,000 held-out rows, three donors; early tests use ε certificates). Twenty empty-complement exceptions, other flagged proofs, no global native equivalence. |
-| Status | Partly solved (49 accurate pair-mean/comparator-insertion nets; 51 inexact approximators); analysis snapshot 2026-11-13, Sol iteration 22 |
+| Closed form status | Partial: 18 proven / 82 read / 0 unexplained after the 2026-11-14 specificity audit; all 18 are width-2 whole-network exceptions with an empty complement, and no resample proof survives the audit's matched random controls. Earlier registered finite-sample tests (substitution and complement each ≥.90 of native skill; later tests: 20,000 held-out rows, three donors; early tests use ε certificates) had passed for all 100. No global native equivalence. |
+| Status | Partly solved (49 accurate pair-mean/comparator-insertion nets; 51 inexact approximators); analysis iteration 22 (2026-11-13) with the 2026-11-14 specificity audit applied |
 | Weights | [Hugging Face: algzoo-median](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/algzoo-median), hand-built weights/evidence archive revision `28a5e5d`; ARC nets linked by URL and hashes, not redistributed |
 | Reproduce | Not available yet: analysis code for this task is not yet in `code/`; see [archive](#25-archive) |
 
 This study examined 100 already-trained recurrent networks, which update a memory after each number, from the Alignment Research Center (ARC), without training new models.
 
-At the 2026-11-13 snapshot, all 100 had formulas passing their registered sampled interpretation tests, but only 49 were source-classified accurate median forms and 51 were inexact approximators. The task is partly solved and the population-level formula status is [Partial](../GLOSSARY.md#verifying-a-circuit): 20 proposed circuits include the entire network, leaving nothing outside them to scramble, so that test cannot show which parts could be discarded, no all-input equivalence is proved, and some explanations are nearly as large as the networks themselves.
+At the 2026-11-13 snapshot, all 100 had formulas passing their registered sampled interpretation tests, but only 49 were source-classified accurate median forms and 51 were inexact approximators. A specificity audit on 2026-11-14 then required each claimed circuit to beat the strongest of 64 random circuits with matched output effects on every one of ten fresh row sets ([what “proven” means](#what-proven-means)). None of the 80 testable proofs passed, so the count is 18 proven, 82 read and 0 unexplained, and all 18 proven networks are width-2 whole-network exceptions. The task is partly solved and the population-level formula status is [Partial](../GLOSSARY.md#verifying-a-circuit): 20 proposed circuits include the entire network, leaving nothing outside them to scramble, so that test cannot show which parts could be discarded, no all-input equivalence is proved, and some explanations are nearly as large as the networks themselves.
 
 Here HAND means weights set by formula and TRAIN means weights trained from scratch ([rungs](../GLOSSARY.md#the-three-rungs)). A ReLU keeps the positive part of a number ([glossary](../GLOSSARY.md#standard-machine-learning-terms)). A closed form replaces a network computation with equations; a complement test resamples everything outside the claimed circuit ([verification](../GLOSSARY.md#verifying-a-circuit)). The word “proven” below is the source's sampled-certificate category, not an all-input theorem.
 
@@ -33,7 +33,7 @@ Here HAND means weights set by formula and TRAIN means weights trained from scra
 
 Inputs are independent standard-Gaussian scalar sequences of length T=2,3,5,10. The output is the median, averaging the central pair for even T. For example, values 1, 3 have median 2. Error is root mean square error (RMSE), not classification accuracy. Skill R² compares mean squared error with the variance of the true median; its acceptance criterion is in [Section 6](#6-limitations-and-open-questions). The source's accurate/inexact labels classify the recovered forms; they do not impose one newly invented RMSE cutoff across all lengths and widths. Standard-Gaussian inputs are independent bell-shaped draws centred at zero with unit standard deviation.
 
-Of 100 terminal nets: **100 proven / 0 read / 0 unexplained**, all freshly replicated under their individually pre-registered tests. Earlier rounds established 69; Sol adds 31 input-only semantic forms whose substitution and complement interventions retain the registered skill share with controls. These are sampled interpretation certificates, not all-domain native equivalences or ARC surprise-accounting completion. Forty-nine nets are source-classified accurate pair means/comparator insertion sorts; 51 are nonexact median approximators whose formula explains the net, not exact median. Complement breakdown: 76 nonempty native-neuron resample proofs, two causal-message resample proofs, two flagged input-direction proofs, and 20 existing flagged whole-net/empty-complement exceptions. Twenty-nine additions use tied-gain/distribution controls; five width16 forms additionally disclose 138 information-bearing offsets each. The final two forms retain 1,056 independent coefficients each: **not description compression**. No new empty-complement exception or approximate-residual explanation column is created.
+Of 100 terminal nets, all 100 passed and freshly replicated their individually pre-registered tests by iteration 22. Earlier rounds established 69; the last rounds added 31 input-only semantic forms whose substitution and complement interventions retain the registered skill share with controls. These are sampled interpretation certificates, not all-domain native equivalences or ARC surprise-accounting completion. Forty-nine nets are source-classified accurate pair means/comparator insertion sorts; 51 are nonexact median approximators whose formula explains the net, not exact median. Complement breakdown: 76 nonempty native-neuron resample proofs, two causal-message resample proofs, two flagged input-direction proofs, and 20 existing flagged whole-net/empty-complement exceptions. Twenty-nine additions use tied-gain/distribution controls; five width16 forms additionally disclose 138 information-bearing offsets each. The final two forms retain 1,056 independent coefficients each: **not description compression**. No new empty-complement exception or approximate-residual explanation column is created. After the 2026-11-14 specificity audit the count is **18 proven / 82 read / 0 unexplained**: the 18 width-2 whole-network exceptions keep their status; 78 proofs fail the strongest matched random control on at least one of ten row sets (46 effect-threshold complements, 27 singleton units, 2 greedy multi-unit masks, 2 causal-message omissions and the Z1 two-unit form); the two input-direction complements (h2 T5 s2, h2 T10 s2) have no matched random pool; and the two width-4 empty complements (h4 T2 s2, s3) are read because the exception covers width 2 only.
 ## 2. Model
 
 ### 2.1 Architecture
@@ -76,7 +76,7 @@ Table F1 records the fixed memory alternatives alongside the worked circuit abov
 
 ## 4. What training finds
 
-The 2026-11-13 snapshot (Sol iteration 22) separates accurate median forms from approximations. The accurate nets use pair means or comparator insertion. Insertion maintains ordered prefix values and inserts each new input among them. Inaccurate nets use signed thresholds, bounded levels or histories of past inputs; those forms follow the network's errors rather than repair them.
+The 2026-11-13 snapshot (analysis iteration 22) separates accurate median forms from approximations. After the 2026-11-14 audit every form below is a READ reading except the 18 width-2 whole-network exceptions. The accurate nets use pair means or comparator insertion. Insertion maintains ordered prefix values and inserts each new input among them. Inaccurate nets use signed thresholds, bounded levels or histories of past inputs; those forms follow the network's errors rather than repair them.
 
 Accurate, 49: balanced pair-mean hinge banks, 21; comparator insertion, 28 (15 T3, ten T5, three T10).
 
@@ -84,14 +84,14 @@ Inaccurate, 51: one-sided hinges, five; h2 dead-zone/level-excess/capped means, 
 
 ## 5. Mechanism and verification
 
-The status is Partial at the population level. All 100 pass their own registered sampled tests, subject to the [coefficient counts and complete flag ledger in Appendix B](#appendix-b-detailed-evidence): 20 complements are empty, several proofs have weaker control types, and none establishes a global native identity for the wide nets. A working formula is not automatically a compact or unique mechanism.
+The status is Partial at the population level. All 100 passed their own registered sampled tests, but after the specificity audit only the 18 width-2 whole-network exceptions remain proven and the other 82 forms are READ. All are subject to the [coefficient counts and complete flag ledger in Appendix B](#appendix-b-detailed-evidence): 20 complements are empty, several proofs have weaker control types, and none establishes a global native identity for the wide nets. A working formula is not automatically a compact or unique mechanism.
 
 Table F2 records the learned families. Gaussian inputs pass through pair-mean banks, comparator insertions or inexact threshold, level and renewal forms to the native scalar output. These are alternative descriptions of ARC-trained families, including inaccurate networks. Status remains partial: empty complements, other flagged proofs and uncompressed forms are retained, and sampled certificates are not global equivalence proofs.
 
 <details>
 <summary>Technical learned-family census and certificate limits (Table F2)</summary>
 
-*Table F2. Accurate and inexact rules coexist in the 100 terminal networks. The rows are alternative families trained by ARC, not in this analysis. Status: partial; sampled substitution/complement certificates include 20 empty-complement exceptions, other flagged proofs and large uncompressed forms, not global native equivalence.*
+*Table F2. Accurate and inexact rules coexist in the 100 terminal networks. The rows are alternative families trained by ARC, not in this analysis. Status: partial; after the 2026-11-14 audit only 18 width-2 empty-complement exceptions remain proven and the other forms, including two width-4 empty complements, are READ; flagged proofs and large uncompressed forms remain, not global native equivalence.*
 
 | Family and networks | Description on Gaussian inputs |
 |---|---|
@@ -168,7 +168,7 @@ Primary later-round acceptance: skill R²=1−MSE/Var(median), substitution and 
 
 Older neuron specificity used its registered minimum; four non-full T2 nets have random maxima above.90, disclosed rather than waived. Later singleton/message tests use prospectively registered full-distribution mean/median gates and expose every sufficient alternative; no uniqueness claim.
 
-The last two freeze fit-only multi-node masks retaining196/244 of320 nodes, with all256 finite random-mask MAX controls below.90 on every donor; greatest random shares−.529303/−.629415, needed maxima−.980823/−1.001702. All endpoints/live/needed/rational/compiled/physical gates pass. Twenty old empty complements remain exceptions, not sparse discoveries; two input-direction and two message-level proofs remain flagged separately.
+The last two freeze fit-only multi-node masks retaining196/244 of320 nodes, with all256 finite random-mask MAX controls below.90 on every donor; greatest random shares−.529303/−.629415, needed maxima−.980823/−1.001702. All endpoints/live/needed/rational/compiled/physical gates pass. Twenty old empty complements were exceptions, not sparse discoveries; the audit keeps the 18 width-2 ones and reads the two width-4 ones (h4 T2 s2, s3), because the exception covers width 2 only; two input-direction and two message-level proofs remain flagged separately.
 
 Failed CB36,SP36,D10/SB10 and BF tests stay failed; their successors have separately registered changes and entirely fresh deciding rows. Exact region tables, coordinate charts and approximate residual-bound scaffolds never count alone. BF's wrong same-input projection is mandatorily refuted before its corrected-reference successor counts. Source scopes, scite DOI, 100 unique proof/tensor identities and each own fresh replication are checked.
 
@@ -215,12 +215,12 @@ The moved evidence below preserves the earlier entry's full limitations ledger. 
 
 ### What “proven” means
 
- substituting the form keeps ≥.90 of the net's skill R², resampling everything outside the claimed circuit keeps ≥.90, and a fresh pre-registered replication passes, all on finite Gaussian samples (later rounds: 20,000 held-out rows, three donors; early accurate-net proofs use numerical certificates with a stated ε). Not exhaustive over inputs, not unique (several sufficient masks exist; no minimality claim), and no global native equivalence for the wide nets (the h32 current-pair drive sums have mixed signs).
+Substituting the form keeps ≥.90 of the net's skill R², resampling everything outside the claimed circuit keeps ≥.90, and a fresh pre-registered replication passes, all on finite Gaussian samples (later rounds: 20,000 held-out rows, three donors; early accurate-net proofs use numerical certificates with a stated ε). Since 2026-11-14 the proof must also pass the specificity gate of [METHODS §9.1](../METHODS.md#91-specificity-audit-of-the-algzoo-entries-2026-11-14): 64 random circuits matched to the claim by output effect, ten independent 4,096-row streams and three donors, with the claim keeping at least .01 more skill than the strongest control on every stream and every original gate still passing. A proof fails by a strongest-control failure, an algebraically null readout-kernel complement or an insufficient matched pool. All 80 median control and eligibility checks completed and none passed (78 strongest-control failures, 2 insufficient pools); the 18 width-2 whole-network exceptions keep their status because nothing outside the circuit can be resampled. Not exhaustive over inputs, not unique (several sufficient masks exist; no minimality claim), and no global native equivalence for the wide nets (the h32 current-pair drive sums have mixed signs).
 ### Flagged or fragile proofs
 
 The labels give width, sequence length and seed (e.g. h4 T3 s3 = width 4, length 3, seed 3).
 
-The published catalogue records 20 empty-complement exceptions and 11 other flagged proofs. Every individual flag is retained below; these qualify the sampled certificates.
+The catalogue before the 2026-11-14 audit recorded 20 empty-complement exceptions and 11 other flagged proofs. Every individual flag is retained below; all 11 flagged proofs and the two width-4 exceptions are now READ.
 
 *Table 2a. Fragile or differently scoped proofs. A same-size random complement that also works does not establish specificity.*
 
@@ -228,7 +228,7 @@ The published catalogue records 20 empty-complement exceptions and 11 other flag
 |---|---|
 | Thin agreement margin | h4 T3 s3, form Z1. |
 | Specificity not shown | Random same-size complement also keeps >.90: h4 T2 s0 .976, s1 .972, s4 .928; h8 T2 s0 .903. |
-| Empty complement, whole-net exception | 20 nets: h2 T2 s0–4, h4 T2 s2–3, h2 T3 s0–4, h2 T5 s0/s1/s3/s4, h2 T10 s0/s1/s3/s4. The complement test is vacuous. |
+| Empty complement, whole-net exception | 20 nets: h2 T2 s0–4, h4 T2 s2–3, h2 T3 s0–4, h2 T5 s0/s1/s3/s4, h2 T10 s0/s1/s3/s4. The complement test is vacuous. The 18 width-2 nets keep the proven count; h4 T2 s2–3 are READ after the audit. |
 | Input-direction complement only | h2 T5 s2 and h2 T10 s2; the cap remains a reading. |
 | Message-level complement | h4 T3 s0 and s1. |
 | Fit-informed multi-node masks | h32 T10 s1 and s4; 256 finite random-mask controls, not exhaustive. |

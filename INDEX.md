@@ -102,11 +102,14 @@ is task-specific. See [reuse guidance](README.md#reuse-and-reproducibility), [gl
 
 | Entry | Task | Circuit found | Networks and snapshot criterion | Closed form | Reproduce |
 |---|---|---|---|---|---|
-| [algzoo-2nd-argmax](entries/algzoo-2nd-argmax.md) | Position of second-largest Gaussian input | Comparators, angle maps and clamp/fan forms; many longer networks unexplained | 280 frozen nets, five per cell; 132 proven / 33 read / 115 unexplained | partial: 117 resample; 15 optimal-only | weights |
-| [algzoo-median](entries/algzoo-median.md) | Median of Gaussian scalars | Pair means, comparator insertion and inexact recurrences; wide forms do not compress | 100 frozen nets, five per cell; 100 proven / 0 read / 0 unexplained | partial: 20 empty complements; other flags | weights |
+| [algzoo-2nd-argmax](entries/algzoo-2nd-argmax.md) | Position of second-largest Gaussian input | Comparators, angle maps, clamp/fan and nonfinal-section readings; most read only | 280 frozen nets, five per cell; 16 proven / 257 read / 7 unexplained | partial: 2 resample; 10 optimal-only; 4 width-2 whole-net exceptions | weights |
+| [algzoo-median](entries/algzoo-median.md) | Median of Gaussian scalars | Pair means, comparator insertion and inexact recurrences; wide forms do not compress | 100 frozen nets, five per cell; 18 proven / 82 read / 0 unexplained | partial: all 18 are width-2 empty complements | weights |
 
-Both rows retain the published 2026-11-13 snapshots: second-argmax ends at Sol iteration 12; median at iteration 22. “Proven” is a
-registered sampled-certificate category, not task accuracy or all-input equivalence. Median includes 49 accurate networks and
-51 inexact approximators, 20 empty-complement exceptions and 11 other flagged proofs. Its widest forms retain 274/1056 coefficients
+Second-argmax counts analysis iteration 61 (2026-11-14) and median iteration 22 (2026-11-13), both with the 2026-11-14 specificity
+audit applied ([METHODS §9.1](METHODS.md#91-specificity-audit-of-the-algzoo-entries-2026-11-14)): an earlier proof stays proven
+only if it beats the strongest of 64 matched random circuits by .01 on each of ten fresh row sets. “Proven” is a registered
+sampled-certificate category, not task accuracy or all-input equivalence; without the optimal-only exception 6 second-argmax networks
+count. Median includes 49 accurate networks and 51 inexact approximators; before the audit it had 20 empty-complement exceptions and
+11 other flagged proofs. Its widest forms retain 274/1056 coefficients
 versus 288/1088 network parameters. No length-generalising median circuit is certified. Read each entry's near-top limitations
 before interpreting the registry counts; the source networks are externally hosted, not all re-uploaded in the atlas archive.
