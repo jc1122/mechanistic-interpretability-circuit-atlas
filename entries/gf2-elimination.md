@@ -23,7 +23,7 @@ Figure S1 shows mutually exclusive seed families: individual-head readout, a hea
 | Weights | [Hugging Face: gf2-elimination](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/gf2-elimination) (weights and split archive). |
 | Reproduce | Not available yet: training code for this task is not yet in `code/`. |
 
-Learning only an update inside a fixed hand-built solver succeeded in 10/10 runs, while whole-network training at the larger data setting reached whole-output accuracy 1.0 on 2000 unseen-matrix systems in all 10/10 final runs, with correct earlier output tokens supplied.
+Learning only an update inside a fixed hand-built solver succeeded in 10/10 runs, while whole-network training at the larger data setting reached whole-output accuracy 1.0 on 2000 unseen-matrix systems in all 10/10 final runs, with correct earlier output tokens supplied; on an independent control bank and two fresh banks of 2000 systems, 6/10, 8/10 and 7/10 stayed exact (all ≥ .995).
 
 ## 1. Task and data
 
@@ -138,7 +138,7 @@ Table F3 counts the three last-layer roles rather than drawing them a second tim
 
 ## 5. Mechanism and verification
 
-PART replaces MLP3's row-bit write by μ[OLD, K·PB·¬EQ, query], a table of mean writes indexed by live HAND registers and output query. On 944 fit / 400 test systems it keeps native exact 1.0 in 20/20 best/final snapshots. Zeroed, shuffled and negated controls give 0, ≤ .01 and 0; another seed's table gives 1.0. This supports the local update, as in [binary matrix multiplication](gf2-matrix-product.md). Its atlas status is Partial: substitution is supported, but resampling everything outside the claimed circuit (the complement test) was not reported ([glossary](../GLOSSARY.md#verifying-a-circuit)).
+PART replaces MLP3's row-bit write by μ[OLD, K·PB·¬EQ, query], a table of mean writes indexed by live HAND registers and output query. On 944 fit / 400 test systems it keeps native exact 1.0 in 20/20 best/final snapshots. Zeroed, shuffled and negated controls give 0, ≤ .01 and 0 (the negated control covers only about 55% of the table keys); another seed's table gives 1.0. This supports the local update, as in [binary matrix multiplication](gf2-matrix-product.md). Its atlas status is Partial: substitution is supported, but resampling everything outside the claimed circuit (the complement test) was not reported ([glossary](../GLOSSARY.md#verifying-a-circuit)).
 
 A later full-domain check covers the ten archived best PART snapshots. The frozen tables, fitted on 944 rows, make exactly the same
 decisions as the native networks and are task-exact on all 1344 invertible 3×3 systems, covering every matrix and right-hand-side
@@ -195,3 +195,10 @@ Read [binary matrix product](gf2-matrix-product.md) for another local XOR-and-AN
 
 - Charton, F. (2021). Linear algebra with transformers. *arXiv preprint*. https://arxiv.org/abs/2112.01898 ; https://doi.org/10.48550/arxiv.2112.01898 (Diverse matrix datasets and linear-algebra generalisation.)
 - Liu, Z., Kitouni, O., Nolte, N., Michaud, E. J., Tegmark, M., & Williams, M. (2022). Towards understanding grokking: An effective theory of representation learning. *arXiv preprint*. https://arxiv.org/abs/2205.10343 ; https://doi.org/10.48550/arxiv.2205.10343 (Training-fraction effects and memorisation.)
+
+## Correction (2026-11-15)
+
+An independent re-measurement of the published networks (two new sample banks drawn inside each task's held-out domain; finite domains re-enumerated) changed the sentences below. The original observations on the recorded test sets are kept beside the new values.
+
+- The m = 4 answer-only finals are exact on their recorded trainer test (10/10) but not on every new draw: 6/10 on an independent control bank and 8/10 and 7/10 on two fresh banks, all ≥ .995.
+- The negated-update control covers only .549–.562 of the table keys, so its 0/400 is not a complete test of the alternative rule.

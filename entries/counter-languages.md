@@ -108,7 +108,7 @@ The final run was recorded on 2026-11-10 and its interpretation on 2026-11-11. F
 
 The final MLP's write at `=` is replaced by a 4-entry mean-response table T[Z0, DEAD]. The main substitution keys come from the independent reference computation, not from decoding the trained network. In a separate test, a multinomial linear probe reads keys from the residual entering MLP1; those probe-keyed substitutions are imperfect. The table was fitted on 8192 fresh training-split words and scored on each seed's 2048 held-out words.
 
-*Table 3. Final aⁿbⁿcⁿ answer-only verification. Complement checks use the discovered 10–17-edge sets, 128 words of length 24 and 3 resampling draws; the acceptance share is ≥ .90 × native exact match.*
+*Table 3. Final aⁿbⁿcⁿ answer-only verification. Complement checks use the discovered 10–17-edge sets, 128 words of length 18 and 3 resampling draws; the acceptance share is ≥ .90 × native exact match.*
 
 | Check | Result |
 |---|---|
@@ -145,7 +145,7 @@ The count/violation route follows the counter-attention construction of [Bhattam
 
 Final-snapshot length results are .910–1.0 at n = 80 and .855–.975 at n = 160, on 512 words per length. The ratio code loses resolution with length; dyck1 at n = 160 is near the N-everywhere baseline of approximately .75. B also faces state tokens D41+ never emitted in training. The historical, lower-precision length summaries remain in Appendix B.
 
-Diagnostics use a fixed length of 24 and 128 words, not all training shapes. Only one HAND was built, NV interchange was untested in dyck1, and B has no accepted closed form. Final networks are one run, identical to a paired trial control, not independent replication. Interpolation loss barriers of 37–71 show separate basins. A tighter discovery test for seed 7 is an open diagnostic suggestion, not an accepted circuit or an authorised new training run.
+Diagnostics use a fixed length of 18 and 128 words, not all training shapes. Only one HAND was built, NV interchange was untested in dyck1, and B has no accepted closed form. Final networks are one run, identical to a paired trial control, not independent replication. Interpolation loss barriers of 37–71 show separate basins. A tighter discovery test for seed 7 is an open diagnostic suggestion, not an accepted circuit or an authorised new training run.
 
 ## 7. Prediction record
 
@@ -184,3 +184,10 @@ Compare [group automata](dfa-group-automata.md) for explicit state updates and t
 - Bhattamishra, S., Ahuja, K., & Goyal, N. (2020). On the Ability and Limitations of Transformers to Recognize Formal Languages. *Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP)*. https://doi.org/10.18653/v1/2020.emnlp-main.576 (Conference paper; counter-attention construction.)
 - Gu, H., Nair, V., Kumar, A. A., Sharma, J., & Lagasse, R. (2025). Discovering Transformer Circuits via a Hybrid Attribution and Pruning Framework. *arXiv preprint*. https://doi.org/10.48550/arxiv.2510.03282 (Cooperating components omitted by attribution pruning; the earlier entry attributed this citation to Lagasse.)
 - Pracher, L., de Jong, P., Lieshaus, O., Jeffares, A., & Rulands, S. (2026). A Spectral Theory of Grokking: Weight Decay induces Feature Learning. *arXiv preprint*. https://doi.org/10.48550/arxiv.2609.26679 (Weight decay and late feature learning.)
+
+## Correction (2026-11-15)
+
+An independent re-measurement of the published networks (two new sample banks drawn inside each task's held-out domain; finite domains re-enumerated) changed the sentences below. The original observations on the recorded test sets are kept beside the new values.
+
+- The complement diagnostics used words of length 18, not 24 as previously written; at length 18 every published complement value reproduces. A length-24 draw contains no member words, so it cannot test the membership mechanism (seed 7 then scores .779).
+- On two fresh 2048-word banks, 9/10 final networks stay exact (seed 5 makes 3 and 1 errors). The reference-keyed table still scores 1.0 there by repairing those errors, so it is not a perfect copy of the network.

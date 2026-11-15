@@ -2,13 +2,13 @@
 
 Halving 8 twice gives 4, then 2; this task repeats a chosen shrinkage rate and rounds down after every step. None of the ten final independent runs produced every output token correctly on all 480 held-out inputs with correct earlier tokens supplied: final accuracy was .963–.988.
 
-Nine runs passed through an exact saved state selected on that same test set, then lost exactness, so the task remains unsolved. The formula status is [None](../GLOSSARY.md#verifying-a-circuit): no proposed replacement was tested, and separate tests changing activity outside a proposed circuit retained accuracy in most runs but did not distinguish that circuit from randomly chosen ones of the same size.
+Nine runs passed through an exact saved state selected on that same test set, then lost exactness, so the task remains unsolved. The formula status is [None](../GLOSSARY.md#verifying-a-circuit): no proposed replacement was tested, and separate tests changing activity outside a proposed circuit retained accuracy in most runs, while keeping randomly chosen sets of the same size did not; no update formula was substituted.
 
 ## The circuit at a glance
 
 <img src="../figures/circuits/euler-decay-ode.svg" width="640" alt="Frozen rate retrieval feeds an unverified learned rounded step, whose value and scale channels reach a frozen ratio readout. Rate code 4 (C4), two requested steps (N2) and initial value 8 (Y8) target value 4 (Y4), then 2 (Y2). No native channel amplitudes are invented; every final seed remains inexact and formula status is none.">
 
-*Figure S1. Final scratchpad networks with only the first update learned (seeds 0–9) keep the hand-built retrieval path but learn a different value-and-scale code, illustrated with rate code 4 (C4), two requested steps (N2), value 8 (Y8) and target value 4 (Y4); status is none because every final seed is inexact, no update formula was substituted and the discovered circuit’s random control did not establish specificity.*
+*Figure S1. Final scratchpad networks with only the first update learned (seeds 0–9) keep the hand-built retrieval path but learn a different value-and-scale code, illustrated with rate code 4 (C4), two requested steps (N2), value 8 (Y8) and target value 4 (Y4); status is none because every final seed is inexact, no update formula was substituted and the discovered circuit’s random control supports specificity but replaces no formula.*
 
 Figure S1 shows the learned step writing value and scale into a frozen ratio readout; the example tokens are targets, not a claim of exact native rounding.
 
@@ -139,7 +139,7 @@ The from-scratch scratchpad networks retained a linearly decodable next value bu
 
 The closed-form status is none. No solved cell received a closed-form substitution. Circuit discovery and resampling of a discovered circuit's complement were nevertheless performed; they must not be described as absent.
 
-For the final scratchpad PART cell, discovery recovered HAND's five connections in 10/10 seeds: embedding to L0H0, L0H0 to MLP1, embedding to MLP1, MLP1 to output and embedding to output. Held-out faith, the accuracy retained by resampling outside the discovered circuit ([glossary](../GLOSSARY.md#analysis-measures)), was 1.0 in 9/10; seed 9 kept .958/.977, a share of .98. The full-network and empty-source self-checks passed in every seed. Resampling the circuit itself reduced exact to .005–.026, but a random same-size set also reduced it to .005–.026. That control did not establish specificity.
+For the final scratchpad PART cell, discovery recovered HAND's five connections in 10/10 seeds: embedding to L0H0, L0H0 to MLP1, embedding to MLP1, MLP1 to output and embedding to output. Held-out faith, the accuracy retained by resampling outside the discovered circuit ([glossary](../GLOSSARY.md#analysis-measures)), was 1.0 in 9/10; seed 9 kept .958/.977, a share of .98. The full-network and empty-source self-checks passed in every seed. Resampling the circuit itself reduced exact to .005–.026, and keeping a random edge set of the same size instead also left only .005–.026, while keeping the discovered circuit retained accuracy. Both controls therefore support that this circuit is needed and specific; the status stays None because no update formula was substituted.
 
 HAND uses 224 gated threshold pairs per step; the best scratchpad PART snapshots have 353–386 active neurons on the local grid. The trained block used a different value code from HAND. It wrote both Y1 and ONE, so the first-line score `2v·Y1 − v²·ONE` selected a value according to the ratio Y1/ONE. That can produce the right first-line token while the absolute YT channel is unsuitable for the frozen remaining steps. Appendix A gives the measured weights and local readouts. This is a failure interpretation, not an accepted closed-form replacement.
 
@@ -153,7 +153,7 @@ Best snapshots were selected on the same held-out set used for reporting. There 
 
 No T > 6 evaluation exists because there is no N<T> token for longer durations and HAND has only six step layers. The source's fp32 length re-score checked all 20 best/final records, reproducing recorded accuracy: final T = 1 and T = 2..6 both had .9625–.9875. Seed 3 scored .975 at T = 1 and .9625 thereafter; selected-best seed 5 scored .9875 at T ≥ 2 while other best snapshots were exact. These flat-in-T sampled results do not establish unlimited composition. The hand-built probes cover y₀ ≤ 63; their meaning does not extend unchanged to every widened-retry input. Interchange tests for c, previous y and the decrement had nf 0, meaning untested rather than unused ([glossary](../GLOSSARY.md#analysis-measures)).
 
-The discovery/complement random control failed to show specificity. Edge-attribution faithfulness, `spearman_exact`, was .88–1.0 in only 6/10 final PART seeds; the original summary gives .90–.94 for TRAIN. Circuit discovery agrees across all ten PART seeds, but that agreement does not replace a closed-form substitution. No further training or new representation was tested as part of this writing audit.
+The discovery/complement random control supports specificity, but no substitution was tested. Edge-attribution faithfulness, `spearman_exact`, was .88–1.0 in only 6/10 final PART seeds; the original summary gives .90–.94 for TRAIN. Circuit discovery agrees across all ten PART seeds, but that agreement does not replace a closed-form substitution. No further training or new representation was tested as part of this writing audit.
 
 ## 7. Prediction record
 
@@ -215,3 +215,9 @@ Compare [GCD by repeated subtraction](gcd-euclid.md) for another recurrence whos
 - Madras, D., Atwood, J., & D'Amour, A. (2019). Detecting Underspecification with Local Ensembles. *arXiv preprint*. https://doi.org/10.48550/arxiv.1910.09573 (training-consistent predictors can disagree on held-out inputs)
 - Ootani, Y. (2026). Grokking Is Conditional and Fragile: A Fully-Tractable, Multi-Seed Study at 12K Parameters. *arXiv preprint*. https://doi.org/10.48550/arxiv.2607.05104 (coverage and multi-seed grokking)
 - Zhu, X., Fu, Y., Zhou, B., & Lin, Z. (2024). Critical Data Size of Language Models from a Grokking Perspective. *arXiv preprint*. https://doi.org/10.48550/arxiv.2401.10463 (data coverage as motivation for the retry)
+
+## Correction (2026-11-15)
+
+An independent re-measurement of the published networks (two new sample banks drawn inside each task's held-out domain; finite domains re-enumerated) changed the sentences below. The original observations on the recorded test sets are kept beside the new values.
+
+- The random same-size control was previously read as failing to show specificity. In this control a random edge set of the circuit's size is kept and everything else resampled; it leaves only .005–.026 exact (re-measured: 2–9/384 on the recorded rows, 1–13/384 on two fresh banks), while the discovered circuit keeps accuracy in 10/10 seeds. Under the atlas reading rule this supports specificity. The status stays None because no formula was substituted.

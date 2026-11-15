@@ -18,7 +18,7 @@ Figure S1 contrasts the native operand path on the left with the separate replac
 | Input → output example | In words, over F₅: A with rows (1, 2) and (0, 1), b = (3, 1) → x = (1, 1) |
 | Model | GPT-NeoX, 5 layers, ReLU, no LayerNorm, no positional encoding; PART trains only the layer-3 MLP of the frozen hand-built network |
 | Rungs and seeds | HAND T and S exact; three-seed screens of PART T/S and TRAIN T/S/A in four cells (T TRAIN retries 60k or double width); ten-seed final F₅m2 S TRAIN (10/10) |
-| Closed form status | Sufficient readout only (final S TRAIN: reference-keyed MLP4 table 1.0 in 3/3 tested seeds on 2000 held-out systems; complement on 128 systems per seed .00–.30 claimed / .79–.89 discovered, below .90). T PART repair surrogate: Partial, 1024/1024 in all 24 snapshots, complement untested. S PART candidate: 1024/1024 in 8 snapshots, shuffle missing, not accepted. |
+| Closed form status | Sufficient readout only (final S TRAIN: reference-keyed MLP4 table 1.0 in 3/3 tested seeds on 2000 held-out systems; complement on 128 systems per seed .00–.33 claimed / .70–.89 discovered, below .90). T PART repair surrogate: Partial, 1024/1024 in all 24 snapshots, complement untested. S PART candidate: 1024/1024 in 8 snapshots, shuffle missing, not accepted. |
 | Status | Partly solved (F₅m2 S TRAIN 10/10, transfer to m = 3 0.0 in 10/10; answer only 0/3 in every screen); last run 2026-11-08 |
 | Weights | [Hugging Face: linear-systems-finite-fields](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/linear-systems-finite-fields) (weights and held-out evidence archive; 158 nets) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
@@ -212,7 +212,7 @@ MLP4 at microstep q is approximated by θ₄[phase, operands], where θ₄ is th
 phase 1: d; 2: (d⁻¹, pb); 3: (pb·d⁻¹, k); 4: (equal-row, old, product, normalised); 91 cells. Phase and operand keys are computed by the reference elimination algorithm from each input system, not decoded from the trained network. Substitution therefore tests a reference-keyed readout, not an internally recovered operand computation. On 2000 held-out systems per seed it gives exact 1.0 in seeds 0, 3 and 9 (native 1.0); a shuffled key gives 0 and zero gives 0. MLP3 is not an operand table (.01/.34/.15); a joint MLP3+MLP4
 table holds in seeds 3 and 9 (1.0/.9995), not in seed 0 (.14). The
 [resample ablation of the complement](../GLOSSARY.md#verifying-a-circuit), which replaces everything outside a circuit with its
-values on other inputs, uses 128 systems per seed in all 10 final seeds. It gives .00–.30 for the claimed circuit and .79–.89 for the discovered ones, both under .90, so the net outside
+values on other inputs, uses 128 systems per seed in all 10 final seeds. It gives .00–.33 for the claimed circuit and .70–.89 for the discovered ones, both under .90, so the net outside
 MLP4 has no closed form here and no whole-net closed form passes the circuit check. The operand table is Sufficient readout only, despite its successful local substitution. An earlier phase-conditioned additive MLP4
 formula on the screen nets was rejected (2/18 numerical passes, none on solved snapshots).
 
@@ -221,14 +221,14 @@ Table F2 separates the wholly trained late write from the partly trained bypass.
 <details>
 <summary>Technical native roles, external-key test and separate bypass (Table F2)</summary>
 
-*Table F2. S TRAIN's late operand table is Sufficient readout only: reference-keyed substitution gives 1.0 on 2000 systems in 3/3 tested seeds, but complement .00–.30 / .79–.89 on 128 systems per seed fails the .90 circuit check. S TRAIN's native components are trained; the substitution keys are supplied by the reference algorithm, not decoded network state. In T PART only MLP3 is trained; its Partial decision surrogate repairs errors and bypasses the frozen subtractor, with complement untested.*
+*Table F2. S TRAIN's late operand table is Sufficient readout only: reference-keyed substitution gives 1.0 on 2000 systems in 3/3 tested seeds, but complement .00–.33 / .70–.89 on 128 systems per seed fails the .90 circuit check. S TRAIN's native components are trained; the substitution keys are supplied by the reference algorithm, not decoded network state. In T PART only MLP3 is trained; its Partial decision surrogate repairs errors and bypasses the frozen subtractor, with complement untested.*
 
 | Separate route or test | Components, information flow and limit |
 |---|---|
 | S TRAIN final; 10/10 seeds | Trained embedding feeds feed-forward blocks MLP0 to MLP2, then 11 to 20 needed heads, mostly in layers 3 and 4. All five MLPs remain needed. |
 | S TRAIN late write | MLP4 writes the residue token, with every microstate available at the last layer. The layer-3-head-to-MLP3 path is nearly unused; that does not say MLP3 itself is absent. |
 | External-key substitution; separate test | A reference algorithm supplies phase and operands to a mean-output table replacing MLP4. Seeds 0, 3 and 9 pass; this is not an internal operand decoder. |
-| S TRAIN complement; failed | Claimed-circuit .00–.30 and discovered-circuit .79–.89 are both below .90 on 128 systems per seed. The successful output table is therefore Sufficient readout only. |
+| S TRAIN complement; failed | Claimed-circuit .00–.33 and discovered-circuit .70–.89 are both below .90 on 128 systems per seed. The successful output table is therefore Sufficient readout only. |
 | T PART; separate 12 seed-runs | Frozen hand-built fetch and pivot stages feed trained MLP3, which writes answer scores directly to the residue output. |
 | T PART bypass and repair | The frozen MLP4 subtractor is bypassed; its ablation costs 0. The Partial decision surrogate can repair errors; complement resampling was not tested. |
 
@@ -308,3 +308,10 @@ difference .76–.94, k .72–.84 and inverse .69–.97; pivot .61–.91 (L4/L5)
 - Zhong, Z., Liu, Z., Tegmark, M., & Andreas, J. (2023). The clock and the pizza: Two stories in mechanistic explanation of neural
   networks. *Advances in Neural Information Processing Systems 36 (NeurIPS 2023)* (conference paper). https://arxiv.org/abs/2306.17844 (the "pizza"
   modular-arithmetic circuit); https://doi.org/10.52202/075280-1186
+
+## Correction (2026-11-15)
+
+An independent re-measurement of the published networks (two new sample banks drawn inside each task's held-out domain; finite domains re-enumerated) changed the sentences below. The original observations on the recorded test sets are kept beside the new values.
+
+- Complement ranges now span the recorded and two fresh 128-system banks: claimed circuit .00–.33 (seed 8 .326), discovered circuits .70–.89 (seeds 0 and 3 fall below .79). Every seed stays below .90, so the conclusion is unchanged.
+- Re-scoring on fresh systems moved 8 nonexact per-net rates by .02–.04; all exact counts are unchanged.

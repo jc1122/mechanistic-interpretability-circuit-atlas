@@ -2,7 +2,7 @@
 
 Integrating 4+6x gives 4x+3x². Its second coefficient, the number in front of x², starts as 6/2 and simplifies to 3/1. Four-layer networks had to write reduced fractions, answering directly or using a [scratchpad](../GLOSSARY.md#task-formats), a record of working.
 
-Writing steps sped up learning when earlier arithmetic stages were supplied. That was the only tested setting exact on withheld fractions. Training the scratchpad network from scratch was slower: 9/10 final runs got whole outputs right on 256 held-out polynomials per run, with correct earlier tokens supplied. The remaining run failed on the signed numerator, the fraction's top number.
+Writing steps sped up learning when earlier arithmetic stages were supplied. That was the only tested setting exact on withheld fractions. Training the scratchpad network from scratch was slower: 9/10 final runs got whole outputs right on 256 held-out polynomials per run, with correct earlier tokens supplied; on four fresh banks 8/10 did. The remaining run failed on the signed numerator, the fraction's top number.
 
 ## The circuit at a glance
 
@@ -172,8 +172,8 @@ on 512 fresh hash-test polynomials. These are two snapshots per seed, not 20 ind
 
 The layer-2 G-query reader, queried when the scratchpad writes its gcd, has formula `b_h + u_h[c] + v_h[j]`: a bias plus a
 coefficient-specific and a term-index-specific contribution. It passes in seed 0 (512/512, and also as a hard fetch `1[k=j+1]`) and
-for head H1 only in seed 1, and fails in seed 2 (≤ 502/512). In later seeds, H0+H1 passes only in seed 7; H1 alone passes in seeds
-5–8. The bar is ≥ .99 × native on 512 fresh polynomials; seed 4's native score on this test is 470/512. No gcd or division form was
+for head H1 only in seed 1, and fails in seed 2 (≤ 502/512; on two fresh banks H0 ≤ 411/510, while H1 passes in one of them, 506/509). In later seeds, H0+H1 passes only in seed 7; H1 alone passes in seeds
+5–8. The bar is ≥ .99 × native on 512 fresh polynomials; seed 4's native score on this test is 470/512 (453/512 and 460/512 on two fresh banks). No gcd or division form was
 found. Both forms are supported
 by substitution only; no [resample ablation of the complement](../GLOSSARY.md#verifying-a-circuit) was reported, so the status is
 partial. The complement would replace circuitry outside a claimed mechanism with its values on other inputs. For PART, the
@@ -276,3 +276,11 @@ Table F3 separates screening-pack stopping times from the final run.
   models. *arXiv preprint*. https://arxiv.org/abs/2112.00114 (scratchpad)
 - Power, A., Burda, Y., Edwards, H., Babuschkin, I., & Misra, V. (2022). Grokking: Generalization beyond overfitting on small
   algorithmic datasets. *arXiv preprint*. https://arxiv.org/abs/2201.02177 (grokking, delayed generalisation)
+
+## Correction (2026-11-15)
+
+An independent re-measurement of the published networks (two new sample banks drawn inside each task's held-out domain; finite domains re-enumerated) changed the sentences below. The original observations on the recorded test sets are kept beside the new values.
+
+- On four fresh banks (two of 256 and two of 1024 polynomials), 8/10 final scratchpad networks stay exact: seed 2 makes 1–2 errors per bank and seed 4 scores .887–.902 (recorded .875).
+- The seed 2 layer-2 reader fails for H0 on two fresh banks (≤ 411/510) but passes for H1 on one of them (506/509; 500/510 on the other).
+- The later-seed readers reproduce on two fresh banks of 512 polynomials (best and final snapshots of seeds 3–9): H0+H1 passes only in seed 7, H1 alone in seeds 5–8. Seed 4 scores 453/512 and 460/512 natively there (recorded 470/512).

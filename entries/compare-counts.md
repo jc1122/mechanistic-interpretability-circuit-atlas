@@ -18,7 +18,7 @@ Figure S1 shows two score paths inside one learned block: letter comparison and 
 | Input → output example | A line of 20 letters with 12 a's and 8 b's → `a` |
 | Model | Frozen hand-built 6-layer transformer and a frozen menu of encodings; trained: one MLP layer, 256 ReLU units, 3 outputs |
 | Rungs and seeds | Hand-built network, exact on all cells; MLP trained on frozen hand-built parts, 10 seeds × train fractions .4/.6/.8 (30 networks), 200,000 steps each; 18 control runs |
-| Closed form status | Partial (approximate two-way comparator: substituted accuracy .928–.958, agreement .916–.935 over all 1080 cells, not an independent formula-fit split; never outputs a tie; complement not tested) |
+| Closed form status | Partial (approximate two-way comparator: substituted accuracy .928–.958, agreement .916–.944 over all 1080 cells, not an independent formula-fit split; never outputs a tie; complement not tested) |
 | Status | Partly solved (greater/less learned; at fraction .8, test .917–.963; `=` 0 correct test cells in 30/30); last run 2026-11-04 |
 | Weights | [Hugging Face: compare-counts](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/compare-counts) (hand-built base in `_shared/m2`) |
 | Reproduce | [Commands](#24-reproduction), run from `code/` |
@@ -172,7 +172,7 @@ Each network was fitted with the closed form
 answer = a if αc + βL + γ > 0 else b (never `=`),
 
 with α, β and γ fitted per network. Substituted for the network, it reaches accuracy .928–.958 (the corresponding networks score
-.946–.963) and agrees with the network on .916–.935 of cells. The fit and substitution screen covered all 1080 count/length cells, not an independently
+.946–.963) and agrees with the network on .916–.944 of cells. The fit and substitution screen covered all 1080 count/length cells, not an independently
 held-out formula-fit split. A form built on the exact variable 2c − L scores lower (.90–.94), so that variable alone does not
 reproduce the measured decisions as well; this does not prove it is absent internally. The closed form is supported by substitution; no [resample ablation of the
 complement](../GLOSSARY.md#verifying-a-circuit) was reported, so the status is partial.
@@ -273,7 +273,7 @@ Key: these are the source's per-fraction ranges, also used in Table 2. The earli
 earlier Table 2 and Section 4 used .91–.94 at fraction .4 and .92–.96 at fraction .8. These historical rounded displays are retained
 here rather than silently selected over the source precision.
 
-The substituted two-way rule scores .928–.958 and agrees with the network on .916–.935 of all 1080 cells; the corresponding network
+The substituted two-way rule scores .928–.958 and agrees with the network on .916–.944 of all 1080 cells; the corresponding network
 scores .946–.963. The earlier Section 5 and fact table displayed .93–.96 substitution accuracy and .92–.94 agreement; the earlier
 Section 5 network display was .95–.96. These are retained reporting precisions, not additional experiments. None of these scores
 counts a held-out equality success.
@@ -288,3 +288,10 @@ Compare [count mod 5](count-mod-5.md), which uses the same frozen count encoding
   feed-forward layers. *ICML 2025 (arXiv preprint)*. https://doi.org/10.48550/arxiv.2407.11542 (counting and histogram tasks)
 - Delétang, G., Ruoss, A., Grau-Moya, J., et al. (2022). Neural networks and the Chomsky hierarchy. *arXiv preprint*.
   https://doi.org/10.48550/arxiv.2207.02098 (length generalisation on formal-language tasks)
+
+## Correction (2026-11-15)
+
+An independent re-measurement of the published networks (two new sample banks drawn inside each task's held-out domain; finite domains re-enumerated) changed the sentences below. The original observations on the recorded test sets are kept beside the new values.
+
+- Comparator agreement with the network is .916–.944 over the 30 nets, not .916–.935: one net (seed 9, f60) agrees on .944 of the 1080 cells.
+- Re-drawing the prompt strings changes more than one saved-test decision in 18/30 and 22/30 nets on two fresh prompt banks (held-out correct counts shift by −5 to +9). The reported accuracies are for the original prompts.

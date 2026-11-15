@@ -168,7 +168,7 @@ cosine decay: seed 1 reached 1 at 25k, seed 0 peaked at .992 and ended at .988 o
 | PART A | 3.5–5.5k | .09 | .11–.14 | .07–.09 |
 | PART T | .5k | 1 | 1 | 1 |
 | TRAIN A, screening | 20.5–23k | .13–.23 | .09–.13 | .12–.15 |
-| TRAIN T, final | 14–19.5k | .13–.98 | 0–.26 | 1 in 7/10; other seeds .30–.75 |
+| TRAIN T, final | 14–19.5k | .13–.98 | 0–.26 (fresh 0–.34) | 1 in 7/10; other seeds .30–.75 |
 
 PART T seeds 0–2 pass n 1–12. Final TRAIN T reaches ≥ .95 at n 11 in 3/10, but short-input exact is ≤ .26 at n 4 and ≤ .71 at n 6.
 The older TRAIN T screen had n 11 best .84 / .86 / .83 and final .18 / .92 / .57, with n 12 ≈ 0. Older PART A tests reported n 12
@@ -193,7 +193,7 @@ the claimed circuit with activations from other inputs.
 |---|---|---|---|---|
 | PART T | MLP2 = W[phase, col, next], next = shift XOR (divisor_bit AND quotient) | 1.0 in 6/6 best/final nets; also with the 35-key HAND-input table | resample 1.0; circuit resampled 0 | accepted on the 3 directly tested seeds |
 | PART A | MLP3 = W[j, next], next = XOR of NB_i over S(D, j) | 1.0 in 6/6 | resample 1.0 | accepted on 3/3 seeds |
-| TRAIN T final | same MLP2 readout, with earlier layers left trained | coarse table 1.0 in 19/20 best/final snapshots; fine 35-key table seed 7 best .9883 rather than 1.0; final seed 7 .9694 with either key | complement .915–.994; circuit resampled and random same-size ≤ .003 | verified at the readout/discovered-circuit scope, 10/10 at the .90 share; not a complete upstream formula |
+| TRAIN T final | same MLP2 readout, with earlier layers left trained | coarse table 1.0 in 19/20 best/final snapshots; fine 35-key table seed 7 best .9883 rather than 1.0; final seed 7 .9694 with either key | complement .915–.994 (two fresh banks: 9/10 and 10/10 pass, seed 7 .895); circuit resampled and random same-size ≤ .003 | verified at the readout/discovered-circuit scope, 10/10 at the .90 share; not a complete upstream formula |
 | TRAIN A | table in answer bit and next remainder | .84 / .69 for solved seeds 1 / 2; failed seed 0 .998 | claimed-component resample .09 / .15 | rejected for the solved seeds |
 
 Complement self-tests pass in every tested network (`full = base`, `empty = source`). The coarse readout key includes the emitted
@@ -283,7 +283,7 @@ device was not logged. No missing diagnostic is treated as a passed check.
 Predictions were committed before any smoke run. PART T by 2.5k held (500); PART A by 15k with poor unseen-D and n 12 accuracy held
 (screen 5.5–7k; unseen D .09–.10). TRAIN T 3/3 by 15k mostly held in screening (seed 0 took 16k); the final run solved 10/10 but only
 2/10 first reached exact by 15k (14–19.5k). TRAIN A ≥ 1/3 by 30k held (2/3). TRAIN T fails n 12 held in screening (0/3) and remained
-limited in the final (maximum .26). Unseen-D accuracy ≥ .95 in most final seeds held (7/10).
+limited in the final (maximum .26; .34 on two fresh draws). Unseen-D accuracy ≥ .95 in most final seeds held (7/10).
 
 ## Appendix A. Weights excerpt and reading
 
@@ -364,3 +364,10 @@ Compare [binary matrix product](gf2-matrix-product.md) for another XOR-and-AND u
   models. *arXiv preprint*. https://doi.org/10.48550/arXiv.2112.00114; https://arxiv.org/abs/2112.00114 (scratchpads)
 - Power, A., Burda, Y., Edwards, H., Babuschkin, I., & Misra, V. (2022). Grokking: Generalization beyond overfitting on small
   algorithmic datasets. *arXiv preprint*. https://doi.org/10.48550/arXiv.2201.02177 (grokking)
+
+## Correction (2026-11-15)
+
+An independent re-measurement of the published networks (two new sample banks drawn inside each task's held-out domain; finite domains re-enumerated) changed the sentences below. The original observations on the recorded test sets are kept beside the new values.
+
+- On two fresh banks the TRAIN T discovered-circuit complement passes in 9/10 (seed 7 .895 < .90) and 10/10 seeds; the original 10/10 is unchanged.
+- Native n 12 accuracy of the final TRAIN T seeds is 0–.31 and 0–.34 on two fresh 512-row draws (0/10 exact), above the recorded maximum .26.

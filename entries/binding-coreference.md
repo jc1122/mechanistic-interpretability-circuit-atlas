@@ -25,7 +25,7 @@ Figure S1 shows clause information and the query merging at one shared name-read
 | Weights | [Hugging Face: binding-coreference](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/binding-coreference), revision `e409d98` |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
-That finding covers all 7 exact answer-only models trained from scratch: 3/30 screening runs and 4/10 retry runs, each exact on 2048 held-out sentences.
+That finding covers all 7 exact answer-only models trained from scratch: 3/30 screening runs and 4/10 retry runs, each exact on 2048 held-out sentences. On two fresh 2048-sentence banks, 4/9 and 6/9 of the selected solved nets stay exact (at most 2 errors each).
 
 Writing the current subject as intermediate working, a [scratchpad](../GLOSSARY.md#task-formats), did not solve the remaining choice among several pronoun matches.
 
@@ -274,3 +274,9 @@ Compare [Dyck brackets and agreement](dyck-k-and-agreement.md) for another point
 - Yu, C., Sie, R., Tedeschi, N., & Bergen, L. (2020). Word Frequency Does Not Predict Grammatical Knowledge in Language Models. *Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP)*. <https://doi.org/10.18653/v1/2020.emnlp-main.331> (conference paper; lexical variation and reflexive dependencies).
 - Zaczynska, K., Feldhus, N., Schwarzenberg, R., Gabryszak, A., & Möller, S. (2020). Evaluating German Transformer Language Models with Syntactic Agreement Tests. *arXiv preprint*. <https://arxiv.org/abs/2007.03765> (arXiv preprint; German reflexive feature agreement).
 - Zhang, X., Yang, Y., Yuan, S., Shen, D., & Carin, L. (2019). Syntax-Infused Variational Autoencoder for Text Generation. *Proceedings of the 57th Annual Meeting of the Association for Computational Linguistics*. <https://doi.org/10.18653/v1/p19-1199> (conference paper; syntax-infused model reflexive experiments).
+
+## Correction (2026-11-15)
+
+An independent re-measurement of the published networks (two new sample banks drawn inside each task's held-out domain; finite domains re-enumerated) changed the sentences below. The original observations on the recorded test sets are kept beside the new values.
+
+- On two fresh 2048-sentence banks only 4/9 and 6/9 of the nine selected solved networks stay exact (2046–2048/2048). The attention substitutions still pass ≥ .90 and the shared templates still fail; one scratchpad draw reaches .901, which is not a general certificate.

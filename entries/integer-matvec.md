@@ -142,11 +142,11 @@ The replacement is `c=[x'+b·a'-s'>=1], y=(x+b·a+c) mod 2`: reconstruct the inc
 
 ### T2: from-scratch scratchpad family
 
-The same formula on ridge-decoded x,x',a,a',b,s' at L5 gives exact 0-.006 on 500 scored rows per seed (1000 saved, 500 fit and 500 scored). Operand bits a/a'/b decode at .69-.95, near the majority rate. The discovered-circuit complement gives .932 in seed 3 (passes) and .839 in seed 4 (fails). The formula is not accepted.
+The same formula on ridge-decoded x,x',a,a',b,s' at L5 gives exact 0-.006 on 500 scored rows per seed (1000 saved, 500 fit and 500 scored). Operand bits a/a'/b decode at .69-.95, near the majority rate. The discovered-circuit complement gave .932 in seed 3 and .839 in seed 4 on the recorded rows; on two fresh 64-row banks both fail (seed 3 .84 and .87, seed 4 .77 and .88). The formula is not accepted.
 
 ### A1: answer-only circuit
 
-Using y_i = sum_j p_ij on decoded products gives .52 in seed 1 versus native 1.0 and is not accepted; p_ij denotes a decoded row product.
+Using y_i = sum_j p_ij on decoded products gives .52 in seed 1 on the recorded rows (.47–.71 on two fresh banks) versus native 1.0 and is not accepted; p_ij denotes a decoded row product.
 The published shorthand compares the failed T2 formula (exact 0-.006) with net 1.0 “on all 10 seeds”. The underlying scored substitution set instead has native 1.0 in nine seeds and .836 in seed 9; the headline final 2,000-row set has seed 7 at .9995 and seed 9 at .815. These are different evaluations, not interchangeable exact-match claims.
 
 Table F2 retains the observed late roles and the failed arithmetic test. A variable being recoverable from a network does not establish the hand-built route through it.
@@ -196,7 +196,7 @@ In TRAIN (archived final nets, L4 direct bit vote), the top 5 of 640 neurons car
 | Evaluation | Rows | Result |
 |---|---|---|
 | Ridge-decoded SUM3 substitution | 1000 saved per seed; 500 fit, 500 scored | Exact 0-.006 in all 10 seeds; native 1.0 in nine seeds, .836 in seed 9 |
-| Discovered-circuit complements | 64 rows, 3 draws | Seed 3 .932 passes; seed 4 .839 fails |
+| Discovered-circuit complements | 64 rows, 3 draws | Seed 3 .932 recorded, .84–.87 fresh: fails; seed 4 .839 fails |
 | Size and value tests | 256 rows per axis | At m=2 and m=4, exact 0 in all 10 seeds |
 
 The published summary describes “three 2x budget retries (30k -> 120k)”. The training record instead identifies run 3 as retry 2: run 1 used 30k, run 2 used 60k and run 3 used 120k. This is two budget doublings across three rounds, not three retries; the old wording is retained here as a correction record. The final budget was 4x the first.
@@ -219,3 +219,10 @@ The diagnostic table and narrative retain their original ranges, including 83-28
 - Parekh, O., Phillips, C. A., James, C. D., & Aimone, J. B. (2018). Constant-depth and subcubic-size threshold circuits for matrix multiplication. *Symposium on Parallelism in Algorithms and Architectures*. https://doi.org/10.1145/3210377.3210410 (conference paper; threshold-circuit comparison).
 - Sworna, Z. T., Ul Haque, M., & Babu, H. M. H. (2016). A LUT-based matrix multiplication using neural networks. *IEEE International Symposium on Circuits and Systems (ISCAS)*. https://doi.org/10.1109/ISCAS.2016.7538964 (conference paper; learned lookup tables).
 - Telgarsky, M. (2016). Benefits of depth in neural networks. *arXiv preprint*. https://arxiv.org/abs/1602.04485 (arXiv preprint; depth/threshold context).
+
+## Correction (2026-11-15)
+
+An independent re-measurement of the published networks (two new sample banks drawn inside each task's held-out domain; finite domains re-enumerated) changed the sentences below. The original observations on the recorded test sets are kept beside the new values.
+
+- Seed 3's discovered-circuit complement (.932 on the recorded rows) fails on two fresh 64-row banks (161/192 and 167/192 donor-row hits, .84 and .87); seed 4 fails as before. No discovered TRAIN circuit passes.
+- The decoded product-sum form scores .706 and .474 in seed 1 on two fresh 500-row banks (recorded .52); it remains rejected in all three seeds.

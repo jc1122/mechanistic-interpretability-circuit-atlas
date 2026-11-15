@@ -25,7 +25,7 @@ Figure S1 shows the tested pre-opener-state pointer and unidentified partner con
 | Weights | [Hugging Face: dyck-k-and-agreement](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/dyck-k-and-agreement), published revision `0aba437e2661`. |
 | Reproduce | Not available yet: training code for this task is not yet in `code/`. |
 
-The final two-bracket-type scratchpad experiment is solved in range, with 10/10 runs at whole-output accuracy 1.0 on 2048 held-out words per run when correct earlier tokens were supplied; replacing one component with a pointer to the written state just before the matching opener, recording what was still open then, kept .90–1.0 accuracy in 8/10 final saved networks.
+The final two-bracket-type scratchpad experiment is solved in range, with 10/10 runs at whole-output accuracy 1.0 on 2048 held-out words per run when correct earlier tokens were supplied; replacing one component with a pointer to the written state just before the matching opener, recording what was still open then, kept .90–1.0 accuracy in 8/10 final saved networks. On two fresh 2048-word banks 8/10 networks stay exact (single errors in two seeds per bank), and the pointer still passes in 8/10.
 
 ## 1. Task and data
 
@@ -241,3 +241,9 @@ Read [binding and coreference](binding-coreference.md) for a separate synthetic 
 - Gan, Z., Ren, R., Yao, W., et al. (2026). Beyond the black box: A survey on the theory and mechanism of large language models. *arXiv preprint*. https://doi.org/10.48550/arxiv.2601.02907 (secondary survey citing Wen et al. 2023; multiple attention patterns for bounded Dyck).
 - Sharma, A., Dawes, C., & Raval, S. (2026). Dissociating decodability and causal use in bracket-sequence transformers. *arXiv preprint*. https://doi.org/10.48550/arxiv.2604.22128 (stack-top routing versus the pre-opener-state pointer; causal use).
 - Yao, S., Peng, B., Papadimitriou, C., & Narasimhan, K. (2021). Self-attention networks can process bounded hierarchical languages. *arXiv preprint*. https://arxiv.org/abs/2105.11115 (bounded-depth match-head construction).
+
+## Correction (2026-11-15)
+
+An independent re-measurement of the published networks (two new sample banks drawn inside each task's held-out domain; finite domains re-enumerated) changed the sentences below. The original observations on the recorded test sets are kept beside the new values.
+
+- On two fresh 2048-word banks, 8/10 Dyck-2 scratchpad finals stay exact (one error in seeds 0 and 8, then in seeds 0 and 5); the recorded 10/10 is unchanged and the pointer substitution still passes in 8/10.

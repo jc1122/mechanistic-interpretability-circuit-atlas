@@ -2,7 +2,7 @@
 
 The largest number that divides both 6 and 4 is 2; repeated subtraction finds this greatest common divisor by keeping the pair's absolute difference and smaller value. Four-layer transformers either gave the answer directly or wrote each such step before answering.
 
-The task is partly solved and the formula status is [partial](../GLOSSARY.md#verifying-a-circuit): replacement and tests changing activity outside the circuit passed in the 7 exact fixed-scaffold runs, but 3 trained output selectors still made held-out errors, and no complete formula was accepted for the from-scratch models, of which 5/10 were exact. Neither training setting reliably transferred to eight-bit inputs.
+The task is partly solved and the formula status is [partial](../GLOSSARY.md#verifying-a-circuit): replacement and tests changing activity outside the circuit passed in the 7 exact fixed-scaffold runs, but 3 trained output selectors still made held-out errors, and no complete formula was accepted for the from-scratch models, of which 6/10 were exact. Neither training setting reliably transferred to eight-bit inputs.
 
 ## The circuit at a glance
 
@@ -19,7 +19,7 @@ Figure S1 shows parallel operand reads and frozen arithmetic feeding the learned
 | Model | GPT-NeoX-shaped, 4 layers × 4 heads, d_model 128, ReLU MLP; PART trains only the layer-3 MLP |
 | Rungs and seeds | GCD PART trace: 3 screening + 10 final seeds; TRAIN trace final: 10 seeds, including 3 from the budget retry; answer-only and side-cell screens: 3 seeds each |
 | Closed form status | Partial (PART router substitution 1.0 in 10/10 on 4096 six-bit pairs, repairing native errors rather than matching every decision; complement .974–1.0 in 7/7 held-out-exact seeds on 128 tuples, not exhaustively replayed; no complete TRAIN form) |
-| Status | Partly solved (PART trace 7/10 exact, TRAIN trace 5/10 exact on 256 held-out tuples; both 10/10 ≥ .99); last run 2026-11-10 |
+| Status | Partly solved (PART trace 7/10 exact, TRAIN trace 6/10 exact on 256 held-out tuples; both 10/10 ≥ .99); last run 2026-11-10 |
 | Weights | [Hugging Face: gcd-euclid](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/gcd-euclid), published revision `6ca84a561e25` |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
@@ -150,7 +150,7 @@ in seeds 0–2, an R token in seed 4 and a B token in seed 5.
 | Cell | Exact seeds (≥ .99) | Best / final test | ≥ .9 / ≥ .99 step (k) | Magnitude checks |
 |---|---|---|---|---|
 | PART T, 6 bit | 7/10 (10/10) | 1.0 ×8, .996 ×2 / 1.0 ×7, .996 ×3 | 13–23.5 / 21–26 | 7 bit .23–.47; 8 bit .05–.17 |
-| TRAIN T final + run 3, 7 bit | 5/10 (10/10) | 1.0 ×8, .996 ×2 / 1.0 ×5, .996 ×5 | 19–38.5 / 31.5–48.5 | 8 bit .20–.33 |
+| TRAIN T final + run 3, 7 bit | 6/10 (10/10) | 1.0 ×8, .996 ×2 / 1.0 ×6, .996 ×4 | 19–38.5 / 31.5–48.5 | 8 bit .20–.33 |
 | S TRAIN width 1 / width 2 (screens) | 0/3 / 0/3 | full trace .03–.52 | never | not reported |
 
 The earlier article called the PART final per-seed list in Table 3 “best snapshot”. The final analysis distinguishes eight exact best
@@ -408,3 +408,9 @@ Compare [rounded Euler decay](euler-decay-ode.md) for a recurrence where learnin
   algorithmic datasets. *arXiv preprint*. https://arxiv.org/abs/2201.02177 (grokking)
 - Rai, D., Geva, M., & Yao, Z. (2026). Data-driven circuit discovery for interpretability of language models. *arXiv preprint*.
   https://doi.org/10.48550/arxiv.2605.09129 (possible mixing of row-specific mechanisms in dataset-wide circuit discovery)
+
+## Correction (2026-11-15)
+
+An independent re-measurement of the published networks (two new sample banks drawn inside each task's held-out domain; finite domains re-enumerated) changed the sentences below. The original observations on the recorded test sets are kept beside the new values.
+
+- The published TRAIN cohort is exact in 6/10 seeds on the saved 256-tuple test, not 5/10: seed 5 scores 256/256, as its own manifest records. On two fresh banks 7/10 and 4/10 are exact; all 10 stay ≥ .99. Prediction-record wording that quotes the earlier count of 5/10 is kept as written at the time.

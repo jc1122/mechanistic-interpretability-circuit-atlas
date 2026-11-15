@@ -23,7 +23,7 @@ Figure S1 shows the final heads and the preceding neuron block feeding separate 
 | Weights | [Hugging Face: chain-rule-differentiation](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/chain-rule-differentiation) (weights and held-out evidence archive; 28 nets + 2 HAND) |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
-Learning all weights solved the register format in 10/10 final runs, with every output token correct on 256 held-out expressions per run when correct earlier tokens were supplied; learning only the output block on a fixed hand-built expression reader failed in all 12 runs (.46–.92 whole-output accuracy).
+Learning all weights solved the register format in 10/10 final runs, with every output token correct on 256 held-out expressions per run when correct earlier tokens were supplied; learning only the output block on a fixed hand-built expression reader failed in all 12 runs (.46–.92 whole-output accuracy). On two fresh 256-expression banks, 7/10 and 8/10 final-round networks stay exact (all ≥ .988).
 
 In 16/16 tested networks, the first layer could be replaced by a rule that counts earlier symbols and weights their contributions according to the symbol being read; the later derivative-writing computation still has no compact formula: its status is [Partial](../GLOSSARY.md#verifying-a-circuit), supported by replacement without testing changes to everything outside the proposed circuit.
 
@@ -298,3 +298,9 @@ Read [polynomial differentiation](polynomial-differentiation.md) for a related s
   models. *arXiv preprint*. https://arxiv.org/abs/2112.00114 (scratchpad format)
 - Power, A., Burda, Y., Edwards, H., Babuschkin, I., & Misra, V. (2022). Grokking: Generalization beyond overfitting on small
   algorithmic datasets. *arXiv preprint*. https://arxiv.org/abs/2201.02177 (delayed generalisation)
+
+## Correction (2026-11-15)
+
+An independent re-measurement of the published networks (two new sample banks drawn inside each task's held-out domain; finite domains re-enumerated) changed the sentences below. The original observations on the recorded test sets are kept beside the new values.
+
+- On two fresh 256-expression banks, native exact match holds in 12/16 TRAIN networks each (final round 7/10 and 8/10, 253–256/256); the rank-4 first-layer table is exact in 12/16 and 13/16 and agrees with the network on 255–256/256 expressions, so it passes the ≥ .90 bar in 16/16 but is not exact everywhere. The public archive holds best snapshots only.

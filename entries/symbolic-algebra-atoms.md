@@ -2,7 +2,7 @@
 
 Expanding (2x+1)(3x+4) gives 6x²+11x+4. These networks received each term's side, power and coefficient (the number in front): the left 2x was supplied as left, power 1, coefficient 2. They did not parse ordinary notation.
 
-Training from scratch with a [scratchpad](../GLOSSARY.md#task-formats), a record of working, produced exact best saved networks in 10/10 runs each for expansion and equation solving, on 1000 saved test examples per run. Correct preceding tokens were supplied. No from-scratch formula was accepted. The picture's residual stream carries shared running information that each layer reads and updates ([glossary](../GLOSSARY.md#standard-machine-learning-terms)).
+Training from scratch with a [scratchpad](../GLOSSARY.md#task-formats), a record of working, produced exact best saved networks in 10/10 runs each for expansion and equation solving, on 1000 saved test examples per run. Correct preceding tokens were supplied. On two fresh banks of 1000 examples the best snapshots stay exact in 4/10 (expansion) and 4–6/10 (solving), all ≥ .99. No from-scratch formula was accepted. The picture's residual stream carries shared running information that each layer reads and updates ([glossary](../GLOSSARY.md#standard-machine-learning-terms)).
 
 ## The circuit at a glance
 
@@ -313,3 +313,9 @@ nearest-HAND attention JS. HAND head and neuron sizes for comparison are in Tabl
   loss landscape perspective. *arXiv preprint*. https://arxiv.org/abs/2410.05192 (budget-retry motivation)
 - Wies, N., Levine, Y., & Shashua, A. (2022). Sub-task decomposition enables learning in sequence to sequence tasks. *arXiv preprint*.
   https://doi.org/10.48550/arxiv.2204.02892 (intermediate supervision)
+
+## Correction (2026-11-15)
+
+An independent re-measurement of the published networks (two new sample banks drawn inside each task's held-out domain; finite domains re-enumerated) changed the sentences below. The original observations on the recorded test sets are kept beside the new values.
+
+- On two fresh 1000-row banks the best snapshots are exact in 4/10 (expansion, both banks) and 4/10 and 6/10 (solving); all stay ≥ .99. Expansion finals are exact in 10/10 and 8/10 (recorded 9/10). The seven public solving finals (seeds 3–9) are exact in 7/7; the finals of seeds 0–2 are not in the public archive.

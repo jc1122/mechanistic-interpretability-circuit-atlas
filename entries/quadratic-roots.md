@@ -23,7 +23,7 @@ Figure 3 shows the supplied-program executor, not a learned quadratic solver ([m
 | Weights | [Hugging Face: quadratic-roots](https://huggingface.co/jc1122/circuit-atlas-nets/tree/main/quadratic-roots) (weights, splits and recorded test archive; published revision `e417b9b92a75`). |
 | Reproduce | Not available yet: training code for this task is not yet in `code/` |
 
-Training the whole network at twice the width succeeded in 0/10 runs: it never learned to fetch the addressed bits.
+Training the whole network at twice the width succeeded in 0/10 runs: it never learned to fetch the addressed bits. Only three of these ten networks are public; all three re-checked as nonexact.
 
 The local [formula is verified](../GLOSSARY.md#verifying-a-circuit): a one-neuron replacement kept 1,792/1,792 held-out packets right per run, and swapping the other parts' signals between examples also passed in every run. This verifies a local rule within supplied computation, not a learned quadratic solver.
 
@@ -340,3 +340,9 @@ Titles and venues of the inherited root-finding references were checked against 
 - Zhang et al. (2008). Finding multiple real roots by neural networks based on complete discrimination system of polynomial. *2008 IEEE Conference on Cybernetics and Intelligent Systems*. https://doi.org/10.1109/ICCIS.2008.4670918 (Conference paper; numerical root finding; source author attribution retained.)
 - Zhang, Y., & Zeng, Z.-Z. (2009). Neural Network Algorithm for the Simultaneous Extraction of All Roots of Algebraic Polynomial. *2009 International Conference on Computational Intelligence and Security*. https://doi.org/10.1109/CIS.2009.78 (Conference paper; numerical root finding.)
 - Zhu et al. (2008). A fast neural-network algorithm for simultaneous extraction of all roots of algebraic polynomial. *2008 9th International Conference on Signal Processing*. https://doi.org/10.1109/ICOSP.2008.4697750 (Conference paper; numerical root finding; source author attribution retained.)
+
+## Correction (2026-11-15)
+
+An independent re-measurement of the published networks (two new sample banks drawn inside each task's held-out domain; finite domains re-enumerated) changed the sentences below. The original observations on the recorded test sets are kept beside the new values.
+
+- Only 3/10 executor TRAIN finals are in the public archive; all three are nonexact on two fresh banks (local 3,179 and 3,282 of 5,376 updates, 0/72 whole traces). The other seven cannot be re-checked.
