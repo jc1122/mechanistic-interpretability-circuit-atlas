@@ -28,6 +28,10 @@ Unreleased changes are not a tagged release or a DOI deposit.
   The argmedian positive-domain net ties exactly on 51% of rows, so its fp32 accuracy depends on summation order (56.46–56.63%);
   the entry and manifest give the fp64 accuracy with a first-index tie-break (56.47%), the strict accuracy (48.9%) and the fp32 band.
 
+### Corrected
+
+- Re-measurement of the published networks on fresh held-out samples (2026-11-15): 14 entries carry a dated Correction section (binding-coreference, chain-rule-differentiation, compare-counts, counter-languages, crc-remainder, dyck-k-and-agreement, euler-decay-ode, gcd-euclid, gf2-elimination, integer-matvec, linear-systems-finite-fields, polynomial-integration, quadratic-roots, symbolic-algebra-atoms). Notable: gcd-euclid TRAIN is 6/10 exact, not 5/10; the euler-decay-ode random control supports specificity; the integer-matvec seed 3 complement fails on fresh rows. Recorded results are kept beside the new values.
+
 ## 1.1.0 (2026-11-14)
 
 ### Added
@@ -53,10 +57,6 @@ Unreleased changes are not a tagged release or a DOI deposit.
   empty-complement forms become READ. Every earlier limitation and failed test is retained.
 - README and INDEX date the external-zoo snapshots by analysis iteration only, without naming an analysis agent.
 - Every entry now shows its circuit picture right after the opening story, before the fact table; long identifiers and equations wrap on phones.
-
-### Corrected
-
-- Re-measurement of the published networks on fresh held-out samples (2026-11-15): 14 entries carry a dated Correction section (binding-coreference, chain-rule-differentiation, compare-counts, counter-languages, crc-remainder, dyck-k-and-agreement, euler-decay-ode, gcd-euclid, gf2-elimination, integer-matvec, linear-systems-finite-fields, polynomial-integration, quadratic-roots, symbolic-algebra-atoms). Notable: gcd-euclid TRAIN is 6/10 exact, not 5/10; the euler-decay-ode random control supports specificity; the integer-matvec seed 3 complement fails on fresh rows. Recorded results are kept beside the new values.
 
 ## 1.0.0 (2026-11-14)
 
